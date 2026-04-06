@@ -72,11 +72,6 @@ export function HostelContextProvider({ children }: { children: React.ReactNode 
       return;
     }
 
-    if (!hostels.length && pathname !== "/owner/create-hostel") {
-      router.replace("/owner/create-hostel");
-      return;
-    }
-
     if (hostels.length && pathname === "/owner/create-hostel") {
       const mode = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("mode") : null;
 
