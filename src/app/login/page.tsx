@@ -1,32 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, ShieldCheck } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleLogin = async () => {
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setLoading(true);
+    setError("");
 
     try {
-      const response = await fetch("/api/owner-hostels", { cache: "no-store" });
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
+
       const data = await response.json();
 
-      if (data.hostels?.length) {
-        const defaultHostelId = data.hostels[0]?.id;
+      if (!response.ok) {
+        setError(data.message ?? "Unable to sign in.");
+        return;
+      }
+
+      const hostelsResponse = await fetch("/api/owner-hostels", { cache: "no-store" });
+      const hostelsData = await hostelsResponse.json();
+
+      if (hostelsData.hostels?.length) {
+        const defaultHostelId = hostelsData.hostels[0]?.id;
 
         if (defaultHostelId && typeof window !== "undefined") {
           window.localStorage.setItem("currentHostelId", defaultHostelId);
         }
 
         router.push("/owner/dashboard");
-        return;
+      } else {
+        router.push("/owner/create-hostel");
       }
-
-      router.push("/owner/create-hostel");
     } finally {
       setLoading(false);
     }
@@ -64,14 +86,16 @@ export default function LoginPage() {
               <p className="mt-3 text-lg text-white/85">Login to your account</p>
             </div>
 
-            <div className="rounded-[28px] border border-white/35 bg-white/85 p-5 text-left shadow-2xl backdrop-blur-xl">
+            <form onSubmit={handleLogin} className="rounded-[28px] border border-white/35 bg-white/85 p-5 text-left shadow-2xl backdrop-blur-xl">
               <div className="space-y-4">
                 <label className="block">
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
-                      placeholder="Username or Email"
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value)}
+                      placeholder="Username"
                       className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 pl-12 text-base text-slate-700 outline-none transition focus:border-orange-300"
                     />
                   </div>
@@ -82,6 +106,8 @@ export default function LoginPage() {
                     <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                     <input
                       type="password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
                       placeholder="Password"
                       className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 pl-12 text-base text-slate-700 outline-none transition focus:border-orange-300"
                     />
@@ -98,19 +124,20 @@ export default function LoginPage() {
                   </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleLogin}
-                  className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-4 text-lg font-semibold text-white shadow-lg transition hover:from-orange-600 hover:to-orange-600"
-                >
-                  {loading ? "Checking..." : "Login"}
-                </button>
+                  <button
+                    type="submit"
+                    className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-4 text-lg font-semibold text-white shadow-lg transition hover:from-orange-600 hover:to-orange-600"
+                  >
+                    {loading ? "Checking..." : "Login"}
+                  </button>
 
-                <div className="rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-slate-700">
-                  Demo mode is active. You can enter any username or email and any password to open the hostel owner flow.
-                </div>
+                {error ? (
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {error}
+                  </div>
+                ) : null}
               </div>
-            </div>
+            </form>
 
             <p className="mt-8 text-base text-white/90">
               Don&apos;t have an account?{" "}

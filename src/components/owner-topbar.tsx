@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
-import { AlertCircle, Bell, Menu, Search } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { AlertCircle, ArrowLeft, Bell, House, Menu, Search } from "lucide-react";
 import { HostelSwitcher } from "@/components/hostel-switcher";
 import { useHostelContext } from "@/components/hostel-context-provider";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
@@ -11,11 +11,13 @@ import { formatPaymentDate, getDueStatus } from "@/lib/payment-utils";
 
 const ALERT_SEEN_PREFIX = "dashboard-payment-alert-seen";
 
-export function OwnerTopbar() {
+export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { currentHostel } = useHostelContext();
   const { tenants, loading } = useOwnerTenants();
   const [open, setOpen] = useState(false);
+  const isDashboard = pathname === "/owner/dashboard";
 
   const alerts = useMemo(() => {
     if (!currentHostel) {
@@ -50,16 +52,49 @@ export function OwnerTopbar() {
     return () => window.clearTimeout(timer);
   }, [alerts.length, currentHostel, loading, pathname]);
 
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push("/owner/dashboard");
+  };
+
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/90 px-3 py-3 backdrop-blur md:px-6">
       <div className="flex min-w-0 items-center gap-2.5">
-        <button type="button" className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 shadow-sm">
+        <button
+          type="button"
+          onClick={onOpenSidebar}
+          aria-label="Open navigation menu"
+          className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 shadow-sm lg:hidden"
+        >
           <Menu className="h-4 w-4" />
         </button>
+        <button
+          type="button"
+          onClick={handleBack}
+          aria-label="Go back"
+          className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 shadow-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <Link
+          href="/owner/dashboard"
+          aria-label="Go to dashboard"
+          className={`rounded-lg border bg-white p-2 shadow-sm transition ${
+            isDashboard
+              ? "border-violet-200 text-violet-600"
+              : "border-slate-200 text-slate-600 hover:border-violet-200 hover:text-violet-600"
+          }`}
+        >
+          <House className="h-4 w-4" />
+        </Link>
         <HostelSwitcher />
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2 sm:gap-2.5">
         <label className="relative hidden md:block">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
           <input
@@ -83,7 +118,7 @@ export function OwnerTopbar() {
           </button>
 
           {open ? (
-            <div className="absolute right-0 top-[calc(100%+0.6rem)] z-30 w-[320px] rounded-[22px] border border-slate-200 bg-white p-3 shadow-[0_20px_50px_rgba(15,23,42,0.14)]">
+            <div className="absolute right-0 top-[calc(100%+0.6rem)] z-30 w-[min(320px,calc(100vw-1.5rem))] rounded-[22px] border border-slate-200 bg-white p-3 shadow-[0_20px_50px_rgba(15,23,42,0.14)]">
               <div className="flex items-center justify-between gap-3 px-1 pb-2">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Payment Alerts</p>

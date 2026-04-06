@@ -55,7 +55,14 @@ Create a local env file from `.env.example` and provide:
 MONGODB_URI=your-mongodb-uri
 JWT_SECRET=your-jwt-secret
 API_PORT=4000
+ADMIN_USERNAME=owneradmin
+ADMIN_PASSWORD=Owner@123
 ```
+
+The Next.js app login uses `ADMIN_USERNAME` and `ADMIN_PASSWORD`. If you do not set them, it falls back to:
+
+- Username: `owneradmin`
+- Password: `Owner@123`
 
 ## Vercel Deployment
 
@@ -70,6 +77,7 @@ Important:
 - The Next.js frontend and app routes deploy cleanly on Vercel.
 - The Express backend inside `backend/` is not the runtime used by Vercel for the frontend deployment.
 - If you need the standalone Express backend in production, deploy it separately on a VPS, Railway, Render, or a similar Node host.
+- Add `ADMIN_USERNAME` and `ADMIN_PASSWORD` in Vercel project environment variables if you want custom login credentials.
 
 ## Notes
 

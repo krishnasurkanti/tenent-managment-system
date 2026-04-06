@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { X } from "lucide-react";
 import {
   BedDouble,
   Building2,
@@ -14,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { HostelMiniScene } from "@/components/hostel-mini-scene";
+import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { cn } from "@/lib/utils";
 
 const workspaceNavigation = [
@@ -29,13 +31,44 @@ const hostelNavigation = [
   { name: "Settings", href: "/owner/settings", icon: Settings },
 ];
 
-export function OwnerSidebar() {
+export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
+  useLockBodyScroll(open);
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("currentHostelId");
+    }
+    onClose();
+    router.push("/login");
+    router.refresh();
+  };
+
+  const handleNavigate = () => {
+    onClose();
+  };
 
   return (
-    <aside className="hidden min-h-screen w-[248px] shrink-0 bg-[radial-gradient(circle_at_top,#11233f_0%,#0b172a_52%,#081220_100%)] text-white lg:flex lg:flex-col">
+    <>
+      <div
+        aria-hidden={!open}
+        onClick={onClose}
+        className={cn(
+          "fixed inset-0 z-30 bg-slate-950/45 transition lg:hidden",
+          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
+        )}
+      />
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 flex min-h-screen w-[288px] max-w-[84vw] flex-col bg-[radial-gradient(circle_at_top,#11233f_0%,#0b172a_52%,#081220_100%)] text-white shadow-[0_24px_60px_rgba(8,18,32,0.38)] transition-transform duration-300 lg:static lg:z-auto lg:w-[248px] lg:max-w-none lg:translate-x-0 lg:shadow-none",
+          open ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
       <div className="border-b border-white/10 px-5 py-5">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
           <div className="rounded-[18px] bg-violet-500/18 p-2.5 text-violet-200 ring-1 ring-white/10">
             <Building2 className="h-4.5 w-4.5" />
           </div>
@@ -45,6 +78,15 @@ export function OwnerSidebar() {
             </p>
             <p className="mt-1 text-xs text-slate-300">Management System</p>
           </div>
+        </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close navigation menu"
+            className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-200 transition hover:bg-white/10 lg:hidden"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
@@ -59,6 +101,7 @@ export function OwnerSidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={handleNavigate}
               className={cn(
                 "group flex items-center gap-2.5 rounded-[16px] px-3.5 py-2.5 text-[13px] font-medium transition",
                 active
@@ -86,6 +129,7 @@ export function OwnerSidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={handleNavigate}
               className={cn(
                 "group flex items-center gap-2.5 rounded-[16px] px-3.5 py-2.5 text-[13px] font-medium transition",
                 active
@@ -130,14 +174,16 @@ export function OwnerSidebar() {
       </div>
 
       <div className="border-t border-white/10 px-3 py-3">
-        <Link
-          href="/login"
+        <button
+          type="button"
+          onClick={handleLogout}
           className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-[13px] font-medium text-slate-200 transition hover:bg-white/8 hover:text-white"
         >
           <LogOut className="h-3.5 w-3.5" />
           Logout
-        </Link>
+        </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
