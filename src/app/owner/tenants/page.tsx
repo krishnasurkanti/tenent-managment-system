@@ -15,11 +15,11 @@ export default function OwnerTenantsPage() {
 
   if (!currentHostel) {
     return (
-      <Card className="border-slate-200 bg-white p-5 text-center">
+      <Card className="p-5 text-center">
         <p className="text-sm font-semibold text-slate-800">No hostel selected.</p>
         <Link
           href="/owner/create-hostel"
-          className="mt-3 inline-flex min-h-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 text-[12px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+          className="mt-3 inline-flex min-h-10 items-center justify-center rounded-2xl bg-[var(--action-gradient)] px-4 text-[12px] font-semibold text-white shadow-[var(--shadow-soft)] transition hover:opacity-95"
         >
           Create Hostel
         </Link>
@@ -31,26 +31,28 @@ export default function OwnerTenantsPage() {
 
   return (
     <div className={`space-y-4 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Tenants</p>
-          <h1 className="mt-1 text-[1.35rem] font-semibold tracking-tight text-slate-800 sm:text-[1.55rem]">
-            Tenant Directory
-          </h1>
-          <p className="mt-1 text-[12px] text-slate-500">Showing tenants for {currentHostel.hostelName} only.</p>
+      <div className="rounded-[28px] border border-white/70 bg-[var(--surface-gradient)] px-4 py-4 shadow-[var(--shadow-card)] sm:px-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Tenants</p>
+            <h1 className="mt-1 text-[1.35rem] font-semibold tracking-tight text-slate-800 sm:text-[1.55rem]">
+              Tenant Directory
+            </h1>
+            <p className="mt-1 text-[12px] text-slate-500">Showing tenants for {currentHostel.hostelName} only.</p>
+          </div>
+          <Link
+            href="/tenants"
+            className="inline-flex items-center justify-center rounded-2xl bg-[var(--action-gradient)] px-4 py-2.5 text-[12px] font-semibold text-white shadow-[var(--shadow-soft)] transition hover:opacity-95"
+          >
+            Add New Tenant
+          </Link>
         </div>
-        <Link
-          href="/tenants"
-          className="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-[12px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
-        >
-          Add New Tenant
-        </Link>
       </div>
 
-      <Card className="overflow-hidden border-slate-200 bg-white">
+      <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-[13px]">
-            <thead className="bg-slate-50 text-slate-500">
+            <thead className="bg-[linear-gradient(180deg,#f6efff_0%,#fff5fa_100%)] text-slate-500">
               <tr>
                 <th className="px-3 py-2.5 font-medium">Tenant ID</th>
                 <th className="px-3 py-2.5 font-medium">Name</th>
@@ -69,7 +71,7 @@ export default function OwnerTenantsPage() {
                 </tr>
               ) : (
                 tenants.map((tenant) => (
-                  <tr key={tenant.tenantId} className="border-t border-slate-200">
+                  <tr key={tenant.tenantId} className="border-t border-white/80">
                     <td className="px-3 py-3 font-semibold text-slate-700">{tenant.tenantId}</td>
                     <td className="px-3 py-3">
                       <Link

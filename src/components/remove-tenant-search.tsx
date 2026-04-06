@@ -80,7 +80,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
   return (
     <>
       <Button
-        className="min-h-12 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-[13px] font-semibold text-emerald-700 shadow-none hover:bg-emerald-100"
+        className="min-h-12 w-full rounded-2xl border border-white/80 bg-[linear-gradient(90deg,#ff8ca6_0%,#ff6e8d_100%)] px-4 text-[13px] font-semibold text-white shadow-[0_16px_30px_rgba(255,110,141,0.2)] hover:opacity-95"
         onClick={() => {
           setQuery("");
           setSelectedTenantId("");
@@ -95,17 +95,23 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
       </Button>
 
       {open ? (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/45 px-4 py-4 sm:py-8">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(48,28,75,0.28)] px-4 py-4 sm:py-8">
           <div className="flex min-h-full items-center justify-center">
-            <Card className="flex max-h-[min(92vh,720px)] w-full max-w-2xl flex-col overflow-hidden p-6">
+            <Card className="flex max-h-[min(92vh,720px)] w-full max-w-2xl flex-col overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82)_0%,rgba(244,236,255,0.95)_100%)] p-6 shadow-[0_28px_70px_rgba(170,148,255,0.22)]">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-semibold">Remove Tenant</h2>
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/72 px-3 py-1.5 text-[13px] font-semibold text-slate-700 shadow-sm">
+                  <span className="rounded-full bg-[linear-gradient(135deg,#ff8ca6_0%,#ff6e8d_100%)] p-1 text-white">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </span>
+                  Remove Tenant
+                </div>
+                <h2 className="mt-3 text-2xl font-semibold">Remove Tenant</h2>
                 <p className="mt-1 text-sm text-[var(--muted-foreground)]">
                   Search by tenant ID or name, confirm room and floor details, then remove the tenant from the hostel.
                 </p>
               </div>
-              <Button variant="ghost" className="px-3" onClick={closeModal}>
+              <Button variant="ghost" className="rounded-2xl px-3" onClick={closeModal}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -124,13 +130,13 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                       setError("");
                     }}
                     placeholder="Type last 5-digit ID or tenant name"
-                    className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 pl-11 text-sm outline-none"
+                    className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm outline-none shadow-sm"
                   />
                 </div>
               </label>
 
               {!normalizedQuery ? (
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] px-4 py-4 text-sm text-[var(--muted-foreground)]">
+                <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-4 text-sm text-[var(--muted-foreground)] shadow-sm">
                   Start typing a tenant ID or name to find the tenant.
                 </div>
               ) : matches.length === 0 ? (
@@ -153,8 +159,8 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                         }}
                         className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
                           active
-                            ? "border-rose-300 bg-rose-50"
-                            : "border-[var(--border)] bg-[var(--background)] hover:border-[var(--border-strong)]"
+                            ? "border-rose-200 bg-[linear-gradient(90deg,#ffe8f0_0%,#ffdbe7_100%)]"
+                            : "border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] hover:border-rose-200"
                         }`}
                       >
                         <p className="font-semibold text-[var(--foreground)]">{tenant.fullName}</p>
@@ -171,7 +177,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
               )}
 
               {selectedTenant ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                <div className="rounded-2xl border border-rose-200 bg-[linear-gradient(180deg,#fff3f7_0%,#ffe7ef_100%)] p-4 text-sm text-rose-700">
                   <p className="font-semibold text-rose-800">{selectedTenant.fullName}</p>
                   <p className="mt-1">Tenant ID: {selectedTenant.tenantId}</p>
                   <p className="mt-1">
@@ -186,7 +192,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
             {message ? <p className="mt-4 text-sm text-emerald-600">{message}</p> : null}
 
             <div className="mt-6 flex flex-col-reverse gap-3 border-t border-[var(--border)] pt-4 sm:flex-row sm:justify-end">
-              <Button variant="secondary" onClick={closeModal}>
+              <Button variant="secondary" onClick={closeModal} className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]">
                 Cancel
               </Button>
               <Button variant="danger" onClick={handleRemove} className={submitting ? "opacity-70" : ""}>

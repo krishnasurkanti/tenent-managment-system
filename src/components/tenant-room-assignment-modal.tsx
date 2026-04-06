@@ -123,12 +123,12 @@ export function TenantRoomAssignmentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/45 px-4 py-4 sm:py-8">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(48,28,75,0.28)] px-4 py-4 sm:py-8">
       <div className="flex min-h-full items-center justify-center">
-      <Card className="flex max-h-[min(92vh,920px)] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border-slate-200 bg-white p-6 shadow-2xl sm:p-8">
+      <Card className="flex max-h-[min(92vh,920px)] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82)_0%,rgba(244,236,255,0.95)_100%)] p-6 shadow-[0_28px_70px_rgba(170,148,255,0.22)] sm:p-8">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
-            <div className="inline-flex items-center rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-violet-700">
+            <div className="inline-flex items-center rounded-full bg-[var(--pill-gradient)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-violet-700">
               Step 2
             </div>
             <h2 className="text-3xl font-semibold tracking-tight text-slate-900">Assign room to tenant</h2>
@@ -136,19 +136,19 @@ export function TenantRoomAssignmentModal({
               Tenant ID <span className="font-semibold text-slate-800">{tenant.tenantId}</span> is ready. Select the hostel, floor, room, sharing setup, and move-in date to complete the tenant profile.
             </p>
           </div>
-          <Button variant="ghost" className="rounded-2xl px-3 text-slate-500 hover:bg-slate-100" onClick={onClose}>
+          <Button variant="ghost" className="rounded-2xl px-3 text-slate-500 hover:bg-white/70" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
 
         <div className="mt-8 flex-1 overflow-y-auto pr-1">
         {loading ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+          <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-5 text-sm text-slate-500 shadow-sm">
             Loading hostel room data...
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
+            <div className="rounded-3xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] p-5 shadow-sm">
               <div className="mb-4 flex items-center gap-2">
                 <Info className="h-4 w-4 text-violet-600" />
                 <p className="text-sm font-medium text-slate-700">Choose the location for this tenant</p>
@@ -166,7 +166,7 @@ export function TenantRoomAssignmentModal({
                   setRoomNumber(nextRoom?.roomNumber ?? "");
                   setSharingType(nextRoom?.sharingType ?? "");
                 }}
-                className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm outline-none"
+                className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm outline-none shadow-sm"
               >
                 {hostels.map((hostel) => (
                   <option key={hostel.hostelId} value={hostel.hostelId}>
@@ -185,7 +185,7 @@ export function TenantRoomAssignmentModal({
                   setRoomNumber(nextRoom?.roomNumber ?? "");
                   setSharingType(nextRoom?.sharingType ?? "");
                 }}
-                className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm outline-none"
+                className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm outline-none shadow-sm"
               >
                 {selectedHostel?.floors.map((floor) => (
                   <option key={floor.floorNumber} value={floor.floorNumber}>
@@ -202,7 +202,7 @@ export function TenantRoomAssignmentModal({
                   setRoomNumber(event.target.value);
                   setSharingType(nextRoom?.sharingType ?? "");
                 }}
-                className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm outline-none"
+                className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm outline-none shadow-sm"
               >
                 {selectedFloor?.rooms
                   .filter((room) => room.occupied < room.capacity)
@@ -221,7 +221,7 @@ export function TenantRoomAssignmentModal({
               <input
                 value={sharingType}
                 onChange={(event) => setSharingType(event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pl-11 text-sm text-slate-700 outline-none transition focus:border-violet-300 focus:bg-white"
+                className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm transition focus:border-violet-300 focus:bg-white"
                 placeholder="Ex: Double Sharing"
               />
             </Field>
@@ -230,7 +230,7 @@ export function TenantRoomAssignmentModal({
                 type="date"
                 value={moveInDate}
                 onChange={(event) => setMoveInDate(event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pl-11 text-sm text-slate-700 outline-none transition focus:border-violet-300 focus:bg-white"
+                className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm transition focus:border-violet-300 focus:bg-white"
               />
             </Field>
             </div>
@@ -239,7 +239,7 @@ export function TenantRoomAssignmentModal({
         </div>
 
         {selectedRoom ? (
-          <div className="mt-6 grid gap-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-5 md:grid-cols-3">
+          <div className="mt-6 grid gap-4 rounded-3xl border border-white/80 bg-[linear-gradient(180deg,#f7fffb_0%,#edf9ff_100%)] p-5 md:grid-cols-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Selected Room</p>
               <p className="mt-2 text-lg font-semibold text-slate-900">Room {selectedRoom.roomNumber}</p>
@@ -259,8 +259,8 @@ export function TenantRoomAssignmentModal({
 
         {error ? <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p> : null}
 
-        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
-          <Button variant="secondary" onClick={onClose} className="rounded-2xl">
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-white/70 pt-4 sm:flex-row sm:justify-end">
+          <Button variant="secondary" onClick={onClose} className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]">
             Later
           </Button>
           <Button onClick={handleAssign} className={`rounded-2xl ${saving ? "opacity-70" : ""}`}>

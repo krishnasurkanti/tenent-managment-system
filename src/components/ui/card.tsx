@@ -8,7 +8,12 @@ export function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className={cn("rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-card)]", className)}>
+    <section
+      className={cn(
+        "rounded-[28px] border border-[var(--border)] bg-[var(--surface-gradient)] shadow-[var(--shadow-card)] backdrop-blur",
+        className,
+      )}
+    >
       {children}
     </section>
   );

@@ -59,7 +59,7 @@ function OwnerRoomsPageContent() {
 
   return (
     <div className={`space-y-3 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
-      <div>
+      <div className="rounded-[28px] border border-white/70 bg-[var(--surface-gradient)] px-4 py-4 shadow-[var(--shadow-card)] sm:px-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Rooms</p>
         <div className="mt-1 flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -78,8 +78,8 @@ function OwnerRoomsPageContent() {
               href="/owner/rooms"
               className={`inline-flex min-h-8.5 items-center justify-center rounded-lg px-3 text-[12px] font-semibold transition ${
                 showAvailableOnly
-                  ? "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                  : "bg-slate-800 text-white hover:bg-slate-700"
+                  ? "border border-white/80 bg-[var(--surface-gradient)] text-slate-600 hover:bg-[var(--pill-gradient)]"
+                  : "bg-[var(--action-gradient)] text-white hover:opacity-95"
               }`}
             >
               All Rooms
@@ -88,8 +88,8 @@ function OwnerRoomsPageContent() {
               href="/owner/rooms?view=available"
               className={`inline-flex min-h-8.5 items-center justify-center rounded-lg px-3 text-[12px] font-semibold transition ${
                 showAvailableOnly
-                  ? "bg-emerald-600 text-white hover:bg-emerald-500"
-                  : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                  ? "bg-[var(--action-gradient)] text-white hover:opacity-95"
+                  : "border border-white/80 bg-[var(--surface-gradient)] text-violet-700 hover:bg-[var(--pill-gradient)]"
               }`}
             >
               Available
@@ -134,12 +134,12 @@ function OwnerRoomsPageContent() {
           if (floorRooms.length === 0) return null;
 
           return (
-            <Card key={floor.id} className="overflow-hidden border-slate-200 bg-white">
+            <Card key={floor.id} className="overflow-hidden">
               <details className="group" open={floorIndex === 0}>
-                <summary className="list-none cursor-pointer bg-slate-50 px-3.5 py-2.5 marker:hidden">
+                <summary className="list-none cursor-pointer bg-[linear-gradient(180deg,#f6efff_0%,#fff5fa_100%)] px-3.5 py-2.5 marker:hidden">
                   <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className="rounded-lg bg-violet-100 p-1.5 text-violet-600">
+                      <div className="rounded-xl bg-[var(--pill-gradient)] p-1.5 text-violet-600">
                         <Layers3 className="h-3.5 w-3.5" />
                       </div>
                       <div>
@@ -154,19 +154,19 @@ function OwnerRoomsPageContent() {
                         <CountPill label="Occupied" value={floorOccupiedBeds} tone="red" />
                         <CountPill label="Available" value={floorAvailableBeds} tone="green" />
                       </div>
-                      <div className="rounded-full border border-slate-200 bg-white p-1 text-slate-500 transition-transform group-open:rotate-180">
+                      <div className="rounded-full border border-white/80 bg-white/80 p-1 text-slate-500 transition-transform group-open:rotate-180">
                         <ChevronDown className="h-3.5 w-3.5" />
                       </div>
                     </div>
                   </div>
                 </summary>
 
-                <div className="border-t border-slate-200">
+                <div className="border-t border-white/80">
                   <div className="grid gap-2.5 p-2.5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                     {floorRooms.map(({ room, occupied, available, roomTenants, status }) => (
                       <details
                         key={room.id}
-                        className="group rounded-lg border border-slate-200 bg-slate-50"
+                        className="group rounded-[20px] border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] shadow-sm"
                         open={showAvailableOnly || (occupied > 0 && available > 0)}
                       >
                         <summary className="list-none cursor-pointer p-2.5 marker:hidden">

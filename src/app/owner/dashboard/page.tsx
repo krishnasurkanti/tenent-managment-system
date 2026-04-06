@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { BedDouble, CreditCard, DoorOpen, HousePlus, UserPlus, Users } from "lucide-react";
+import { BedDouble, CreditCard, DoorOpen, Home, UserMinus, UserPlus, Users } from "lucide-react";
 import { HostelMiniScene } from "@/components/hostel-mini-scene";
-import { RemoveTenantSearch } from "@/components/remove-tenant-search";
-import { TenantRentSearch } from "@/components/tenant-rent-search";
 import { useHostelContext } from "@/components/hostel-context-provider";
 import { Card } from "@/components/ui/card";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
@@ -45,54 +43,89 @@ export default function OwnerDashboardPage() {
   const occupiedPercent = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
 
   return (
-    <div className={`space-y-3.5 transition-opacity sm:space-y-4 ${isSwitching ? "opacity-70" : "opacity-100"}`}>
-      <Card className="border-slate-200 bg-white px-4 py-4 shadow-[0_12px_34px_rgba(148,163,184,0.12)] sm:px-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Dashboard</p>
-            <h1 className="mt-1 text-[1.35rem] font-semibold tracking-tight text-slate-800 sm:text-[1.55rem]">
-              Welcome back, Surya Krishna
-            </h1>
-            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <p className="text-[12px] font-medium text-slate-700">{currentHostel.hostelName}</p>
-              <span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:inline-flex" />
-              <p className="text-[12px] text-slate-500">Today&apos;s overview for your selected hostel</p>
+    <div className={`space-y-4 transition-opacity sm:space-y-5 ${isSwitching ? "opacity-70" : "opacity-100"}`}>
+      <Card className="overflow-hidden border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(248,242,255,0.96)_100%)] p-0 shadow-[0_22px_50px_rgba(193,181,255,0.2)]">
+        <div className="relative overflow-hidden px-4 py-4 sm:px-5 sm:py-5">
+          <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(90deg,rgba(141,120,255,0.2)_0%,rgba(255,158,204,0.18)_48%,rgba(255,214,143,0.16)_100%)]" />
+          <div className="absolute -left-10 top-20 h-32 w-32 rounded-full bg-[rgba(255,196,226,0.22)] blur-3xl" />
+          <div className="absolute -right-8 top-8 h-32 w-32 rounded-full bg-[rgba(152,192,255,0.22)] blur-3xl" />
+
+          <div className="relative flex flex-col gap-4">
+            <div className="rounded-[28px] border border-white/70 bg-[linear-gradient(180deg,rgba(225,205,255,0.95)_0%,rgba(255,240,248,0.88)_100%)] p-3 shadow-[0_18px_40px_rgba(174,160,255,0.16)]">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-[13px] font-semibold text-slate-700 shadow-sm">
+                  <span className="rounded-full bg-[linear-gradient(135deg,#7c5cff_0%,#ff9b8e_100%)] p-1 text-white">
+                    <Home className="h-3.5 w-3.5" />
+                  </span>
+                  Hostels
+                </div>
+                <div className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-500 shadow-sm">
+                  {currentHostel.floors.length} floors
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-[22px] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.78)_0%,rgba(255,247,251,0.92)_100%)] p-2">
+                <div className="rounded-[18px] bg-[linear-gradient(180deg,#f8f0ff_0%,#fff8f2_100%)] p-3">
+                  <HostelMiniScene className="h-auto w-full" />
+                </div>
+                <div className="px-2 pb-1 pt-3 text-center">
+                  <h1 className="text-[1.35rem] font-semibold tracking-tight text-slate-800 sm:text-[1.55rem]">
+                    {currentHostel.hostelName}
+                  </h1>
+                  <p className="mt-1 text-[12px] text-slate-500">Soft pastel dashboard with your most-used actions up front.</p>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-2 lg:w-[420px] lg:grid-cols-2">
-            <Link
-              href="/owner/tenants?action=add-tenant"
-              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-center text-[12px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
-            >
-              <UserPlus className="h-3.5 w-3.5" />
-              Add Tenant
-            </Link>
+            <div className="rounded-[26px] border border-white/70 bg-white/72 p-3.5 shadow-[0_16px_38px_rgba(193,181,255,0.12)] backdrop-blur">
+              <div className="mb-3 flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Quick Actions</p>
+                  <h2 className="mt-1 text-[1.05rem] font-semibold text-slate-800">Manage this hostel</h2>
+                </div>
+                <p className="text-[11px] text-slate-500">4 shortcuts</p>
+              </div>
 
-            <div className="flex min-h-9 items-center justify-center">
-              <TenantRentSearch tenants={tenants} />
+              <div className="grid grid-cols-2 gap-2.5">
+                <ActionCard
+                  href="/owner/tenants?action=add-tenant"
+                  icon={UserPlus}
+                  label="Add Tenant"
+                  note="Register new tenant"
+                  tone="peach"
+                />
+                <ActionCard
+                  href="/owner/tenants?action=remove-tenant"
+                  icon={UserMinus}
+                  label="Remove Tenant"
+                  note="Vacate a room"
+                  tone="rose"
+                />
+                <ActionCard
+                  href="/owner/payments"
+                  icon={CreditCard}
+                  label="Payments"
+                  note="Track rent status"
+                  tone="violet"
+                />
+                <ActionCard
+                  href="/owner/rooms?view=available"
+                  icon={DoorOpen}
+                  label="Available Rooms"
+                  note="See empty beds"
+                  tone="sky"
+                />
+              </div>
             </div>
-
-            <div className="flex min-h-9 items-center justify-center">
-              <RemoveTenantSearch tenants={tenants} />
-            </div>
-
-            <Link
-              href="/owner/rooms?view=available"
-              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-center text-[12px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
-            >
-              <HousePlus className="h-3.5 w-3.5" />
-              Available
-            </Link>
           </div>
         </div>
       </Card>
 
-      <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
-        <StatCard icon={DoorOpen} label="Rooms" value={String(totalRooms)} hint={`${currentHostel.floors.length} floors`} tone="blue" />
-        <StatCard icon={Users} label="Tenants" value={String(tenants.length)} hint={`${occupiedBeds} occupied`} tone="green" />
-        <StatCard icon={CreditCard} label="Income" value={`₹${monthlyIncome.toLocaleString("en-IN")}`} hint="This hostel" tone="amber" />
-        <StatCard icon={BedDouble} label="Vacant" value={String(vacantBeds)} hint="Beds open" tone="rose" />
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <StatCard icon={BedDouble} label="Total Beds" value={String(totalBeds)} hint={`${currentHostel.floors.length} floors in hostel`} tone="gold" />
+        <StatCard icon={Users} label="Occupied" value={String(occupiedBeds)} hint={`${occupiedPercent}% occupied`} tone="violet" />
+        <StatCard icon={CreditCard} label="Payments" value={`Rs ${monthlyIncome.toLocaleString("en-IN")}`} hint="Monthly rent total" tone="rose" />
+        <StatCard icon={DoorOpen} label="Available Rooms" value={String(vacantBeds)} hint={`${totalRooms} total rooms`} tone="orange" />
       </div>
 
       {tenants.length === 0 ? (
@@ -103,62 +136,66 @@ export default function OwnerDashboardPage() {
           ctaLabel="Add First Tenant"
         />
       ) : (
-        <div className="grid gap-3.5 xl:grid-cols-[1.02fr_1.08fr]">
-          <Card className="border-slate-200 bg-white p-4">
+        <div className="grid gap-4 xl:grid-cols-[1fr_1.05fr]">
+          <Card className="overflow-hidden border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(246,243,255,0.92)_100%)] p-4 shadow-[0_18px_42px_rgba(193,181,255,0.12)]">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Occupancy</p>
-                <h2 className="mt-1 text-base font-semibold text-slate-800">Live Bed Status</h2>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Live Status</p>
+                <h2 className="mt-1 text-base font-semibold text-slate-800">Occupancy Overview</h2>
               </div>
-              <div className="text-right">
-                <p className="text-[1.25rem] font-semibold tracking-tight text-slate-800">{occupiedPercent}%</p>
-                <p className="text-[11px] text-slate-500">occupied</p>
+              <div className="rounded-full bg-[rgba(124,92,255,0.1)] px-3 py-1 text-[12px] font-semibold text-violet-700">
+                {occupiedPercent}% full
               </div>
             </div>
 
-            <div className="mt-4 grid gap-3 lg:grid-cols-[0.88fr_1.12fr] lg:items-center">
-              <div className="hidden rounded-[18px] border border-slate-200 bg-[linear-gradient(180deg,#f8fafc_0%,#eef5ff_100%)] p-3 lg:block">
-                <HostelMiniScene className="h-auto w-full" />
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <MiniMetric label="Occupied" value={occupiedBeds} tone="violet" />
+              <MiniMetric label="Vacant" value={vacantBeds} tone="sky" />
+              <MiniMetric label="Total Rooms" value={totalRooms} tone="gold" />
+            </div>
+
+            <div className="mt-4 overflow-hidden rounded-[22px] border border-white/70 bg-[linear-gradient(180deg,#fff7fb_0%,#f8f4ff_100%)] p-3">
+              <HostelMiniScene className="h-auto w-full" />
+            </div>
+
+            <div className="mt-4">
+              <div className="mb-2 flex items-center justify-between text-[11px] text-slate-500">
+                <span>Occupied beds</span>
+                <span>
+                  {occupiedBeds}/{totalBeds}
+                </span>
               </div>
-
-              <div>
-                <div className="grid grid-cols-3 gap-2">
-                  <MiniMetric label="Occupied" value={occupiedBeds} tone="emerald" />
-                  <MiniMetric label="Vacant" value={vacantBeds} tone="blue" />
-                  <MiniMetric label="Beds" value={totalBeds} tone="slate" />
-                </div>
-
-                <div className="mt-4">
-                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-[linear-gradient(90deg,#10b981_0%,#3b82f6_100%)]"
-                      style={{ width: `${occupiedPercent}%` }}
-                    />
-                  </div>
-                </div>
+              <div className="h-3 overflow-hidden rounded-full bg-[rgba(124,92,255,0.1)]">
+                <div
+                  className="h-full rounded-full bg-[linear-gradient(90deg,#8b7bff_0%,#ff9bb0_50%,#ffc786_100%)]"
+                  style={{ width: `${occupiedPercent}%` }}
+                />
               </div>
             </div>
           </Card>
 
-          <Card className="border-slate-200 bg-white p-4">
+          <Card className="overflow-hidden border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(255,246,250,0.94)_100%)] p-4 shadow-[0_18px_42px_rgba(244,180,211,0.16)]">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Due Tracker</p>
-                <h2 className="mt-1 text-base font-semibold text-slate-800">Upcoming Events</h2>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Upcoming Events</p>
+                <h2 className="mt-1 text-base font-semibold text-slate-800">Due Tracker</h2>
               </div>
               <Link href="/owner/payments" className="text-[12px] font-semibold text-violet-600 hover:text-violet-700">
                 View All
               </Link>
             </div>
 
-            <div className="mt-3 grid gap-2">
+            <div className="mt-3 grid gap-2.5">
               {upcoming.length === 0 ? (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
+                <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#fff7fb_0%,#f8f4ff_100%)] px-3 py-4 text-sm text-slate-500">
                   No tenant dues available yet for this hostel.
                 </div>
               ) : (
                 upcoming.map(({ tenant, status }) => (
-                  <div key={tenant.tenantId} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+                  <div
+                    key={tenant.tenantId}
+                    className="rounded-[22px] border border-white/80 bg-[linear-gradient(180deg,rgba(255,245,250,0.95)_0%,rgba(247,243,255,0.95)_100%)] px-3 py-3 shadow-[0_12px_28px_rgba(193,181,255,0.08)]"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <Link
@@ -167,19 +204,20 @@ export default function OwnerDashboardPage() {
                         >
                           {tenant.fullName}
                         </Link>
-                        <p className="mt-0.5 text-[11px] text-slate-500">
-                          Room {tenant.assignment?.roomNumber} • ₹{tenant.monthlyRent.toLocaleString("en-IN")}
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          Room {tenant.assignment?.roomNumber} - Rs {tenant.monthlyRent.toLocaleString("en-IN")}
                         </p>
+                        <p className="mt-1 text-[11px] text-slate-400">{tenant.phone}</p>
                       </div>
                       <span
-                        className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold ${
+                        className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${
                           status.tone === "red"
-                            ? "bg-rose-100 text-rose-600"
+                            ? "bg-rose-500 text-white"
                             : status.tone === "orange"
-                              ? "bg-orange-100 text-orange-600"
+                              ? "bg-orange-400 text-white"
                               : status.tone === "yellow"
-                                ? "bg-amber-100 text-amber-600"
-                                : "bg-emerald-100 text-emerald-600"
+                                ? "bg-amber-300 text-amber-900"
+                                : "bg-emerald-400 text-white"
                         }`}
                       >
                         {status.label}
@@ -212,16 +250,56 @@ function EmptyWorkspace({
   ctaLabel: string;
 }) {
   return (
-    <Card className="border-slate-200 bg-white p-5 text-center">
+    <Card className="border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(248,242,255,0.92)_100%)] p-5 text-center shadow-[0_16px_38px_rgba(193,181,255,0.12)]">
       <p className="text-sm font-semibold text-slate-800">{title}</p>
       <p className="mt-1.5 text-sm text-slate-500">{description}</p>
       <Link
         href={ctaHref}
-        className="mt-3 inline-flex min-h-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 text-[12px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+        className="mt-3 inline-flex min-h-10 items-center justify-center rounded-xl bg-[linear-gradient(90deg,#8b7bff_0%,#ff9bb0_100%)] px-4 text-[12px] font-semibold text-white shadow-[0_14px_28px_rgba(193,181,255,0.22)] transition hover:opacity-95"
       >
         {ctaLabel}
       </Link>
     </Card>
+  );
+}
+
+function ActionCard({
+  href,
+  icon: Icon,
+  label,
+  note,
+  tone,
+}: {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  note: string;
+  tone: "peach" | "rose" | "violet" | "sky";
+}) {
+  const toneClass =
+    tone === "peach"
+      ? "bg-[linear-gradient(180deg,#fff1e4_0%,#ffe7d4_100%)] text-orange-700"
+      : tone === "rose"
+        ? "bg-[linear-gradient(180deg,#ffeaf3_0%,#ffdce9_100%)] text-rose-700"
+        : tone === "violet"
+          ? "bg-[linear-gradient(180deg,#f1ebff_0%,#e5ddff_100%)] text-violet-700"
+          : "bg-[linear-gradient(180deg,#ebf5ff_0%,#dbeeff_100%)] text-sky-700";
+
+  return (
+    <Link
+      href={href}
+      className={`rounded-[20px] border border-white/70 p-3 shadow-[0_12px_26px_rgba(193,181,255,0.08)] transition hover:-translate-y-0.5 ${toneClass}`}
+    >
+      <div className="flex items-start gap-3">
+        <div className="rounded-2xl bg-white/80 p-2.5 shadow-sm">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold">{label}</p>
+          <p className="mt-1 text-[11px] opacity-80">{note}</p>
+        </div>
+      </div>
+    </Link>
   );
 }
 
@@ -236,28 +314,27 @@ function StatCard({
   label: string;
   value: string;
   hint: string;
-  tone: "blue" | "green" | "amber" | "rose";
+  tone: "gold" | "violet" | "rose" | "orange";
 }) {
   const toneClass =
-    tone === "blue"
-      ? "bg-blue-100 text-blue-600"
-      : tone === "green"
-        ? "bg-emerald-100 text-emerald-600"
-        : tone === "amber"
-          ? "bg-amber-100 text-amber-600"
-          : "bg-rose-100 text-rose-600";
-  const hintClass = tone === "rose" ? "text-rose-500" : "text-slate-500";
+    tone === "gold"
+      ? "bg-[linear-gradient(180deg,#fff2de_0%,#ffe5c1_100%)] text-amber-700"
+      : tone === "violet"
+        ? "bg-[linear-gradient(180deg,#f1ebff_0%,#e5ddff_100%)] text-violet-700"
+        : tone === "rose"
+          ? "bg-[linear-gradient(180deg,#ffe8f0_0%,#ffdbe7_100%)] text-rose-700"
+          : "bg-[linear-gradient(180deg,#fff1e5_0%,#ffe2c4_100%)] text-orange-700";
 
   return (
-    <Card className="border-slate-200 bg-white p-3.5">
-      <div className="flex items-center gap-2.5">
-        <div className={`rounded-lg p-2 ${toneClass}`}>
+    <Card className={`overflow-hidden border-white/70 p-3.5 shadow-[0_16px_34px_rgba(193,181,255,0.12)] ${toneClass}`}>
+      <div className="flex items-start gap-2.5">
+        <div className="rounded-2xl bg-white/75 p-2 shadow-sm">
           <Icon className="h-4 w-4" />
         </div>
         <div className="min-w-0">
-          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500">{label}</p>
-          <p className="mt-0.5 text-[1.05rem] font-semibold tracking-tight text-slate-800 sm:text-[1.2rem]">{value}</p>
-          <p className={`mt-0.5 text-[11px] ${hintClass}`}>{hint}</p>
+          <p className="text-[11px] font-semibold">{label}</p>
+          <p className="mt-1 text-[1.45rem] font-semibold leading-none tracking-tight">{value}</p>
+          <p className="mt-2 text-[11px] opacity-80">{hint}</p>
         </div>
       </div>
     </Card>
@@ -271,19 +348,19 @@ function MiniMetric({
 }: {
   label: string;
   value: number;
-  tone: "emerald" | "blue" | "slate";
+  tone: "violet" | "sky" | "gold";
 }) {
   const toneClass =
-    tone === "emerald"
-      ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-      : tone === "blue"
-        ? "bg-blue-50 border-blue-200 text-blue-700"
-        : "bg-slate-50 border-slate-200 text-slate-700";
+    tone === "violet"
+      ? "border-violet-100 bg-[linear-gradient(180deg,#f5efff_0%,#ede6ff_100%)] text-violet-700"
+      : tone === "sky"
+        ? "border-sky-100 bg-[linear-gradient(180deg,#edf7ff_0%,#e2f0ff_100%)] text-sky-700"
+        : "border-amber-100 bg-[linear-gradient(180deg,#fff6e8_0%,#ffedd1_100%)] text-amber-700";
 
   return (
-    <div className={`rounded-lg border px-2.5 py-2 ${toneClass}`}>
+    <div className={`rounded-2xl border px-3 py-3 ${toneClass}`}>
       <p className="text-[10px] font-semibold uppercase tracking-[0.14em]">{label}</p>
-      <p className="mt-0.5 text-[13px] font-semibold">{value}</p>
+      <p className="mt-1 text-[1.05rem] font-semibold">{value}</p>
     </div>
   );
 }

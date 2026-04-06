@@ -62,13 +62,13 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   };
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/90 px-3 py-3 backdrop-blur md:px-6">
+    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-white/60 bg-white/55 px-3 py-3 backdrop-blur-xl md:px-6">
       <div className="flex min-w-0 items-center gap-2.5">
         <button
           type="button"
           onClick={onOpenSidebar}
           aria-label="Open navigation menu"
-          className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 shadow-sm lg:hidden"
+          className="rounded-2xl border border-white/70 bg-[var(--surface-gradient)] p-2.5 text-slate-600 shadow-sm lg:hidden"
         >
           <Menu className="h-4 w-4" />
         </button>
@@ -76,17 +76,17 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
           type="button"
           onClick={handleBack}
           aria-label="Go back"
-          className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 shadow-sm"
+          className="rounded-2xl border border-white/70 bg-[var(--surface-gradient)] p-2.5 text-slate-600 shadow-sm"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
         <Link
           href="/owner/dashboard"
           aria-label="Go to dashboard"
-          className={`rounded-lg border bg-white p-2 shadow-sm transition ${
+          className={`rounded-2xl border bg-[var(--surface-gradient)] p-2.5 shadow-sm transition ${
             isDashboard
               ? "border-violet-200 text-violet-600"
-              : "border-slate-200 text-slate-600 hover:border-violet-200 hover:text-violet-600"
+              : "border-white/70 text-slate-600 hover:border-violet-200 hover:text-violet-600"
           }`}
         >
           <House className="h-4 w-4" />
@@ -96,18 +96,18 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
 
       <div className="flex items-center gap-2 sm:gap-2.5">
         <label className="relative hidden md:block">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-violet-400" />
           <input
             type="text"
             placeholder="Search..."
-            className="w-64 rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-[13px] text-slate-600 outline-none transition focus:border-violet-300"
+            className="w-64 rounded-full border border-white/80 bg-[var(--surface-gradient)] py-2.5 pl-10 pr-4 text-[13px] text-slate-600 outline-none transition focus:border-violet-300"
           />
         </label>
         <div className="relative">
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
-            className="relative rounded-lg border border-slate-200 bg-white p-2 text-slate-500 shadow-sm"
+            className="relative rounded-2xl border border-white/70 bg-[var(--surface-gradient)] p-2.5 text-slate-500 shadow-sm"
           >
             <Bell className="h-4 w-4" />
             {alerts.length > 0 ? (
@@ -118,7 +118,7 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
           </button>
 
           {open ? (
-            <div className="absolute right-0 top-[calc(100%+0.6rem)] z-30 w-[min(320px,calc(100vw-1.5rem))] rounded-[22px] border border-slate-200 bg-white p-3 shadow-[0_20px_50px_rgba(15,23,42,0.14)]">
+            <div className="absolute right-0 top-[calc(100%+0.6rem)] z-30 w-[min(320px,calc(100vw-1.5rem))] rounded-[26px] border border-white/70 bg-[var(--surface-gradient)] p-3 shadow-[var(--shadow-card)]">
               <div className="flex items-center justify-between gap-3 px-1 pb-2">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Payment Alerts</p>
@@ -127,7 +127,7 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
                   </p>
                 </div>
                 {alerts.length > 0 ? (
-                  <span className="rounded-full bg-rose-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-600">
+                    <span className="rounded-full bg-[linear-gradient(90deg,#ffe8f0_0%,#ffdbe7_100%)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-600">
                     Daily
                   </span>
                 ) : null}
@@ -135,7 +135,7 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
 
               <div className="max-h-[360px] space-y-2 overflow-y-auto">
                 {alerts.length === 0 ? (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-[13px] text-slate-500">
+                  <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-4 text-[13px] text-slate-500">
                     No tenants are due today or overdue in this hostel.
                   </div>
                 ) : (
@@ -144,11 +144,13 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
                       key={tenant.tenantId}
                       href="/owner/payments"
                       onClick={() => setOpen(false)}
-                      className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 transition hover:border-violet-200 hover:bg-violet-50/50"
+                      className="flex items-start gap-3 rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-3 py-3 transition hover:border-violet-200 hover:bg-[var(--pill-gradient)]"
                     >
                       <span
                         className={`mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
-                          status.tone === "red" ? "bg-rose-100 text-rose-600" : "bg-orange-100 text-orange-600"
+                          status.tone === "red"
+                            ? "bg-[linear-gradient(90deg,#ffe8f0_0%,#ffdbe7_100%)] text-rose-600"
+                            : "bg-[linear-gradient(90deg,#fff0d6_0%,#ffe3cc_100%)] text-orange-600"
                         }`}
                       >
                         <AlertCircle className="h-4 w-4" />
@@ -170,8 +172,8 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
             </div>
           ) : null}
         </div>
-        <Link href="/owner/settings" className="rounded-full border border-slate-200 bg-white p-1 shadow-sm">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+        <Link href="/owner/settings" className="rounded-full border border-white/70 bg-[var(--surface-gradient)] p-1 shadow-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--pill-gradient)] text-xs font-semibold text-violet-700">
             S
           </div>
         </Link>

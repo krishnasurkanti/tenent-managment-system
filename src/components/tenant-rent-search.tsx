@@ -164,7 +164,7 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
   return (
     <>
       <Button
-        className="min-h-12 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-[13px] font-semibold text-emerald-700 shadow-none hover:bg-emerald-100"
+        className="min-h-12 w-full rounded-2xl border border-white/80 bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] px-4 text-[13px] font-semibold text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95"
         onClick={() => {
           setQuery("");
           setSelectedTenantId("");
@@ -183,17 +183,23 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
       </Button>
 
       {open ? (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/45 px-4 py-4 sm:py-8">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(48,28,75,0.28)] px-4 py-4 sm:py-8">
           <div className="flex min-h-full items-center justify-center">
-            <Card className="flex max-h-[min(92vh,760px)] w-full max-w-2xl flex-col overflow-hidden p-6">
+            <Card className="flex max-h-[min(92vh,760px)] w-full max-w-2xl flex-col overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82)_0%,rgba(244,236,255,0.95)_100%)] p-6 shadow-[0_28px_70px_rgba(170,148,255,0.22)]">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-semibold">Pay Rent</h2>
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/72 px-3 py-1.5 text-[13px] font-semibold text-slate-700 shadow-sm">
+                  <span className="rounded-full bg-[linear-gradient(135deg,#8d71ff_0%,#ff8fb0_100%)] p-1 text-white">
+                    <WalletCards className="h-3.5 w-3.5" />
+                  </span>
+                  Payments
+                </div>
+                <h2 className="mt-3 text-2xl font-semibold text-slate-800">Pay Rent</h2>
                 <p className="mt-1 text-sm text-[var(--muted-foreground)]">
                   Search by tenant ID or name, confirm room and floor details, then record the payment.
                 </p>
               </div>
-              <Button variant="ghost" className="px-3" onClick={closeModal}>
+              <Button variant="ghost" className="rounded-2xl px-3" onClick={closeModal}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -212,13 +218,13 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                       setError("");
                     }}
                     placeholder="Type last 5-digit ID or tenant name"
-                    className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 pl-11 text-sm outline-none"
+                    className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm outline-none shadow-sm"
                   />
                 </div>
               </label>
 
               {!normalizedQuery ? (
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] px-4 py-4 text-sm text-[var(--muted-foreground)]">
+                <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-4 text-sm text-[var(--muted-foreground)] shadow-sm">
                   Start typing a tenant ID or name to find the correct tenant.
                 </div>
               ) : matches.length === 0 ? (
@@ -242,8 +248,8 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                         }}
                         className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
                           active
-                            ? "border-[var(--accent)] bg-[var(--muted)]"
-                            : "border-[var(--border)] bg-[var(--background)] hover:border-[var(--border-strong)]"
+                            ? "border-pink-200 bg-[linear-gradient(90deg,#ffe7f2_0%,#efe6ff_100%)]"
+                            : "border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] hover:border-violet-200"
                         }`}
                       >
                         <p className="font-semibold text-[var(--foreground)]">{tenant.fullName}</p>
@@ -261,7 +267,7 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
 
               {selectedTenant ? (
                 <>
-                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4 text-sm text-[var(--muted-foreground)]">
+                  <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] p-4 text-sm text-[var(--muted-foreground)] shadow-sm">
                     <p className="font-semibold text-[var(--foreground)]">{selectedTenant.fullName}</p>
                     <p className="mt-1">Tenant ID: {selectedTenant.tenantId}</p>
                     <p className="mt-1">
@@ -278,7 +284,7 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                         min="0"
                         value={amount}
                         onChange={(event) => setAmount(event.target.value)}
-                        className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm outline-none"
+                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm outline-none shadow-sm"
                       />
                     </label>
 
@@ -290,7 +296,7 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                           type="date"
                           value={paidOnDate}
                           onChange={(event) => setPaidOnDate(event.target.value)}
-                          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 pl-11 text-sm outline-none"
+                          className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm outline-none shadow-sm"
                         />
                       </div>
                     </label>
@@ -300,7 +306,7 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                       <select
                         value={paymentMethod}
                         onChange={(event) => setPaymentMethod(event.target.value === "online" ? "online" : "cash")}
-                        className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm outline-none"
+                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm outline-none shadow-sm"
                       >
                         <option value="cash">Cash</option>
                         <option value="online">Online</option>
@@ -313,7 +319,7 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                         value={txnId}
                         onChange={(event) => setTxnId(event.target.value.toUpperCase())}
                         placeholder={paymentMethod === "online" ? "Enter online transaction id" : "Optional for cash payment"}
-                        className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm outline-none"
+                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm outline-none shadow-sm"
                       />
                     </label>
 
@@ -325,7 +331,7 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                           type="file"
                           onChange={(event) => setProofFile(event.target.files?.[0] ?? null)}
                           accept="image/*,.pdf"
-                          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 pl-11 text-sm outline-none file:mr-3 file:rounded-xl file:border-0 file:bg-[var(--accent)] file:px-3 file:py-2 file:text-white"
+                          className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm outline-none shadow-sm file:mr-3 file:rounded-xl file:border-0 file:bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] file:px-3 file:py-2 file:text-white"
                         />
                       </div>
                       <p className="mt-2 text-xs text-slate-500">Optional: image, screenshot, or PDF receipt.</p>
@@ -340,20 +346,20 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
             {message ? <p className="mt-4 text-sm text-emerald-600">{message}</p> : null}
 
             <div className="mt-6 flex flex-col-reverse gap-3 border-t border-[var(--border)] pt-4 sm:flex-row sm:justify-end">
-              <Button variant="secondary" onClick={closeModal}>
+              <Button variant="secondary" onClick={closeModal} className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]">
                 Cancel
               </Button>
               {pendingProofPaymentId ? (
                 <>
-                  <Button variant="secondary" onClick={handleSaveProofLater}>
+                  <Button variant="secondary" onClick={handleSaveProofLater} className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]">
                     Add Later
                   </Button>
-                  <Button onClick={handleUploadProof} className={submitting ? "opacity-70" : ""}>
+                  <Button onClick={handleUploadProof} className={`rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white ${submitting ? "opacity-70" : ""}`}>
                     {submitting ? "Saving..." : "Save Proof"}
                   </Button>
                 </>
               ) : (
-                <Button onClick={handleRecordPayment} className={submitting ? "opacity-70" : ""}>
+                <Button onClick={handleRecordPayment} className={`rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white ${submitting ? "opacity-70" : ""}`}>
                   {submitting ? "Recording..." : "Record Payment"}
                 </Button>
               )}

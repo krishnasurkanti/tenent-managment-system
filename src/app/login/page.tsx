@@ -57,7 +57,7 @@ export default function LoginPage() {
   return (
     <main className="relative min-h-screen overflow-hidden">
       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(22,18,16,0.28),rgba(30,24,20,0.48))]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(88,58,136,0.28),rgba(60,38,103,0.44))]" />
 
       <div className="relative z-10 flex min-h-screen flex-col px-6 py-6">
         <div className="flex justify-end">
@@ -74,11 +74,11 @@ export default function LoginPage() {
             <div className="mb-8">
               <div className="mx-auto flex w-fit items-center gap-3">
                 <div className="rounded-2xl border border-white/25 bg-white/10 p-3 backdrop-blur-md">
-                  <ShieldCheck className="h-8 w-8 text-orange-400" />
+                  <ShieldCheck className="h-8 w-8 text-pink-300" />
                 </div>
                 <div className="text-left">
                   <p className="text-5xl font-bold tracking-tight">
-                    My<span className="text-orange-400">PG</span>
+                    My<span className="text-pink-300">PG</span>
                   </p>
                 </div>
               </div>
@@ -86,7 +86,7 @@ export default function LoginPage() {
               <p className="mt-3 text-lg text-white/85">Login to your account</p>
             </div>
 
-            <form onSubmit={handleLogin} className="rounded-[28px] border border-white/35 bg-white/85 p-5 text-left shadow-2xl backdrop-blur-xl">
+            <form onSubmit={handleLogin} className="rounded-[30px] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.86)_0%,rgba(245,238,255,0.92)_100%)] p-5 text-left shadow-2xl backdrop-blur-xl">
               <div className="space-y-4">
                 <label className="block">
                   <div className="relative">
@@ -96,7 +96,7 @@ export default function LoginPage() {
                       value={username}
                       onChange={(event) => setUsername(event.target.value)}
                       placeholder="Username"
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 pl-12 text-base text-slate-700 outline-none transition focus:border-orange-300"
+                      className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-4 pl-12 text-base text-slate-700 outline-none transition focus:border-violet-300"
                     />
                   </div>
                 </label>
@@ -109,7 +109,7 @@ export default function LoginPage() {
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       placeholder="Password"
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 pl-12 text-base text-slate-700 outline-none transition focus:border-orange-300"
+                      className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-4 pl-12 text-base text-slate-700 outline-none transition focus:border-violet-300"
                     />
                   </div>
                 </label>
@@ -119,14 +119,14 @@ export default function LoginPage() {
                     <input type="checkbox" className="h-4 w-4 rounded border-slate-300" />
                     <span>Remember Me</span>
                   </label>
-                  <button type="button" className="font-medium text-orange-500 hover:text-orange-600">
+                  <button type="button" className="font-medium text-violet-500 hover:text-violet-600">
                     Forgot Password?
                   </button>
                 </div>
 
                   <button
                     type="submit"
-                    className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-4 text-lg font-semibold text-white shadow-lg transition hover:from-orange-600 hover:to-orange-600"
+                    className="w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] px-4 py-4 text-lg font-semibold text-white shadow-[var(--shadow-soft)] transition hover:opacity-95"
                   >
                     {loading ? "Checking..." : "Login"}
                   </button>
@@ -141,7 +141,7 @@ export default function LoginPage() {
 
             <p className="mt-8 text-base text-white/90">
               Don&apos;t have an account?{" "}
-              <button type="button" className="font-semibold text-orange-300 hover:text-orange-200">
+                <button type="button" className="font-semibold text-pink-200 hover:text-pink-100">
                 Sign Up
               </button>
             </p>
