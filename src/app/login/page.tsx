@@ -44,11 +44,9 @@ export default function LoginPage() {
         if (defaultHostelId && typeof window !== "undefined") {
           window.localStorage.setItem("currentHostelId", defaultHostelId);
         }
-
-        router.push("/owner/dashboard");
-      } else {
-        router.push("/owner/create-hostel");
       }
+
+      router.push("/owner/dashboard");
     } finally {
       setLoading(false);
     }

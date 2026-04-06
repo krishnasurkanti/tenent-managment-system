@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import {
@@ -14,7 +13,6 @@ import {
   SquarePlus,
   Users,
 } from "lucide-react";
-import { HostelMiniScene } from "@/components/hostel-mini-scene";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { cn } from "@/lib/utils";
 
@@ -46,8 +44,9 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
     router.refresh();
   };
 
-  const handleNavigate = () => {
+  const handleNavigate = (href: string) => {
     onClose();
+    router.push(href);
   };
 
   return (
@@ -98,12 +97,12 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
-            <Link
+            <button
               key={item.name}
-              href={item.href}
-              onClick={handleNavigate}
+              type="button"
+              onClick={() => handleNavigate(item.href)}
               className={cn(
-                "group flex items-center gap-2.5 rounded-[16px] px-3.5 py-2.5 text-[13px] font-medium transition",
+                "group flex w-full items-center gap-2.5 rounded-[16px] px-3.5 py-2.5 text-left text-[13px] font-medium transition",
                 active
                   ? "bg-[var(--action-gradient)] text-white shadow-[var(--shadow-soft)]"
                   : "text-slate-700 hover:bg-[var(--pill-gradient)] hover:text-slate-900",
@@ -113,7 +112,7 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
                 <item.icon className="h-3.5 w-3.5" />
               </span>
               {item.name}
-            </Link>
+            </button>
           );
         })}
           </nav>
@@ -126,12 +125,12 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
-            <Link
+            <button
               key={item.name}
-              href={item.href}
-              onClick={handleNavigate}
+              type="button"
+              onClick={() => handleNavigate(item.href)}
               className={cn(
-                "group flex items-center gap-2.5 rounded-[16px] px-3.5 py-2.5 text-[13px] font-medium transition",
+                "group flex w-full items-center gap-2.5 rounded-[16px] px-3.5 py-2.5 text-left text-[13px] font-medium transition",
                 active
                   ? "bg-[var(--action-gradient)] text-white shadow-[var(--shadow-soft)]"
                   : "text-slate-700 hover:bg-[var(--pill-gradient)] hover:text-slate-900",
@@ -141,23 +140,10 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
                 <item.icon className="h-3.5 w-3.5" />
               </span>
               {item.name}
-            </Link>
+            </button>
           );
         })}
           </nav>
-        </div>
-
-        <div className="overflow-hidden rounded-[24px] border border-white/70 bg-[var(--surface-gradient)] px-4 py-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Live vibe</p>
-              <p className="mt-1 text-sm font-semibold text-slate-800">Smart workspace</p>
-            </div>
-            <span className="rounded-full bg-[linear-gradient(90deg,#80ddb7_0%,#65d0cf_100%)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
-              Active
-            </span>
-          </div>
-          <HostelMiniScene className="mt-4 h-auto w-full" />
         </div>
       </div>
 
@@ -177,7 +163,7 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
         <button
           type="button"
           onClick={handleLogout}
-          className="flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-[13px] font-medium text-slate-700 transition hover:bg-[var(--pill-gradient)] hover:text-slate-900"
+          className="flex w-full items-center gap-2.5 rounded-2xl bg-[linear-gradient(90deg,#ff8ca6_0%,#ff6e8d_100%)] px-3.5 py-2.5 text-[13px] font-medium text-white shadow-[0_14px_28px_rgba(255,110,141,0.18)] transition hover:opacity-95"
         >
           <LogOut className="h-3.5 w-3.5" />
           Logout
