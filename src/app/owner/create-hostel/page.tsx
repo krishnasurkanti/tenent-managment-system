@@ -2,9 +2,8 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Building2, CheckCircle2, ChevronRight, Home, MapPin, Plus, Save, Trash2 } from "lucide-react";
+import { Building2, CheckCircle2, ChevronRight, Home, MapPin, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HostelMiniScene } from "@/components/hostel-mini-scene";
 import { Card } from "@/components/ui/card";
 import type { OwnerHostel } from "@/types/owner-hostel";
 
@@ -12,7 +11,6 @@ type RoomForm = {
   id: string;
   roomNumber: string;
   bedCount: string;
-  sharingType: string;
 };
 
 type FloorForm = {
@@ -21,14 +19,11 @@ type FloorForm = {
   rooms: RoomForm[];
 };
 
-const sharingOptions = ["Single", "Double Sharing", "Triple Sharing", "Four Sharing", "Custom"];
-
 function createRoom(index: number): RoomForm {
   return {
     id: `room-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 6)}`,
     roomNumber: "",
     bedCount: "",
-    sharingType: "Single",
   };
 }
 
@@ -41,7 +36,20 @@ function createFloor(index: number): FloorForm {
 }
 
 function isRoomComplete(room: RoomForm) {
-  return room.roomNumber.trim() && room.bedCount && Number(room.bedCount) > 0 && room.sharingType.trim();
+  return room.roomNumber.trim() && room.bedCount && Number(room.bedCount) > 0;
+}
+
+function getSharingLabel(bedCount: string) {
+  const beds = Number(bedCount);
+  if (!Number.isFinite(beds) || beds < 1) {
+    return "Sharing updates from bed count";
+  }
+
+  if (beds === 1) {
+    return "Single sharing";
+  }
+
+  return `${beds} sharing`;
 }
 
 export default function CreateHostelPage() {
@@ -97,14 +105,13 @@ function CreateHostelPageContent() {
         const nextFloors = data.hostel.floors.map((floor, floorIndex) => ({
           id: floor.id,
           floorLabel: floor.floorLabel || `Floor ${floorIndex + 1}`,
-          rooms:
-            floor.rooms.length > 0
-              ? floor.rooms.map((room) => ({
-                  id: room.id,
-                  roomNumber: room.roomNumber,
-                  bedCount: String(room.bedCount),
-                  sharingType: room.sharingType,
-                }))
+                rooms:
+                  floor.rooms.length > 0
+                    ? floor.rooms.map((room) => ({
+                        id: room.id,
+                        roomNumber: room.roomNumber,
+                        bedCount: String(room.bedCount),
+                      }))
               : [createRoom(1)],
         }));
 
@@ -322,7 +329,7 @@ function CreateHostelPageContent() {
     );
 
     if (hasInvalidRoom) {
-      setError("Please complete each room with room number, bed count, and sharing type.");
+      setError("Please complete each room with room number and bed count.");
       return;
     }
 
@@ -339,7 +346,7 @@ function CreateHostelPageContent() {
           id: room.id,
           roomNumber: room.roomNumber,
           bedCount: Number(room.bedCount),
-          sharingType: room.sharingType,
+          sharingType: getSharingLabel(room.bedCount),
         })),
       })),
     };
@@ -375,51 +382,6 @@ function CreateHostelPageContent() {
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f4eefb_0%,#efe7fb_30%,#f7f3ff_65%,#faf7ff_100%)] px-3 py-4 sm:px-6 sm:py-6">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 sm:gap-4">
-        <div className="overflow-hidden rounded-[32px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.78)_0%,rgba(245,238,255,0.92)_100%)] shadow-[0_24px_55px_rgba(164,140,255,0.16)] backdrop-blur">
-          <div className="relative px-4 py-4 sm:px-5 sm:py-5">
-            <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(90deg,rgba(136,108,255,0.12)_0%,rgba(255,170,198,0.1)_55%,rgba(255,214,165,0.08)_100%)]" />
-            <div className="absolute -left-10 top-12 h-32 w-32 rounded-full bg-[rgba(255,190,214,0.16)] blur-3xl" />
-            <div className="absolute right-0 top-4 h-28 w-28 rounded-full bg-[rgba(152,124,255,0.14)] blur-3xl" />
-
-            <div className="relative grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                {isEditMode ? "Edit Hostel" : "Owner Setup"}
-                </p>
-                <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 text-[13px] font-semibold text-slate-700 shadow-sm">
-                  <span className="rounded-full bg-[linear-gradient(135deg,#8d71ff_0%,#ff8fb0_100%)] p-1 text-white">
-                    <Building2 className="h-3.5 w-3.5" />
-                  </span>
-                  {isEditMode ? "Edit Hostel" : "Add Hostel"}
-                </div>
-                <h1 className="mt-3 text-[1.25rem] font-semibold tracking-tight text-slate-800 sm:text-[1.55rem]">
-                  {isEditMode ? "Update Your Hostel Details" : "Create Your Hostel"}
-                </h1>
-                <p className="mt-2 max-w-2xl text-[11px] leading-5 text-slate-500">
-                  Use this soft mobile-style form to add floors and rooms. You can still go one room at a time, or quickly add multiple rooms to the same floor.
-                </p>
-                <Button
-                  className="mt-4 w-full bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:w-fit"
-                  onClick={handleSave}
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  {saving ? "Saving..." : isEditMode ? "Update Hostel" : "Add Hostel"}
-                </Button>
-              </div>
-
-              <div className="overflow-hidden rounded-[28px] border border-white/80 bg-[linear-gradient(180deg,rgba(244,236,255,0.92)_0%,rgba(255,245,249,0.95)_100%)] p-3 shadow-[0_18px_40px_rgba(170,148,255,0.14)]">
-                <div className="rounded-[22px] bg-[linear-gradient(180deg,#fff7fc_0%,#f5efff_100%)] p-3">
-                  <HostelMiniScene className="h-auto w-full" />
-                </div>
-                <div className="px-2 pb-1 pt-3 text-center">
-                  <p className="text-sm font-semibold text-slate-800">{hostelName.trim() || "Add Hostel"}</p>
-                  <p className="mt-1 text-[11px] text-slate-500">{address.trim() || "Enter hostel basics and start adding floors."}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {error ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-medium text-rose-600">
             {error}
@@ -434,7 +396,7 @@ function CreateHostelPageContent() {
               </div>
               <div>
                 <h2 className="text-sm font-semibold text-slate-800">Hostel Basics</h2>
-                <p className="text-[11px] text-slate-500">Use the same clean mobile-style fields from your reference for name and address.</p>
+                <p className="text-[11px] text-slate-500">Only the fields you actually need: hostel name and address.</p>
               </div>
             </div>
           </div>
@@ -474,7 +436,7 @@ function CreateHostelPageContent() {
               </div>
               <div>
                 <h2 className="text-sm font-semibold text-slate-800">Floor and Room Setup</h2>
-                <p className="text-[11px] text-slate-500">Same logic as before, just a softer card layout and a multiple-room shortcut.</p>
+                <p className="text-[11px] text-slate-500">Add floor, room number, and bed count. Sharing is automatic from beds.</p>
               </div>
             </div>
           </div>
@@ -551,7 +513,7 @@ function CreateHostelPageContent() {
                         <h4 className="mt-1 text-sm font-semibold text-slate-800">
                           Room {activeFloor.rooms.findIndex((room) => room.id === activeRoom.id) + 1}
                         </h4>
-                        <p className="text-[11px] text-slate-500">Finish this room before adding the next one.</p>
+                        <p className="text-[11px] text-slate-500">Enter room number and how many beds this room has.</p>
                       </div>
                       {activeFloor.rooms.length > 1 ? (
                         <Button
@@ -584,18 +546,10 @@ function CreateHostelPageContent() {
                           className="w-full rounded-2xl border border-white/80 bg-white/90 px-3 py-3 text-[13px] text-slate-700 outline-none shadow-[0_10px_24px_rgba(170,148,255,0.08)] transition focus:border-pink-200"
                         />
                       </Field>
-                      <Field label="Sharing Type">
-                        <select
-                          value={activeRoom.sharingType}
-                          onChange={(event) => updateRoom(activeFloor.id, activeRoom.id, "sharingType", event.target.value)}
-                          className="w-full rounded-2xl border border-white/80 bg-white/90 px-3 py-3 text-[13px] text-slate-700 outline-none shadow-[0_10px_24px_rgba(170,148,255,0.08)] transition focus:border-pink-200"
-                        >
-                          {sharingOptions.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
+                      <Field label="Sharing">
+                        <div className="flex min-h-[48px] items-center rounded-2xl border border-white/80 bg-white/90 px-3 py-3 text-[13px] font-medium text-violet-700 shadow-[0_10px_24px_rgba(170,148,255,0.08)]">
+                          {getSharingLabel(activeRoom.bedCount)}
+                        </div>
                       </Field>
                     </div>
 
@@ -670,7 +624,7 @@ function CreateHostelPageContent() {
                             <p className="text-[12px] font-semibold text-slate-800">Room {index + 1}</p>
                             <p className="text-[11px] text-slate-500">
                               {room.roomNumber.trim()
-                                ? [room.roomNumber, `${room.bedCount || 0} beds`, room.sharingType].join(" - ")
+                                ? [room.roomNumber, `${room.bedCount || 0} beds`, getSharingLabel(room.bedCount)].join(" - ")
                                 : "Room details pending"}
                             </p>
                           </div>
@@ -714,6 +668,22 @@ function CreateHostelPageContent() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="flex flex-col gap-2 border-t border-white/70 pt-4 sm:flex-row sm:justify-end">
+              <Button
+                variant="secondary"
+                className="w-full rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)] text-slate-700 shadow-[0_10px_24px_rgba(170,148,255,0.08)] sm:w-auto"
+                onClick={() => router.push("/owner/dashboard")}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:w-auto"
+                onClick={handleSave}
+              >
+                {saving ? "Saving..." : isEditMode ? "Update Hostel" : "Add Hostel"}
+              </Button>
             </div>
           </div>
         </Card>

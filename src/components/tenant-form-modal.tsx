@@ -18,6 +18,8 @@ const initialState = {
   emergencyContact: "",
 };
 
+type TenantStep = 1 | 2 | 3;
+
 export function TenantFormModal({
   open,
   onClose,
@@ -27,6 +29,7 @@ export function TenantFormModal({
   onClose: () => void;
   onCreated: (tenant: TenantRecord) => void;
 }) {
+  const [step, setStep] = useState<TenantStep>(1);
   const [form, setForm] = useState(initialState);
   const [idImage, setIdImage] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -37,6 +40,39 @@ export function TenantFormModal({
   if (!open) {
     return null;
   }
+
+  const resetFormState = () => {
+    setStep(1);
+    setForm(initialState);
+    setIdImage(null);
+    setSubmitting(false);
+    setError("");
+  };
+
+  const handleClose = () => {
+    resetFormState();
+    onClose();
+  };
+
+  const handleNextFromPersonal = () => {
+    if (!form.fullName.trim() || !form.phone.trim()) {
+      setError("Please complete full name and phone first.");
+      return;
+    }
+
+    setError("");
+    setStep(2);
+  };
+
+  const handleNextFromId = () => {
+    if (!idImage) {
+      setError("Please upload an ID proof before continuing.");
+      return;
+    }
+
+    setError("");
+    setStep(3);
+  };
 
   const handleSubmit = async () => {
     if (!idImage) {
@@ -72,9 +108,7 @@ export function TenantFormModal({
     }
 
     onCreated(data.tenant as TenantRecord);
-    setForm(initialState);
-    setIdImage(null);
-    setSubmitting(false);
+    resetFormState();
     onClose();
   };
 
@@ -95,155 +129,165 @@ export function TenantFormModal({
                   </span>
                   Add Tenant
                 </div>
-                <p className="mt-2 text-[11px] leading-5 text-slate-500">
-                  Use the same tenant creation logic as before. Only the UI styling has been refreshed.
-                </p>
+                <p className="mt-2 text-[11px] leading-5 text-slate-500">Go one section at a time: personal details, ID proof, then payment.</p>
               </div>
-              <Button variant="ghost" className="rounded-2xl px-3 text-slate-500 hover:bg-white/70" onClick={onClose}>
+              <Button variant="ghost" className="rounded-2xl px-3 text-slate-500 hover:bg-white/70" onClick={handleClose}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
 
             <div className="relative flex-1 overflow-y-auto px-4 pb-4 sm:px-5 sm:pb-5">
               <div className="space-y-4 rounded-[30px] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.7)_0%,rgba(247,241,255,0.9)_100%)] p-3 shadow-[0_18px_40px_rgba(170,148,255,0.12)] sm:p-4">
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <UploadCard
-                    icon={ImageIcon}
-                    title="Upload Photo"
-                    subtitle="Optional preview style"
-                    tone="violet"
-                    disabled
-                  />
-                  <label className="block cursor-pointer">
-                    <span className="sr-only">Upload ID</span>
-                    <div className="rounded-[22px] border border-white/80 bg-[linear-gradient(180deg,#f3eaff_0%,#ece4ff_100%)] p-3 shadow-[0_12px_26px_rgba(170,148,255,0.1)] transition hover:opacity-95">
-                      <div className="flex items-center gap-3">
-                        <div className="rounded-2xl bg-white/78 p-2.5 text-violet-600 shadow-sm">
-                          <FileBadge2 className="h-4 w-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-semibold text-slate-800">{idImage ? "ID Selected" : "Upload ID"}</p>
-                          <p className="mt-1 text-[11px] text-slate-500">{idImage?.name ?? "Photo or ID number required"}</p>
-                        </div>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(event) => setIdImage(event.target.files?.[0] ?? null)}
-                        className="hidden"
-                      />
+                <div className="flex flex-wrap gap-2">
+                  <StepPill label="1. Personal" active={step === 1} done={step > 1} />
+                  <StepPill label="2. ID Proof" active={step === 2} done={step > 2} />
+                  <StepPill label="3. Payment" active={step === 3} done={false} />
+                </div>
+
+                {step === 1 ? (
+                  <>
+                    <div>
+                      <h3 className="text-[15px] font-semibold text-slate-800">Personal Details</h3>
+                      <p className="mt-1 text-[11px] text-slate-500">Start with the tenant basics first. No need to see payment and proof before this is done.</p>
                     </div>
-                  </label>
-                </div>
 
-                <div>
-                  <h3 className="text-[15px] font-semibold text-slate-800">Tenant Information</h3>
-                  <p className="mt-1 text-[11px] text-slate-500">Add the basic details exactly like before, now in the new soft mobile layout.</p>
-                </div>
+                    <div className="grid gap-3">
+                      <Field label="Full Name *">
+                        <InputShell icon={<User className="h-4 w-4 text-violet-500" />}>
+                          <input
+                            value={form.fullName}
+                            onChange={(event) => setForm({ ...form, fullName: event.target.value })}
+                            className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
+                            placeholder="Enter full name"
+                          />
+                        </InputShell>
+                      </Field>
 
-                <div className="grid gap-3">
-                  <Field label="Full Name *">
-                    <InputShell icon={<User className="h-4 w-4 text-violet-500" />}>
-                      <input
-                        value={form.fullName}
-                        onChange={(event) => setForm({ ...form, fullName: event.target.value })}
-                        className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
-                        placeholder="Enter full name"
-                      />
-                    </InputShell>
-                  </Field>
+                      <Field label="Phone *">
+                        <InputShell icon={<Phone className="h-4 w-4 text-emerald-500" />}>
+                          <span className="text-[13px] font-medium text-slate-600">+91</span>
+                          <input
+                            value={form.phone}
+                            onChange={(event) => setForm({ ...form, phone: event.target.value })}
+                            className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
+                            placeholder="Enter phone number"
+                          />
+                        </InputShell>
+                      </Field>
 
-                  <Field label="Phone *">
-                    <InputShell icon={<Phone className="h-4 w-4 text-emerald-500" />}>
-                      <span className="text-[13px] font-medium text-slate-600">+91</span>
-                      <input
-                        value={form.phone}
-                        onChange={(event) => setForm({ ...form, phone: event.target.value })}
-                        className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
-                        placeholder="Enter phone number"
-                      />
-                    </InputShell>
-                  </Field>
+                      <Field label="Email">
+                        <InputShell icon={<Mail className="h-4 w-4 text-orange-400" />}>
+                          <input
+                            type="email"
+                            value={form.email}
+                            onChange={(event) => setForm({ ...form, email: event.target.value })}
+                            className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
+                            placeholder="Enter email address"
+                          />
+                        </InputShell>
+                      </Field>
 
-                  <Field label="Email">
-                    <InputShell icon={<Mail className="h-4 w-4 text-orange-400" />}>
-                      <input
-                        type="email"
-                        value={form.email}
-                        onChange={(event) => setForm({ ...form, email: event.target.value })}
-                        className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
-                        placeholder="Enter email address"
-                      />
-                    </InputShell>
-                  </Field>
+                      <Field label="Emergency Contact">
+                        <InputShell icon={<ShieldAlert className="h-4 w-4 text-amber-500" />}>
+                          <span className="text-[13px] font-medium text-slate-600">+91</span>
+                          <input
+                            value={form.emergencyContact}
+                            onChange={(event) => setForm({ ...form, emergencyContact: event.target.value })}
+                            className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
+                            placeholder="Enter emergency contact number"
+                          />
+                        </InputShell>
+                      </Field>
+                    </div>
+                  </>
+                ) : null}
 
-                  <Field label="Emergency Contact">
-                    <InputShell icon={<ShieldAlert className="h-4 w-4 text-amber-500" />}>
-                      <span className="text-[13px] font-medium text-slate-600">+91</span>
-                      <input
-                        value={form.emergencyContact}
-                        onChange={(event) => setForm({ ...form, emergencyContact: event.target.value })}
-                        className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
-                        placeholder="Enter emergency contact number"
-                      />
-                    </InputShell>
-                  </Field>
+                {step === 2 ? (
+                  <>
+                    <div>
+                      <h3 className="text-[15px] font-semibold text-slate-800">ID Proof</h3>
+                      <p className="mt-1 text-[11px] text-slate-500">Now collect ID information and proof. Once saved here, the last section is payment.</p>
+                    </div>
 
-                  <Field label="ID Number">
-                    <InputShell icon={<FileBadge2 className="h-4 w-4 text-violet-500" />}>
-                      <input
-                        value={form.idNumber}
-                        onChange={(event) => setForm({ ...form, idNumber: event.target.value.toUpperCase() })}
-                        className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
-                        placeholder="Enter ID number"
-                      />
-                    </InputShell>
-                  </Field>
-                </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <UploadCard icon={ImageIcon} title="Upload Photo" subtitle="Optional preview style" tone="violet" disabled />
+                      <label className="block cursor-pointer">
+                        <span className="sr-only">Upload ID</span>
+                        <div className="rounded-[22px] border border-white/80 bg-[linear-gradient(180deg,#f3eaff_0%,#ece4ff_100%)] p-3 shadow-[0_12px_26px_rgba(170,148,255,0.1)] transition hover:opacity-95">
+                          <div className="flex items-center gap-3">
+                            <div className="rounded-2xl bg-white/78 p-2.5 text-violet-600 shadow-sm">
+                              <FileBadge2 className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[13px] font-semibold text-slate-800">{idImage ? "ID Selected" : "Upload ID"}</p>
+                              <p className="mt-1 text-[11px] text-slate-500">{idImage?.name ?? "Photo or ID number required"}</p>
+                            </div>
+                          </div>
+                          <input type="file" accept="image/*" onChange={(event) => setIdImage(event.target.files?.[0] ?? null)} className="hidden" />
+                        </div>
+                      </label>
+                    </div>
 
-                <div>
-                  <h3 className="text-[15px] font-semibold text-slate-800">Payment Details</h3>
-                  <p className="mt-1 text-[11px] text-slate-500">Existing rent fields are preserved, just shown in a cleaner card layout.</p>
-                </div>
+                    <Field label="ID Number">
+                      <InputShell icon={<FileBadge2 className="h-4 w-4 text-violet-500" />}>
+                        <input
+                          value={form.idNumber}
+                          onChange={(event) => setForm({ ...form, idNumber: event.target.value.toUpperCase() })}
+                          className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
+                          placeholder="Enter ID number"
+                        />
+                      </InputShell>
+                    </Field>
+                  </>
+                ) : null}
 
-                <div className="grid gap-3 md:grid-cols-2">
-                  <Field label="Monthly Rent">
-                    <InputShell icon={<IndianRupee className="h-4 w-4 text-fuchsia-500" />}>
-                      <input
-                        type="number"
-                        min="0"
-                        value={form.monthlyRent}
-                        onChange={(event) => setForm({ ...form, monthlyRent: event.target.value })}
-                        className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
-                        placeholder="Enter monthly rent"
-                      />
-                    </InputShell>
-                  </Field>
+                {step === 3 ? (
+                  <>
+                    <div>
+                      <h3 className="text-[15px] font-semibold text-slate-800">Payment Details</h3>
+                      <p className="mt-1 text-[11px] text-slate-500">Final section here. After saving this, the next guided step is room assignment.</p>
+                    </div>
 
-                  <Field label="Rent Paid">
-                    <InputShell icon={<CreditCard className="h-4 w-4 text-violet-500" />}>
-                      <input
-                        type="number"
-                        min="0"
-                        value={form.rentPaid}
-                        onChange={(event) => setForm({ ...form, rentPaid: event.target.value })}
-                        className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
-                        placeholder="Enter rent paid amount"
-                      />
-                    </InputShell>
-                  </Field>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Field label="Monthly Rent">
+                        <InputShell icon={<IndianRupee className="h-4 w-4 text-fuchsia-500" />}>
+                          <input
+                            type="number"
+                            min="0"
+                            value={form.monthlyRent}
+                            onChange={(event) => setForm({ ...form, monthlyRent: event.target.value })}
+                            className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
+                            placeholder="Enter monthly rent"
+                          />
+                        </InputShell>
+                      </Field>
 
-                  <Field label="Paid On Date">
-                    <InputShell icon={<CalendarDays className="h-4 w-4 text-sky-500" />}>
-                      <input
-                        type="date"
-                        value={form.paidOnDate}
-                        onChange={(event) => setForm({ ...form, paidOnDate: event.target.value })}
-                        className="w-full bg-transparent text-[13px] text-slate-700 outline-none"
-                      />
-                    </InputShell>
-                  </Field>
-                </div>
+                      <Field label="Rent Paid">
+                        <InputShell icon={<CreditCard className="h-4 w-4 text-violet-500" />}>
+                          <input
+                            type="number"
+                            min="0"
+                            value={form.rentPaid}
+                            onChange={(event) => setForm({ ...form, rentPaid: event.target.value })}
+                            className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
+                            placeholder="Enter rent paid amount"
+                          />
+                        </InputShell>
+                      </Field>
+
+                      <Field label="Paid On Date">
+                        <InputShell icon={<CalendarDays className="h-4 w-4 text-sky-500" />}>
+                          <input
+                            type="date"
+                            value={form.paidOnDate}
+                            onChange={(event) => setForm({ ...form, paidOnDate: event.target.value })}
+                            className="w-full bg-transparent text-[13px] text-slate-700 outline-none"
+                          />
+                        </InputShell>
+                      </Field>
+                    </div>
+                  </>
+                ) : null}
 
                 {error ? (
                   <div className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-medium text-rose-600">
@@ -254,19 +298,34 @@ export function TenantFormModal({
                 <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
                   <Button
                     variant="secondary"
-                    onClick={onClose}
+                    onClick={step === 1 ? handleClose : () => setStep((current) => (current === 3 ? 2 : 1))}
                     className="w-full rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)] text-slate-700 shadow-[0_10px_24px_rgba(170,148,255,0.08)] sm:flex-1"
                   >
-                    Cancel
+                    {step === 1 ? "Cancel" : "Back"}
                   </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    className={`w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:flex-1 ${
-                      submitting ? "opacity-70" : ""
-                    }`}
-                  >
-                    {submitting ? "Creating..." : "Add Tenant"}
-                  </Button>
+
+                  {step === 1 ? (
+                    <Button onClick={handleNextFromPersonal} className="w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:flex-1">
+                      Next: ID Proof
+                    </Button>
+                  ) : null}
+
+                  {step === 2 ? (
+                    <Button onClick={handleNextFromId} className="w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:flex-1">
+                      Next: Payment
+                    </Button>
+                  ) : null}
+
+                  {step === 3 ? (
+                    <Button
+                      onClick={handleSubmit}
+                      className={`w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:flex-1 ${
+                        submitting ? "opacity-70" : ""
+                      }`}
+                    >
+                      {submitting ? "Creating..." : "Save Tenant"}
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -274,6 +333,30 @@ export function TenantFormModal({
         </Card>
       </div>
     </div>
+  );
+}
+
+function StepPill({
+  label,
+  active,
+  done,
+}: {
+  label: string;
+  active: boolean;
+  done: boolean;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-semibold ${
+        active
+          ? "bg-[var(--action-gradient)] text-white"
+          : done
+            ? "bg-emerald-100 text-emerald-700"
+            : "bg-[var(--pill-gradient)] text-violet-700"
+      }`}
+    >
+      {label}
+    </span>
   );
 }
 
