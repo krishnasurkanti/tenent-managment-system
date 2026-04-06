@@ -104,11 +104,11 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
               className={cn(
                 "group flex w-full items-center gap-2.5 rounded-[16px] px-3.5 py-2.5 text-left text-[13px] font-medium transition",
                 active
-                  ? "bg-[var(--action-gradient)] text-white shadow-[var(--shadow-soft)]"
+                  ? "bg-[linear-gradient(90deg,#f4ecff_0%,#ffe8f1_100%)] text-slate-900 shadow-[0_12px_26px_rgba(170,148,255,0.16)]"
                   : "text-slate-700 hover:bg-[var(--pill-gradient)] hover:text-slate-900",
               )}
             >
-              <span className={cn("inline-flex h-7 w-7 items-center justify-center rounded-xl border transition", active ? "border-white/20 bg-white/15" : "border-white/60 bg-white/60 group-hover:border-white/80 group-hover:bg-white/80")}>
+              <span className={cn("inline-flex h-7 w-7 items-center justify-center rounded-xl border transition", active ? "border-white/80 bg-white/80 text-violet-600" : "border-white/60 bg-white/60 group-hover:border-white/80 group-hover:bg-white/80 group-hover:text-violet-600")}>
                 <item.icon className="h-3.5 w-3.5" />
               </span>
               {item.name}
@@ -132,11 +132,11 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
               className={cn(
                 "group flex w-full items-center gap-2.5 rounded-[16px] px-3.5 py-2.5 text-left text-[13px] font-medium transition",
                 active
-                  ? "bg-[var(--action-gradient)] text-white shadow-[var(--shadow-soft)]"
+                  ? "bg-[linear-gradient(90deg,#f4ecff_0%,#ffe8f1_100%)] text-slate-900 shadow-[0_12px_26px_rgba(170,148,255,0.16)]"
                   : "text-slate-700 hover:bg-[var(--pill-gradient)] hover:text-slate-900",
               )}
             >
-              <span className={cn("inline-flex h-7 w-7 items-center justify-center rounded-xl border transition", active ? "border-white/20 bg-white/15" : "border-white/60 bg-white/60 group-hover:border-white/80 group-hover:bg-white/80")}>
+              <span className={cn("inline-flex h-7 w-7 items-center justify-center rounded-xl border transition", active ? "border-white/80 bg-white/80 text-violet-600" : "border-white/60 bg-white/60 group-hover:border-white/80 group-hover:bg-white/80 group-hover:text-violet-600")}>
                 <item.icon className="h-3.5 w-3.5" />
               </span>
               {item.name}

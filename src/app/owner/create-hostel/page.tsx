@@ -70,7 +70,6 @@ function CreateHostelPageContent() {
   const [floors, setFloors] = useState<FloorForm[]>([createFloor(1)]);
   const [activeFloorId, setActiveFloorId] = useState<string | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
-  const [bulkRoomCount, setBulkRoomCount] = useState("2");
   const [saving, setSaving] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(isEditMode);
   const [error, setError] = useState("");
@@ -222,37 +221,6 @@ function CreateHostelPageContent() {
       rooms: [...floor.rooms, nextRoom],
     }));
     setActiveRoomId(nextRoom.id);
-  };
-
-  const handleAddMultipleRooms = () => {
-    setError("");
-
-    if (!activeFloor || !activeRoom) {
-      return;
-    }
-
-    if (!activeFloor.floorLabel.trim()) {
-      setError("Please select or enter the floor name before adding rooms.");
-      return;
-    }
-
-    if (!isRoomComplete(activeRoom)) {
-      setError("Please finish the current room details before adding more rooms.");
-      return;
-    }
-
-    const roomCount = Number(bulkRoomCount);
-    if (!Number.isInteger(roomCount) || roomCount < 2) {
-      setError("Please select a valid number of rooms to add.");
-      return;
-    }
-
-    const nextRooms = Array.from({ length: roomCount }, (_, index) => createRoom(activeFloor.rooms.length + index + 1));
-    updateFloor(activeFloor.id, (floor) => ({
-      ...floor,
-      rooms: [...floor.rooms, ...nextRooms],
-    }));
-    setActiveRoomId(nextRooms[0]?.id ?? null);
   };
 
   const handleFinishFloor = () => {
@@ -554,26 +522,6 @@ function CreateHostelPageContent() {
                     </div>
 
                     <div className="mt-4 grid gap-2">
-                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-                        <select
-                          value={bulkRoomCount}
-                          onChange={(event) => setBulkRoomCount(event.target.value)}
-                          className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-3 py-3 text-[13px] font-medium text-slate-700 outline-none shadow-[0_10px_24px_rgba(170,148,255,0.08)]"
-                        >
-                          <option value="2">Add 2 rooms</option>
-                          <option value="3">Add 3 rooms</option>
-                          <option value="5">Add 5 rooms</option>
-                        </select>
-                        <Button
-                          variant="secondary"
-                          className="w-full rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)] text-violet-700 shadow-[0_10px_24px_rgba(170,148,255,0.08)] sm:w-auto"
-                          onClick={handleAddMultipleRooms}
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Multiple
-                        </Button>
-                      </div>
-
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <Button
                           className="w-full bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:flex-1"
@@ -599,7 +547,7 @@ function CreateHostelPageContent() {
                   <div className="mb-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Room Progress</p>
                     <h3 className="mt-1 text-sm font-semibold text-slate-800">{activeFloor.floorLabel}</h3>
-                    <p className="mt-1 text-[11px] text-slate-500">Use Finish Floor when this floor is done and the next floor will be created automatically.</p>
+                    <p className="mt-1 text-[11px] text-slate-500">Even 1 room with 1 bed is enough. When this floor is done, press Finish Floor.</p>
                   </div>
 
                   <div className="space-y-2">
