@@ -210,7 +210,7 @@ export function TenantFormModal({
                     </div>
 
                     <div className="grid gap-2 sm:grid-cols-2">
-                      <UploadCard icon={ImageIcon} title="Photo Optional" subtitle="You can add tenant photo later" tone="violet" disabled />
+                      <UploadCard icon={ImageIcon} title="Upload Photo" subtitle="Optional preview style" tone="violet" disabled />
                       <label className="block cursor-pointer">
                         <span className="sr-only">Upload ID</span>
                         <div className="rounded-[22px] border border-white/80 bg-[linear-gradient(180deg,#f3eaff_0%,#ece4ff_100%)] p-3 shadow-[0_12px_26px_rgba(170,148,255,0.1)] transition hover:opacity-95">
@@ -351,8 +351,8 @@ function StepPill({
         active
           ? "bg-[var(--action-gradient)] text-white"
           : done
-            ? "bg-[var(--success-soft)] text-emerald-700"
-            : "bg-[var(--pill-gradient)] text-indigo-700"
+            ? "bg-emerald-100 text-emerald-700"
+            : "bg-[var(--pill-gradient)] text-violet-700"
       }`}
     >
       {label}

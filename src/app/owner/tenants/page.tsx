@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { useHostelContext } from "@/components/hostel-context-provider";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
+import { formatPaymentDate, getDueStatus } from "@/lib/payment-utils";
 
 export default function OwnerTenantsPage() {
   const { currentHostel, loading: hostelLoading, isSwitching } = useHostelContext();
@@ -28,6 +29,12 @@ export default function OwnerTenantsPage() {
   }
 
   const tenants = allTenants.filter((tenant) => tenant.assignment?.hostelId === currentHostel.id);
+  const dueSoonCount = tenants.filter((tenant) => {
+    const tone = getDueStatus(tenant.nextDueDate).tone;
+    return tone === "orange" || tone === "yellow";
+  }).length;
+  const overdueCount = tenants.filter((tenant) => getDueStatus(tenant.nextDueDate).tone === "red").length;
+  const assignedCount = tenants.filter((tenant) => tenant.assignment).length;
 
   return (
     <div className={`space-y-4 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
@@ -49,10 +56,17 @@ export default function OwnerTenantsPage() {
         </div>
       </div>
 
-      <Card className="overflow-hidden">
+      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+        <TenantSummaryCard label="Total Tenants" value={String(tenants.length)} helper="Current hostel only" tone="violet" />
+        <TenantSummaryCard label="Due Soon" value={String(dueSoonCount)} helper="Needs attention" tone="orange" />
+        <TenantSummaryCard label="Overdue" value={String(overdueCount)} helper="Follow up now" tone="rose" />
+        <TenantSummaryCard label="Assigned" value={String(assignedCount)} helper="Rooms occupied" tone="sky" />
+      </div>
+
+      <Card className="hidden overflow-hidden lg:block">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-[13px]">
-            <thead className="bg-[linear-gradient(180deg,#f6efff_0%,#fff5fa_100%)] text-slate-500">
+            <thead className="bg-[linear-gradient(180deg,#eef2ff_0%,#fdf2f8_100%)] text-slate-500">
               <tr>
                 <th className="px-3 py-2.5 font-medium">Tenant ID</th>
                 <th className="px-3 py-2.5 font-medium">Name</th>
@@ -60,45 +74,125 @@ export default function OwnerTenantsPage() {
                 <th className="px-3 py-2.5 font-medium">Room</th>
                 <th className="px-3 py-2.5 font-medium">Monthly Rent</th>
                 <th className="px-3 py-2.5 font-medium">Next Due</th>
+                <th className="px-3 py-2.5 font-medium">Status</th>
               </tr>
             </thead>
             <tbody>
               {tenants.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-7 text-center text-sm text-slate-500">
+                  <td colSpan={7} className="px-3 py-7 text-center text-sm text-slate-500">
                     No tenants created yet for this hostel. Add your first tenant to get started.
                   </td>
                 </tr>
               ) : (
-                tenants.map((tenant) => (
-                  <tr key={tenant.tenantId} className="border-t border-white/80">
-                    <td className="px-3 py-3 font-semibold text-slate-700">{tenant.tenantId}</td>
-                    <td className="px-3 py-3">
-                      <Link
-                        href={`/owner/tenants/${tenant.tenantId}`}
-                        className="font-medium text-slate-800 transition hover:text-violet-600"
-                      >
-                        {tenant.fullName}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-3">
-                      <p>{tenant.phone}</p>
-                      <p className="mt-0.5 text-[11px] text-slate-500">{tenant.email}</p>
-                    </td>
-                    <td className="px-3 py-3">
-                      {tenant.assignment
-                        ? `Floor ${tenant.assignment.floorNumber} / Room ${tenant.assignment.roomNumber}`
-                        : "Pending"}
-                    </td>
-                    <td className="px-3 py-3">₹{tenant.monthlyRent.toLocaleString("en-IN")}</td>
-                    <td className="px-3 py-3">{tenant.nextDueDate}</td>
-                  </tr>
-                ))
+                tenants.map((tenant) => {
+                  const status = getDueStatus(tenant.nextDueDate);
+
+                  return (
+                    <tr key={tenant.tenantId} className="border-t border-white/80">
+                      <td className="px-3 py-3 font-semibold text-slate-700">{tenant.tenantId}</td>
+                      <td className="px-3 py-3">
+                        <Link href={`/owner/tenants/${tenant.tenantId}`} className="font-medium text-slate-800 transition hover:text-indigo-600">
+                          {tenant.fullName}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-3">
+                        <p>{tenant.phone}</p>
+                        <p className="mt-0.5 text-[11px] text-slate-500">{tenant.email}</p>
+                      </td>
+                      <td className="px-3 py-3">
+                        {tenant.assignment ? `Floor ${tenant.assignment.floorNumber} / Room ${tenant.assignment.roomNumber}` : "Pending"}
+                      </td>
+                      <td className="px-3 py-3">Rs {tenant.monthlyRent.toLocaleString("en-IN")}</td>
+                      <td className="px-3 py-3">{formatPaymentDate(tenant.nextDueDate)}</td>
+                      <td className="px-3 py-3">
+                        <span className={getTenantStatusClassName(status.tone)}>{status.label}</span>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </Card>
+
+      <div className="space-y-2.5 lg:hidden">
+        {tenants.length === 0 ? (
+          <Card className="p-4 text-center text-sm text-slate-500">
+            No tenants created yet for this hostel. Add your first tenant to get started.
+          </Card>
+        ) : (
+          tenants.map((tenant) => {
+            const status = getDueStatus(tenant.nextDueDate);
+
+            return (
+              <Card key={tenant.tenantId} className="border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.94)_0%,rgba(248,250,252,0.96)_100%)] p-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Link href={`/owner/tenants/${tenant.tenantId}`} className="text-[13px] font-semibold text-slate-800 hover:text-indigo-600">
+                      {tenant.fullName}
+                    </Link>
+                    <p className="mt-1 text-[11px] text-slate-500">{tenant.tenantId} • {tenant.phone}</p>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      {tenant.assignment ? `Floor ${tenant.assignment.floorNumber} / Room ${tenant.assignment.roomNumber}` : "Pending assignment"}
+                    </p>
+                  </div>
+                  <span className={getTenantStatusClassName(status.tone)}>{status.label}</span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <TenantMiniInfo label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} />
+                  <TenantMiniInfo label="Next Due" value={formatPaymentDate(tenant.nextDueDate)} />
+                </div>
+              </Card>
+            );
+          })
+        )}
+      </div>
     </div>
   );
+}
+
+function TenantSummaryCard({
+  label,
+  value,
+  helper,
+  tone,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  tone: "violet" | "orange" | "rose" | "sky";
+}) {
+  const toneClass =
+    tone === "violet"
+      ? "bg-[linear-gradient(180deg,#eef2ff_0%,#e0e7ff_100%)] text-indigo-700"
+      : tone === "orange"
+        ? "bg-[linear-gradient(180deg,#fff7ed_0%,#ffedd5_100%)] text-orange-700"
+        : tone === "rose"
+          ? "bg-[linear-gradient(180deg,#fff1f2_0%,#ffe4e6_100%)] text-rose-700"
+          : "bg-[linear-gradient(180deg,#eff6ff_0%,#dbeafe_100%)] text-sky-700";
+
+  return (
+    <Card className={`border-white/70 p-3 ${toneClass}`}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-80">{label}</p>
+      <p className="mt-1 text-[1.2rem] font-semibold leading-none">{value}</p>
+      <p className="mt-1 text-[11px] opacity-80">{helper}</p>
+    </Card>
+  );
+}
+
+function TenantMiniInfo({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] px-3 py-2 shadow-sm">
+      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-400">{label}</p>
+      <p className="mt-1 text-[12px] font-semibold text-slate-800">{value}</p>
+    </div>
+  );
+}
+
+function getTenantStatusClassName(tone: string) {
+  if (tone === "red") return "inline-flex rounded-full bg-[var(--danger-soft)] px-2 py-1 text-[10px] font-semibold text-rose-700";
+  if (tone === "orange" || tone === "yellow") return "inline-flex rounded-full bg-[var(--warning-soft)] px-2 py-1 text-[10px] font-semibold text-orange-700";
+  return "inline-flex rounded-full bg-[var(--success-soft)] px-2 py-1 text-[10px] font-semibold text-emerald-700";
 }

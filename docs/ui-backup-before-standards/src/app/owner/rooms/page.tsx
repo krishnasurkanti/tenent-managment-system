@@ -134,9 +134,9 @@ function OwnerRoomsPageContent() {
           if (floorRooms.length === 0) return null;
 
           return (
-            <Card key={floor.id} className="overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.94)_0%,rgba(248,250,252,0.96)_100%)]">
+            <Card key={floor.id} className="overflow-hidden">
               <details className="group" open={floorIndex === 0}>
-                <summary className="list-none cursor-pointer bg-[linear-gradient(180deg,#eef2ff_0%,#fdf2f8_100%)] px-3.5 py-2.5 marker:hidden">
+                <summary className="list-none cursor-pointer bg-[linear-gradient(180deg,#f6efff_0%,#fff5fa_100%)] px-3.5 py-2.5 marker:hidden">
                   <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex items-center gap-2.5">
                       <div className="rounded-xl bg-[var(--pill-gradient)] p-1.5 text-violet-600">
@@ -162,11 +162,11 @@ function OwnerRoomsPageContent() {
                 </summary>
 
                 <div className="border-t border-white/80">
-                  <div className="grid gap-2.5 p-2.5 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
+                  <div className="grid gap-2.5 p-2.5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                     {floorRooms.map(({ room, occupied, available, roomTenants, status }) => (
                       <details
                         key={room.id}
-                        className="group rounded-[20px] border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] shadow-sm"
+                        className="group rounded-[20px] border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] shadow-sm"
                         open={showAvailableOnly || (occupied > 0 && available > 0)}
                       >
                         <summary className="list-none cursor-pointer p-2.5 marker:hidden">

@@ -70,7 +70,6 @@ function CreateHostelPageContent() {
   const [floors, setFloors] = useState<FloorForm[]>([createFloor(1)]);
   const [activeFloorId, setActiveFloorId] = useState<string | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [saving, setSaving] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(isEditMode);
   const [error, setError] = useState("");
@@ -344,40 +343,6 @@ function CreateHostelPageContent() {
     router.refresh();
   };
 
-  const handleNextFromBasics = () => {
-    setError("");
-
-    if (!hostelName.trim() || !address.trim()) {
-      setError("Please enter hostel name and address.");
-      return;
-    }
-
-    setStep(2);
-  };
-
-  const handleNextFromSetup = () => {
-    setError("");
-
-    const hasInvalidFloor = floors.some((floor) => !floor.floorLabel.trim());
-    if (hasInvalidFloor) {
-      setError("Please select a floor for each section before continuing.");
-      return;
-    }
-
-    const hasInvalidRoom = floors.some(
-      (floor) =>
-        floor.rooms.length === 0 ||
-        floor.rooms.some((room) => !room.roomNumber.trim() || !room.bedCount || Number(room.bedCount) < 1),
-    );
-
-    if (hasInvalidRoom) {
-      setError("Please complete each room with room number and bed count before review.");
-      return;
-    }
-
-    setStep(3);
-  };
-
   if (loadingExisting) {
     return <CreateHostelLoadingState />;
   }
@@ -391,13 +356,6 @@ function CreateHostelPageContent() {
           </div>
         ) : null}
 
-        <div className="flex flex-wrap gap-2">
-          <WizardPill label="1. Basics" active={step === 1} done={step > 1} />
-          <WizardPill label="2. Setup" active={step === 2} done={step > 2} />
-          <WizardPill label="3. Review" active={step === 3} done={false} />
-        </div>
-
-        {step === 1 ? (
         <Card className="overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.84)_0%,rgba(247,241,255,0.92)_100%)] shadow-[0_18px_42px_rgba(170,148,255,0.1)]">
           <div className="border-b border-white/70 px-4 py-3 sm:px-5">
             <div className="flex items-center gap-3">
@@ -436,18 +394,8 @@ function CreateHostelPageContent() {
               </div>
             </Field>
           </div>
-          <div className="flex flex-col gap-2 border-t border-white/70 px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
-            <Button variant="secondary" className="w-full sm:w-auto" onClick={() => router.push("/owner/dashboard")}>
-              Cancel
-            </Button>
-            <Button className="w-full sm:w-auto" onClick={handleNextFromBasics}>
-              Continue
-            </Button>
-          </div>
         </Card>
-        ) : null}
 
-        {step === 2 ? (
         <Card className="overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.84)_0%,rgba(247,241,255,0.92)_100%)] shadow-[0_18px_42px_rgba(170,148,255,0.1)]">
           <div className="border-b border-white/70 px-4 py-3 sm:px-5">
             <div className="flex items-center gap-3">
@@ -674,90 +622,19 @@ function CreateHostelPageContent() {
               <Button
                 variant="secondary"
                 className="w-full rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)] text-slate-700 shadow-[0_10px_24px_rgba(170,148,255,0.08)] sm:w-auto"
-                onClick={() => setStep(1)}
-              >
-                Back
-              </Button>
-              <Button
-                variant="secondary"
-                className="w-full rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)] text-slate-700 shadow-[0_10px_24px_rgba(170,148,255,0.08)] sm:w-auto"
                 onClick={() => router.push("/owner/dashboard")}
               >
                 Cancel
               </Button>
               <Button
                 className="w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:w-auto"
-                onClick={handleNextFromSetup}
+                onClick={handleSave}
               >
-                Review Hostel
+                {saving ? "Saving..." : isEditMode ? "Update Hostel" : "Add Hostel"}
               </Button>
             </div>
           </div>
         </Card>
-        ) : null}
-
-        {step === 3 ? (
-          <Card className="overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.9)_0%,rgba(247,241,255,0.96)_100%)] shadow-[0_18px_42px_rgba(170,148,255,0.1)]">
-            <div className="border-b border-white/70 px-4 py-3 sm:px-5">
-              <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-[var(--pill-gradient)] p-2.5 text-indigo-600">
-                  <CheckCircle2 className="h-4 w-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-800">Review Hostel</h2>
-                  <p className="text-[11px] text-slate-500">Check the summary once, then save the hostel.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4 px-4 py-4 sm:px-5">
-              <div className="grid gap-3 md:grid-cols-2">
-                <ReviewCard label="Hostel Name" value={hostelName} />
-                <ReviewCard label="Address" value={address} />
-              </div>
-
-              <div className="rounded-[24px] border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] p-4 shadow-sm">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Structure</p>
-                    <h3 className="mt-1 text-sm font-semibold text-slate-800">
-                      {floors.length} floor{floors.length > 1 ? "s" : ""} • {floors.reduce((sum, floor) => sum + floor.rooms.length, 0)} room{floors.reduce((sum, floor) => sum + floor.rooms.length, 0) > 1 ? "s" : ""}
-                    </h3>
-                  </div>
-                  <span className="rounded-full bg-[var(--pill-gradient)] px-2.5 py-1 text-[10px] font-semibold text-indigo-700">
-                    Ready to save
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  {floors.map((floor) => (
-                    <div key={floor.id} className="rounded-2xl border border-white/80 bg-white/90 px-3 py-3">
-                      <p className="text-[12px] font-semibold text-slate-800">{floor.floorLabel}</p>
-                      <div className="mt-2 space-y-1.5">
-                        {floor.rooms.map((room) => (
-                          <div key={room.id} className="flex items-center justify-between gap-3 text-[11px] text-slate-600">
-                            <span>{room.roomNumber}</span>
-                            <span>{room.bedCount} beds</span>
-                            <span className="font-medium text-indigo-700">{getSharingLabel(room.bedCount)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2 border-t border-white/70 pt-4 sm:flex-row sm:justify-end">
-                <Button variant="secondary" className="w-full sm:w-auto" onClick={() => setStep(2)}>
-                  Back to Setup
-                </Button>
-                <Button className="w-full sm:w-auto" onClick={handleSave}>
-                  {saving ? "Saving..." : isEditMode ? "Update Hostel" : "Add Hostel"}
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ) : null}
       </div>
     </main>
   );
@@ -787,38 +664,5 @@ function Field({
       <span className="mb-1.5 block text-[11px] font-medium text-slate-700">{label}</span>
       {children}
     </label>
-  );
-}
-
-function WizardPill({
-  label,
-  active,
-  done,
-}: {
-  label: string;
-  active: boolean;
-  done: boolean;
-}) {
-  return (
-    <div
-      className={`inline-flex items-center rounded-full px-3 py-2 text-[11px] font-semibold shadow-sm ${
-        active
-          ? "bg-[var(--action-gradient)] text-white"
-          : done
-            ? "bg-[var(--success-soft)] text-emerald-700"
-            : "border border-white/80 bg-white/80 text-slate-500"
-      }`}
-    >
-      {label}
-    </div>
-  );
-}
-
-function ReviewCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[22px] border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] px-4 py-3 shadow-sm">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</p>
-      <p className="mt-1 text-[13px] font-semibold text-slate-800">{value}</p>
-    </div>
   );
 }

@@ -139,7 +139,7 @@ export function TenantRoomAssignmentModal({
         <Card className="flex max-h-[min(92vh,920px)] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82)_0%,rgba(244,236,255,0.95)_100%)] p-6 shadow-[0_28px_70px_rgba(170,148,255,0.22)] sm:p-8">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2">
-              <div className="inline-flex items-center rounded-full bg-[var(--pill-gradient)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-700">
+              <div className="inline-flex items-center rounded-full bg-[var(--pill-gradient)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-violet-700">
                 Room Assignment
               </div>
               <h2 className="text-3xl font-semibold tracking-tight text-slate-900">Assign room to tenant</h2>
@@ -311,8 +311,8 @@ function StepPill({
         active
           ? "bg-[var(--action-gradient)] text-white"
           : done
-            ? "bg-[var(--success-soft)] text-emerald-700"
-            : "bg-[var(--pill-gradient)] text-indigo-700"
+            ? "bg-emerald-100 text-emerald-700"
+            : "bg-[var(--pill-gradient)] text-violet-700"
       }`}
     >
       {label}

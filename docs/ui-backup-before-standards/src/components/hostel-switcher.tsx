@@ -38,13 +38,13 @@ export function HostelSwitcher() {
 
   return (
     <div className="relative hidden items-center gap-2 xl:flex">
-      <div className="inline-flex min-h-10 items-center rounded-2xl border border-white/80 bg-[var(--surface-gradient)] px-3.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500 shadow-sm">
-        Workspace
+      <div className="inline-flex min-h-10 items-center rounded-2xl border border-white/80 bg-[var(--surface-gradient)] px-3.5 text-[13px] font-semibold text-slate-600 shadow-sm">
+        Hostels
       </div>
 
       <div className="inline-flex min-h-10 items-center gap-2 rounded-2xl border border-white/80 bg-[var(--surface-gradient)] px-2.5 shadow-sm">
         {summaryItems.map((item) => (
-          <span key={item} className="inline-flex items-center rounded-full bg-[var(--pill-gradient)] px-2.5 py-1.5 text-[12px] font-medium text-indigo-700">
+          <span key={item} className="inline-flex items-center rounded-full bg-[var(--pill-gradient)] px-2.5 py-1.5 text-[12px] font-medium text-violet-700">
             {item}
           </span>
         ))}
@@ -56,8 +56,8 @@ export function HostelSwitcher() {
         className={cn(
           "inline-flex min-h-10 min-w-[12.5rem] items-center justify-between gap-3 rounded-2xl border px-3.5 text-left shadow-sm transition",
           isSwitching
-            ? "border-indigo-200 bg-[var(--pill-gradient)] text-indigo-700"
-            : "border-white/80 bg-[var(--surface-gradient)] text-slate-700 hover:border-indigo-200 hover:bg-[var(--pill-gradient)]",
+            ? "border-violet-200 bg-[var(--pill-gradient)] text-violet-700"
+            : "border-white/80 bg-[var(--surface-gradient)] text-slate-700 hover:border-violet-200 hover:bg-[var(--pill-gradient)]",
         )}
       >
         <div className="min-w-0">
@@ -88,7 +88,7 @@ export function HostelSwitcher() {
                   }}
                   className={cn(
                     "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition",
-                    selected ? "bg-[var(--pill-gradient)] text-indigo-700" : "hover:bg-[var(--pill-gradient)] text-slate-700",
+                    selected ? "bg-[var(--pill-gradient)] text-violet-700" : "hover:bg-[var(--pill-gradient)] text-slate-700",
                   )}
                 >
                   <div className="min-w-0">
@@ -104,7 +104,7 @@ export function HostelSwitcher() {
           <div className="mt-2 border-t border-white/70 pt-2">
             <Link
               href="/owner/create-hostel"
-              className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-[13px] font-semibold text-indigo-700 transition hover:bg-[var(--pill-gradient)]"
+              className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-[13px] font-semibold text-violet-700 transition hover:bg-[var(--pill-gradient)]"
               onClick={() => setOpen(false)}
             >
               <Plus className="h-4 w-4" />
