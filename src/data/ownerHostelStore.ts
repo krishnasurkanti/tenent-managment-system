@@ -3,7 +3,32 @@ import type { HostelRoomInventory } from "@/types/tenant";
 
 export const DEMO_OWNER_HOSTEL_ID = "owner-hostel-demo";
 
-const demoOwnerHostels: OwnerHostel[] = [];
+const demoOwnerHostels: OwnerHostel[] = [
+  {
+    id: DEMO_OWNER_HOSTEL_ID,
+    hostelName: "Test Residency",
+    address: "Madhapur Main Road, Hyderabad",
+    createdAt: "2026-04-01T10:00:00.000Z",
+    floors: [
+      {
+        id: "floor-demo-1",
+        floorLabel: "Floor 1",
+        rooms: [
+          { id: "room-demo-101", roomNumber: "101", bedCount: 3, sharingType: "3 sharing" },
+          { id: "room-demo-102", roomNumber: "102", bedCount: 2, sharingType: "2 sharing" },
+        ],
+      },
+      {
+        id: "floor-demo-2",
+        floorLabel: "Floor 2",
+        rooms: [
+          { id: "room-demo-201", roomNumber: "201", bedCount: 1, sharingType: "Single sharing" },
+          { id: "room-demo-202", roomNumber: "202", bedCount: 4, sharingType: "4 sharing" },
+        ],
+      },
+    ],
+  },
+];
 
 let ownerHostels: OwnerHostel[] = getDemoOwnerHostels();
 
