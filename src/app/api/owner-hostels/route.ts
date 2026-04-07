@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOwnerHostels, saveOwnerHostel } from "@/data/ownerHostelStore";
+import { seedDemoTenantsForHostel } from "@/data/tenantStore";
 import type { OwnerFloor } from "@/types/owner-hostel";
 
 export const dynamic = "force-dynamic";
@@ -39,5 +40,7 @@ export async function POST(request: Request) {
     floors,
   });
 
-  return NextResponse.json({ hostel }, { status: 201 });
+  const seededTenants = seedDemoTenantsForHostel(hostel.id);
+
+  return NextResponse.json({ hostel, seededTenants }, { status: 201 });
 }

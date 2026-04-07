@@ -214,3 +214,104 @@ export function addPaymentProof(
 
   return tenant;
 }
+
+export function seedDemoTenantsForHostel(hostelId: string) {
+  const hostel = getOwnerHostelInventory().find((item) => item.hostelId === hostelId);
+
+  if (!hostel) {
+    return [];
+  }
+
+  const alreadyAssigned = tenantRecords.some((tenant) => tenant.assignment?.hostelId === hostelId);
+  if (alreadyAssigned) {
+    return [];
+  }
+
+  const availableSlots = hostel.floors.flatMap((floor) =>
+    floor.rooms.flatMap((room) =>
+      Array.from({ length: room.capacity }, () => ({
+        floorNumber: floor.floorNumber,
+        roomNumber: room.roomNumber,
+        sharingType: room.sharingType ?? `${room.capacity} sharing`,
+      })),
+    ),
+  );
+
+  const demoProfiles = [
+    {
+      fullName: "Aarav Sharma",
+      phone: "9876501201",
+      email: "aarav.test@example.com",
+      monthlyRent: 8500,
+      rentPaid: 8500,
+      paidOnOffsetDays: -22,
+      dueOffsetDays: 8,
+    },
+    {
+      fullName: "Diya Patel",
+      phone: "9876501202",
+      email: "diya.test@example.com",
+      monthlyRent: 9000,
+      rentPaid: 9000,
+      paidOnOffsetDays: -27,
+      dueOffsetDays: 3,
+    },
+    {
+      fullName: "Kabir Reddy",
+      phone: "9876501203",
+      email: "kabir.test@example.com",
+      monthlyRent: 7800,
+      rentPaid: 7800,
+      paidOnOffsetDays: -31,
+      dueOffsetDays: 0,
+    },
+    {
+      fullName: "Meera Nair",
+      phone: "9876501204",
+      email: "meera.test@example.com",
+      monthlyRent: 9600,
+      rentPaid: 9600,
+      paidOnOffsetDays: -36,
+      dueOffsetDays: -4,
+    },
+  ];
+
+  const seededTenants = demoProfiles.slice(0, availableSlots.length).map((profile, index) => {
+    const moveInDate = formatDateFromToday(profile.paidOnOffsetDays);
+    const paidOnDate = moveInDate;
+    const nextDueDate = formatDateFromToday(profile.dueOffsetDays);
+    const slot = availableSlots[index];
+
+    const tenant = createTenantRecord({
+      fullName: profile.fullName,
+      phone: profile.phone,
+      email: profile.email,
+      monthlyRent: profile.monthlyRent,
+      rentPaid: profile.rentPaid,
+      paidOnDate,
+      billingAnchorDate: moveInDate,
+      nextDueDate,
+      idNumber: `TEST-ID-${index + 1}`,
+      emergencyContact: `98765022${String(index + 1).padStart(2, "0")}`,
+      idImageName: "demo-id.png",
+    });
+
+    assignTenantRoom(tenant.tenantId, {
+      hostelId,
+      floorNumber: slot.floorNumber,
+      roomNumber: slot.roomNumber,
+      sharingType: slot.sharingType,
+      moveInDate,
+    });
+
+    return tenant;
+  });
+
+  return seededTenants;
+}
+
+function formatDateFromToday(offsetDays: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+}
