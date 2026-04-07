@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { BedDouble, CreditCard, DoorOpen, Home, UserMinus, UserPlus, Users } from "lucide-react";
-import { HostelMiniScene } from "@/components/hostel-mini-scene";
 import { useHostelContext } from "@/components/hostel-context-provider";
 import { Card } from "@/components/ui/card";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
@@ -45,7 +44,13 @@ export default function OwnerDashboardPage() {
   return (
     <div className={`space-y-4 transition-opacity sm:space-y-5 ${isSwitching ? "opacity-70" : "opacity-100"}`}>
       <div className="lg:hidden">
-        <MobileHeroCard hostelName={currentHostel.hostelName} floorCount={currentHostel.floors.length} />
+        <MobileHeroCard
+          hostelName={currentHostel.hostelName}
+          floorCount={currentHostel.floors.length}
+          totalRooms={totalRooms}
+          occupiedPercent={occupiedPercent}
+          address={currentHostel.address}
+        />
       </div>
       <div className="hidden lg:block">
         <DesktopHeroCard
@@ -54,6 +59,8 @@ export default function OwnerDashboardPage() {
           floorCount={currentHostel.floors.length}
           totalRooms={totalRooms}
           occupiedPercent={occupiedPercent}
+          totalBeds={totalBeds}
+          vacantBeds={vacantBeds}
         />
       </div>
 
@@ -92,8 +99,10 @@ export default function OwnerDashboardPage() {
               <MiniMetric label="Total Rooms" value={totalRooms} tone="gold" />
             </div>
 
-            <div className="mt-4 overflow-hidden rounded-[22px] border border-white/70 bg-[linear-gradient(180deg,#fff7fb_0%,#f8f4ff_100%)] p-3">
-              <HostelMiniScene className="h-auto w-full" />
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <SummaryStrip label="Floors" value={currentHostel.floors.length} helper="Active building levels" tone="violet" />
+              <SummaryStrip label="Rooms" value={totalRooms} helper="Ready for tenant assignment" tone="sky" />
+              <SummaryStrip label="Vacancy" value={vacantBeds} helper="Beds available right now" tone="gold" />
             </div>
 
             <div className="mt-4">
@@ -175,9 +184,15 @@ export default function OwnerDashboardPage() {
 function MobileHeroCard({
   hostelName,
   floorCount,
+  totalRooms,
+  occupiedPercent,
+  address,
 }: {
   hostelName: string;
   floorCount: number;
+  totalRooms: number;
+  occupiedPercent: number;
+  address: string;
 }) {
   return (
     <Card className="overflow-hidden border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(248,242,255,0.96)_100%)] p-0 shadow-[0_22px_50px_rgba(193,181,255,0.2)]">
@@ -199,13 +214,22 @@ function MobileHeroCard({
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-[22px] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.78)_0%,rgba(255,247,251,0.92)_100%)] p-2">
-            <div className="rounded-[18px] bg-[linear-gradient(180deg,#f8f0ff_0%,#fff8f2_100%)] p-3">
-              <HostelMiniScene className="h-auto w-full" />
-            </div>
-            <div className="px-2 pb-1 pt-3 text-center">
-              <h1 className="text-[1.35rem] font-semibold tracking-tight text-slate-800 sm:text-[1.55rem]">{hostelName}</h1>
-              <p className="mt-1 text-[12px] text-slate-500">Soft pastel dashboard with your most-used actions up front.</p>
+          <div className="overflow-hidden rounded-[22px] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.78)_0%,rgba(255,247,251,0.92)_100%)] p-3">
+            <div className="rounded-[18px] bg-[linear-gradient(180deg,#fff7fb_0%,#f8f4ff_100%)] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h1 className="text-[1.35rem] font-semibold tracking-tight text-slate-800 sm:text-[1.55rem]">{hostelName}</h1>
+                  <p className="mt-1 text-[12px] text-slate-500">{address}</p>
+                </div>
+                <div className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-violet-700 shadow-sm">
+                  {occupiedPercent}% occupied
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2.5">
+                <HeroMetric label="Floors" value={String(floorCount)} tone="violet" />
+                <HeroMetric label="Rooms" value={String(totalRooms)} tone="sky" />
+              </div>
             </div>
           </div>
         </div>
@@ -220,12 +244,16 @@ function DesktopHeroCard({
   floorCount,
   totalRooms,
   occupiedPercent,
+  totalBeds,
+  vacantBeds,
 }: {
   hostelName: string;
   address: string;
   floorCount: number;
   totalRooms: number;
   occupiedPercent: number;
+  totalBeds: number;
+  vacantBeds: number;
 }) {
   return (
     <Card className="overflow-hidden border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(248,242,255,0.96)_100%)] p-0 shadow-[0_22px_50px_rgba(193,181,255,0.18)]">
@@ -256,8 +284,14 @@ function DesktopHeroCard({
           </div>
 
           <div className="overflow-hidden rounded-[28px] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.84)_0%,rgba(255,247,251,0.92)_100%)] p-4 shadow-[0_18px_34px_rgba(193,181,255,0.12)]">
-            <div className="rounded-[22px] bg-[linear-gradient(180deg,#f8f0ff_0%,#fff8f2_100%)] p-4">
-              <HostelMiniScene className="mx-auto h-auto w-full max-w-[520px]" />
+            <div className="rounded-[22px] bg-[linear-gradient(180deg,#fff7fb_0%,#f8f4ff_100%)] p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Hostel Snapshot</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <SummaryStrip label="Total Beds" value={totalBeds} helper="Across all rooms" tone="violet" />
+                <SummaryStrip label="Vacant Beds" value={vacantBeds} helper="Ready for check-in" tone="gold" />
+                <SummaryStrip label="Floor Setup" value={floorCount} helper="Levels configured" tone="sky" />
+                <SummaryStrip label="Room Setup" value={totalRooms} helper="Rooms available in system" tone="violet" />
+              </div>
             </div>
           </div>
         </div>
@@ -438,6 +472,56 @@ function MiniMetric({
     <div className={`rounded-2xl border px-3 py-3 ${toneClass}`}>
       <p className="text-[10px] font-semibold uppercase tracking-[0.14em]">{label}</p>
       <p className="mt-1 text-[1.05rem] font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function HeroMetric({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "violet" | "sky";
+}) {
+  return (
+    <div
+      className={`rounded-2xl border border-white/80 px-3 py-3 shadow-sm ${
+        tone === "violet"
+          ? "bg-[linear-gradient(180deg,#f5efff_0%,#ede6ff_100%)] text-violet-700"
+          : "bg-[linear-gradient(180deg,#edf7ff_0%,#e2f0ff_100%)] text-sky-700"
+      }`}
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-80">{label}</p>
+      <p className="mt-1 text-[1.05rem] font-semibold leading-none">{value}</p>
+    </div>
+  );
+}
+
+function SummaryStrip({
+  label,
+  value,
+  helper,
+  tone,
+}: {
+  label: string;
+  value: number;
+  helper: string;
+  tone: "violet" | "sky" | "gold";
+}) {
+  const toneClass =
+    tone === "violet"
+      ? "border-violet-100 bg-[linear-gradient(180deg,#f5efff_0%,#ede6ff_100%)] text-violet-700"
+      : tone === "sky"
+        ? "border-sky-100 bg-[linear-gradient(180deg,#edf7ff_0%,#e2f0ff_100%)] text-sky-700"
+        : "border-amber-100 bg-[linear-gradient(180deg,#fff6e8_0%,#ffedd1_100%)] text-amber-700";
+
+  return (
+    <div className={`rounded-[20px] border px-3.5 py-3 ${toneClass}`}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-80">{label}</p>
+      <p className="mt-1 text-[1.25rem] font-semibold leading-none">{value}</p>
+      <p className="mt-1.5 text-[11px] opacity-80">{helper}</p>
     </div>
   );
 }

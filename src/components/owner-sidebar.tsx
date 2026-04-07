@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import {
   BedDouble,
+  Bell,
   Building2,
   CreditCard,
   PencilLine,
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 
 const workspaceNavigation = [
   { name: "Dashboard", href: "/owner/dashboard", icon: LayoutDashboard },
+  { name: "Notifications", href: "/owner/notifications", icon: Bell },
   { name: "Rooms", href: "/owner/rooms", icon: BedDouble },
   { name: "Tenants", href: "/owner/tenants", icon: Users },
   { name: "Payments", href: "/owner/payments", icon: CreditCard },

@@ -1,23 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { AlertCircle, ArrowLeft, Bell, House, Menu, Search } from "lucide-react";
+import { ArrowLeft, Bell, House, Menu, Search } from "lucide-react";
 import { HostelSwitcher } from "@/components/hostel-switcher";
 import { useHostelContext } from "@/components/hostel-context-provider";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
-import { formatPaymentDate, getDueStatus } from "@/lib/payment-utils";
-
-const ALERT_SEEN_PREFIX = "dashboard-payment-alert-seen";
+import { getDueStatus } from "@/lib/payment-utils";
 
 export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { currentHostel } = useHostelContext();
-  const { tenants, loading } = useOwnerTenants();
-  const [open, setOpen] = useState(false);
+  const { tenants } = useOwnerTenants();
   const isDashboard = pathname === "/owner/dashboard";
+  const isNotifications = pathname === "/owner/notifications";
 
   const alerts = useMemo(() => {
     if (!currentHostel) {
@@ -30,27 +28,6 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
       .filter(({ status }) => status.tone === "red" || status.tone === "orange")
       .sort((left, right) => left.status.priority - right.status.priority);
   }, [currentHostel, tenants]);
-
-  useEffect(() => {
-    if (loading || pathname !== "/owner/dashboard" || !currentHostel || alerts.length === 0) {
-      return;
-    }
-
-    const todayKey = new Date().toISOString().slice(0, 10);
-    const storageKey = `${ALERT_SEEN_PREFIX}-${currentHostel.id}`;
-    const lastSeen = window.localStorage.getItem(storageKey);
-
-    if (lastSeen === todayKey) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setOpen(true);
-    }, 0);
-
-    window.localStorage.setItem(storageKey, todayKey);
-    return () => window.clearTimeout(timer);
-  }, [alerts.length, currentHostel, loading, pathname]);
 
   const handleBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -103,75 +80,22 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
             className="w-72 rounded-full border border-white/80 bg-[var(--surface-gradient)] py-2.5 pl-10 pr-4 text-[13px] text-slate-600 outline-none transition focus:border-indigo-300"
           />
         </label>
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setOpen((value) => !value)}
-            className="relative rounded-2xl border border-white/70 bg-[var(--surface-gradient)] p-2.5 text-slate-500 shadow-sm"
-          >
-            <Bell className="h-4 w-4" />
-            {alerts.length > 0 ? (
-              <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
-                {alerts.length}
-              </span>
-            ) : null}
-          </button>
 
-          {open ? (
-            <div className="absolute right-0 top-[calc(100%+0.6rem)] z-30 w-[min(340px,calc(100vw-1.5rem))] rounded-[26px] border border-white/70 bg-[var(--surface-gradient)] p-3 shadow-[var(--shadow-card)]">
-              <div className="flex items-center justify-between gap-3 px-1 pb-2">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Payment Alerts</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-800">
-                    {alerts.length > 0 ? `${alerts.length} action needed` : "No dues today"}
-                  </p>
-                </div>
-                {alerts.length > 0 ? (
-                    <span className="rounded-full bg-[var(--danger-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-600">
-                    Daily
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="max-h-[360px] space-y-2 overflow-y-auto">
-                {alerts.length === 0 ? (
-                  <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-4 text-[13px] text-slate-500">
-                    No tenants are due today or overdue in this hostel.
-                  </div>
-                ) : (
-                  alerts.map(({ tenant, status }) => (
-                    <Link
-                      key={tenant.tenantId}
-                      href="/owner/payments"
-                      onClick={() => setOpen(false)}
-                      className="flex items-start gap-3 rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] px-3 py-3 transition hover:border-indigo-200 hover:bg-[var(--pill-gradient)]"
-                    >
-                      <span
-                        className={`mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
-                          status.tone === "red"
-                            ? "bg-[linear-gradient(90deg,#ffe8f0_0%,#ffdbe7_100%)] text-rose-600"
-                            : "bg-[linear-gradient(90deg,#fff0d6_0%,#ffe3cc_100%)] text-orange-600"
-                        }`}
-                      >
-                        <AlertCircle className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate text-[13px] font-semibold text-slate-800">{tenant.fullName}</p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Room {tenant.assignment?.roomNumber} • Floor {tenant.assignment?.floorNumber}
-                        </p>
-                        <p className={`mt-1 text-xs font-semibold ${status.tone === "red" ? "text-rose-600" : "text-orange-600"}`}>
-                          {status.label}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">Due date: {formatPaymentDate(tenant.nextDueDate)}</p>
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </div>
-            </div>
+        <Link
+          href="/owner/notifications"
+          aria-label="Open notifications"
+          className={`relative rounded-2xl border bg-[var(--surface-gradient)] p-2.5 text-slate-500 shadow-sm transition ${
+            isNotifications ? "border-indigo-200 text-indigo-600" : "border-white/70 hover:border-indigo-200 hover:text-indigo-600"
+          }`}
+        >
+          <Bell className="h-4 w-4" />
+          {alerts.length > 0 ? (
+            <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
+              {alerts.length}
+            </span>
           ) : null}
-        </div>
+        </Link>
+
         <Link href="/owner/settings" className="rounded-full border border-white/70 bg-[var(--surface-gradient)] p-1 shadow-sm">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--pill-gradient)] text-xs font-semibold text-indigo-700">
             S
