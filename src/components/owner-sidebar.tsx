@@ -7,6 +7,7 @@ import {
   Bell,
   Building2,
   CreditCard,
+  CircleDollarSign,
   PencilLine,
   LayoutDashboard,
   LogOut,
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 
 const workspaceNavigation = [
   { name: "Dashboard", href: "/owner/dashboard", icon: LayoutDashboard },
+  { name: "Pricing", href: "/plans", icon: CircleDollarSign },
   { name: "Notifications", href: "/owner/notifications", icon: Bell },
   { name: "Rooms", href: "/owner/rooms", icon: BedDouble },
   { name: "Tenants", href: "/owner/tenants", icon: Users },

@@ -36,6 +36,10 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
   const selectedTenant = matches.find((tenant) => tenant.tenantId === selectedTenantId) ?? null;
 
   const closeModal = () => {
+    if (submitting) {
+      return;
+    }
+
     setOpen(false);
     setQuery("");
     setSelectedTenantId("");
@@ -46,7 +50,11 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
 
   const handleRemove = async () => {
     if (!selectedTenant) {
-      setError("Select a tenant before removing.");
+      setError("Select a tenant before removing. Search and choose the tenant first.");
+      return;
+    }
+
+    if (submitting) {
       return;
     }
 
@@ -111,7 +119,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                   Search by tenant ID or name, confirm room and floor details, then remove the tenant from the hostel.
                 </p>
               </div>
-              <Button variant="ghost" className="rounded-2xl px-3" onClick={closeModal}>
+              <Button variant="ghost" disabled={submitting} className="rounded-2xl px-3" onClick={closeModal}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -129,6 +137,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                       setMessage("");
                       setError("");
                     }}
+                    disabled={submitting}
                     placeholder="Type last 5-digit ID or tenant name"
                     className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm outline-none shadow-sm"
                   />
@@ -152,6 +161,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                       <button
                         key={tenant.tenantId}
                         type="button"
+                        disabled={submitting}
                         onClick={() => {
                           setSelectedTenantId(tenant.tenantId);
                           setMessage("");
@@ -192,10 +202,10 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
             {message ? <p className="mt-4 text-sm text-emerald-600">{message}</p> : null}
 
             <div className="mt-6 flex flex-col-reverse gap-3 border-t border-[var(--border)] pt-4 sm:flex-row sm:justify-end">
-              <Button variant="secondary" onClick={closeModal} className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]">
+              <Button variant="secondary" disabled={submitting} onClick={closeModal} className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]">
                 Cancel
               </Button>
-              <Button variant="danger" onClick={handleRemove} className={submitting ? "opacity-70" : ""}>
+              <Button variant="danger" disabled={submitting} onClick={handleRemove} className={submitting ? "opacity-70" : ""}>
                 {submitting ? "Removing..." : "Remove Tenant"}
               </Button>
             </div>

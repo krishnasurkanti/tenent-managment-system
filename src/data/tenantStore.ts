@@ -1,6 +1,8 @@
 import { DEMO_OWNER_HOSTEL_ID, getOwnerHostelInventory } from "@/data/ownerHostelStore";
 import { calculateNextDueDate, getDueStatus } from "@/lib/payment-utils";
 import type { TenantAssignment, TenantRecord } from "@/types/tenant";
+import fs from "node:fs";
+import path from "node:path";
 
 function getDemoTenantRecords(): TenantRecord[] {
   const demoTenantRecords: TenantRecord[] = [
@@ -161,7 +163,38 @@ function getDemoTenantRecords(): TenantRecord[] {
   }));
 }
 
-const tenantRecords: TenantRecord[] = getDemoTenantRecords();
+const TENANTS_DATA_DIR = path.join(process.cwd(), ".data");
+const TENANTS_DATA_FILE = path.join(TENANTS_DATA_DIR, "tenants.json");
+
+const tenantRecords: TenantRecord[] = loadTenantRecords();
+
+function loadTenantRecords() {
+  try {
+    if (!fs.existsSync(TENANTS_DATA_FILE)) {
+      const demo = getDemoTenantRecords();
+      persistTenantRecords(demo);
+      return demo;
+    }
+
+    const fileContent = fs.readFileSync(TENANTS_DATA_FILE, "utf8");
+    const parsed = JSON.parse(fileContent) as TenantRecord[];
+
+    if (!Array.isArray(parsed)) {
+      const demo = getDemoTenantRecords();
+      persistTenantRecords(demo);
+      return demo;
+    }
+
+    return parsed;
+  } catch {
+    return getDemoTenantRecords();
+  }
+}
+
+function persistTenantRecords(records: TenantRecord[]) {
+  fs.mkdirSync(TENANTS_DATA_DIR, { recursive: true });
+  fs.writeFileSync(TENANTS_DATA_FILE, JSON.stringify(records, null, 2), "utf8");
+}
 
 function generateUniqueFiveDigitId() {
   let nextId = "";
@@ -190,6 +223,7 @@ export function getTenantRecords() {
 
 export function resetTenantRecords() {
   tenantRecords.splice(0, tenantRecords.length, ...getDemoTenantRecords());
+  persistTenantRecords(tenantRecords);
   return tenantRecords;
 }
 
@@ -229,6 +263,7 @@ export function createTenantRecord(input: Omit<TenantRecord, "tenantId" | "creat
   };
 
   tenantRecords.unshift(tenant);
+  persistTenantRecords(tenantRecords);
   return tenant;
 }
 
@@ -275,6 +310,7 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
     tenant.paymentHistory[0].nextDueDate = tenant.nextDueDate;
   }
 
+  persistTenantRecords(tenantRecords);
   return tenant;
 }
 
@@ -322,6 +358,7 @@ export function recordTenantPayment(
     proofMimeType: proofMimeType?.trim() ?? "",
   });
 
+  persistTenantRecords(tenantRecords);
   return tenant;
 }
 
@@ -333,6 +370,7 @@ export function removeTenantRecord(tenantId: string) {
   }
 
   const [removedTenant] = tenantRecords.splice(tenantIndex, 1);
+  persistTenantRecords(tenantRecords);
   return removedTenant;
 }
 
@@ -361,6 +399,7 @@ export function addPaymentProof(
   payment.proofImageUrl = proofImageUrl?.trim() ?? payment.proofImageUrl ?? "";
   payment.proofMimeType = proofMimeType?.trim() ?? payment.proofMimeType ?? "";
 
+  persistTenantRecords(tenantRecords);
   return tenant;
 }
 

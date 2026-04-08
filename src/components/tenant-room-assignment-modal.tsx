@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2, CalendarDays, DoorClosed, Info, Layers3, Users2, X } from "lucide-react";
+import { Building2, CalendarDays, Check, ChevronDown, DoorClosed, Info, Layers3, Users2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import type { HostelRoomInventory, TenantRecord } from "@/types/tenant";
 
@@ -35,6 +36,9 @@ export function TenantRoomAssignmentModal({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [hostelMenuOpen, setHostelMenuOpen] = useState(false);
+  const [floorMenuOpen, setFloorMenuOpen] = useState(false);
+  const [roomMenuOpen, setRoomMenuOpen] = useState(false);
 
   useLockBodyScroll(open);
 
@@ -53,17 +57,16 @@ export function TenantRoomAssignmentModal({
       const preferredFloor =
         preferredHostel?.floors.find((item) => item.floorNumber === preferredAssignment?.floorNumber) ??
         preferredHostel?.floors[0];
-      const preferredRoom =
-        preferredFloor?.rooms.find((room) => room.roomNumber === preferredAssignment?.roomNumber && room.occupied < room.capacity) ??
-        preferredFloor?.rooms.find((room) => room.occupied < room.capacity);
-
       setHostels(nextHostels);
       setHostelId(preferredHostel?.hostelId ?? "");
       setFloorNumber(preferredFloor ? String(preferredFloor.floorNumber) : "");
-      setRoomNumber(preferredRoom?.roomNumber ?? "");
-      setSharingType(preferredRoom?.sharingType ?? "");
+      setRoomNumber("");
+      setSharingType("");
       setMoveInDate(new Date().toISOString().slice(0, 10));
       setStep(1);
+      setHostelMenuOpen(false);
+      setFloorMenuOpen(false);
+      setRoomMenuOpen(false);
       setLoading(false);
     };
 
@@ -80,12 +83,38 @@ export function TenantRoomAssignmentModal({
     [roomNumber, selectedFloor],
   );
   const availableBeds = selectedRoom ? selectedRoom.capacity - selectedRoom.occupied : 0;
+  const availableRooms = selectedFloor?.rooms.filter((room) => room.occupied < room.capacity) ?? [];
+  const filteredRooms = availableRooms.filter((room) => room.roomNumber.toLowerCase().includes(roomNumber.toLowerCase()));
+
+  useEffect(() => {
+    setHostelMenuOpen(false);
+    setFloorMenuOpen(false);
+    setRoomMenuOpen(false);
+  }, [floorNumber, hostelId, open]);
+
+  useEffect(() => {
+    setSharingType(selectedRoom?.sharingType ?? "");
+  }, [selectedRoom]);
 
   if (!open || !tenant) {
     return null;
   }
 
   const handleAssign = async () => {
+    if (!hostelId || !floorNumber || !roomNumber || !selectedRoom) {
+      setError("Choose a hostel, floor, and valid room before assigning.");
+      return;
+    }
+
+    if (!moveInDate) {
+      setError("Choose the move-in date before assigning the room.");
+      return;
+    }
+
+    if (saving) {
+      return;
+    }
+
     setSaving(true);
     setError("");
 
@@ -129,6 +158,11 @@ export function TenantRoomAssignmentModal({
       return;
     }
 
+    if (!selectedRoom) {
+      setError("Please choose a valid available room from the list.");
+      return;
+    }
+
     setError("");
     setStep(2);
   };
@@ -145,7 +179,7 @@ export function TenantRoomAssignmentModal({
               <h2 className="text-3xl font-semibold tracking-tight text-slate-900">Assign room to tenant</h2>
               <p className="max-w-2xl text-sm leading-6 text-slate-500">Finish this in two small steps: choose location, then confirm move-in and review.</p>
             </div>
-            <Button variant="ghost" className="rounded-2xl px-3 text-slate-500 hover:bg-white/70" onClick={onClose}>
+            <Button variant="ghost" disabled={saving} className="rounded-2xl px-3 text-slate-500 hover:bg-white/70" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -155,7 +189,7 @@ export function TenantRoomAssignmentModal({
             <StepPill label="2. Review" active={step === 2} done={false} />
           </div>
 
-          <div className="mt-8 flex-1 overflow-y-auto pr-1">
+          <div className="mt-8 flex-1 overflow-visible pr-1">
             {loading ? (
               <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-5 text-sm text-slate-500 shadow-sm">
                 Loading hostel room data...
@@ -170,65 +204,137 @@ export function TenantRoomAssignmentModal({
                     </div>
                     <div className="grid gap-4 lg:grid-cols-3">
                       <Field label="Hostel" icon={Building2} helper="Select the hostel property">
-                        <select
-                          value={hostelId}
-                          onChange={(event) => {
-                            const nextHostel = hostels.find((item) => item.hostelId === event.target.value);
-                            const nextFloor = nextHostel?.floors[0];
-                            const nextRoom = nextFloor?.rooms.find((room) => room.occupied < room.capacity);
-                            setHostelId(event.target.value);
-                            setFloorNumber(nextFloor ? String(nextFloor.floorNumber) : "");
-                            setRoomNumber(nextRoom?.roomNumber ?? "");
-                            setSharingType(nextRoom?.sharingType ?? "");
+                        <CustomDropdown
+                          open={hostelMenuOpen}
+                          disabled={saving}
+                          onToggle={() => {
+                            if (saving) return;
+                            setHostelMenuOpen((value) => !value);
+                            setFloorMenuOpen(false);
+                            setRoomMenuOpen(false);
                           }}
-                          className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm outline-none shadow-sm"
+                          value={hostels.find((hostel) => hostel.hostelId === hostelId)?.hostelName ?? "Select hostel"}
                         >
-                          {hostels.map((hostel) => (
-                            <option key={hostel.hostelId} value={hostel.hostelId}>
-                              {hostel.hostelName}
-                            </option>
-                          ))}
-                        </select>
+                          {hostels.map((hostel) => {
+                            const selected = hostel.hostelId === hostelId;
+
+                            return (
+                              <DropdownOption
+                                key={hostel.hostelId}
+                                selected={selected}
+                                primary={hostel.hostelName}
+                                secondary={`${hostel.floors.length} floors`}
+                                onClick={() => {
+                                  const nextFloor = hostel.floors[0];
+                                  setHostelId(hostel.hostelId);
+                                  setFloorNumber(nextFloor ? String(nextFloor.floorNumber) : "");
+                                  setRoomNumber("");
+                                  setSharingType("");
+                                  setHostelMenuOpen(false);
+                                }}
+                              />
+                            );
+                          })}
+                        </CustomDropdown>
                       </Field>
 
                       <Field label="Floor" icon={Layers3} helper="Choose the floor inside the hostel">
-                        <select
-                          value={floorNumber}
-                          onChange={(event) => {
-                            const nextFloor = selectedHostel?.floors.find((item) => item.floorNumber === Number(event.target.value));
-                            const nextRoom = nextFloor?.rooms.find((room) => room.occupied < room.capacity);
-                            setFloorNumber(event.target.value);
-                            setRoomNumber(nextRoom?.roomNumber ?? "");
-                            setSharingType(nextRoom?.sharingType ?? "");
+                        <CustomDropdown
+                          open={floorMenuOpen}
+                          disabled={saving}
+                          onToggle={() => {
+                            if (saving) return;
+                            setFloorMenuOpen((value) => !value);
+                            setHostelMenuOpen(false);
+                            setRoomMenuOpen(false);
                           }}
-                          className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm outline-none shadow-sm"
+                          value={floorNumber ? `Floor ${floorNumber}` : "Select floor"}
                         >
-                          {selectedHostel?.floors.map((floor) => (
-                            <option key={floor.floorNumber} value={floor.floorNumber}>
-                              Floor {floor.floorNumber}
-                            </option>
-                          ))}
-                        </select>
+                          {(selectedHostel?.floors ?? []).map((floor) => {
+                            const selected = String(floor.floorNumber) === floorNumber;
+
+                            return (
+                              <DropdownOption
+                                key={floor.floorNumber}
+                                selected={selected}
+                                primary={`Floor ${floor.floorNumber}`}
+                                secondary={`${floor.rooms.length} rooms`}
+                                onClick={() => {
+                                  setFloorNumber(String(floor.floorNumber));
+                                  setRoomNumber("");
+                                  setSharingType("");
+                                  setFloorMenuOpen(false);
+                                }}
+                              />
+                            );
+                          })}
+                        </CustomDropdown>
                       </Field>
 
                       <Field label="Room" icon={DoorClosed} helper="Only rooms with available beds are shown">
-                        <select
-                          value={roomNumber}
-                          onChange={(event) => {
-                            const nextRoom = selectedFloor?.rooms.find((room) => room.roomNumber === event.target.value);
-                            setRoomNumber(event.target.value);
-                            setSharingType(nextRoom?.sharingType ?? "");
-                          }}
-                          className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm outline-none shadow-sm"
-                        >
-                          {selectedFloor?.rooms
-                            .filter((room) => room.occupied < room.capacity)
-                            .map((room) => (
-                              <option key={room.roomNumber} value={room.roomNumber}>
-                                {room.roomNumber} ({room.occupied}/{room.capacity})
-                              </option>
-                            ))}
-                        </select>
+                        <div className="relative">
+                          <div className="flex items-center gap-2 rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 shadow-sm transition focus-within:border-violet-300">
+                            <input
+                              value={roomNumber}
+                              onChange={(event) => {
+                                if (saving) return;
+                                setRoomNumber(event.target.value);
+                                setRoomMenuOpen(true);
+                              }}
+                              onFocus={() => {
+                                if (!saving) {
+                                  setRoomMenuOpen(true);
+                                }
+                              }}
+                              disabled={saving}
+                              placeholder="Enter room number"
+                              className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                            />
+                            <button
+                              type="button"
+                              disabled={saving}
+                              onClick={() => setRoomMenuOpen((value) => !value)}
+                              className="shrink-0 text-slate-500 transition hover:text-slate-700"
+                              aria-label="Toggle room list"
+                            >
+                              <ChevronDown className={`h-4 w-4 transition ${roomMenuOpen ? "rotate-180" : ""}`} />
+                            </button>
+                          </div>
+
+                          {roomMenuOpen ? (
+                            <div
+                              className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 max-h-44 overflow-y-scroll rounded-2xl border border-violet-100 bg-white shadow-[0_18px_40px_rgba(170,148,255,0.18)]"
+                              style={{ scrollbarGutter: "stable" }}
+                            >
+                              {filteredRooms.length > 0 ? (
+                                filteredRooms.map((room) => {
+                                  const selected = room.roomNumber === roomNumber;
+
+                                  return (
+                                    <button
+                                      key={room.roomNumber}
+                                      type="button"
+                                      onClick={() => {
+                                        setRoomNumber(room.roomNumber);
+                                        setSharingType(room.sharingType ?? "");
+                                        setRoomMenuOpen(false);
+                                      }}
+                                      className={cn(
+                                        "flex w-full items-center justify-between px-4 py-3 text-left text-sm transition",
+                                        selected ? "bg-indigo-600 text-white" : "text-slate-700 hover:bg-[var(--pill-gradient)]",
+                                      )}
+                                    >
+                                      <span>{room.roomNumber} ({room.occupied}/{room.capacity})</span>
+                                      {selected ? <Check className="h-4 w-4 shrink-0" /> : null}
+                                    </button>
+                                  );
+                                })
+                              ) : (
+                                <div className="px-4 py-3 text-sm text-slate-500">No matching available rooms</div>
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
                       </Field>
                     </div>
                   </div>
@@ -241,6 +347,7 @@ export function TenantRoomAssignmentModal({
                         <input
                           value={sharingType}
                           onChange={(event) => setSharingType(event.target.value)}
+                          disabled={saving}
                           className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm transition focus:border-violet-300 focus:bg-white"
                           placeholder="Ex: Double Sharing"
                         />
@@ -251,6 +358,7 @@ export function TenantRoomAssignmentModal({
                           type="date"
                           value={moveInDate}
                           onChange={(event) => setMoveInDate(event.target.value)}
+                          disabled={saving}
                           className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm transition focus:border-violet-300 focus:bg-white"
                         />
                       </Field>
@@ -283,16 +391,82 @@ export function TenantRoomAssignmentModal({
           {error ? <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p> : null}
 
           <div className="mt-6 flex flex-col-reverse gap-3 border-t border-white/70 pt-4 sm:flex-row sm:justify-end">
-            <Button variant="secondary" onClick={step === 1 ? onClose : () => setStep(1)} className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]">
+            <Button variant="secondary" disabled={saving} onClick={step === 1 ? onClose : () => setStep(1)} className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]">
               {step === 1 ? "Later" : "Back"}
             </Button>
-            <Button onClick={step === 1 ? handleNext : handleAssign} className={`rounded-2xl ${saving ? "opacity-70" : ""}`}>
+            <Button disabled={saving} onClick={step === 1 ? handleNext : handleAssign} className={`rounded-2xl ${saving ? "opacity-70" : ""}`}>
               {step === 1 ? "Next: Review" : saving ? "Assigning..." : "Assign Room"}
             </Button>
           </div>
         </Card>
       </div>
     </div>
+  );
+}
+
+function CustomDropdown({
+  open,
+  onToggle,
+  value,
+  children,
+  disabled = false,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  value: string;
+  children: React.ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={disabled}
+        className="flex w-full items-center justify-between rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-left text-sm text-slate-700 shadow-sm transition hover:border-violet-200"
+      >
+        <span className="truncate">{value}</span>
+        <ChevronDown className={`h-4 w-4 shrink-0 transition ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open ? (
+        <div
+          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 max-h-44 overflow-y-scroll rounded-2xl border border-violet-100 bg-white shadow-[0_18px_40px_rgba(170,148,255,0.18)]"
+          style={{ scrollbarGutter: "stable" }}
+        >
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function DropdownOption({
+  selected,
+  primary,
+  secondary,
+  onClick,
+}: {
+  selected: boolean;
+  primary: string;
+  secondary?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition",
+        selected ? "bg-indigo-600 text-white" : "text-slate-700 hover:bg-[var(--pill-gradient)]",
+      )}
+    >
+      <div className="min-w-0">
+        <p className="truncate font-medium">{primary}</p>
+        {secondary ? <p className={cn("truncate text-xs", selected ? "text-white/80" : "text-slate-500")}>{secondary}</p> : null}
+      </div>
+      {selected ? <Check className="h-4 w-4 shrink-0" /> : null}
+    </button>
   );
 }
 

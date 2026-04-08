@@ -42,7 +42,7 @@ function isRoomComplete(room: RoomForm) {
 function getSharingLabel(bedCount: string) {
   const beds = Number(bedCount);
   if (!Number.isFinite(beds) || beds < 1) {
-    return "Sharing updates from bed count";
+    return "";
   }
 
   if (beds === 1) {
@@ -167,6 +167,7 @@ function CreateHostelPageContent() {
   );
   const activeRoom = activeFloor?.rooms.find((room) => room.id === activeRoomId) ?? activeFloor?.rooms[0] ?? null;
   const completedFloors = floors.filter((floor) => floor.rooms.length > 0 && floor.rooms.every(isRoomComplete));
+  const activeFloorCompleted = Boolean(activeFloor && activeFloor.rooms.length > 0 && activeFloor.rooms.every(isRoomComplete));
 
   const updateFloor = (floorId: string, updater: (floor: FloorForm) => FloorForm) => {
     setFloors((current) => current.map((floor) => (floor.id === floorId ? updater(floor) : floor)));
@@ -180,6 +181,10 @@ function CreateHostelPageContent() {
   };
 
   const addAnotherFloor = () => {
+    if (saving) {
+      return;
+    }
+
     setError("");
     const nextFloor = createFloor(floors.length + 1);
     setFloors((current) => [...current, nextFloor]);
@@ -188,6 +193,10 @@ function CreateHostelPageContent() {
   };
 
   const removeFloor = (floorId: string) => {
+    if (saving) {
+      return;
+    }
+
     setError("");
     setFloors((current) =>
       current
@@ -200,6 +209,10 @@ function CreateHostelPageContent() {
   };
 
   const handleAddRoom = () => {
+    if (saving) {
+      return;
+    }
+
     setError("");
 
     if (!activeFloor || !activeRoom) {
@@ -225,6 +238,10 @@ function CreateHostelPageContent() {
   };
 
   const handleFinishFloor = () => {
+    if (saving) {
+      return;
+    }
+
     setError("");
 
     if (!activeFloor) {
@@ -236,28 +253,34 @@ function CreateHostelPageContent() {
       return;
     }
 
+    const trimmedRooms = activeFloor.rooms.filter((room, index, rooms) => {
+      const isTrailingRoom = index === rooms.length - 1;
+      const isEmpty = !room.roomNumber.trim() && !room.bedCount.trim();
+      return !(isTrailingRoom && isEmpty);
+    });
+
     const hasInvalidRoom =
-      activeFloor.rooms.length === 0 || activeFloor.rooms.some((room) => !isRoomComplete(room));
+      trimmedRooms.length === 0 || trimmedRooms.some((room) => !isRoomComplete(room));
 
     if (hasInvalidRoom) {
-      setError("Please finish the current room details before finishing this floor.");
+      setError("Please save every room on this floor before finishing the floor.");
       return;
     }
 
-    const nextIncompleteFloor = floors.find(
-      (floor) => floor.id !== activeFloor.id && floor.rooms.some((room) => !isRoomComplete(room)),
-    );
-
-    if (nextIncompleteFloor) {
-      setActiveFloorId(nextIncompleteFloor.id);
-      setActiveRoomId(nextIncompleteFloor.rooms[0]?.id ?? null);
-      return;
+    if (trimmedRooms.length !== activeFloor.rooms.length) {
+      updateFloor(activeFloor.id, (floor) => ({
+        ...floor,
+        rooms: trimmedRooms,
+      }));
+      setActiveRoomId(trimmedRooms[trimmedRooms.length - 1]?.id ?? null);
     }
-
-    addAnotherFloor();
   };
 
   const handleRemoveRoom = (roomId: string) => {
+    if (saving) {
+      return;
+    }
+
     setError("");
 
     if (!activeFloor) {
@@ -280,14 +303,22 @@ function CreateHostelPageContent() {
   const handleSave = async () => {
     setError("");
 
+    if (saving) {
+      return;
+    }
+
     if (!hostelName.trim() || !address.trim()) {
-      setError("Please enter hostel name and address.");
+      const missingFields = [
+        !hostelName.trim() ? "hostel name" : null,
+        !address.trim() ? "address" : null,
+      ].filter(Boolean);
+      setError(`Cannot save hostel yet. Missing: ${missingFields.join(", ")}.`);
       return;
     }
 
     const hasInvalidFloor = floors.some((floor) => !floor.floorLabel.trim());
     if (hasInvalidFloor) {
-      setError("Please select a floor for each section before saving.");
+      setError("Cannot save hostel yet. Each floor needs a floor name.");
       return;
     }
 
@@ -298,7 +329,7 @@ function CreateHostelPageContent() {
     );
 
     if (hasInvalidRoom) {
-      setError("Please complete each room with room number and bed count.");
+      setError("Cannot save hostel yet. Each room needs both a room number and a bed count greater than 0.");
       return;
     }
 
@@ -348,7 +379,11 @@ function CreateHostelPageContent() {
     setError("");
 
     if (!hostelName.trim() || !address.trim()) {
-      setError("Please enter hostel name and address.");
+      const missingFields = [
+        !hostelName.trim() ? "hostel name" : null,
+        !address.trim() ? "address" : null,
+      ].filter(Boolean);
+      setError(`Complete ${missingFields.join(" and ")} before continuing.`);
       return;
     }
 
@@ -360,7 +395,7 @@ function CreateHostelPageContent() {
 
     const hasInvalidFloor = floors.some((floor) => !floor.floorLabel.trim());
     if (hasInvalidFloor) {
-      setError("Please select a floor for each section before continuing.");
+      setError("Finish naming each floor before review.");
       return;
     }
 
@@ -371,7 +406,7 @@ function CreateHostelPageContent() {
     );
 
     if (hasInvalidRoom) {
-      setError("Please complete each room with room number and bed count before review.");
+      setError("Finish every room first. Each room needs a room number and bed count before review.");
       return;
     }
 
@@ -418,6 +453,7 @@ function CreateHostelPageContent() {
                 <input
                   value={hostelName}
                   onChange={(event) => setHostelName(event.target.value)}
+                  disabled={saving}
                   placeholder="Enter hostel name"
                   className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
                 />
@@ -429,6 +465,7 @@ function CreateHostelPageContent() {
                 <input
                   value={address}
                   onChange={(event) => setAddress(event.target.value)}
+                  disabled={saving}
                   placeholder="Enter hostel address"
                   className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
                 />
@@ -437,10 +474,19 @@ function CreateHostelPageContent() {
             </Field>
           </div>
           <div className="flex flex-col gap-2 border-t border-white/70 px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
-            <Button variant="secondary" className="w-full sm:w-auto" onClick={() => router.push("/owner/dashboard")}>
+            <Button
+              variant="secondary"
+              className="w-full border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f3ecff_100%)] text-slate-800 shadow-[0_10px_24px_rgba(170,148,255,0.1)] hover:text-slate-900 sm:w-auto"
+              disabled={saving}
+              onClick={() => router.push("/owner/dashboard")}
+            >
               Cancel
             </Button>
-            <Button className="w-full sm:w-auto" onClick={handleNextFromBasics}>
+            <Button
+              className="w-full border-violet-300/60 bg-[linear-gradient(90deg,#6d5dfc_0%,#ff7ea8_100%)] text-white shadow-[0_18px_34px_rgba(167,111,255,0.28)] hover:text-white sm:w-auto"
+              disabled={saving}
+              onClick={handleNextFromBasics}
+            >
               Continue
             </Button>
           </div>
@@ -472,6 +518,7 @@ function CreateHostelPageContent() {
                     key={floor.id}
                     type="button"
                     onClick={() => {
+                      if (saving) return;
                       setActiveFloorId(floor.id);
                       setActiveRoomId(floor.rooms[0]?.id ?? null);
                       setError("");
@@ -503,6 +550,7 @@ function CreateHostelPageContent() {
                     {floors.length > 1 ? (
                       <Button
                         variant="ghost"
+                        disabled={saving}
                         onClick={() => removeFloor(activeFloor.id)}
                           className="w-full rounded-2xl text-rose-600 hover:bg-rose-50 hover:text-rose-700 sm:w-auto"
                       >
@@ -521,6 +569,7 @@ function CreateHostelPageContent() {
                           floorLabel: event.target.value,
                         }))
                       }
+                      disabled={saving}
                       placeholder="Ex: Ground Floor or Floor 1"
                       className="w-full rounded-2xl border border-white/80 bg-white/90 px-3 py-3 text-[13px] text-slate-700 outline-none shadow-[0_10px_24px_rgba(170,148,255,0.08)] transition focus:border-pink-200"
                     />
@@ -538,6 +587,7 @@ function CreateHostelPageContent() {
                       {activeFloor.rooms.length > 1 ? (
                         <Button
                           variant="ghost"
+                          disabled={saving}
                           onClick={() => handleRemoveRoom(activeRoom.id)}
                           className="w-full rounded-2xl text-rose-600 hover:bg-rose-50 hover:text-rose-700 sm:w-auto"
                         >
@@ -552,6 +602,7 @@ function CreateHostelPageContent() {
                         <input
                           value={activeRoom.roomNumber}
                           onChange={(event) => updateRoom(activeFloor.id, activeRoom.id, "roomNumber", event.target.value)}
+                          disabled={saving}
                           placeholder="Ex: 101"
                           className="w-full rounded-2xl border border-white/80 bg-white/90 px-3 py-3 text-[13px] text-slate-700 outline-none shadow-[0_10px_24px_rgba(170,148,255,0.08)] transition focus:border-pink-200"
                         />
@@ -562,29 +613,27 @@ function CreateHostelPageContent() {
                           min="1"
                           value={activeRoom.bedCount}
                           onChange={(event) => updateRoom(activeFloor.id, activeRoom.id, "bedCount", event.target.value)}
+                          disabled={saving}
                           placeholder="Ex: 3"
                           className="w-full rounded-2xl border border-white/80 bg-white/90 px-3 py-3 text-[13px] text-slate-700 outline-none shadow-[0_10px_24px_rgba(170,148,255,0.08)] transition focus:border-pink-200"
                         />
-                      </Field>
-                      <Field label="Sharing">
-                        <div className="flex min-h-[48px] items-center rounded-2xl border border-white/80 bg-white/90 px-3 py-3 text-[13px] font-medium text-violet-700 shadow-[0_10px_24px_rgba(170,148,255,0.08)]">
-                          {getSharingLabel(activeRoom.bedCount)}
-                        </div>
                       </Field>
                     </div>
 
                     <div className="mt-4 grid gap-2">
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <Button
-                          className="w-full bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:flex-1"
+                          className="w-full border-violet-300/60 bg-[linear-gradient(90deg,#6d5dfc_0%,#ff7ea8_100%)] text-white shadow-[0_18px_34px_rgba(167,111,255,0.28)] hover:text-white sm:flex-1"
+                          disabled={saving}
                           onClick={handleAddRoom}
                         >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Room
+                          <Plus className="mr-2 h-4 w-4" />
+                        Save and Add New Room
                         </Button>
                         <Button
                           variant="secondary"
                           className="w-full rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)] text-violet-700 shadow-[0_10px_24px_rgba(170,148,255,0.08)] sm:flex-1"
+                          disabled={saving}
                           onClick={handleFinishFloor}
                         >
                           <CheckCircle2 className="mr-2 h-4 w-4" />
@@ -599,7 +648,9 @@ function CreateHostelPageContent() {
                   <div className="mb-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Room Progress</p>
                     <h3 className="mt-1 text-sm font-semibold text-slate-800">{activeFloor.floorLabel}</h3>
-                    <p className="mt-1 text-[11px] text-slate-500">Even 1 room with 1 bed is enough. When this floor is done, press Finish Floor.</p>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      Use Save and Add New Room to save the current room and open the next one. When all rooms on this floor are complete, press Finish Floor.
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -611,6 +662,7 @@ function CreateHostelPageContent() {
                         <button
                           key={room.id}
                           type="button"
+                          disabled={saving}
                           onClick={() => setActiveRoomId(room.id)}
                           className={`flex w-full items-center justify-between rounded-[22px] border px-3 py-3 text-left shadow-sm transition ${
                             isActive
@@ -674,6 +726,7 @@ function CreateHostelPageContent() {
               <Button
                 variant="secondary"
                 className="w-full rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)] text-slate-700 shadow-[0_10px_24px_rgba(170,148,255,0.08)] sm:w-auto"
+                disabled={saving}
                 onClick={() => setStep(1)}
               >
                 Back
@@ -681,16 +734,39 @@ function CreateHostelPageContent() {
               <Button
                 variant="secondary"
                 className="w-full rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)] text-slate-700 shadow-[0_10px_24px_rgba(170,148,255,0.08)] sm:w-auto"
+                disabled={saving}
                 onClick={() => router.push("/owner/dashboard")}
               >
                 Cancel
               </Button>
-              <Button
-                className="w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:w-auto"
-                onClick={handleNextFromSetup}
-              >
-                Review Hostel
-              </Button>
+              {activeFloorCompleted ? (
+                <>
+                  <Button
+                    variant="secondary"
+                    className="w-full rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)] text-slate-800 shadow-[0_10px_24px_rgba(170,148,255,0.08)] hover:text-slate-900 sm:w-auto"
+                    disabled={saving}
+                    onClick={addAnotherFloor}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Another Floor
+                  </Button>
+                  <Button
+                    className="w-full rounded-2xl border-violet-300/60 bg-[linear-gradient(90deg,#6d5dfc_0%,#ff7ea8_100%)] text-white shadow-[0_18px_34px_rgba(167,111,255,0.28)] hover:text-white sm:w-auto"
+                    disabled={saving}
+                    onClick={handleSave}
+                  >
+                    {saving ? "Saving..." : isEditMode ? "Update Hostel" : "Save Hostel"}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  className="w-full rounded-2xl border-violet-300/60 bg-[linear-gradient(90deg,#6d5dfc_0%,#ff7ea8_100%)] text-white shadow-[0_18px_34px_rgba(167,111,255,0.28)] hover:text-white sm:w-auto"
+                  disabled={saving}
+                  onClick={handleNextFromSetup}
+                >
+                  Review Hostel
+                </Button>
+              )}
             </div>
           </div>
         </Card>
@@ -748,10 +824,10 @@ function CreateHostelPageContent() {
               </div>
 
               <div className="flex flex-col gap-2 border-t border-white/70 pt-4 sm:flex-row sm:justify-end">
-                <Button variant="secondary" className="w-full sm:w-auto" onClick={() => setStep(2)}>
+                <Button variant="secondary" className="w-full sm:w-auto" disabled={saving} onClick={() => setStep(2)}>
                   Back to Setup
                 </Button>
-                <Button className="w-full sm:w-auto" onClick={handleSave}>
+                <Button className="w-full sm:w-auto" disabled={saving} onClick={handleSave}>
                   {saving ? "Saving..." : isEditMode ? "Update Hostel" : "Add Hostel"}
                 </Button>
               </div>
@@ -803,10 +879,10 @@ function WizardPill({
     <div
       className={`inline-flex items-center rounded-full px-3 py-2 text-[11px] font-semibold shadow-sm ${
         active
-          ? "bg-[var(--action-gradient)] text-white"
+          ? "border border-violet-300/60 bg-[linear-gradient(90deg,#6d5dfc_0%,#ff7ea8_100%)] text-white shadow-[0_14px_26px_rgba(167,111,255,0.2)]"
           : done
-            ? "bg-[var(--success-soft)] text-emerald-700"
-            : "border border-white/80 bg-white/80 text-slate-500"
+            ? "border border-emerald-200 bg-[linear-gradient(180deg,#ecfdf5_0%,#d1fae5_100%)] text-emerald-700"
+            : "border border-slate-200 bg-white text-slate-700"
       }`}
     >
       {label}

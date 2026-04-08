@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarDays, IdCard, Phone, User2 } from "lucide-react";
-import { getTenantRecordById } from "@/data/tenantStore";
 import { Card } from "@/components/ui/card";
 import { formatPaymentDate, getDueStatus } from "@/lib/payment-utils";
+import type { TenantRecord } from "@/types/tenant";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,24 @@ export default async function OwnerTenantDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const tenant = getTenantRecordById(id);
+  const headersList = await headers();
+  const host = headersList.get("x-forwarded-host") ?? headersList.get("host");
+  const protocol = (headersList.get("x-forwarded-proto") ?? "http").split(",")[0].trim();
+
+  if (!host) {
+    notFound();
+  }
+
+  const response = await fetch(`${protocol}://${host}/api/tenants?tenantId=${encodeURIComponent(id)}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    notFound();
+  }
+
+  const data = (await response.json()) as { tenants?: TenantRecord[] };
+  const tenant = data.tenants?.[0];
 
   if (!tenant) {
     notFound();

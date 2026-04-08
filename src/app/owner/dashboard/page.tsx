@@ -64,7 +64,12 @@ export default function OwnerDashboardPage() {
         />
       </div>
 
-      <QuickActionPanel />
+      <div className="hidden lg:block">
+        <HostelSnapshotPanel floorCount={currentHostel.floors.length} totalRooms={totalRooms} totalBeds={totalBeds} vacantBeds={vacantBeds} />
+      </div>
+      <div className="lg:hidden">
+        <QuickActionPanel />
+      </div>
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard icon={BedDouble} label="Total Beds" value={String(totalBeds)} hint={`${currentHostel.floors.length} floors in hostel`} tone="gold" />
@@ -127,7 +132,7 @@ export default function OwnerDashboardPage() {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Upcoming Events</p>
                 <h2 className="mt-1 text-base font-semibold text-slate-800">Due Tracker</h2>
               </div>
-              <Link href="/owner/payments" className="text-[12px] font-semibold text-violet-600 hover:text-violet-700">
+              <Link href="/owner/payments" className="text-[12px] font-semibold text-violet-700 hover:text-violet-900">
                 View All
               </Link>
             </div>
@@ -283,18 +288,32 @@ function DesktopHeroCard({
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-[28px] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.84)_0%,rgba(255,247,251,0.92)_100%)] p-4 shadow-[0_18px_34px_rgba(193,181,255,0.12)]">
-            <div className="rounded-[22px] bg-[linear-gradient(180deg,#fff7fb_0%,#f8f4ff_100%)] p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Hostel Snapshot</p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <SummaryStrip label="Total Beds" value={totalBeds} helper="Across all rooms" tone="violet" />
-                <SummaryStrip label="Vacant Beds" value={vacantBeds} helper="Ready for check-in" tone="gold" />
-                <SummaryStrip label="Floor Setup" value={floorCount} helper="Levels configured" tone="sky" />
-                <SummaryStrip label="Room Setup" value={totalRooms} helper="Rooms available in system" tone="violet" />
-              </div>
-            </div>
-          </div>
+          <QuickActionPanel />
         </div>
+      </div>
+    </Card>
+  );
+}
+
+function HostelSnapshotPanel({
+  floorCount,
+  totalRooms,
+  totalBeds,
+  vacantBeds,
+}: {
+  floorCount: number;
+  totalRooms: number;
+  totalBeds: number;
+  vacantBeds: number;
+}) {
+  return (
+    <Card className="overflow-hidden border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(255,246,250,0.94)_100%)] p-4 shadow-[0_18px_42px_rgba(244,180,211,0.16)]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Hostel Snapshot</p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <SummaryStrip label="Total Beds" value={totalBeds} helper="Across all rooms" tone="violet" />
+        <SummaryStrip label="Vacant Beds" value={vacantBeds} helper="Ready for check-in" tone="gold" />
+        <SummaryStrip label="Floor Setup" value={floorCount} helper="Levels configured" tone="sky" />
+        <SummaryStrip label="Room Setup" value={totalRooms} helper="Rooms available in system" tone="violet" />
       </div>
     </Card>
   );
@@ -366,7 +385,7 @@ function EmptyWorkspace({
       <p className="mt-1.5 text-sm text-slate-500">{description}</p>
       <Link
         href={ctaHref}
-        className="mt-3 inline-flex min-h-10 items-center justify-center rounded-xl bg-[linear-gradient(90deg,#8b7bff_0%,#ff9bb0_100%)] px-4 text-[12px] font-semibold text-white shadow-[0_14px_28px_rgba(193,181,255,0.22)] transition hover:opacity-95"
+        className="mt-3 inline-flex min-h-10 items-center justify-center rounded-xl bg-[linear-gradient(90deg,#8b7bff_0%,#ff9bb0_100%)] px-4 text-[12px] font-semibold text-white shadow-[0_14px_28px_rgba(193,181,255,0.22)] transition hover:text-white hover:opacity-95"
       >
         {ctaLabel}
       </Link>
@@ -399,7 +418,7 @@ function ActionCard({
   return (
     <Link
       href={href}
-      className={`rounded-[20px] border border-white/70 p-3 shadow-[0_12px_26px_rgba(193,181,255,0.08)] transition hover:-translate-y-0.5 ${toneClass}`}
+      className={`rounded-[20px] border border-white/70 p-3 shadow-[0_12px_26px_rgba(193,181,255,0.08)] transition hover:-translate-y-0.5 hover:brightness-[0.98] ${toneClass}`}
     >
       <div className="flex items-start gap-3">
         <div className="rounded-2xl bg-white/80 p-2.5 shadow-sm">

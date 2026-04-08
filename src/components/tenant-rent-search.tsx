@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { CalendarDays, ImageUp, Search, WalletCards, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,8 +24,13 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
 
   useLockBodyScroll(open);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -64,10 +70,19 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
       return;
     }
 
+    if (submitting) {
+      return;
+    }
+
     const numericAmount = Number(amount);
 
+    if (!amount.trim()) {
+      setError("Enter the paid amount before recording payment.");
+      return;
+    }
+
     if (Number.isNaN(numericAmount) || numericAmount < 0) {
-      setError("Enter a valid paid amount.");
+      setError("Enter a valid paid amount greater than or equal to 0.");
       return;
     }
 
@@ -124,8 +139,12 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
       return;
     }
 
+    if (submitting) {
+      return;
+    }
+
     if (!txnId.trim() && !proofFile) {
-      setError("Add a transaction id or upload a receipt, screenshot, or proof file.");
+      setError("Cannot save proof yet. Add a transaction id or upload a receipt, screenshot, or proof file.");
       return;
     }
 
@@ -172,7 +191,8 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
   return (
     <>
       <Button
-        className="min-h-12 w-full rounded-2xl border border-white/80 bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] px-4 text-[13px] font-semibold text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95"
+        disabled={submitting}
+        className="min-h-12 w-full rounded-2xl border border-white/80 bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] px-4 text-[13px] font-semibold text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:text-white hover:opacity-95"
         onClick={() => {
           resetState();
           setOpen(true);
@@ -182,10 +202,11 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
         Pay Rent
       </Button>
 
-      {open ? (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(48,28,75,0.28)] px-4 py-4 sm:py-8">
-          <div className="flex min-h-full items-center justify-center">
-            <Card className="flex max-h-[min(92vh,760px)] w-full max-w-2xl flex-col overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82)_0%,rgba(244,236,255,0.95)_100%)] p-6 shadow-[0_28px_70px_rgba(170,148,255,0.22)]">
+      {open && mounted
+        ? createPortal(
+        <div className="fixed inset-0 z-[80] overflow-y-auto overscroll-contain bg-[rgba(48,28,75,0.38)] px-4 py-4 sm:py-8">
+          <div className="flex min-h-full items-start justify-center sm:items-center">
+            <Card className="flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82)_0%,rgba(244,236,255,0.95)_100%)] p-6 shadow-[0_28px_70px_rgba(170,148,255,0.22)] sm:max-h-[min(92dvh,760px)]">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="inline-flex items-center gap-2 rounded-full bg-white/72 px-3 py-1.5 text-[13px] font-semibold text-slate-700 shadow-sm">
@@ -197,12 +218,12 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                   <h2 className="mt-3 text-2xl font-semibold text-slate-800">Pay Rent</h2>
                   <p className="mt-1 text-sm text-[var(--muted-foreground)]">Select tenant, record payment, then attach proof if needed.</p>
                 </div>
-                <Button variant="ghost" className="rounded-2xl px-3" onClick={resetState}>
+                <Button variant="ghost" disabled={submitting} className="rounded-2xl px-3" onClick={resetState}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
 
-              <div className="mt-6 flex-1 space-y-4 overflow-y-auto pr-1">
+              <div className="mt-6 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-1">
                 <div className="flex flex-wrap gap-2">
                   <StepPill label="1. Tenant" active={step === 1} done={step > 1} />
                   <StepPill label="2. Payment" active={step === 2} done={step > 2} />
@@ -212,7 +233,7 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                 {step === 1 ? (
                   <>
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium">Search by tenant ID or name</span>
+                      <span className="mb-2 block text-sm font-medium text-slate-800">Search by tenant ID or name</span>
                       <div className="relative">
                         <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                         <input
@@ -223,8 +244,9 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                             setMessage("");
                             setError("");
                           }}
+                          disabled={submitting}
                           placeholder="Type last 5-digit ID or tenant name"
-                          className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm outline-none shadow-sm"
+                          className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm placeholder:text-slate-400"
                         />
                       </div>
                     </label>
@@ -246,6 +268,7 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                             <button
                               key={tenant.tenantId}
                               type="button"
+                              disabled={submitting}
                               onClick={() => {
                                 setSelectedTenantId(tenant.tenantId);
                                 setAmount(String(tenant.monthlyRent));
@@ -283,35 +306,38 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                 {selectedTenant && step === 2 ? (
                   <div className="grid gap-4 md:grid-cols-2">
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium">Paid Amount</span>
+                      <span className="mb-2 block text-sm font-medium text-slate-800">Paid Amount</span>
                       <input
                         type="number"
                         min="0"
                         value={amount}
                         onChange={(event) => setAmount(event.target.value)}
-                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm outline-none shadow-sm"
+                        disabled={submitting}
+                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm text-slate-700 outline-none shadow-sm"
                       />
                     </label>
 
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium">Paid On Date</span>
+                      <span className="mb-2 block text-sm font-medium text-slate-800">Paid On Date</span>
                       <div className="relative">
                         <CalendarDays className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                         <input
                           type="date"
                           value={paidOnDate}
                           onChange={(event) => setPaidOnDate(event.target.value)}
-                          className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm outline-none shadow-sm"
+                          disabled={submitting}
+                          className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm"
                         />
                       </div>
                     </label>
 
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium">Payment Mode</span>
+                      <span className="mb-2 block text-sm font-medium text-slate-800">Payment Mode</span>
                       <select
                         value={paymentMethod}
                         onChange={(event) => setPaymentMethod(event.target.value === "online" ? "online" : "cash")}
-                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm outline-none shadow-sm"
+                        disabled={submitting}
+                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm text-slate-700 outline-none shadow-sm"
                       >
                         <option value="cash">Cash</option>
                         <option value="online">Online</option>
@@ -319,12 +345,13 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                     </label>
 
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium">Txn ID (Optional)</span>
+                      <span className="mb-2 block text-sm font-medium text-slate-800">Txn ID (Optional)</span>
                       <input
                         value={txnId}
                         onChange={(event) => setTxnId(event.target.value.toUpperCase())}
+                        disabled={submitting}
                         placeholder={paymentMethod === "online" ? "Enter online transaction id" : "Optional for cash payment"}
-                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm outline-none shadow-sm"
+                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm text-slate-700 outline-none shadow-sm placeholder:text-slate-400"
                       />
                     </label>
                   </div>
@@ -337,24 +364,26 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                     </div>
 
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium">Txn ID (Optional)</span>
+                      <span className="mb-2 block text-sm font-medium text-slate-800">Txn ID (Optional)</span>
                       <input
                         value={txnId}
                         onChange={(event) => setTxnId(event.target.value.toUpperCase())}
+                        disabled={submitting}
                         placeholder="Enter transaction id"
-                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm outline-none shadow-sm"
+                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm text-slate-700 outline-none shadow-sm placeholder:text-slate-400"
                       />
                     </label>
 
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium">Proof File (Optional)</span>
+                      <span className="mb-2 block text-sm font-medium text-slate-800">Proof File (Optional)</span>
                       <div className="relative">
                         <ImageUp className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                         <input
                           type="file"
                           onChange={(event) => setProofFile(event.target.files?.[0] ?? null)}
                           accept="image/*,.pdf"
-                          className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm outline-none shadow-sm file:mr-3 file:rounded-xl file:border-0 file:bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] file:px-3 file:py-2 file:text-white"
+                          disabled={submitting}
+                          className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm file:mr-3 file:rounded-xl file:border-0 file:bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] file:px-3 file:py-2 file:text-white"
                         />
                       </div>
                       {proofFile ? <p className="mt-1 text-xs text-slate-500">{proofFile.name}</p> : null}
@@ -370,6 +399,7 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
                 <Button
                   variant="secondary"
                   onClick={step === 1 ? resetState : () => setStep((current) => (current === 3 ? 2 : 1))}
+                  disabled={submitting}
                   className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]"
                 >
                   {step === 1 ? "Cancel" : "Back"}
@@ -377,17 +407,18 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
 
                 {step === 3 && pendingProofPaymentId ? (
                   <>
-                    <Button variant="secondary" onClick={resetState} className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]">
+                    <Button variant="secondary" disabled={submitting} onClick={resetState} className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]">
                       Add Later
                     </Button>
-                    <Button onClick={handleUploadProof} className={`rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white ${submitting ? "opacity-70" : ""}`}>
+                    <Button disabled={submitting} onClick={handleUploadProof} className={`rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white hover:text-white ${submitting ? "opacity-70" : ""}`}>
                       {submitting ? "Saving..." : "Save Proof"}
                     </Button>
                   </>
                 ) : (
                   <Button
+                    disabled={submitting}
                     onClick={step === 1 ? handleNextFromTenant : handleRecordPayment}
-                    className={`rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white ${submitting ? "opacity-70" : ""}`}
+                    className={`rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white hover:text-white ${submitting ? "opacity-70" : ""}`}
                   >
                     {step === 1 ? "Next: Payment" : submitting ? "Recording..." : "Record Payment"}
                   </Button>
@@ -395,8 +426,10 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
               </div>
             </Card>
           </div>
-        </div>
-      ) : null}
+        </div>,
+        document.body,
+      )
+        : null}
     </>
   );
 }
@@ -414,10 +447,10 @@ function StepPill({
     <span
       className={`inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-semibold ${
         active
-          ? "bg-[var(--action-gradient)] text-white"
+          ? "border border-violet-200 bg-[var(--action-gradient)] text-white shadow-sm"
           : done
-            ? "bg-emerald-100 text-emerald-700"
-            : "bg-[var(--pill-gradient)] text-violet-700"
+            ? "border border-emerald-200 bg-[linear-gradient(180deg,#ecfdf5_0%,#d1fae5_100%)] text-emerald-700"
+            : "border border-violet-100 bg-[linear-gradient(180deg,#f8f5ff_0%,#f2ebff_100%)] text-violet-700"
       }`}
     >
       {label}

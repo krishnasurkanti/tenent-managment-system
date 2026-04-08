@@ -8,9 +8,14 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const hostelId = searchParams.get("hostelId");
-  const tenants = hostelId
-    ? getTenantRecords().filter((tenant) => tenant.assignment?.hostelId === hostelId)
-    : getTenantRecords();
+  const tenantId = searchParams.get("tenantId");
+  const allTenants = getTenantRecords();
+
+  const tenants = tenantId
+    ? allTenants.filter((tenant) => tenant.tenantId === tenantId)
+    : hostelId
+      ? allTenants.filter((tenant) => tenant.assignment?.hostelId === hostelId)
+      : allTenants;
 
   return NextResponse.json({ tenants, hostels: getOwnerHostelInventory() });
 }

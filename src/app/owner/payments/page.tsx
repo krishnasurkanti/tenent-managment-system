@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useMemo, useState } from "react";
 import { Download, ImageUp, IndianRupee, X } from "lucide-react";
 import { useHostelContext } from "@/components/hostel-context-provider";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import type { TenantRecord } from "@/types/tenant";
 export default function OwnerPaymentsPage() {
   const { currentHostel, loading: hostelLoading, isSwitching } = useHostelContext();
   const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants();
+  const [tenantOverrides, setTenantOverrides] = useState<Record<string, TenantRecord>>({});
   const [proofModal, setProofModal] = useState<{
     tenantId: string;
     tenantName: string;
@@ -26,6 +28,20 @@ export default function OwnerPaymentsPage() {
   const [proofImage, setProofImage] = useState<File | null>(null);
   const [savingProof, setSavingProof] = useState(false);
   const [proofError, setProofError] = useState("");
+  const [mounted, setMounted] = useState(false);
+  const tenants = useMemo(() => {
+    if (!currentHostel) {
+      return [];
+    }
+
+    return allTenants
+      .filter((tenant) => tenant.assignment?.hostelId === currentHostel.id)
+      .map((tenant) => tenantOverrides[tenant.tenantId] ?? tenant);
+  }, [allTenants, currentHostel, tenantOverrides]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   if (hostelLoading || tenantLoading) {
     return <Card className="border-slate-200 bg-white p-4 text-center text-sm text-slate-600">Loading payments...</Card>;
@@ -39,7 +55,6 @@ export default function OwnerPaymentsPage() {
     );
   }
 
-  const tenants = allTenants.filter((tenant) => tenant.assignment?.hostelId === currentHostel.id);
   const dueItems = tenants
     .map((tenant) => ({
       tenant,
@@ -240,7 +255,7 @@ export default function OwnerPaymentsPage() {
         </div>
       </div>
 
-      {proofModal ? (
+      {proofModal && mounted ? (
         <AddProofModal
           tenantName={proofModal.tenantName}
           txnId={txnIdInput}
@@ -285,10 +300,15 @@ export default function OwnerPaymentsPage() {
               return;
             }
 
+            setTenantOverrides((current) => ({
+              ...current,
+              [data.tenant.tenantId]: data.tenant as TenantRecord,
+            }));
             setSavingProof(false);
             setProofModal(null);
             setProofImage(null);
-            window.location.reload();
+            setTxnIdInput("");
+            setProofError("");
           }}
         />
       ) : null}
@@ -375,7 +395,7 @@ function renderProofCell({
         <a
           href={latestPayment.proofImageUrl}
           download={latestPayment.proofImageName || `${tenant.tenantId}-payment-proof`}
-          className="inline-flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-md border border-white/80 bg-white text-indigo-700 transition hover:bg-indigo-50"
+          className="inline-flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-md border border-white/80 bg-white text-indigo-700 transition hover:bg-indigo-50 hover:text-indigo-900"
           aria-label={`Download payment proof for ${tenant.fullName}`}
           title="Download proof"
         >
@@ -407,7 +427,7 @@ function renderProofCell({
         setProofImage(null);
         setProofError("");
       }}
-      className="rounded-xl border border-white/80 bg-[var(--action-gradient)] px-2.5 py-1.5 text-[10px] font-semibold text-white shadow-sm transition hover:opacity-95"
+      className="rounded-xl border border-white/80 bg-[var(--action-gradient)] px-2.5 py-1.5 text-[10px] font-semibold text-white shadow-sm transition hover:text-white hover:opacity-95"
     >
       Add Proof
     </button>
@@ -445,10 +465,10 @@ function AddProofModal({
 }) {
   useLockBodyScroll(true);
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(48,28,75,0.28)] px-3 py-3 sm:py-8">
-      <div className="flex min-h-full items-center justify-center">
-        <Card className="flex max-h-[min(92vh,520px)] w-full max-w-md flex-col overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.84)_0%,rgba(244,236,255,0.95)_100%)] p-3.5 shadow-[0_28px_70px_rgba(170,148,255,0.22)]">
+  return createPortal(
+    <div className="fixed inset-0 z-[80] overflow-y-auto overscroll-contain bg-[rgba(48,28,75,0.38)] px-3 py-3 sm:py-8">
+      <div className="flex min-h-full items-start justify-center sm:items-center">
+        <Card className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.84)_0%,rgba(244,236,255,0.95)_100%)] p-3.5 shadow-[0_28px_70px_rgba(170,148,255,0.22)] sm:max-h-[min(92dvh,520px)]">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-[14px] font-semibold text-slate-800">Add Payment Proof</h2>
@@ -461,7 +481,7 @@ function AddProofModal({
             </Button>
           </div>
 
-          <div className="mt-3 flex-1 space-y-2.5 overflow-y-auto pr-1">
+          <div className="mt-3 flex-1 space-y-2.5 overflow-y-auto overscroll-contain pr-1">
             <label className="block">
               <span className="mb-1 block text-[11px] font-medium text-slate-700">Txn ID (Optional)</span>
               <input
@@ -500,6 +520,7 @@ function AddProofModal({
           </div>
         </Card>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

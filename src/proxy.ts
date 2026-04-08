@@ -21,7 +21,7 @@ export function proxy(request: NextRequest) {
   }
 
   if (pathname === "/login" && authenticated) {
-    return NextResponse.redirect(new URL("/owner/welcome", request.url));
+    return NextResponse.redirect(new URL("/owner/dashboard", request.url));
   }
 
   return NextResponse.next();

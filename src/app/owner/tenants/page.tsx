@@ -1,14 +1,91 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { TenantFormModal } from "@/components/tenant-form-modal";
+import { TenantRoomAssignmentModal } from "@/components/tenant-room-assignment-modal";
 import { Card } from "@/components/ui/card";
 import { useHostelContext } from "@/components/hostel-context-provider";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
 import { formatPaymentDate, getDueStatus } from "@/lib/payment-utils";
+import type { TenantRecord } from "@/types/tenant";
 
 export default function OwnerTenantsPage() {
+  return (
+    <Suspense fallback={<Card className="border-slate-200 bg-white p-4 text-center text-sm text-slate-600">Loading tenants...</Card>}>
+      <OwnerTenantsPageContent />
+    </Suspense>
+  );
+}
+
+function OwnerTenantsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { currentHostel, loading: hostelLoading, isSwitching } = useHostelContext();
   const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants();
+  const [createdTenants, setCreatedTenants] = useState<TenantRecord[]>([]);
+  const [tenantOverrides, setTenantOverrides] = useState<Record<string, TenantRecord>>({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [assignmentOpen, setAssignmentOpen] = useState(false);
+  const [pendingTenant, setPendingTenant] = useState<TenantRecord | null>(null);
+
+  const preferredAssignment = useMemo(
+    () => ({
+      action: searchParams.get("action") ?? undefined,
+      hostelId: searchParams.get("hostelId") ?? undefined,
+      floorNumber: searchParams.get("floor") ? Number(searchParams.get("floor")) : undefined,
+      roomNumber: searchParams.get("room") ?? undefined,
+      sharingType: searchParams.get("sharingType") ?? undefined,
+    }),
+    [searchParams],
+  );
+
+  const shouldAutoAssign =
+    preferredAssignment.action === "add-tenant" &&
+    !!preferredAssignment.hostelId &&
+    !!preferredAssignment.floorNumber &&
+    !!preferredAssignment.roomNumber &&
+    !!preferredAssignment.sharingType;
+
+  useEffect(() => {
+    setModalOpen(searchParams.get("action") === "add-tenant");
+  }, [searchParams]);
+
+  const closeModal = () => {
+    setModalOpen(false);
+    router.replace("/owner/tenants");
+  };
+
+  const tenants = useMemo(() => {
+    if (!currentHostel) {
+      return [];
+    }
+
+    const visibleTenantIds = new Set<string>();
+    const scopedExistingTenants = allTenants
+      .filter((tenant) => tenant.assignment?.hostelId === currentHostel.id)
+      .map((tenant) => {
+        visibleTenantIds.add(tenant.tenantId);
+        return tenantOverrides[tenant.tenantId] ?? tenant;
+      });
+
+    const scopedCreatedTenants = createdTenants.filter((tenant) => {
+      if (visibleTenantIds.has(tenant.tenantId)) {
+        return false;
+      }
+
+      return tenant.assignment?.hostelId === currentHostel.id || !tenant.assignment;
+    });
+
+    return [...scopedCreatedTenants, ...scopedExistingTenants];
+  }, [allTenants, createdTenants, currentHostel, tenantOverrides]);
+  const dueSoonCount = tenants.filter((tenant) => {
+    const tone = getDueStatus(tenant.nextDueDate).tone;
+    return tone === "orange" || tone === "yellow";
+  }).length;
+  const overdueCount = tenants.filter((tenant) => getDueStatus(tenant.nextDueDate).tone === "red").length;
+  const assignedCount = tenants.filter((tenant) => tenant.assignment).length;
 
   if (hostelLoading || tenantLoading) {
     return <Card className="border-slate-200 bg-white p-4 text-center text-sm text-slate-600">Loading tenants...</Card>;
@@ -28,14 +105,6 @@ export default function OwnerTenantsPage() {
     );
   }
 
-  const tenants = allTenants.filter((tenant) => tenant.assignment?.hostelId === currentHostel.id);
-  const dueSoonCount = tenants.filter((tenant) => {
-    const tone = getDueStatus(tenant.nextDueDate).tone;
-    return tone === "orange" || tone === "yellow";
-  }).length;
-  const overdueCount = tenants.filter((tenant) => getDueStatus(tenant.nextDueDate).tone === "red").length;
-  const assignedCount = tenants.filter((tenant) => tenant.assignment).length;
-
   return (
     <div className={`space-y-4 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
       <div className="rounded-[28px] border border-white/70 bg-[var(--surface-gradient)] px-4 py-4 shadow-[var(--shadow-card)] sm:px-5">
@@ -47,12 +116,13 @@ export default function OwnerTenantsPage() {
             </h1>
             <p className="mt-1 text-[12px] text-slate-500">Showing tenants for {currentHostel.hostelName} only.</p>
           </div>
-          <Link
-            href="/tenants"
-            className="inline-flex items-center justify-center rounded-2xl bg-[var(--action-gradient)] px-4 py-2.5 text-[12px] font-semibold text-white shadow-[var(--shadow-soft)] transition hover:opacity-95"
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="inline-flex min-h-11 min-w-[164px] items-center justify-center rounded-2xl border border-indigo-300/40 bg-[linear-gradient(90deg,#7c5cff_0%,#ff7ca8_100%)] px-5 py-2.5 text-[12px] font-semibold text-white shadow-[0_16px_32px_rgba(144,112,255,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(144,112,255,0.28)]"
           >
             Add New Tenant
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -133,7 +203,7 @@ export default function OwnerTenantsPage() {
                     <Link href={`/owner/tenants/${tenant.tenantId}`} className="text-[13px] font-semibold text-slate-800 hover:text-indigo-600">
                       {tenant.fullName}
                     </Link>
-                    <p className="mt-1 text-[11px] text-slate-500">{tenant.tenantId} • {tenant.phone}</p>
+                    <p className="mt-1 text-[11px] text-slate-500">{tenant.tenantId} | {tenant.phone}</p>
                     <p className="mt-1 text-[11px] text-slate-500">
                       {tenant.assignment ? `Floor ${tenant.assignment.floorNumber} / Room ${tenant.assignment.roomNumber}` : "Pending assignment"}
                     </p>
@@ -149,6 +219,73 @@ export default function OwnerTenantsPage() {
           })
         )}
       </div>
+
+      <TenantFormModal
+        open={modalOpen}
+        onClose={closeModal}
+        onCreated={async (tenant) => {
+          if (shouldAutoAssign) {
+            const response = await fetch("/api/tenants/assign-room", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                tenantId: tenant.tenantId,
+                hostelId: preferredAssignment.hostelId,
+                floorNumber: preferredAssignment.floorNumber,
+                roomNumber: preferredAssignment.roomNumber,
+                sharingType: preferredAssignment.sharingType,
+                moveInDate: tenant.paidOnDate,
+              }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              setCreatedTenants((current) => {
+                const nextTenant = data.tenant as TenantRecord;
+                const filtered = current.filter((item) => item.tenantId !== nextTenant.tenantId);
+                return [nextTenant, ...filtered];
+              });
+              setTenantOverrides((current) => ({
+                ...current,
+                [data.tenant.tenantId]: data.tenant as TenantRecord,
+              }));
+              setPendingTenant(data.tenant as TenantRecord);
+              closeModal();
+              return;
+            }
+          }
+
+          setCreatedTenants((current) => {
+            const filtered = current.filter((item) => item.tenantId !== tenant.tenantId);
+            return [tenant, ...filtered];
+          });
+          setPendingTenant(tenant);
+          setAssignmentOpen(true);
+          closeModal();
+        }}
+      />
+
+      <TenantRoomAssignmentModal
+        open={assignmentOpen}
+        tenant={pendingTenant}
+        onClose={() => setAssignmentOpen(false)}
+        onAssigned={(tenant) => {
+          setCreatedTenants((current) => {
+            const filtered = current.filter((item) => item.tenantId !== tenant.tenantId);
+            return [tenant, ...filtered];
+          });
+          setTenantOverrides((current) => ({
+            ...current,
+            [tenant.tenantId]: tenant,
+          }));
+          setPendingTenant(tenant);
+          setAssignmentOpen(false);
+        }}
+        preferredAssignment={preferredAssignment}
+      />
     </div>
   );
 }

@@ -39,7 +39,7 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   };
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-white/70 bg-white/78 px-3 py-3 backdrop-blur-xl md:px-5 xl:px-6">
+    <header className="sticky top-0 z-50 isolate flex items-center justify-between border-b border-white/70 bg-white/78 px-3 py-3 backdrop-blur-xl md:px-5 xl:px-6">
       <div className="flex min-w-0 items-center gap-2.5">
         <button
           type="button"

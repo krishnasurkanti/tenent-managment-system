@@ -20,6 +20,10 @@ const initialState = {
 
 type TenantStep = 1 | 2 | 3;
 
+function getMissingFields(fields: Array<[label: string, valid: boolean]>) {
+  return fields.filter(([, valid]) => !valid).map(([label]) => label);
+}
+
 export function TenantFormModal({
   open,
   onClose,
@@ -50,13 +54,22 @@ export function TenantFormModal({
   };
 
   const handleClose = () => {
+    if (submitting) {
+      return;
+    }
+
     resetFormState();
     onClose();
   };
 
   const handleNextFromPersonal = () => {
-    if (!form.fullName.trim() || !form.phone.trim()) {
-      setError("Please complete full name and phone first.");
+    const missingFields = getMissingFields([
+      ["full name", Boolean(form.fullName.trim())],
+      ["phone number", Boolean(form.phone.trim())],
+    ]);
+
+    if (missingFields.length > 0) {
+      setError(`Complete ${missingFields.join(" and ")} before going to ID proof.`);
       return;
     }
 
@@ -65,8 +78,13 @@ export function TenantFormModal({
   };
 
   const handleNextFromId = () => {
-    if (!idImage) {
-      setError("Please upload an ID proof before continuing.");
+    const missingFields = getMissingFields([
+      ["ID proof image", Boolean(idImage)],
+      ["ID number", Boolean(form.idNumber.trim())],
+    ]);
+
+    if (missingFields.length > 0) {
+      setError(`Add ${missingFields.join(" and ")} before going to payment.`);
       return;
     }
 
@@ -75,8 +93,22 @@ export function TenantFormModal({
   };
 
   const handleSubmit = async () => {
-    if (!idImage) {
-      setError("Please select an ID image.");
+    const missingFields = getMissingFields([
+      ["full name", Boolean(form.fullName.trim())],
+      ["phone number", Boolean(form.phone.trim())],
+      ["ID proof image", Boolean(idImage)],
+      ["ID number", Boolean(form.idNumber.trim())],
+      ["monthly rent", Boolean(form.monthlyRent) && Number(form.monthlyRent) > 0],
+      ["rent paid amount", Boolean(form.rentPaid) && Number(form.rentPaid) >= 0],
+      ["paid on date", Boolean(form.paidOnDate)],
+    ]);
+
+    if (missingFields.length > 0) {
+      setError(`Cannot save tenant yet. Missing: ${missingFields.join(", ")}.`);
+      return;
+    }
+
+    if (submitting) {
       return;
     }
 
@@ -92,7 +124,7 @@ export function TenantFormModal({
     payload.append("paidOnDate", form.paidOnDate);
     payload.append("idNumber", form.idNumber);
     payload.append("emergencyContact", form.emergencyContact);
-    payload.append("idImage", idImage);
+    payload.append("idImage", idImage!);
 
     const response = await fetch("/api/tenants", {
       method: "POST",
@@ -131,7 +163,7 @@ export function TenantFormModal({
                 </div>
                 <p className="mt-2 text-[11px] leading-5 text-slate-500">Go one section at a time: personal details, ID proof, then payment.</p>
               </div>
-              <Button variant="ghost" className="rounded-2xl px-3 text-slate-500 hover:bg-white/70" onClick={handleClose}>
+              <Button variant="ghost" disabled={submitting} className="rounded-2xl px-3 text-slate-500 hover:bg-white/70" onClick={handleClose}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -157,6 +189,7 @@ export function TenantFormModal({
                           <input
                             value={form.fullName}
                             onChange={(event) => setForm({ ...form, fullName: event.target.value })}
+                            disabled={submitting}
                             className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
                             placeholder="Enter full name"
                           />
@@ -169,6 +202,7 @@ export function TenantFormModal({
                           <input
                             value={form.phone}
                             onChange={(event) => setForm({ ...form, phone: event.target.value })}
+                            disabled={submitting}
                             className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
                             placeholder="Enter phone number"
                           />
@@ -181,6 +215,7 @@ export function TenantFormModal({
                             type="email"
                             value={form.email}
                             onChange={(event) => setForm({ ...form, email: event.target.value })}
+                            disabled={submitting}
                             className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
                             placeholder="Enter email address"
                           />
@@ -193,6 +228,7 @@ export function TenantFormModal({
                           <input
                             value={form.emergencyContact}
                             onChange={(event) => setForm({ ...form, emergencyContact: event.target.value })}
+                            disabled={submitting}
                             className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
                             placeholder="Enter emergency contact number"
                           />
@@ -211,7 +247,7 @@ export function TenantFormModal({
 
                     <div className="grid gap-2 sm:grid-cols-2">
                       <UploadCard icon={ImageIcon} title="Photo Optional" subtitle="You can add tenant photo later" tone="violet" disabled />
-                      <label className="block cursor-pointer">
+                      <label className={`block ${submitting ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}>
                         <span className="sr-only">Upload ID</span>
                         <div className="rounded-[22px] border border-white/80 bg-[linear-gradient(180deg,#f3eaff_0%,#ece4ff_100%)] p-3 shadow-[0_12px_26px_rgba(170,148,255,0.1)] transition hover:opacity-95">
                           <div className="flex items-center gap-3">
@@ -223,7 +259,7 @@ export function TenantFormModal({
                               <p className="mt-1 text-[11px] text-slate-500">{idImage?.name ?? "Photo or ID number required"}</p>
                             </div>
                           </div>
-                          <input type="file" accept="image/*" onChange={(event) => setIdImage(event.target.files?.[0] ?? null)} className="hidden" />
+                          <input type="file" accept="image/*" disabled={submitting} onChange={(event) => setIdImage(event.target.files?.[0] ?? null)} className="hidden" />
                         </div>
                       </label>
                     </div>
@@ -233,6 +269,7 @@ export function TenantFormModal({
                         <input
                           value={form.idNumber}
                           onChange={(event) => setForm({ ...form, idNumber: event.target.value.toUpperCase() })}
+                          disabled={submitting}
                           className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
                           placeholder="Enter ID number"
                         />
@@ -256,6 +293,7 @@ export function TenantFormModal({
                             min="0"
                             value={form.monthlyRent}
                             onChange={(event) => setForm({ ...form, monthlyRent: event.target.value })}
+                            disabled={submitting}
                             className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
                             placeholder="Enter monthly rent"
                           />
@@ -269,6 +307,7 @@ export function TenantFormModal({
                             min="0"
                             value={form.rentPaid}
                             onChange={(event) => setForm({ ...form, rentPaid: event.target.value })}
+                            disabled={submitting}
                             className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
                             placeholder="Enter rent paid amount"
                           />
@@ -281,6 +320,7 @@ export function TenantFormModal({
                             type="date"
                             value={form.paidOnDate}
                             onChange={(event) => setForm({ ...form, paidOnDate: event.target.value })}
+                            disabled={submitting}
                             className="w-full bg-transparent text-[13px] text-slate-700 outline-none"
                           />
                         </InputShell>
@@ -299,19 +339,20 @@ export function TenantFormModal({
                   <Button
                     variant="secondary"
                     onClick={step === 1 ? handleClose : () => setStep((current) => (current === 3 ? 2 : 1))}
+                    disabled={submitting}
                     className="w-full rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)] text-slate-700 shadow-[0_10px_24px_rgba(170,148,255,0.08)] sm:flex-1"
                   >
                     {step === 1 ? "Cancel" : "Back"}
                   </Button>
 
                   {step === 1 ? (
-                    <Button onClick={handleNextFromPersonal} className="w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:flex-1">
+                    <Button disabled={submitting} onClick={handleNextFromPersonal} className="w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:flex-1">
                       Next: ID Proof
                     </Button>
                   ) : null}
 
                   {step === 2 ? (
-                    <Button onClick={handleNextFromId} className="w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:flex-1">
+                    <Button disabled={submitting} onClick={handleNextFromId} className="w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:flex-1">
                       Next: Payment
                     </Button>
                   ) : null}
@@ -319,6 +360,7 @@ export function TenantFormModal({
                   {step === 3 ? (
                     <Button
                       onClick={handleSubmit}
+                      disabled={submitting}
                       className={`w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:flex-1 ${
                         submitting ? "opacity-70" : ""
                       }`}

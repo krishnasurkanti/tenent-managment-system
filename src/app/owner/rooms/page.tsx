@@ -78,7 +78,7 @@ function OwnerRoomsPageContent() {
               href="/owner/rooms"
               className={`inline-flex min-h-8.5 items-center justify-center rounded-lg px-3 text-[12px] font-semibold transition ${
                 showAvailableOnly
-                  ? "border border-white/80 bg-[var(--surface-gradient)] text-slate-600 hover:bg-[var(--pill-gradient)]"
+                  ? "border border-white/80 bg-[var(--surface-gradient)] text-slate-700 hover:bg-[var(--pill-gradient)] hover:text-slate-900"
                   : "bg-[var(--action-gradient)] text-white hover:opacity-95"
               }`}
             >
@@ -89,7 +89,7 @@ function OwnerRoomsPageContent() {
               className={`inline-flex min-h-8.5 items-center justify-center rounded-lg px-3 text-[12px] font-semibold transition ${
                 showAvailableOnly
                   ? "bg-[var(--action-gradient)] text-white hover:opacity-95"
-                  : "border border-white/80 bg-[var(--surface-gradient)] text-violet-700 hover:bg-[var(--pill-gradient)]"
+                  : "border border-white/80 bg-[var(--surface-gradient)] text-violet-700 hover:bg-[var(--pill-gradient)] hover:text-violet-900"
               }`}
             >
               Available
@@ -271,8 +271,8 @@ function OwnerRoomsPageContent() {
                           {available > 0 ? (
                             <div className="mt-3 flex justify-center border-t border-slate-200 pt-2.5">
                               <Link
-                                href={`/tenants?action=add-tenant&hostelId=${currentHostel.id}&floor=${floorIndex + 1}&room=${room.roomNumber}&sharingType=${encodeURIComponent(room.sharingType)}`}
-                                className="inline-flex min-h-8.5 items-center justify-center rounded-lg bg-[var(--accent)] px-3 text-[12px] font-semibold text-white transition hover:opacity-90"
+                                href={`/owner/tenants?action=add-tenant&hostelId=${currentHostel.id}&floor=${floorIndex + 1}&room=${room.roomNumber}&sharingType=${encodeURIComponent(room.sharingType)}`}
+                                className="inline-flex min-h-8.5 items-center justify-center rounded-lg bg-[var(--accent)] px-3 text-[12px] font-semibold text-white transition hover:text-white hover:opacity-90"
                               >
                                 Add tenant
                               </Link>

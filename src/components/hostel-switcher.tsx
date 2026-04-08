@@ -37,7 +37,7 @@ export function HostelSwitcher() {
   }
 
   return (
-    <div className="relative hidden items-center gap-2 xl:flex">
+    <div className="relative z-[60] hidden items-center gap-2 xl:flex">
       <div className="inline-flex min-h-10 items-center rounded-2xl border border-white/80 bg-[var(--surface-gradient)] px-3.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500 shadow-sm">
         Workspace
       </div>
@@ -68,7 +68,7 @@ export function HostelSwitcher() {
       </button>
 
       {open ? (
-        <div className="absolute left-0 top-[calc(100%+0.65rem)] z-30 w-[25rem] rounded-[24px] border border-white/80 bg-[var(--surface-gradient)] p-3 shadow-[var(--shadow-card)]">
+        <div className="absolute left-0 top-[calc(100%+0.65rem)] z-[70] w-[25rem] rounded-[24px] border border-white/80 bg-[var(--surface-gradient)] p-3 shadow-[var(--shadow-card)]">
           <div className="mb-2 flex items-center gap-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
             <Building2 className="h-3 w-3" />
             All Hostels

@@ -105,9 +105,9 @@ export default function OwnerNotificationsPage() {
                   </div>
                   <Link
                     href="/owner/payments"
-                    className="inline-flex min-h-9 items-center justify-center rounded-xl bg-[var(--action-gradient)] px-3 text-[12px] font-semibold text-white shadow-[var(--shadow-soft)] transition hover:opacity-95"
+                    className="inline-flex min-h-10 min-w-[104px] shrink-0 items-center justify-center rounded-2xl border border-indigo-300/40 bg-[linear-gradient(90deg,#7c5cff_0%,#ff7ca8_100%)] px-4 text-[12px] font-semibold text-white shadow-[0_16px_32px_rgba(144,112,255,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(144,112,255,0.28)]"
                   >
-                    Open Payments
+                    Pay
                   </Link>
                 </div>
               </div>

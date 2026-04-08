@@ -13,6 +13,20 @@ export default function LoginPage() {
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (loading) {
+      return;
+    }
+
+    const missingFields = [
+      !username.trim() ? "username" : null,
+      !password.trim() ? "password" : null,
+    ].filter(Boolean);
+
+    if (missingFields.length > 0) {
+      setError(`Enter ${missingFields.join(" and ")} before logging in.`);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -61,7 +75,7 @@ export default function LoginPage() {
         <div className="flex justify-end">
           <button
             type="button"
-            className="rounded-full border border-white/30 bg-white/18 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/24"
+            className="rounded-full border border-white/40 bg-white/22 px-4 py-2 text-sm font-semibold text-white shadow-sm backdrop-blur-md transition hover:bg-white/30 hover:text-white"
           >
             Owner Access
           </button>
@@ -93,6 +107,7 @@ export default function LoginPage() {
                       type="text"
                       value={username}
                       onChange={(event) => setUsername(event.target.value)}
+                      disabled={loading}
                       placeholder="Username"
                       className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-4 pl-12 text-base text-slate-700 outline-none transition focus:border-violet-300"
                     />
@@ -106,6 +121,7 @@ export default function LoginPage() {
                       type="password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
+                      disabled={loading}
                       placeholder="Password"
                       className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-4 pl-12 text-base text-slate-700 outline-none transition focus:border-violet-300"
                     />
@@ -114,17 +130,18 @@ export default function LoginPage() {
 
                 <div className="flex items-center justify-between px-1 text-sm text-slate-600">
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" className="h-4 w-4 rounded border-slate-300" />
+                    <input type="checkbox" disabled={loading} className="h-4 w-4 rounded border-slate-300" />
                     <span>Remember Me</span>
                   </label>
-                  <button type="button" className="font-medium text-violet-500 hover:text-violet-600">
+                  <button type="button" className="font-medium text-violet-600 hover:text-violet-700">
                     Forgot Password?
                   </button>
                 </div>
 
                   <button
                     type="submit"
-                    className="w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] px-4 py-4 text-lg font-semibold text-white shadow-[var(--shadow-soft)] transition hover:opacity-95"
+                    disabled={loading}
+                    className="w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] px-4 py-4 text-lg font-semibold text-white shadow-[var(--shadow-soft)] transition hover:text-white hover:opacity-95"
                   >
                     {loading ? "Checking..." : "Login"}
                   </button>
@@ -139,7 +156,7 @@ export default function LoginPage() {
 
             <p className="mt-8 text-base text-white/90">
               Don&apos;t have an account?{" "}
-                <button type="button" className="font-semibold text-pink-200 hover:text-pink-100">
+                <button type="button" className="font-semibold text-pink-100 hover:text-white">
                 Sign Up
               </button>
             </p>
