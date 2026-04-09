@@ -1,67 +1,81 @@
-const User = require("../models/User");
-const { createToken } = require("../utils/auth");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { query } = require("../config/db");
+const { createHttpError } = require("../utils/httpErrors");
 
-async function signup(req, res, next) {
-  try {
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "Name, email, and password are required." });
-    }
-
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      return res.status(409).json({ message: "A user with this email already exists." });
-    }
-
-    const user = await User.create({
-      name,
-      email: email.toLowerCase(),
-      password,
-    });
-
-    return res.status(201).json({
-      token: createToken(user._id.toString()),
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    return next(error);
-  }
+function signToken(owner) {
+  return jwt.sign(
+    {
+      ownerId: owner.id,
+      email: owner.email,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" },
+  );
 }
 
-async function login(req, res, next) {
-  try {
-    const { email, password } = req.body;
+async function register(req, res) {
+  const { email, password } = req.validatedBody;
+  const normalizedEmail = email.toLowerCase();
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required." });
-    }
-
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return res.status(401).json({ message: "Invalid email or password." });
-    }
-
-    const passwordMatches = await user.comparePassword(password);
-    if (!passwordMatches) {
-      return res.status(401).json({ message: "Invalid email or password." });
-    }
-
-    return res.json({
-      token: createToken(user._id.toString()),
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    return next(error);
+  const existingOwner = await query("SELECT id FROM owners WHERE email = $1 LIMIT 1", [normalizedEmail]);
+  if (existingOwner.rowCount > 0) {
+    throw createHttpError(409, "An owner with this email already exists.");
   }
+
+  const hashedPassword = await bcrypt.hash(password, 12);
+  const result = await query(
+    `
+      INSERT INTO owners (email, password)
+      VALUES ($1, $2)
+      RETURNING id, email, created_at
+    `,
+    [normalizedEmail, hashedPassword],
+  );
+
+  const owner = result.rows[0];
+
+  return res.status(201).json({
+    message: "Owner registered successfully.",
+    token: signToken(owner),
+    owner,
+  });
 }
 
-module.exports = { signup, login };
+async function login(req, res) {
+  const { email, password } = req.validatedBody;
+  const normalizedEmail = email.toLowerCase();
+
+  const result = await query(
+    `
+      SELECT id, email, password, created_at
+      FROM owners
+      WHERE email = $1
+      LIMIT 1
+    `,
+    [normalizedEmail],
+  );
+
+  if (result.rowCount === 0) {
+    throw createHttpError(401, "Invalid email or password.");
+  }
+
+  const owner = result.rows[0];
+  const passwordMatches = await bcrypt.compare(password, owner.password);
+
+  if (!passwordMatches) {
+    throw createHttpError(401, "Invalid email or password.");
+  }
+
+  return res.json({
+    message: "Login successful.",
+    token: signToken(owner),
+    owner: {
+      id: owner.id,
+      email: owner.email,
+      created_at: owner.created_at,
+    },
+  });
+}
+
+module.exports = { register, login };

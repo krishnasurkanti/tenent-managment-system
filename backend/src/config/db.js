@@ -1,10 +1,51 @@
-const mongoose = require("mongoose");
+const { Pool } = require("pg");
 
-async function connectDatabase() {
-  const mongoUri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/hostel_management";
+let pool;
 
-  mongoose.set("strictQuery", true);
-  await mongoose.connect(mongoUri);
+function getPool() {
+  if (pool) {
+    return pool;
+  }
+
+  const connectionString = process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is required.");
+  }
+
+  pool = new Pool({
+    connectionString,
+    ssl:
+      process.env.NODE_ENV === "production" || connectionString.includes("render.com")
+        ? { rejectUnauthorized: false }
+        : false,
+    max: Number(process.env.DB_POOL_MAX || 10),
+    idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT_MS || 10000),
+    connectionTimeoutMillis: Number(process.env.DB_CONNECTION_TIMEOUT_MS || 10000),
+  });
+
+  pool.on("error", (error) => {
+    console.error("Unexpected PostgreSQL pool error", error);
+  });
+
+  return pool;
 }
 
-module.exports = connectDatabase;
+async function query(text, params) {
+  return getPool().query(text, params);
+}
+
+async function getClient() {
+  return getPool().connect();
+}
+
+async function connectDatabase() {
+  await query("SELECT 1");
+}
+
+module.exports = {
+  getPool,
+  query,
+  getClient,
+  connectDatabase,
+};

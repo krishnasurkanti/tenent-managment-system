@@ -1,18 +1,14 @@
 const express = require("express");
-const {
-  getTenants,
-  getTenantById,
-  createTenant,
-  updateTenant,
-  deleteTenant,
-} = require("../controllers/tenantController");
+const { createTenant, getTenants } = require("../controllers/tenantController");
 const { protect } = require("../middleware/authMiddleware");
-const { validateObjectId } = require("../middleware/validateObjectId");
+const { validateBody, validateQuery } = require("../middleware/validate");
+const { asyncHandler } = require("../utils/asyncHandler");
+const { tenantCreateSchema, tenantListSchema } = require("../utils/schemas");
 
 const router = express.Router();
 
 router.use(protect);
-router.route("/").get(getTenants).post(createTenant);
-router.route("/:id").get(validateObjectId, getTenantById).put(validateObjectId, updateTenant).delete(validateObjectId, deleteTenant);
+router.get("/", validateQuery(tenantListSchema), asyncHandler(getTenants));
+router.post("/", validateBody(tenantCreateSchema), asyncHandler(createTenant));
 
 module.exports = router;

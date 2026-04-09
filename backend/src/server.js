@@ -1,16 +1,18 @@
 const dotenv = require("dotenv");
-const app = require("./app");
-const connectDatabase = require("./config/db");
-
 dotenv.config();
 
-const port = Number(process.env.API_PORT || 4000);
+const app = require("./app");
+const { connectDatabase } = require("./config/db");
+const { validateEnv, PORT } = require("./config/env");
+const { initializeDatabase } = require("./services/schemaService");
 
 async function startServer() {
+  validateEnv();
   await connectDatabase();
+  await initializeDatabase();
 
-  app.listen(port, () => {
-    console.log(`API server running on http://localhost:${port}`);
+  app.listen(PORT, () => {
+    console.log(`API server running on port ${PORT}`);
   });
 }
 

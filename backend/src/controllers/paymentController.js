@@ -47,11 +47,7 @@ async function getPaymentById(req, res, next) {
 
 async function createPayment(req, res, next) {
   try {
-    const { hostelId, roomId, tenantId, amount, dueDate, paidOn, note } = req.body;
-
-    if (!hostelId || !roomId || !tenantId || amount === undefined || !dueDate) {
-      return res.status(400).json({ message: "hostelId, roomId, tenantId, amount, and dueDate are required." });
-    }
+    const { hostelId, roomId, tenantId, amount, dueDate, paidOn, note } = req.validatedBody;
 
     const [hostel, room, tenant] = await Promise.all([
       Hostel.findOne({ _id: hostelId, ownerId: req.user.id }),
@@ -95,10 +91,11 @@ async function updatePayment(req, res, next) {
       return res.status(404).json({ message: "Payment not found." });
     }
 
-    const nextPaidOn = req.body.paidOn !== undefined ? req.body.paidOn : payment.paidOn;
-    const nextDueDate = req.body.dueDate ?? payment.dueDate;
+    const patch = req.validatedBody;
+    const nextPaidOn = patch.paidOn !== undefined ? patch.paidOn : payment.paidOn;
+    const nextDueDate = patch.dueDate ?? payment.dueDate;
 
-    Object.assign(payment, req.body);
+    Object.assign(payment, patch);
     payment.status = getRentStatus(nextDueDate, nextPaidOn);
     await payment.save();
 

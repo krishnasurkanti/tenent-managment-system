@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, ShieldCheck } from "lucide-react";
 
@@ -73,12 +74,12 @@ export default function LoginPage() {
 
       <div className="relative z-10 flex min-h-screen flex-col px-6 py-6">
         <div className="flex justify-end">
-          <button
-            type="button"
+          <Link
+            href="/admin/login"
             className="rounded-full border border-white/40 bg-white/22 px-4 py-2 text-sm font-semibold text-white shadow-sm backdrop-blur-md transition hover:bg-white/30 hover:text-white"
           >
-            Owner Access
-          </button>
+            Admin Login
+          </Link>
         </div>
 
         <div className="flex flex-1 items-center justify-center">

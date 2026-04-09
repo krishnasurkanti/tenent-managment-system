@@ -53,16 +53,31 @@ Create a local env file from `.env.example` and provide:
 
 ```env
 MONGODB_URI=your-mongodb-uri
-JWT_SECRET=your-jwt-secret
 API_PORT=4000
-ADMIN_USERNAME=owneradmin
-ADMIN_PASSWORD=Owner@123
+ACCESS_TOKEN_SECRET=your-long-random-access-secret
+REFRESH_TOKEN_SECRET=your-long-random-refresh-secret
+SUPER_ADMIN_NAME=Platform Admin
+SUPER_ADMIN_EMAIL=admin@example.com
+SUPER_ADMIN_USERNAME=admin
+SUPER_ADMIN_PASSWORD=change-me
+CORS_ORIGIN=http://localhost:3000
+BACKEND_URL=http://localhost:4000
+REDIS_URL=redis://127.0.0.1:6379
+RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxx
+RAZORPAY_KEY_SECRET=xxxxxxxxxx
+RAZORPAY_WEBHOOK_SECRET=whsec_xxxxxxxxxx
 ```
 
-The Next.js app login uses `ADMIN_USERNAME` and `ADMIN_PASSWORD`. If you do not set them, it falls back to:
+There are no hardcoded credentials. Create users via backend bootstrap/env and the auth APIs.
 
-- Username: `owneradmin`
-- Password: `Owner@123`
+## Admin Billing Razorpay (Backend)
+
+Razorpay is wired for **admin billing invoices only** (not tenant payments):
+
+- `POST /api/admin/razorpay/create-order` (super_admin only)
+- `POST /api/admin/razorpay/webhook` (signature-verified callback)
+
+Set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET` to enable it.
 
 ## Vercel Deployment
 
@@ -77,7 +92,7 @@ Important:
 - The Next.js frontend and app routes deploy cleanly on Vercel.
 - The Express backend inside `backend/` is not the runtime used by Vercel for the frontend deployment.
 - If you need the standalone Express backend in production, deploy it separately on a VPS, Railway, Render, or a similar Node host.
-- Add `ADMIN_USERNAME` and `ADMIN_PASSWORD` in Vercel project environment variables if you want custom login credentials.
+- Add `SUPER_ADMIN_USERNAME` (or `SUPER_ADMIN_EMAIL`) and `SUPER_ADMIN_PASSWORD` in Vercel project environment variables for admin login.
 
 ## Notes
 

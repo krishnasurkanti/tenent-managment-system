@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionCookieValue, isValidAdminLogin, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { setAuthCookies } from "@/lib/backend-api";
 
 export const dynamic = "force-dynamic";
 
@@ -12,24 +12,34 @@ export async function POST(request: Request) {
   const username = body.username?.trim() ?? "";
   const password = body.password?.trim() ?? "";
 
-  if (!username || !password) {
-    return NextResponse.json({ message: "Username and password are required." }, { status: 400 });
+  let backendResponse: Response;
+  let payload: {
+    message?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    user?: { role?: string };
+  } = {};
+  try {
+    backendResponse = await fetch(`${process.env.BACKEND_URL?.trim() || "http://localhost:4000"}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username,
+        password,
+        roleHint: "owner",
+      }),
+      cache: "no-store",
+    });
+    payload = (await backendResponse.json()) as typeof payload;
+  } catch {
+    return NextResponse.json({ message: "Authentication service unavailable." }, { status: 503 });
   }
 
-  if (!isValidAdminLogin(username, password)) {
-    return NextResponse.json({ message: "Invalid username or password." }, { status: 401 });
+  if (!backendResponse.ok || !payload.accessToken || !payload.refreshToken || payload.user?.role === "super_admin") {
+    return NextResponse.json({ message: payload.message || "Invalid username or password." }, { status: backendResponse.status || 401 });
   }
 
-  const response = NextResponse.json({ ok: true });
-  response.cookies.set({
-    name: SESSION_COOKIE_NAME,
-    value: getSessionCookieValue(),
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-
+  const response = NextResponse.json({ ok: true, user: payload.user });
+  setAuthCookies(response, payload.accessToken, payload.refreshToken);
   return response;
 }

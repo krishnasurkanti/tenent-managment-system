@@ -1,18 +1,14 @@
 const express = require("express");
-const {
-  getHostels,
-  getHostelById,
-  createHostel,
-  updateHostel,
-  deleteHostel,
-} = require("../controllers/hostelController");
+const { createHostel, getHostels } = require("../controllers/hostelController");
 const { protect } = require("../middleware/authMiddleware");
-const { validateObjectId } = require("../middleware/validateObjectId");
+const { validateBody } = require("../middleware/validate");
+const { asyncHandler } = require("../utils/asyncHandler");
+const { hostelCreateSchema } = require("../utils/schemas");
 
 const router = express.Router();
 
 router.use(protect);
-router.route("/").get(getHostels).post(createHostel);
-router.route("/:id").get(validateObjectId, getHostelById).put(validateObjectId, updateHostel).delete(validateObjectId, deleteHostel);
+router.get("/", asyncHandler(getHostels));
+router.post("/", validateBody(hostelCreateSchema), asyncHandler(createHostel));
 
 module.exports = router;

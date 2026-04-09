@@ -19,6 +19,7 @@ const initialState = {
 };
 
 type TenantStep = 1 | 2 | 3;
+type TenantType = "new" | "old";
 
 function getMissingFields(fields: Array<[label: string, valid: boolean]>) {
   return fields.filter(([, valid]) => !valid).map(([label]) => label);
@@ -34,6 +35,7 @@ export function TenantFormModal({
   onCreated: (tenant: TenantRecord) => void;
 }) {
   const [step, setStep] = useState<TenantStep>(1);
+  const [tenantType, setTenantType] = useState<TenantType>("new");
   const [form, setForm] = useState(initialState);
   const [idImage, setIdImage] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -47,6 +49,7 @@ export function TenantFormModal({
 
   const resetFormState = () => {
     setStep(1);
+    setTenantType("new");
     setForm(initialState);
     setIdImage(null);
     setSubmitting(false);
@@ -65,7 +68,7 @@ export function TenantFormModal({
   const handleNextFromPersonal = () => {
     const missingFields = getMissingFields([
       ["full name", Boolean(form.fullName.trim())],
-      ["phone number", Boolean(form.phone.trim())],
+      ["phone number", tenantType === "old" ? true : Boolean(form.phone.trim())],
     ]);
 
     if (missingFields.length > 0) {
@@ -78,6 +81,12 @@ export function TenantFormModal({
   };
 
   const handleNextFromId = () => {
+    if (tenantType === "old") {
+      setError("");
+      setStep(3);
+      return;
+    }
+
     const missingFields = getMissingFields([
       ["ID proof image", Boolean(idImage)],
       ["ID number", Boolean(form.idNumber.trim())],
@@ -95,12 +104,12 @@ export function TenantFormModal({
   const handleSubmit = async () => {
     const missingFields = getMissingFields([
       ["full name", Boolean(form.fullName.trim())],
-      ["phone number", Boolean(form.phone.trim())],
-      ["ID proof image", Boolean(idImage)],
-      ["ID number", Boolean(form.idNumber.trim())],
+      ["phone number", tenantType === "old" ? true : Boolean(form.phone.trim())],
+      ["ID proof image", tenantType === "old" ? true : Boolean(idImage)],
+      ["ID number", tenantType === "old" ? true : Boolean(form.idNumber.trim())],
       ["monthly rent", Boolean(form.monthlyRent) && Number(form.monthlyRent) > 0],
       ["rent paid amount", Boolean(form.rentPaid) && Number(form.rentPaid) >= 0],
-      ["paid on date", Boolean(form.paidOnDate)],
+      ["joining date", Boolean(form.paidOnDate)],
     ]);
 
     if (missingFields.length > 0) {
@@ -117,6 +126,7 @@ export function TenantFormModal({
 
     const payload = new FormData();
     payload.append("fullName", form.fullName);
+    payload.append("tenantType", tenantType);
     payload.append("phone", form.phone);
     payload.append("email", form.email);
     payload.append("monthlyRent", form.monthlyRent);
@@ -124,7 +134,9 @@ export function TenantFormModal({
     payload.append("paidOnDate", form.paidOnDate);
     payload.append("idNumber", form.idNumber);
     payload.append("emergencyContact", form.emergencyContact);
-    payload.append("idImage", idImage!);
+    if (idImage) {
+      payload.append("idImage", idImage);
+    }
 
     const response = await fetch("/api/tenants", {
       method: "POST",
@@ -180,7 +192,30 @@ export function TenantFormModal({
                   <>
                     <div>
                       <h3 className="text-[15px] font-semibold text-slate-800">Personal Details</h3>
-                      <p className="mt-1 text-[11px] text-slate-500">Start with the tenant basics first. No need to see payment and proof before this is done.</p>
+                      <p className="mt-1 text-[11px] text-slate-500">Choose tenant type first. Old tenants can be onboarded with missing details and updated later.</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/80 bg-white/70 p-2">
+                      <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={() => setTenantType("new")}
+                        className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                          tenantType === "new" ? "bg-[var(--action-gradient)] text-white" : "bg-white text-slate-700"
+                        }`}
+                      >
+                        New Tenant
+                      </button>
+                      <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={() => setTenantType("old")}
+                        className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                          tenantType === "old" ? "bg-[linear-gradient(90deg,#0ea5e9_0%,#22c55e_100%)] text-white" : "bg-white text-slate-700"
+                        }`}
+                      >
+                        Old Tenant (Onboarding)
+                      </button>
                     </div>
 
                     <div className="grid gap-3">
@@ -196,7 +231,7 @@ export function TenantFormModal({
                         </InputShell>
                       </Field>
 
-                      <Field label="Phone *">
+                      <Field label={tenantType === "old" ? "Phone (Add Later if Needed)" : "Phone *"}>
                         <InputShell icon={<Phone className="h-4 w-4 text-emerald-500" />}>
                           <span className="text-[13px] font-medium text-slate-600">+91</span>
                           <input
@@ -209,7 +244,7 @@ export function TenantFormModal({
                         </InputShell>
                       </Field>
 
-                      <Field label="Email">
+                      <Field label="Email (Optional)">
                         <InputShell icon={<Mail className="h-4 w-4 text-orange-400" />}>
                           <input
                             type="email"
@@ -222,7 +257,7 @@ export function TenantFormModal({
                         </InputShell>
                       </Field>
 
-                      <Field label="Emergency Contact">
+                      <Field label="Emergency Contact (Optional)">
                         <InputShell icon={<ShieldAlert className="h-4 w-4 text-amber-500" />}>
                           <span className="text-[13px] font-medium text-slate-600">+91</span>
                           <input
@@ -242,7 +277,11 @@ export function TenantFormModal({
                   <>
                     <div>
                       <h3 className="text-[15px] font-semibold text-slate-800">ID Proof</h3>
-                      <p className="mt-1 text-[11px] text-slate-500">Now collect ID information and proof. Once saved here, the last section is payment.</p>
+                      <p className="mt-1 text-[11px] text-slate-500">
+                        {tenantType === "old"
+                          ? "ID details are optional for old tenant onboarding. You can add later."
+                          : "Collect ID information and proof before final payment step."}
+                      </p>
                     </div>
 
                     <div className="grid gap-2 sm:grid-cols-2">
@@ -256,7 +295,7 @@ export function TenantFormModal({
                             </div>
                             <div className="min-w-0">
                               <p className="text-[13px] font-semibold text-slate-800">{idImage ? "ID Selected" : "Upload ID"}</p>
-                              <p className="mt-1 text-[11px] text-slate-500">{idImage?.name ?? "Photo or ID number required"}</p>
+                              <p className="mt-1 text-[11px] text-slate-500">{idImage?.name ?? "Optional for old tenant onboarding"}</p>
                             </div>
                           </div>
                           <input type="file" accept="image/*" disabled={submitting} onChange={(event) => setIdImage(event.target.files?.[0] ?? null)} className="hidden" />
@@ -264,7 +303,7 @@ export function TenantFormModal({
                       </label>
                     </div>
 
-                    <Field label="ID Number">
+                    <Field label={tenantType === "old" ? "ID Number (Optional)" : "ID Number"}>
                       <InputShell icon={<FileBadge2 className="h-4 w-4 text-violet-500" />}>
                         <input
                           value={form.idNumber}
@@ -282,7 +321,7 @@ export function TenantFormModal({
                   <>
                     <div>
                       <h3 className="text-[15px] font-semibold text-slate-800">Payment Details</h3>
-                      <p className="mt-1 text-[11px] text-slate-500">Final section here. After saving this, the next guided step is room assignment.</p>
+                      <p className="mt-1 text-[11px] text-slate-500">Final step. Joining date and billing date will be treated as the same date.</p>
                     </div>
 
                     <div className="grid gap-3 md:grid-cols-2">
@@ -314,7 +353,7 @@ export function TenantFormModal({
                         </InputShell>
                       </Field>
 
-                      <Field label="Paid On Date">
+                      <Field label="Joining / Billing Date">
                         <InputShell icon={<CalendarDays className="h-4 w-4 text-sky-500" />}>
                           <input
                             type="date"
@@ -353,7 +392,7 @@ export function TenantFormModal({
 
                   {step === 2 ? (
                     <Button disabled={submitting} onClick={handleNextFromId} className="w-full rounded-2xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white shadow-[0_16px_30px_rgba(198,145,255,0.24)] hover:opacity-95 sm:flex-1">
-                      Next: Payment
+                      {tenantType === "old" ? "Skip ID and Continue" : "Next: Payment"}
                     </Button>
                   ) : null}
 

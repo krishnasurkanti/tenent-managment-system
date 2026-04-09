@@ -1,14 +1,14 @@
 function notFound(req, res, next) {
   const error = new Error(`Route not found: ${req.originalUrl}`);
-  res.status(404);
+  error.statusCode = 404;
   next(error);
 }
 
 function errorHandler(error, _req, res, _next) {
-  const statusCode = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
+  const statusCode = error.statusCode || res.statusCode || 500;
 
-  res.status(statusCode).json({
-    message: error.message || "Something went wrong.",
+  res.status(statusCode >= 400 ? statusCode : 500).json({
+    message: error.message || "Internal server error.",
   });
 }
 

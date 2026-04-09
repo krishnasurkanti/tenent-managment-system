@@ -40,11 +40,7 @@ async function getRoomById(req, res, next) {
 
 async function createRoom(req, res, next) {
   try {
-    const { hostelId, roomNumber, floorNumber, sharingType, totalBeds } = req.body;
-
-    if (!hostelId || !roomNumber || floorNumber === undefined || !sharingType || !totalBeds) {
-      return res.status(400).json({ message: "hostelId, roomNumber, floorNumber, sharingType, and totalBeds are required." });
-    }
+    const { hostelId, roomNumber, floorNumber, sharingType, totalBeds } = req.validatedBody;
 
     const hostel = await Hostel.findOne({ _id: hostelId, ownerId: req.user.id });
     if (!hostel) {
@@ -76,12 +72,13 @@ async function updateRoom(req, res, next) {
       return res.status(404).json({ message: "Room not found." });
     }
 
-    const nextTotalBeds = req.body.totalBeds ?? room.totalBeds;
+    const patch = req.validatedBody;
+    const nextTotalBeds = patch.totalBeds ?? room.totalBeds;
     if (nextTotalBeds < room.occupiedBeds) {
       return res.status(400).json({ message: "totalBeds cannot be less than occupiedBeds." });
     }
 
-    Object.assign(room, req.body, { totalBeds: nextTotalBeds });
+    Object.assign(room, patch, { totalBeds: nextTotalBeds });
     await room.save();
 
     return res.json({
