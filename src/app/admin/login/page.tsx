@@ -39,7 +39,10 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.push("/admin/dashboard");
+      router.replace("/admin/dashboard");
+      router.refresh();
+    } catch (_error) {
+      setError("Unable to sign in right now. Please try again.");
     } finally {
       setLoading(false);
     }
