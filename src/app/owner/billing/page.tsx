@@ -33,16 +33,26 @@ export default function OwnerBillingPage() {
   const { currentHostel, loading } = useHostelContext();
   const [data, setData] = useState<OwnerBillingData | null>(null);
   const [message, setMessage] = useState("");
+  const [pageError, setPageError] = useState("");
 
   const load = async () => {
     if (!currentHostel?.id) return;
+
     const response = await fetch(`/api/owner-billing?hostelId=${currentHostel.id}`, { cache: "no-store" });
-    const next = (await response.json()) as OwnerBillingData;
+    const next = (await response.json()) as OwnerBillingData & { message?: string };
+
+    if (!response.ok) {
+      throw new Error(next.message || "Unable to load billing.");
+    }
+
+    setPageError("");
     setData(next);
   };
 
   useEffect(() => {
-    void load();
+    void load().catch((error: unknown) => {
+      setPageError(error instanceof Error ? error.message : "Unable to load billing.");
+    });
   }, [currentHostel?.id]);
 
   const nextPlan = useMemo(() => {
@@ -56,7 +66,11 @@ export default function OwnerBillingPage() {
   }
 
   if (!data) {
-    return <Card className="border-slate-200 bg-white p-4 text-center text-sm text-slate-600">Loading billing...</Card>;
+    return (
+      <Card className="border-slate-200 bg-white p-4 text-center text-sm text-slate-600">
+        {pageError || "Loading billing..."}
+      </Card>
+    );
   }
 
   const payNow = async () => {
@@ -65,9 +79,9 @@ export default function OwnerBillingPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ hostelId: currentHostel.id, paymentMethod: "online" }),
     });
-    const payload = await response.json();
+    const payload = (await response.json()) as { message?: string };
     setMessage(response.ok ? "Payment successful. Account is active again." : payload.message || "Unable to process payment.");
-    await load();
+    await load().catch(() => {});
   };
 
   const toggleAutoPay = async (enabled: boolean) => {
@@ -76,13 +90,14 @@ export default function OwnerBillingPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ hostelId: currentHostel.id, enabled }),
     });
-    const payload = await response.json();
+    const payload = (await response.json()) as { message?: string };
     setMessage(response.ok ? `Auto-pay ${enabled ? "enabled" : "disabled"}.` : payload.message || "Unable to update auto-pay.");
-    await load();
+    await load().catch(() => {});
   };
 
   const requestUpgrade = async () => {
     if (!nextPlan) return;
+
     const response = await fetch("/api/owner-billing/request-upgrade", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -92,9 +107,9 @@ export default function OwnerBillingPage() {
         note: `Upgrade requested from ${data.planId} to ${nextPlan}`,
       }),
     });
-    const payload = await response.json();
+    const payload = (await response.json()) as { message?: string };
     setMessage(response.ok ? "Upgrade request sent to admin for approval." : payload.message || "Unable to request upgrade.");
-    await load();
+    await load().catch(() => {});
   };
 
   return (
@@ -103,17 +118,17 @@ export default function OwnerBillingPage() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Pricing & Billing</p>
         <h1 className="mt-1 text-[1.4rem] font-semibold text-slate-900">Billing for {data.hostelName}</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Plan: <span className="font-semibold uppercase">{data.planId}</span> • Due Date:{" "}
-          <span className="font-semibold">{new Date(data.dueDate).toLocaleDateString("en-IN")}</span> • Payable Amount:{" "}
-          <span className="font-semibold">₹{data.payableAmount.toLocaleString("en-IN")}</span>
+          Plan: <span className="font-semibold uppercase">{data.planId}</span> | Due Date:{" "}
+          <span className="font-semibold">{new Date(data.dueDate).toLocaleDateString("en-IN")}</span> | Payable Amount:{" "}
+          <span className="font-semibold">Rs. {data.payableAmount.toLocaleString("en-IN")}</span>
         </p>
       </Card>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="Billing Status" value={data.paymentStatus.toUpperCase()} helper={data.accessActive ? "Access Active" : "Access Restricted"} />
         <Metric label="Billable Tenants" value={String(data.billing.billableTenantCount)} helper={`Current: ${data.billing.tenantCount}`} />
-        <Metric label="Extra Charges" value={`₹${data.billing.extraCharges.toLocaleString("en-IN")}`} helper={`${data.billing.extraTenants} extra tenants`} />
-        <Metric label="Final Amount" value={`₹${data.billing.finalAmount.toLocaleString("en-IN")}`} helper={`Cycle ${data.monthKey}`} />
+        <Metric label="Extra Charges" value={`Rs. ${data.billing.extraCharges.toLocaleString("en-IN")}`} helper={`${data.billing.extraTenants} extra tenants`} />
+        <Metric label="Final Amount" value={`Rs. ${data.billing.finalAmount.toLocaleString("en-IN")}`} helper={`Cycle ${data.monthKey}`} />
       </div>
 
       <Card className="rounded-[22px] border-white/70 bg-white/90 p-4">
@@ -168,6 +183,7 @@ export default function OwnerBillingPage() {
       </Card>
 
       {message ? <p className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">{message}</p> : null}
+      {pageError ? <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{pageError}</p> : null}
     </main>
   );
 }

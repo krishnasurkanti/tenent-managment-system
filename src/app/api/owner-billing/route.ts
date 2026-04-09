@@ -1,13 +1,20 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { backendFetch } from "@/lib/backend-api";
+import { getOwnerBilling } from "@/data/adminStore";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const hostelId = request.nextUrl.searchParams.get("hostelId");
-  const query = hostelId ? `?hostelId=${encodeURIComponent(hostelId)}` : "";
-  const response = await backendFetch(`/api/owner/billing${query}`);
-  const payload = await response.json();
-  return NextResponse.json(payload, { status: response.status });
+
+  if (!hostelId) {
+    return NextResponse.json({ message: "hostelId is required." }, { status: 400 });
+  }
+
+  try {
+    return NextResponse.json(getOwnerBilling(hostelId));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to load billing.";
+    return NextResponse.json({ message }, { status: 400 });
+  }
 }
