@@ -8,7 +8,7 @@ import { Lock, Mail, ShieldCheck } from "lucide-react";
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
@@ -19,7 +19,7 @@ export default function LoginPage() {
     }
 
     const missingFields = [
-      !username.trim() ? "username" : null,
+      !email.trim() ? "email" : null,
       !password.trim() ? "password" : null,
     ].filter(Boolean);
 
@@ -38,7 +38,7 @@ export default function LoginPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username,
+          email,
           password,
         }),
       });
@@ -105,11 +105,11 @@ export default function LoginPage() {
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                     <input
-                      type="text"
-                      value={username}
-                      onChange={(event) => setUsername(event.target.value)}
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
                       disabled={loading}
-                      placeholder="Username"
+                      placeholder="Email address"
                       className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-4 pl-12 text-base text-slate-700 outline-none transition focus:border-violet-300"
                     />
                   </div>

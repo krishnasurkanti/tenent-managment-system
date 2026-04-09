@@ -19,7 +19,7 @@ npm run dev:full
 Main app:
 
 - Frontend: `http://localhost:3000`
-- Express API (local backend scaffold): `http://localhost:4000`
+- Express API (Render backend): `https://hostel-backend-qa1e.onrender.com`
 
 For normal frontend development and Vercel-parity local testing, use:
 
@@ -61,7 +61,10 @@ SUPER_ADMIN_EMAIL=admin@example.com
 SUPER_ADMIN_USERNAME=admin
 SUPER_ADMIN_PASSWORD=change-me
 CORS_ORIGIN=http://localhost:3000
-BACKEND_URL=http://localhost:4000
+BACKEND_URL=https://hostel-backend-qa1e.onrender.com
+NEXT_PUBLIC_API_URL=https://hostel-backend-qa1e.onrender.com
+VITE_API_URL=https://hostel-backend-qa1e.onrender.com
+REACT_APP_API_URL=https://hostel-backend-qa1e.onrender.com
 REDIS_URL=redis://127.0.0.1:6379
 RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxx
 RAZORPAY_KEY_SECRET=xxxxxxxxxx

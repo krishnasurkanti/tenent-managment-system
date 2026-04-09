@@ -1,9 +1,6 @@
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from "@/lib/auth";
-
-function getBackendBaseUrl() {
-  return process.env.BACKEND_URL?.trim() || "http://localhost:4000";
-}
+import { getApiBaseUrl } from "@/lib/api-config";
 
 export async function backendFetch(path: string, init: RequestInit = {}) {
   const accessToken = (await cookies()).get(ACCESS_TOKEN_COOKIE_NAME)?.value;
@@ -15,18 +12,20 @@ export async function backendFetch(path: string, init: RequestInit = {}) {
     headers.set("Content-Type", "application/json");
   }
 
-  return fetch(`${getBackendBaseUrl()}${path}`, {
+  return fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
     headers,
     cache: "no-store",
   });
 }
 
-export function setAuthCookies(response: Response, accessToken: string, refreshToken: string) {
+export function setAuthCookies(response: Response, accessToken: string, refreshToken?: string) {
   const secure = process.env.NODE_ENV === "production";
   const cookieHeaders = [
     `${ACCESS_TOKEN_COOKIE_NAME}=${encodeURIComponent(accessToken)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=900${secure ? "; Secure" : ""}`,
-    `${REFRESH_TOKEN_COOKIE_NAME}=${encodeURIComponent(refreshToken)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}${secure ? "; Secure" : ""}`,
+    refreshToken
+      ? `${REFRESH_TOKEN_COOKIE_NAME}=${encodeURIComponent(refreshToken)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}${secure ? "; Secure" : ""}`
+      : `${REFRESH_TOKEN_COOKIE_NAME}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${secure ? "; Secure" : ""}`,
   ];
   cookieHeaders.forEach((value) => response.headers.append("Set-Cookie", value));
 }

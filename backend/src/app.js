@@ -32,9 +32,16 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true });
+});
+
 app.use("/auth", authRoutes);
 app.use("/hostels", hostelRoutes);
 app.use("/tenants", tenantRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/hostels", hostelRoutes);
+app.use("/api/tenants", tenantRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

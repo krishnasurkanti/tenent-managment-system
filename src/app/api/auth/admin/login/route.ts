@@ -1,32 +1,30 @@
 import { NextResponse } from "next/server";
-import { setAuthCookies } from "@/lib/backend-api";
+import { getApiBaseUrl } from "@/lib/api-config";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {
-    username?: string;
+    email?: string;
     password?: string;
   };
 
-  const username = body.username?.trim() ?? "";
+  const email = body.email?.trim() ?? "";
   const password = body.password?.trim() ?? "";
 
   let backendResponse: Response;
   let payload: {
     message?: string;
-    accessToken?: string;
-    refreshToken?: string;
-    user?: { role?: string };
+    token?: string;
+    owner?: { id?: string | number; email?: string; created_at?: string };
   } = {};
   try {
-    backendResponse = await fetch(`${process.env.BACKEND_URL?.trim() || "http://localhost:4000"}/api/auth/login`, {
+    backendResponse = await fetch(`${getApiBaseUrl()}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        username,
+        email,
         password,
-        roleHint: "super_admin",
       }),
       cache: "no-store",
     });
@@ -36,11 +34,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Authentication service unavailable." }, { status: 503 });
   }
 
-  if (!backendResponse.ok || !payload.accessToken || !payload.refreshToken || payload.user?.role !== "super_admin") {
-    return NextResponse.json({ message: payload.message || "Invalid username or password." }, { status: backendResponse.status || 401 });
+  if (!backendResponse.ok || !payload.token) {
+    return NextResponse.json({ message: payload.message || "Invalid email or password." }, { status: backendResponse.status || 401 });
   }
 
-  const response = NextResponse.json({ ok: true, user: payload.user });
-  setAuthCookies(response, payload.accessToken, payload.refreshToken);
-  return response;
+  return NextResponse.json(
+    { message: "Admin login is not available on the currently deployed backend." },
+    { status: 403 },
+  );
 }
