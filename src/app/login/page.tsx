@@ -51,21 +51,6 @@ export default function LoginPage() {
         return;
       }
 
-      try {
-        const hostelsResponse = await fetch("/api/owner-hostels", { cache: "no-store" });
-        const hostelsData = await hostelsResponse.json();
-
-        if (hostelsData.hostels?.length) {
-          const defaultHostelId = hostelsData.hostels[0]?.id;
-
-          if (defaultHostelId && typeof window !== "undefined") {
-            window.localStorage.setItem("currentHostelId", defaultHostelId);
-          }
-        }
-      } catch (_error) {
-        // Keep login successful even if the hostel preload fails.
-      }
-
       router.replace("/owner/dashboard");
       router.refresh();
     } catch (_error) {
