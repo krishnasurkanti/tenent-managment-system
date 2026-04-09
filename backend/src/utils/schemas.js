@@ -6,8 +6,12 @@ const authRegisterSchema = z.object({
 });
 
 const authLoginSchema = z.object({
-  email: z.string().trim().email(),
+  email: z.string().trim().email().optional(),
+  username: z.string().trim().min(3).max(64).optional(),
   password: z.string().min(8).max(128),
+}).refine((value) => Boolean(value.email || value.username), {
+  message: "Either email or username is required.",
+  path: ["email"],
 });
 
 const hostelCreateSchema = z.object({
