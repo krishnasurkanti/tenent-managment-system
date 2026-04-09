@@ -8,7 +8,7 @@ import { Lock, Mail, Shield } from "lucide-react";
 export default function AdminLoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
@@ -16,8 +16,8 @@ export default function AdminLoginPage() {
     event.preventDefault();
     if (loading) return;
 
-    if (!email.trim() || !password.trim()) {
-      setError("Email and password are required.");
+    if (!identifier.trim() || !password.trim()) {
+      setError("Username or email and password are required.");
       return;
     }
 
@@ -30,7 +30,7 @@ export default function AdminLoginPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username: identifier, email: identifier, password }),
       });
 
       const data = await response.json();
@@ -78,11 +78,11 @@ export default function AdminLoginPage() {
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-300" />
                     <input
-                      type="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
+                      type="text"
+                      value={identifier}
+                      onChange={(event) => setIdentifier(event.target.value)}
                       disabled={loading}
-                      placeholder="Admin email"
+                      placeholder="Admin username or email"
                       className="w-full rounded-2xl border border-white/25 bg-white/95 px-4 py-4 pl-12 text-base text-slate-700 outline-none transition focus:border-cyan-300"
                     />
                   </div>

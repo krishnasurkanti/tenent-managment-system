@@ -1,32 +1,58 @@
 import type { OwnerHostel } from "@/types/owner-hostel";
 import type { HostelRoomInventory } from "@/types/tenant";
 
-export const DEMO_OWNER_HOSTEL_ID = "owner-hostel-demo";
+export const DEMO_OWNER_HOSTEL_ID = "owner-hostel-aurora";
+
+function createRooms(prefix: string, floorNumber: number) {
+  return [
+    {
+      id: `room-${prefix}-${floorNumber}01`,
+      roomNumber: `${floorNumber}01`,
+      bedCount: 3,
+      sharingType: "3 sharing",
+    },
+    {
+      id: `room-${prefix}-${floorNumber}02`,
+      roomNumber: `${floorNumber}02`,
+      bedCount: 2,
+      sharingType: "2 sharing",
+    },
+  ];
+}
 
 const demoOwnerHostels: OwnerHostel[] = [
   {
     id: DEMO_OWNER_HOSTEL_ID,
-    hostelName: "Test Residency",
+    hostelName: "Aurora Residency",
     address: "Madhapur Main Road, Hyderabad",
     createdAt: "2026-04-01T10:00:00.000Z",
-    floors: [
-      {
-        id: "floor-demo-1",
-        floorLabel: "Floor 1",
-        rooms: [
-          { id: "room-demo-101", roomNumber: "101", bedCount: 3, sharingType: "3 sharing" },
-          { id: "room-demo-102", roomNumber: "102", bedCount: 2, sharingType: "2 sharing" },
-        ],
-      },
-      {
-        id: "floor-demo-2",
-        floorLabel: "Floor 2",
-        rooms: [
-          { id: "room-demo-201", roomNumber: "201", bedCount: 1, sharingType: "Single sharing" },
-          { id: "room-demo-202", roomNumber: "202", bedCount: 4, sharingType: "4 sharing" },
-        ],
-      },
-    ],
+    floors: [1, 2, 3, 4].map((floorNumber) => ({
+      id: `floor-aurora-${floorNumber}`,
+      floorLabel: `Floor ${floorNumber}`,
+      rooms: createRooms("aurora", floorNumber),
+    })),
+  },
+  {
+    id: "owner-hostel-lotus",
+    hostelName: "Lotus Elite Stay",
+    address: "Kukatpally Housing Board, Hyderabad",
+    createdAt: "2026-04-03T10:00:00.000Z",
+    floors: [1, 2, 3, 4].map((floorNumber) => ({
+      id: `floor-lotus-${floorNumber}`,
+      floorLabel: `Floor ${floorNumber}`,
+      rooms: createRooms("lotus", floorNumber),
+    })),
+  },
+  {
+    id: "owner-hostel-skyline",
+    hostelName: "Skyline Comforts",
+    address: "Gachibowli Financial District, Hyderabad",
+    createdAt: "2026-04-05T10:00:00.000Z",
+    floors: [1, 2, 3, 4].map((floorNumber) => ({
+      id: `floor-skyline-${floorNumber}`,
+      floorLabel: `Floor ${floorNumber}`,
+      rooms: createRooms("skyline", floorNumber),
+    })),
   },
 ];
 

@@ -6,7 +6,7 @@ import path from "node:path";
 
 function getDemoTenantRecords(): TenantRecord[] {
   const demoTenantRecords: TenantRecord[] = [
-    {
+    buildDemoTenant({
       tenantId: "51201",
       fullName: "Aarav Sharma",
       phone: "9876501201",
@@ -14,36 +14,19 @@ function getDemoTenantRecords(): TenantRecord[] {
       monthlyRent: 8500,
       rentPaid: 8500,
       paidOnDate: "2026-03-15",
-      billingAnchorDate: "2026-03-15",
       nextDueDate: "2026-04-15",
-      idNumber: "TEST-ID-1",
-      idImageName: "demo-id.png",
       emergencyContact: "9876502201",
       createdAt: "2026-03-15T09:00:00.000Z",
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
-        hostelName: "Test Residency",
+        hostelName: "Aurora Residency",
         floorNumber: 1,
         roomNumber: "101",
         sharingType: "3 sharing",
         moveInDate: "2026-03-15",
       },
-      paymentHistory: [
-        {
-          paymentId: "pay-demo-1",
-          amount: 8500,
-          paidOnDate: "2026-03-15",
-          nextDueDate: "2026-04-15",
-          status: "due-soon",
-          paymentMethod: "cash",
-          txnId: "",
-          proofImageName: "",
-          proofImageUrl: "",
-          proofMimeType: "",
-        },
-      ],
-    },
-    {
+    }),
+    buildDemoTenant({
       tenantId: "51202",
       fullName: "Diya Patel",
       phone: "9876501202",
@@ -51,36 +34,19 @@ function getDemoTenantRecords(): TenantRecord[] {
       monthlyRent: 9000,
       rentPaid: 9000,
       paidOnDate: "2026-03-10",
-      billingAnchorDate: "2026-03-10",
       nextDueDate: "2026-04-10",
-      idNumber: "TEST-ID-2",
-      idImageName: "demo-id.png",
       emergencyContact: "9876502202",
       createdAt: "2026-03-10T10:00:00.000Z",
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
-        hostelName: "Test Residency",
+        hostelName: "Aurora Residency",
         floorNumber: 1,
         roomNumber: "101",
         sharingType: "3 sharing",
         moveInDate: "2026-03-10",
       },
-      paymentHistory: [
-        {
-          paymentId: "pay-demo-2",
-          amount: 9000,
-          paidOnDate: "2026-03-10",
-          nextDueDate: "2026-04-10",
-          status: "due-soon",
-          paymentMethod: "cash",
-          txnId: "",
-          proofImageName: "",
-          proofImageUrl: "",
-          proofMimeType: "",
-        },
-      ],
-    },
-    {
+    }),
+    buildDemoTenant({
       tenantId: "51203",
       fullName: "Kabir Reddy",
       phone: "9876501203",
@@ -88,36 +54,19 @@ function getDemoTenantRecords(): TenantRecord[] {
       monthlyRent: 7800,
       rentPaid: 7800,
       paidOnDate: "2026-03-07",
-      billingAnchorDate: "2026-03-07",
       nextDueDate: "2026-04-07",
-      idNumber: "TEST-ID-3",
-      idImageName: "demo-id.png",
       emergencyContact: "9876502203",
       createdAt: "2026-03-07T11:00:00.000Z",
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
-        hostelName: "Test Residency",
-        floorNumber: 1,
-        roomNumber: "102",
+        hostelName: "Aurora Residency",
+        floorNumber: 2,
+        roomNumber: "202",
         sharingType: "2 sharing",
         moveInDate: "2026-03-07",
       },
-      paymentHistory: [
-        {
-          paymentId: "pay-demo-3",
-          amount: 7800,
-          paidOnDate: "2026-03-07",
-          nextDueDate: "2026-04-07",
-          status: "due-soon",
-          paymentMethod: "cash",
-          txnId: "",
-          proofImageName: "",
-          proofImageUrl: "",
-          proofMimeType: "",
-        },
-      ],
-    },
-    {
+    }),
+    buildDemoTenant({
       tenantId: "51204",
       fullName: "Meera Nair",
       phone: "9876501204",
@@ -125,35 +74,138 @@ function getDemoTenantRecords(): TenantRecord[] {
       monthlyRent: 9600,
       rentPaid: 9600,
       paidOnDate: "2026-03-01",
-      billingAnchorDate: "2026-03-01",
       nextDueDate: "2026-04-01",
-      idNumber: "TEST-ID-4",
-      idImageName: "demo-id.png",
       emergencyContact: "9876502204",
       createdAt: "2026-03-01T12:00:00.000Z",
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
-        hostelName: "Test Residency",
-        floorNumber: 2,
-        roomNumber: "201",
-        sharingType: "Single sharing",
+        hostelName: "Aurora Residency",
+        floorNumber: 4,
+        roomNumber: "401",
+        sharingType: "3 sharing",
         moveInDate: "2026-03-01",
       },
-      paymentHistory: [
-        {
-          paymentId: "pay-demo-4",
-          amount: 9600,
-          paidOnDate: "2026-03-01",
-          nextDueDate: "2026-04-01",
-          status: "overdue",
-          paymentMethod: "cash",
-          txnId: "",
-          proofImageName: "",
-          proofImageUrl: "",
-          proofMimeType: "",
-        },
-      ],
-    },
+    }),
+    buildDemoTenant({
+      tenantId: "51205",
+      fullName: "Rohan Verma",
+      phone: "9876501205",
+      email: "rohan.test@example.com",
+      monthlyRent: 8200,
+      rentPaid: 8200,
+      paidOnDate: "2026-03-18",
+      nextDueDate: "2026-04-18",
+      emergencyContact: "9876502205",
+      createdAt: "2026-03-18T12:00:00.000Z",
+      assignment: {
+        hostelId: "owner-hostel-lotus",
+        hostelName: "Lotus Elite Stay",
+        floorNumber: 1,
+        roomNumber: "101",
+        sharingType: "3 sharing",
+        moveInDate: "2026-03-18",
+      },
+    }),
+    buildDemoTenant({
+      tenantId: "51206",
+      fullName: "Sana Khan",
+      phone: "9876501206",
+      email: "sana.test@example.com",
+      monthlyRent: 8800,
+      rentPaid: 8800,
+      paidOnDate: "2026-03-12",
+      nextDueDate: "2026-04-12",
+      emergencyContact: "9876502206",
+      createdAt: "2026-03-12T12:00:00.000Z",
+      assignment: {
+        hostelId: "owner-hostel-lotus",
+        hostelName: "Lotus Elite Stay",
+        floorNumber: 2,
+        roomNumber: "201",
+        sharingType: "3 sharing",
+        moveInDate: "2026-03-12",
+      },
+    }),
+    buildDemoTenant({
+      tenantId: "51207",
+      fullName: "Neha Joshi",
+      phone: "9876501207",
+      email: "neha.test@example.com",
+      monthlyRent: 9100,
+      rentPaid: 9100,
+      paidOnDate: "2026-03-09",
+      nextDueDate: "2026-04-09",
+      emergencyContact: "9876502207",
+      createdAt: "2026-03-09T12:00:00.000Z",
+      assignment: {
+        hostelId: "owner-hostel-lotus",
+        hostelName: "Lotus Elite Stay",
+        floorNumber: 4,
+        roomNumber: "402",
+        sharingType: "2 sharing",
+        moveInDate: "2026-03-09",
+      },
+    }),
+    buildDemoTenant({
+      tenantId: "51208",
+      fullName: "Arjun Rao",
+      phone: "9876501208",
+      email: "arjun.test@example.com",
+      monthlyRent: 10000,
+      rentPaid: 10000,
+      paidOnDate: "2026-03-04",
+      nextDueDate: "2026-04-04",
+      emergencyContact: "9876502208",
+      createdAt: "2026-03-04T12:00:00.000Z",
+      assignment: {
+        hostelId: "owner-hostel-skyline",
+        hostelName: "Skyline Comforts",
+        floorNumber: 1,
+        roomNumber: "102",
+        sharingType: "2 sharing",
+        moveInDate: "2026-03-04",
+      },
+    }),
+    buildDemoTenant({
+      tenantId: "51209",
+      fullName: "Pooja Singh",
+      phone: "9876501209",
+      email: "pooja.test@example.com",
+      monthlyRent: 9400,
+      rentPaid: 9400,
+      paidOnDate: "2026-03-20",
+      nextDueDate: "2026-04-20",
+      emergencyContact: "9876502209",
+      createdAt: "2026-03-20T12:00:00.000Z",
+      assignment: {
+        hostelId: "owner-hostel-skyline",
+        hostelName: "Skyline Comforts",
+        floorNumber: 2,
+        roomNumber: "201",
+        sharingType: "3 sharing",
+        moveInDate: "2026-03-20",
+      },
+    }),
+    buildDemoTenant({
+      tenantId: "51210",
+      fullName: "Vikram Das",
+      phone: "9876501210",
+      email: "vikram.test@example.com",
+      monthlyRent: 8700,
+      rentPaid: 8700,
+      paidOnDate: "2026-03-14",
+      nextDueDate: "2026-04-14",
+      emergencyContact: "9876502210",
+      createdAt: "2026-03-14T12:00:00.000Z",
+      assignment: {
+        hostelId: "owner-hostel-skyline",
+        hostelName: "Skyline Comforts",
+        floorNumber: 3,
+        roomNumber: "302",
+        sharingType: "2 sharing",
+        moveInDate: "2026-03-14",
+      },
+    }),
   ];
 
   return demoTenantRecords.map((tenant) => ({
@@ -161,6 +213,55 @@ function getDemoTenantRecords(): TenantRecord[] {
     assignment: tenant.assignment ? { ...tenant.assignment } : undefined,
     paymentHistory: tenant.paymentHistory.map((payment) => ({ ...payment })),
   }));
+}
+
+function buildDemoTenant(input: {
+  tenantId: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  monthlyRent: number;
+  rentPaid: number;
+  paidOnDate: string;
+  nextDueDate: string;
+  emergencyContact: string;
+  createdAt: string;
+  assignment: TenantAssignment;
+}): TenantRecord {
+  return {
+    tenantId: input.tenantId,
+    fullName: input.fullName,
+    phone: input.phone,
+    email: input.email,
+    monthlyRent: input.monthlyRent,
+    rentPaid: input.rentPaid,
+    paidOnDate: input.paidOnDate,
+    billingAnchorDate: input.assignment.moveInDate,
+    nextDueDate: input.nextDueDate,
+    idNumber: `TEST-ID-${input.tenantId}`,
+    idImageName: "demo-id.png",
+    emergencyContact: input.emergencyContact,
+    createdAt: input.createdAt,
+    assignment: { ...input.assignment },
+    paymentHistory: [
+      {
+        paymentId: `pay-${input.tenantId}`,
+        amount: input.rentPaid,
+        paidOnDate: input.paidOnDate,
+        nextDueDate: input.nextDueDate,
+        status: getDueStatus(input.nextDueDate).tone === "red"
+          ? "overdue"
+          : getDueStatus(input.nextDueDate).tone === "yellow" || getDueStatus(input.nextDueDate).tone === "orange"
+            ? "due-soon"
+            : "active",
+        paymentMethod: "cash",
+        txnId: "",
+        proofImageName: "",
+        proofImageUrl: "",
+        proofMimeType: "",
+      },
+    ],
+  };
 }
 
 const TENANTS_DATA_DIR = path.join(process.cwd(), ".data");

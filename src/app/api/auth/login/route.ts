@@ -1,17 +1,25 @@
 import { NextResponse } from "next/server";
 import { getApiBaseUrl } from "@/lib/api-config";
 import { setAuthCookies } from "@/lib/backend-api";
+import { createDemoSessionToken, getDemoOwnerProfile, matchesDemoCredentials } from "@/lib/demo-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {
+    username?: string;
     email?: string;
     password?: string;
   };
 
-  const email = body.email?.trim() ?? "";
+  const identifier = body.username?.trim() || body.email?.trim() || "";
   const password = body.password?.trim() ?? "";
+
+  if (matchesDemoCredentials(identifier, password)) {
+    const response = NextResponse.json({ ok: true, owner: getDemoOwnerProfile() });
+    setAuthCookies(response, createDemoSessionToken("owner"));
+    return response;
+  }
 
   let backendResponse: Response;
   let payload: {
@@ -24,7 +32,7 @@ export async function POST(request: Request) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        email,
+        email: identifier,
         password,
       }),
       cache: "no-store",
