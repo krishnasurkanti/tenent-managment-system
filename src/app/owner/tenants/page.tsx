@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Plus, UserCheck, UserRound, Wallet } from "lucide-react";
 import { TenantFormModal } from "@/components/tenant-form-modal";
 import { TenantRoomAssignmentModal } from "@/components/tenant-room-assignment-modal";
 import { Card } from "@/components/ui/card";
@@ -13,7 +14,7 @@ import type { TenantRecord } from "@/types/tenant";
 
 export default function OwnerTenantsPage() {
   return (
-    <Suspense fallback={<Card className="border-slate-200 bg-white p-4 text-center text-sm text-slate-600">Loading tenants...</Card>}>
+    <Suspense fallback={<LoadingState />}>
       <OwnerTenantsPageContent />
     </Suspense>
   );
@@ -80,6 +81,7 @@ function OwnerTenantsPageContent() {
 
     return [...scopedCreatedTenants, ...scopedExistingTenants];
   }, [allTenants, createdTenants, currentHostel, tenantOverrides]);
+
   const dueSoonCount = tenants.filter((tenant) => {
     const tone = getDueStatus(tenant.nextDueDate).tone;
     return tone === "orange" || tone === "yellow";
@@ -88,16 +90,16 @@ function OwnerTenantsPageContent() {
   const assignedCount = tenants.filter((tenant) => tenant.assignment).length;
 
   if (hostelLoading || tenantLoading) {
-    return <Card className="border-slate-200 bg-white p-4 text-center text-sm text-slate-600">Loading tenants...</Card>;
+    return <LoadingState />;
   }
 
   if (!currentHostel) {
     return (
-      <Card className="p-5 text-center">
+      <Card className="rounded-[24px] p-5 text-center">
         <p className="text-sm font-semibold text-slate-800">No hostel selected.</p>
         <Link
           href="/owner/create-hostel"
-          className="mt-3 inline-flex min-h-10 items-center justify-center rounded-2xl bg-[var(--action-gradient)] px-4 text-[12px] font-semibold text-white shadow-[var(--shadow-soft)] transition hover:opacity-95"
+          className="mt-3 inline-flex min-h-11 items-center justify-center rounded-2xl bg-[var(--action-gradient)] px-4 text-sm font-semibold text-white"
         >
           Create Hostel
         </Link>
@@ -106,119 +108,150 @@ function OwnerTenantsPageContent() {
   }
 
   return (
-    <div className={`space-y-4 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
-      <div className="rounded-[28px] border border-white/70 bg-[var(--surface-gradient)] px-4 py-4 shadow-[var(--shadow-card)] sm:px-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Tenants</p>
-            <h1 className="mt-1 text-[1.35rem] font-semibold tracking-tight text-slate-800 sm:text-[1.55rem]">
-              Tenant Directory
-            </h1>
-            <p className="mt-1 text-[12px] text-slate-500">Showing tenants for {currentHostel.hostelName} only.</p>
+    <div className={`space-y-3 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
+      <section className="space-y-3 lg:hidden">
+        <Card className="rounded-[24px] border-slate-100 bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Tenant hub</p>
+              <h1 className="mt-1 text-xl font-semibold text-slate-900">Tenants</h1>
+              <p className="mt-1 text-xs text-slate-500">{currentHostel.hostelName}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-[var(--action-gradient)] px-3 text-sm font-semibold text-white"
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              Add
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setModalOpen(true)}
-            className="inline-flex min-h-11 min-w-[164px] items-center justify-center rounded-2xl border border-indigo-300/40 bg-[linear-gradient(90deg,#7c5cff_0%,#ff7ca8_100%)] px-5 py-2.5 text-[12px] font-semibold text-white shadow-[0_16px_32px_rgba(144,112,255,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(144,112,255,0.28)]"
-          >
-            Add New Tenant
-          </button>
-        </div>
-      </div>
 
-      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-        <TenantSummaryCard label="Total Tenants" value={String(tenants.length)} helper="Current hostel only" tone="violet" />
-        <TenantSummaryCard label="Due Soon" value={String(dueSoonCount)} helper="Needs attention" tone="orange" />
-        <TenantSummaryCard label="Overdue" value={String(overdueCount)} helper="Follow up now" tone="rose" />
-        <TenantSummaryCard label="Assigned" value={String(assignedCount)} helper="Rooms occupied" tone="sky" />
-      </div>
+          <div className="mt-3 grid grid-cols-2 gap-2.5">
+            <SummaryTile icon={UserRound} label="Total" value={String(tenants.length)} />
+            <SummaryTile icon={Wallet} label="Due soon" value={String(dueSoonCount)} tone="warning" />
+            <SummaryTile icon={Wallet} label="Overdue" value={String(overdueCount)} tone="danger" />
+            <SummaryTile icon={UserCheck} label="Assigned" value={String(assignedCount)} tone="success" />
+          </div>
+        </Card>
 
-      <Card className="hidden overflow-hidden lg:block">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-[13px]">
-            <thead className="bg-[linear-gradient(180deg,#eef2ff_0%,#fdf2f8_100%)] text-slate-500">
-              <tr>
-                <th className="px-3 py-2.5 font-medium">Tenant ID</th>
-                <th className="px-3 py-2.5 font-medium">Name</th>
-                <th className="px-3 py-2.5 font-medium">Contact</th>
-                <th className="px-3 py-2.5 font-medium">Room</th>
-                <th className="px-3 py-2.5 font-medium">Monthly Rent</th>
-                <th className="px-3 py-2.5 font-medium">Next Due</th>
-                <th className="px-3 py-2.5 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tenants.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-3 py-7 text-center text-sm text-slate-500">
-                    No tenants created yet for this hostel. Add your first tenant to get started.
-                  </td>
-                </tr>
-              ) : (
-                tenants.map((tenant) => {
-                  const status = getDueStatus(tenant.nextDueDate);
+        <div className="space-y-2.5">
+          {tenants.length === 0 ? (
+            <Card className="rounded-[24px] border-slate-100 p-4 text-center text-sm text-slate-500">
+              No tenants yet for this hostel.
+            </Card>
+          ) : (
+            tenants.map((tenant) => {
+              const status = getDueStatus(tenant.nextDueDate);
 
-                  return (
-                    <tr key={tenant.tenantId} className="border-t border-white/80">
-                      <td className="px-3 py-3 font-semibold text-slate-700">{tenant.tenantId}</td>
-                      <td className="px-3 py-3">
-                        <Link href={`/owner/tenants/${tenant.tenantId}`} className="font-medium text-slate-800 transition hover:text-indigo-600">
-                          {tenant.fullName}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-3">
-                        <p>{tenant.phone}</p>
-                        <p className="mt-0.5 text-[11px] text-slate-500">{tenant.email}</p>
-                      </td>
-                      <td className="px-3 py-3">
-                        {tenant.assignment ? `Floor ${tenant.assignment.floorNumber} / Room ${tenant.assignment.roomNumber}` : "Pending"}
-                      </td>
-                      <td className="px-3 py-3">Rs {tenant.monthlyRent.toLocaleString("en-IN")}</td>
-                      <td className="px-3 py-3">{formatPaymentDate(tenant.nextDueDate)}</td>
-                      <td className="px-3 py-3">
-                        <span className={getTenantStatusClassName(status.tone)}>{status.label}</span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      <div className="space-y-2.5 lg:hidden">
-        {tenants.length === 0 ? (
-          <Card className="p-4 text-center text-sm text-slate-500">
-            No tenants created yet for this hostel. Add your first tenant to get started.
-          </Card>
-        ) : (
-          tenants.map((tenant) => {
-            const status = getDueStatus(tenant.nextDueDate);
-
-            return (
-              <Card key={tenant.tenantId} className="border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.94)_0%,rgba(248,250,252,0.96)_100%)] p-3.5">
-                <div className="flex items-start justify-between gap-3">
+              return (
+                <Link
+                  key={tenant.tenantId}
+                  href={`/owner/tenants/${tenant.tenantId}`}
+                  className="grid grid-cols-[1fr_auto] gap-3 rounded-[22px] border border-slate-100 bg-white px-3 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.05)]"
+                >
                   <div className="min-w-0">
-                    <Link href={`/owner/tenants/${tenant.tenantId}`} className="text-[13px] font-semibold text-slate-800 hover:text-indigo-600">
-                      {tenant.fullName}
-                    </Link>
-                    <p className="mt-1 text-[11px] text-slate-500">{tenant.tenantId} | {tenant.phone}</p>
-                    <p className="mt-1 text-[11px] text-slate-500">
-                      {tenant.assignment ? `Floor ${tenant.assignment.floorNumber} / Room ${tenant.assignment.roomNumber}` : "Pending assignment"}
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-semibold text-slate-900">{tenant.fullName}</p>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                        #{tenant.tenantId}
+                      </span>
+                    </div>
+                    <p className="mt-1 truncate text-[11px] text-slate-500">
+                      {tenant.assignment ? `F${tenant.assignment.floorNumber} • R${tenant.assignment.roomNumber}` : "Pending assignment"} • {tenant.phone}
                     </p>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <MiniInfo label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} />
+                      <MiniInfo label="Next Due" value={formatPaymentDate(tenant.nextDueDate)} />
+                    </div>
                   </div>
-                  <span className={getTenantStatusClassName(status.tone)}>{status.label}</span>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <TenantMiniInfo label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} />
-                  <TenantMiniInfo label="Next Due" value={formatPaymentDate(tenant.nextDueDate)} />
-                </div>
-              </Card>
-            );
-          })
-        )}
-      </div>
+                  <span className={statusClass(status.tone)}>{status.label}</span>
+                </Link>
+              );
+            })
+          )}
+        </div>
+      </section>
+
+      <section className="hidden space-y-4 lg:block">
+        <div className="rounded-[28px] border border-white/70 bg-[var(--surface-gradient)] px-4 py-4 shadow-[var(--shadow-card)] sm:px-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Tenants</p>
+              <h1 className="mt-1 text-[1.35rem] font-semibold tracking-tight text-slate-800 sm:text-[1.55rem]">Tenant Directory</h1>
+              <p className="mt-1 text-[12px] text-slate-500">Showing tenants for {currentHostel.hostelName} only.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="inline-flex min-h-11 min-w-[164px] items-center justify-center rounded-2xl bg-[var(--action-gradient)] px-5 py-2.5 text-[12px] font-semibold text-white shadow-[var(--shadow-soft)]"
+            >
+              Add New Tenant
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+          <SummaryTile icon={UserRound} label="Total Tenants" value={String(tenants.length)} />
+          <SummaryTile icon={Wallet} label="Due Soon" value={String(dueSoonCount)} tone="warning" />
+          <SummaryTile icon={Wallet} label="Overdue" value={String(overdueCount)} tone="danger" />
+          <SummaryTile icon={UserCheck} label="Assigned" value={String(assignedCount)} tone="success" />
+        </div>
+
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-[13px]">
+              <thead className="bg-slate-50 text-slate-500">
+                <tr>
+                  <th className="px-3 py-2.5 font-medium">Tenant ID</th>
+                  <th className="px-3 py-2.5 font-medium">Name</th>
+                  <th className="px-3 py-2.5 font-medium">Contact</th>
+                  <th className="px-3 py-2.5 font-medium">Room</th>
+                  <th className="px-3 py-2.5 font-medium">Monthly Rent</th>
+                  <th className="px-3 py-2.5 font-medium">Next Due</th>
+                  <th className="px-3 py-2.5 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tenants.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-3 py-7 text-center text-sm text-slate-500">
+                      No tenants created yet for this hostel.
+                    </td>
+                  </tr>
+                ) : (
+                  tenants.map((tenant) => {
+                    const status = getDueStatus(tenant.nextDueDate);
+
+                    return (
+                      <tr key={tenant.tenantId} className="border-t border-white/80">
+                        <td className="px-3 py-3 font-semibold text-slate-700">{tenant.tenantId}</td>
+                        <td className="px-3 py-3">
+                          <Link href={`/owner/tenants/${tenant.tenantId}`} className="font-medium text-slate-800 transition hover:text-[var(--accent)]">
+                            {tenant.fullName}
+                          </Link>
+                        </td>
+                        <td className="px-3 py-3">
+                          <p>{tenant.phone}</p>
+                          <p className="mt-0.5 text-[11px] text-slate-500">{tenant.email}</p>
+                        </td>
+                        <td className="px-3 py-3">
+                          {tenant.assignment ? `Floor ${tenant.assignment.floorNumber} / Room ${tenant.assignment.roomNumber}` : "Pending"}
+                        </td>
+                        <td className="px-3 py-3">Rs {tenant.monthlyRent.toLocaleString("en-IN")}</td>
+                        <td className="px-3 py-3">{formatPaymentDate(tenant.nextDueDate)}</td>
+                        <td className="px-3 py-3">
+                          <span className={statusClass(status.tone)}>{status.label}</span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </section>
 
       <TenantFormModal
         open={modalOpen}
@@ -227,9 +260,7 @@ function OwnerTenantsPageContent() {
           if (shouldAutoAssign) {
             const response = await fetch("/api/tenants/assign-room", {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 tenantId: tenant.tenantId,
                 hostelId: preferredAssignment.hostelId,
@@ -290,46 +321,72 @@ function OwnerTenantsPageContent() {
   );
 }
 
-function TenantSummaryCard({
+function SummaryTile({
+  icon: Icon,
   label,
   value,
-  helper,
-  tone,
+  tone = "default",
 }: {
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
-  helper: string;
-  tone: "violet" | "orange" | "rose" | "sky";
+  tone?: "default" | "warning" | "danger" | "success";
 }) {
   const toneClass =
-    tone === "violet"
-      ? "bg-[linear-gradient(180deg,#eef2ff_0%,#e0e7ff_100%)] text-indigo-700"
-      : tone === "orange"
-        ? "bg-[linear-gradient(180deg,#fff7ed_0%,#ffedd5_100%)] text-orange-700"
-        : tone === "rose"
-          ? "bg-[linear-gradient(180deg,#fff1f2_0%,#ffe4e6_100%)] text-rose-700"
-          : "bg-[linear-gradient(180deg,#eff6ff_0%,#dbeafe_100%)] text-sky-700";
+    tone === "warning"
+      ? "bg-[var(--warning-soft)] text-amber-700"
+      : tone === "danger"
+        ? "bg-[var(--danger-soft)] text-rose-700"
+        : tone === "success"
+          ? "bg-[var(--success-soft)] text-emerald-700"
+          : "bg-[var(--pill-gradient)] text-[var(--accent)]";
 
   return (
-    <Card className={`border-white/70 p-3 ${toneClass}`}>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-80">{label}</p>
-      <p className="mt-1 text-[1.2rem] font-semibold leading-none">{value}</p>
-      <p className="mt-1 text-[11px] opacity-80">{helper}</p>
+    <Card className={`rounded-[20px] border-slate-100 p-3 shadow-[0_8px_20px_rgba(15,23,42,0.04)] ${toneClass}`}>
+      <div className="flex items-start gap-2.5">
+        <div className="rounded-xl bg-white/80 p-2 shadow-sm">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-80">{label}</p>
+          <p className="mt-1 text-[1.15rem] font-semibold leading-none">{value}</p>
+        </div>
+      </div>
     </Card>
   );
 }
 
-function TenantMiniInfo({ label, value }: { label: string; value: string }) {
+function MiniInfo({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] px-3 py-2 shadow-sm">
-      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-400">{label}</p>
-      <p className="mt-1 text-[12px] font-semibold text-slate-800">{value}</p>
+    <div className="rounded-2xl bg-slate-50 px-2.5 py-2">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
+      <p className="mt-1 text-[11px] font-semibold text-slate-800">{value}</p>
     </div>
   );
 }
 
-function getTenantStatusClassName(tone: string) {
-  if (tone === "red") return "inline-flex rounded-full bg-[var(--danger-soft)] px-2 py-1 text-[10px] font-semibold text-rose-700";
-  if (tone === "orange" || tone === "yellow") return "inline-flex rounded-full bg-[var(--warning-soft)] px-2 py-1 text-[10px] font-semibold text-orange-700";
-  return "inline-flex rounded-full bg-[var(--success-soft)] px-2 py-1 text-[10px] font-semibold text-emerald-700";
+function LoadingState() {
+  return (
+    <div className="space-y-3">
+      <div className="h-36 animate-pulse rounded-[24px] bg-slate-100" />
+      <div className="grid grid-cols-2 gap-2.5">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="h-20 animate-pulse rounded-[20px] bg-slate-100" />
+        ))}
+      </div>
+      <div className="space-y-2.5">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="h-28 animate-pulse rounded-[22px] bg-slate-100" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function statusClass(tone: string) {
+  if (tone === "red") return "inline-flex h-fit rounded-full bg-[var(--danger-soft)] px-2 py-1 text-[10px] font-semibold text-rose-700";
+  if (tone === "orange" || tone === "yellow") {
+    return "inline-flex h-fit rounded-full bg-[var(--warning-soft)] px-2 py-1 text-[10px] font-semibold text-amber-700";
+  }
+  return "inline-flex h-fit rounded-full bg-[var(--success-soft)] px-2 py-1 text-[10px] font-semibold text-emerald-700";
 }

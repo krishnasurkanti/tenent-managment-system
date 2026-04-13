@@ -29,6 +29,7 @@ export default function OwnerPaymentsPage() {
   const [savingProof, setSavingProof] = useState(false);
   const [proofError, setProofError] = useState("");
   const [mounted, setMounted] = useState(false);
+
   const tenants = useMemo(() => {
     if (!currentHostel) {
       return [];
@@ -44,15 +45,11 @@ export default function OwnerPaymentsPage() {
   }, []);
 
   if (hostelLoading || tenantLoading) {
-    return <Card className="border-slate-200 bg-white p-4 text-center text-sm text-slate-600">Loading payments...</Card>;
+    return <LoadingState />;
   }
 
   if (!currentHostel) {
-    return (
-      <Card className="border-slate-200 bg-white p-4 text-center text-sm text-slate-600">
-        Create a hostel first to view payments.
-      </Card>
-    );
+    return <Card className="rounded-[24px] p-4 text-center text-sm text-slate-600">Create a hostel first to view payments.</Card>;
   }
 
   const dueItems = tenants
@@ -66,52 +63,77 @@ export default function OwnerPaymentsPage() {
   const collectedTotal = tenants.reduce((sum, tenant) => sum + tenant.rentPaid, 0);
 
   return (
-    <main className={`min-h-screen transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
-      <div className="mx-auto w-full max-w-7xl space-y-4">
-        <div className="overflow-hidden rounded-[30px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.9)_0%,rgba(246,243,255,0.98)_100%)] px-4 py-4 shadow-[0_24px_55px_rgba(164,140,255,0.12)] backdrop-blur md:px-5">
-          <div className="relative">
-            <div className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(90deg,rgba(99,102,241,0.08)_0%,rgba(139,92,246,0.08)_55%,rgba(249,115,22,0.05)_100%)]" />
-            <div className="relative flex flex-col gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/72 px-3 py-1.5 text-[13px] font-semibold text-slate-700 shadow-sm">
-                  <span className="rounded-full bg-[var(--action-gradient)] p-1 text-white">
-                    <IndianRupee className="h-3.5 w-3.5" />
-                  </span>
-                  Payments
-                </div>
-                <h1 className="mt-3 text-[1.15rem] font-semibold tracking-tight text-slate-800 sm:text-[1.4rem]">
-                  Tenant payment cycles
-                </h1>
-                <p className="mt-1 text-[11px] text-slate-500">
-                  Showing payment and due status for {currentHostel.hostelName} only.
-                </p>
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-4">
-                <SummaryBadge label="Collected" value={`Rs ${collectedTotal.toLocaleString("en-IN")}`} tone="violet" />
-                <SummaryBadge label="Overdue" value={String(overdueCount)} tone="rose" />
-                <SummaryBadge label="Due Soon" value={String(dueSoonCount)} tone="orange" />
-                <SummaryBadge label="Tenants" value={String(tenants.length)} tone="sky" />
-              </div>
-
-              <div className="max-w-md">
-                <TenantRentSearch tenants={tenants} />
-              </div>
+    <main className={`space-y-3 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
+      <section className="space-y-3 lg:hidden">
+        <Card className="rounded-[24px] border-slate-100 bg-white p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Payments</p>
+          <h1 className="mt-1 text-xl font-semibold text-slate-900">{currentHostel.hostelName}</h1>
+          <div className="mt-3 grid grid-cols-[1.4fr_1fr] gap-2.5">
+            <div className="rounded-[20px] bg-[var(--action-gradient)] px-3 py-3 text-white">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-100">Collected</p>
+              <p className="mt-1 text-[1.5rem] font-semibold leading-none">Rs {collectedTotal.toLocaleString("en-IN")}</p>
+            </div>
+            <div className="grid gap-2">
+              <MetricBox label="Due" value={String(dueSoonCount)} tone="warning" />
+              <MetricBox label="Late" value={String(overdueCount)} tone="danger" />
             </div>
           </div>
-        </div>
+          <div className="mt-3">
+            <TenantRentSearch tenants={tenants} />
+          </div>
+        </Card>
 
+        <div className="space-y-2.5">
+          {tenants.length === 0 ? (
+            <Card className="rounded-[24px] border-slate-100 p-4 text-center text-sm text-slate-500">No tenant payment data yet.</Card>
+          ) : (
+            tenants.map((tenant) => {
+              const latestPayment = tenant.paymentHistory[0];
+              const status = getDueStatus(tenant.nextDueDate);
+
+              return (
+                <div key={tenant.tenantId} className="rounded-[22px] border border-slate-100 bg-white px-3 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.05)]">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <Link href={`/owner/tenants/${tenant.tenantId}`} className="truncate text-sm font-semibold text-slate-900">
+                        {tenant.fullName}
+                      </Link>
+                      <p className="mt-1 truncate text-[11px] text-slate-500">
+                        Room {tenant.assignment?.roomNumber ?? "-"} • {latestPayment?.paymentMethod ?? "cash"}
+                      </p>
+                    </div>
+                    <span className={statusClass(status.tone)}>{status.label}</span>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <MiniValue label="Amount" value={`Rs ${tenant.rentPaid.toLocaleString("en-IN")}`} />
+                    <MiniValue label="Paid" value={formatPaymentDate(tenant.paidOnDate)} />
+                    <MiniValue label="Next" value={formatPaymentDate(tenant.nextDueDate)} />
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="truncate text-[11px] text-slate-500">
+                      {latestPayment?.txnId ? `Txn: ${latestPayment.txnId}` : "No txn id"}
+                    </div>
+                    <div>{renderProofCell({ tenant, latestPayment, setProofModal, setTxnIdInput, setProofImage, setProofError })}</div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
+
+      <section className="hidden lg:block">
         <div className="grid gap-3 xl:grid-cols-[1.62fr_0.78fr]">
-          <Card className="overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.9)_0%,rgba(247,241,255,0.94)_100%)] shadow-[0_18px_42px_rgba(170,148,255,0.1)]">
+          <Card className="overflow-hidden border-white/70 bg-white shadow-[0_18px_42px_rgba(170,148,255,0.1)]">
             <div className="border-b border-white/70 px-3 py-3">
               <h2 className="text-[14px] font-semibold text-slate-800">Payment History</h2>
-              <p className="mt-0.5 text-[10px] text-slate-500">
-                All payment details are scoped to the selected hostel workspace.
-              </p>
+              <p className="mt-0.5 text-[10px] text-slate-500">All payment details are scoped to the selected hostel workspace.</p>
             </div>
-            <div className="hidden xl:block overflow-x-auto">
+            <div className="overflow-x-auto">
               <table className="min-w-full text-left text-[12px]">
-                <thead className="bg-[linear-gradient(180deg,#eef2ff_0%,#fdf2f8_100%)] text-slate-500">
+                <thead className="bg-slate-50 text-slate-500">
                   <tr>
                     <th className="px-3 py-3 font-medium">Tenant</th>
                     <th className="px-3 py-3 font-medium">Room</th>
@@ -138,7 +160,7 @@ export default function OwnerPaymentsPage() {
                       return (
                         <tr key={tenant.tenantId} className="border-t border-white/80 align-top">
                           <td className="px-3 py-3">
-                            <Link href={`/owner/tenants/${tenant.tenantId}`} className="font-semibold text-slate-800 transition hover:text-indigo-600">
+                            <Link href={`/owner/tenants/${tenant.tenantId}`} className="font-semibold text-slate-800 transition hover:text-[var(--accent)]">
                               {tenant.fullName}
                             </Link>
                             <p className="mt-1 text-[10px] text-slate-500">{tenant.tenantId} • {tenant.phone}</p>
@@ -147,16 +169,16 @@ export default function OwnerPaymentsPage() {
                             {tenant.assignment ? `R-${tenant.assignment.roomNumber} / F-${tenant.assignment.floorNumber}` : "-"}
                           </td>
                           <td className="px-3 py-3">
-                            <span className={getStatusClassName(status.tone)}>{status.label}</span>
+                            <span className={statusClass(status.tone)}>{status.label}</span>
                           </td>
                           <td className="px-3 py-3 text-slate-600">
-                            <span className="inline-flex rounded-full bg-[var(--pill-gradient)] px-2.5 py-1 text-[10px] font-semibold capitalize text-indigo-700">
+                            <span className="inline-flex rounded-full bg-[var(--pill-gradient)] px-2.5 py-1 text-[10px] font-semibold capitalize text-[var(--accent)]">
                               {latestPayment?.paymentMethod ?? "cash"}
                             </span>
                           </td>
                           <td className="px-3 py-3 font-semibold text-slate-800">Rs {tenant.rentPaid.toLocaleString("en-IN")}</td>
                           <td className="px-3 py-3 text-slate-600">{formatPaymentDate(tenant.paidOnDate)}</td>
-                          <td className="px-3 py-3 font-medium text-indigo-700">{formatPaymentDate(tenant.nextDueDate)}</td>
+                          <td className="px-3 py-3 font-medium text-[var(--accent)]">{formatPaymentDate(tenant.nextDueDate)}</td>
                           <td className="px-3 py-3 text-slate-600">{renderProofCell({ tenant, latestPayment, setProofModal, setTxnIdInput, setProofImage, setProofError })}</td>
                         </tr>
                       );
@@ -165,95 +187,49 @@ export default function OwnerPaymentsPage() {
                 </tbody>
               </table>
             </div>
-
-            <div className="space-y-2.5 p-3 xl:hidden">
-              {tenants.length === 0 ? (
-                <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] px-4 py-4 text-sm text-slate-500">
-                  No tenant payment data exists yet for this hostel.
-                </div>
-              ) : (
-                tenants.map((tenant) => {
-                  const latestPayment = tenant.paymentHistory[0];
-                  const status = getDueStatus(tenant.nextDueDate);
-
-                  return (
-                    <div key={tenant.tenantId} className="rounded-[22px] border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] px-3 py-3 shadow-sm">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <Link href={`/owner/tenants/${tenant.tenantId}`} className="text-[13px] font-semibold text-slate-800 hover:text-indigo-600">
-                            {tenant.fullName}
-                          </Link>
-                          <p className="mt-1 text-[10px] text-slate-500">
-                            {tenant.tenantId} • Room {tenant.assignment?.roomNumber ?? "-"} • Floor {tenant.assignment?.floorNumber ?? "-"}
-                          </p>
-                          <p className="mt-1 text-[10px] text-slate-500">
-                            Paid {formatPaymentDate(tenant.paidOnDate)} • Due {formatPaymentDate(tenant.nextDueDate)}
-                          </p>
-                        </div>
-                        <span className={getStatusClassName(status.tone)}>{status.label}</span>
-                      </div>
-
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        <MiniPaymentStat label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} />
-                        <MiniPaymentStat label="Paid" value={`Rs ${tenant.rentPaid.toLocaleString("en-IN")}`} />
-                      </div>
-
-                      <div className="mt-3 flex items-center justify-between gap-3">
-                        <span className="inline-flex rounded-full bg-[var(--pill-gradient)] px-2.5 py-1 text-[10px] font-semibold capitalize text-indigo-700">
-                          {latestPayment?.paymentMethod ?? "cash"}
-                        </span>
-                        <div className="text-right text-[10px] text-slate-500">
-                          {latestPayment?.txnId ? `Txn: ${latestPayment.txnId}` : "No txn id"}
-                        </div>
-                      </div>
-
-                      <div className="mt-3">
-                        {renderProofCell({ tenant, latestPayment, setProofModal, setTxnIdInput, setProofImage, setProofError })}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
           </Card>
 
-          <Card className="border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.9)_0%,rgba(247,241,255,0.94)_100%)] p-3 shadow-[0_18px_42px_rgba(170,148,255,0.1)]">
-            <div className="mb-2">
-              <h2 className="text-[14px] font-semibold text-slate-800">Upcoming Dues</h2>
-              <p className="mt-0.5 text-[10px] text-slate-500">Only dues from the selected hostel are shown here.</p>
-            </div>
+          <div className="space-y-3">
+            <Card className="border-white/70 bg-white p-3 shadow-[0_18px_42px_rgba(170,148,255,0.1)]">
+              <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-1">
+                <MetricBox label="Collected" value={`Rs ${collectedTotal.toLocaleString("en-IN")}`} />
+                <MetricBox label="Overdue" value={String(overdueCount)} tone="danger" />
+                <MetricBox label="Due Soon" value={String(dueSoonCount)} tone="warning" />
+              </div>
+              <div className="mt-3">
+                <TenantRentSearch tenants={tenants} />
+              </div>
+            </Card>
 
-            <div className="space-y-2">
-              {dueItems.length === 0 ? (
-                <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">
-                  No due data available yet.
-                </div>
-              ) : (
-                dueItems.map(({ tenant, status }) => (
-                  <div key={tenant.tenantId} className="rounded-[20px] border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-3 py-2.5 shadow-sm">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-[11px] font-semibold text-slate-800">{tenant.fullName}</p>
-                        <p className="mt-0.5 text-[9px] text-slate-500">
-                          {tenant.tenantId} / Room {tenant.assignment?.roomNumber} / Floor {tenant.assignment?.floorNumber}
-                        </p>
-                        <p className="mt-0.5 text-[9px] text-slate-500">
-                          Next due {formatPaymentDate(tenant.nextDueDate)}
-                        </p>
+            <Card className="border-white/70 bg-white p-3 shadow-[0_18px_42px_rgba(170,148,255,0.1)]">
+              <div className="mb-2">
+                <h2 className="text-[14px] font-semibold text-slate-800">Upcoming Dues</h2>
+                <p className="mt-0.5 text-[10px] text-slate-500">Only dues from the selected hostel are shown here.</p>
+              </div>
+              <div className="space-y-2">
+                {dueItems.length === 0 ? (
+                  <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">No due data available yet.</div>
+                ) : (
+                  dueItems.map(({ tenant, status }) => (
+                    <div key={tenant.tenantId} className="rounded-[20px] border border-slate-100 bg-slate-50 px-3 py-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-[11px] font-semibold text-slate-800">{tenant.fullName}</p>
+                          <p className="mt-0.5 text-[9px] text-slate-500">
+                            {tenant.tenantId} / Room {tenant.assignment?.roomNumber} / Floor {tenant.assignment?.floorNumber}
+                          </p>
+                          <p className="mt-0.5 text-[9px] text-slate-500">Next due {formatPaymentDate(tenant.nextDueDate)}</p>
+                        </div>
+                        <span className={statusClass(status.tone)}>{status.label}</span>
                       </div>
-                      <span className={getStatusClassName(status.tone)}>{status.label}</span>
                     </div>
-                    <div className="mt-1.5 flex items-center justify-between text-[10px]">
-                      <span className="text-slate-500">Monthly Rent</span>
-                      <span className="font-semibold text-slate-700">Rs. {tenant.monthlyRent.toLocaleString("en-IN")}</span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </Card>
+                  ))
+                )}
+              </div>
+            </Card>
+          </div>
         </div>
-      </div>
+      </section>
 
       {proofModal && mounted ? (
         <AddProofModal
@@ -316,44 +292,54 @@ export default function OwnerPaymentsPage() {
   );
 }
 
-function getStatusClassName(tone: string) {
-  if (tone === "red") return "inline-flex rounded-full bg-[linear-gradient(90deg,#ff8ca6_0%,#ff6e8d_100%)] px-2 py-0.5 text-[9px] font-semibold text-white";
-  if (tone === "orange") return "inline-flex rounded-full bg-[linear-gradient(90deg,#ffb26b_0%,#ff9a7b_100%)] px-2 py-0.5 text-[9px] font-semibold text-white";
-  if (tone === "yellow") return "inline-flex rounded-full bg-[linear-gradient(90deg,#ffe08a_0%,#ffd7a3_100%)] px-2 py-0.5 text-[9px] font-semibold text-amber-900";
-  return "inline-flex rounded-full bg-[linear-gradient(90deg,#80ddb7_0%,#65d0cf_100%)] px-2 py-0.5 text-[9px] font-semibold text-white";
-}
-
-function SummaryBadge({
+function MetricBox({
   label,
   value,
-  tone,
+  tone = "default",
 }: {
   label: string;
   value: string;
-  tone: "violet" | "rose" | "orange" | "sky";
+  tone?: "default" | "warning" | "danger";
 }) {
   const toneClass =
-    tone === "violet"
-      ? "bg-[linear-gradient(180deg,#eef2ff_0%,#e0e7ff_100%)] text-indigo-700"
-      : tone === "rose"
-        ? "bg-[linear-gradient(180deg,#fff1f2_0%,#ffe4e6_100%)] text-rose-700"
-        : tone === "orange"
-          ? "bg-[linear-gradient(180deg,#fff7ed_0%,#ffedd5_100%)] text-orange-700"
-          : "bg-[linear-gradient(180deg,#eff6ff_0%,#dbeafe_100%)] text-sky-700";
+    tone === "warning"
+      ? "bg-[var(--warning-soft)] text-amber-700"
+      : tone === "danger"
+        ? "bg-[var(--danger-soft)] text-rose-700"
+        : "bg-[var(--pill-gradient)] text-[var(--accent)]";
 
   return (
-    <div className={`rounded-[22px] border border-white/80 px-3 py-3 shadow-sm ${toneClass}`}>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-80">{label}</p>
+    <div className={`rounded-[18px] px-3 py-3 ${toneClass}`}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-80">{label}</p>
       <p className="mt-1 text-[1.1rem] font-semibold leading-none">{value}</p>
     </div>
   );
 }
 
-function MiniPaymentStat({ label, value }: { label: string; value: string }) {
+function MiniValue({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] px-3 py-2 shadow-sm">
-      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-400">{label}</p>
-      <p className="mt-1 text-[12px] font-semibold text-slate-800">{value}</p>
+    <div className="rounded-2xl bg-slate-50 px-2.5 py-2">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
+      <p className="mt-1 text-[11px] font-semibold text-slate-800">{value}</p>
+    </div>
+  );
+}
+
+function statusClass(tone: string) {
+  if (tone === "red") return "inline-flex rounded-full bg-[var(--danger-soft)] px-2 py-1 text-[10px] font-semibold text-rose-700";
+  if (tone === "orange" || tone === "yellow") return "inline-flex rounded-full bg-[var(--warning-soft)] px-2 py-1 text-[10px] font-semibold text-amber-700";
+  return "inline-flex rounded-full bg-[var(--success-soft)] px-2 py-1 text-[10px] font-semibold text-emerald-700";
+}
+
+function LoadingState() {
+  return (
+    <div className="space-y-3">
+      <div className="h-40 animate-pulse rounded-[24px] bg-slate-100" />
+      <div className="space-y-2.5">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="h-32 animate-pulse rounded-[22px] bg-slate-100" />
+        ))}
+      </div>
     </div>
   );
 }
@@ -375,7 +361,7 @@ function renderProofCell({
 }) {
   if (latestPayment?.proofImageUrl) {
     return (
-      <div className="inline-flex max-w-[170px] items-center gap-1.5 rounded-xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] px-1.5 py-1 shadow-sm">
+      <div className="inline-flex max-w-[170px] items-center gap-1.5 rounded-xl border border-slate-100 bg-white px-1.5 py-1 shadow-sm">
         <a href={latestPayment.proofImageUrl} target="_blank" rel="noreferrer" className="inline-flex min-w-0 items-center gap-1.5">
           {isImageProof(latestPayment.proofMimeType, latestPayment.proofImageName) ? (
             <Image
@@ -386,7 +372,7 @@ function renderProofCell({
               className="h-7 w-7 rounded-md object-cover"
             />
           ) : (
-            <div className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[var(--pill-gradient)] text-[8px] font-semibold text-indigo-700">
+            <div className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[var(--pill-gradient)] text-[8px] font-semibold text-[var(--accent)]">
               PDF
             </div>
           )}
@@ -395,7 +381,7 @@ function renderProofCell({
         <a
           href={latestPayment.proofImageUrl}
           download={latestPayment.proofImageName || `${tenant.tenantId}-payment-proof`}
-          className="inline-flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-md border border-white/80 bg-white text-indigo-700 transition hover:bg-indigo-50 hover:text-indigo-900"
+          className="inline-flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-md border border-slate-100 bg-white text-[var(--accent)] transition hover:bg-blue-50"
           aria-label={`Download payment proof for ${tenant.fullName}`}
           title="Download proof"
         >
@@ -427,7 +413,7 @@ function renderProofCell({
         setProofImage(null);
         setProofError("");
       }}
-      className="rounded-xl border border-white/80 bg-[var(--action-gradient)] px-2.5 py-1.5 text-[10px] font-semibold text-white shadow-sm transition hover:text-white hover:opacity-95"
+      className="rounded-xl border border-blue-200 bg-[var(--pill-gradient)] px-2.5 py-1.5 text-[10px] font-semibold text-[var(--accent)]"
     >
       Add Proof
     </button>
@@ -466,15 +452,13 @@ function AddProofModal({
   useLockBodyScroll(true);
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] overflow-y-auto overscroll-contain bg-[rgba(48,28,75,0.38)] px-3 py-3 sm:py-8">
+    <div className="fixed inset-0 z-[80] overflow-y-auto overscroll-contain bg-[rgba(15,23,42,0.42)] px-3 py-3 sm:py-8">
       <div className="flex min-h-full items-start justify-center sm:items-center">
-        <Card className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.84)_0%,rgba(244,236,255,0.95)_100%)] p-3.5 shadow-[0_28px_70px_rgba(170,148,255,0.22)] sm:max-h-[min(92dvh,520px)]">
+        <Card className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden border-slate-100 bg-white p-3.5 shadow-[0_28px_70px_rgba(15,23,42,0.22)] sm:max-h-[min(92dvh,520px)]">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-[14px] font-semibold text-slate-800">Add Payment Proof</h2>
-              <p className="mt-0.5 text-[10px] text-slate-500">
-                Save proof for {tenantName}. You can add transaction id, image proof, or both.
-              </p>
+              <p className="mt-0.5 text-[10px] text-slate-500">Save proof for {tenantName}. You can add transaction id, image proof, or both.</p>
             </div>
             <Button variant="ghost" className="px-2" onClick={onClose}>
               <X className="h-4 w-4" />
@@ -488,7 +472,7 @@ function AddProofModal({
                 value={txnId}
                 onChange={(event) => onTxnIdChange(event.target.value.toUpperCase())}
                 placeholder="Enter transaction id"
-                className="w-full rounded-xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-3 py-2.5 text-[11px] outline-none shadow-sm"
+                className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-[11px] outline-none shadow-sm"
               />
             </label>
 
@@ -500,7 +484,7 @@ function AddProofModal({
                   type="file"
                   accept="image/*,.pdf"
                   onChange={(event) => onProofImageChange(event.target.files?.[0] ?? null)}
-                  className="w-full rounded-xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-3 py-2.5 pl-8 text-[11px] outline-none shadow-sm file:mr-2 file:rounded-md file:border-0 file:bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] file:px-2 file:py-1 file:text-[11px] file:text-white"
+                  className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 pl-8 text-[11px] outline-none shadow-sm file:mr-2 file:rounded-md file:border-0 file:bg-[var(--action-gradient)] file:px-2 file:py-1 file:text-[11px] file:text-white"
                 />
               </div>
               <p className="mt-1 text-[9px] text-slate-500">Optional: image, screenshot, or PDF receipt.</p>
@@ -511,10 +495,10 @@ function AddProofModal({
           {error ? <p className="mt-2.5 text-xs text-rose-600">{error}</p> : null}
 
           <div className="mt-3 flex flex-col-reverse gap-2 border-t border-[var(--border)] pt-3 sm:flex-row sm:justify-end">
-            <Button variant="secondary" onClick={onClose} className="rounded-xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]">
+            <Button variant="secondary" onClick={onClose} className="rounded-xl border-white/80 bg-white">
               Cancel
             </Button>
-            <Button onClick={onSave} className={`rounded-xl bg-[linear-gradient(90deg,#8c76ff_0%,#ff8fb1_100%)] text-white ${saving ? "opacity-70" : ""}`}>
+            <Button onClick={onSave} className={`rounded-xl bg-[var(--action-gradient)] text-white ${saving ? "opacity-70" : ""}`}>
               {saving ? "Saving..." : "Save Proof"}
             </Button>
           </div>

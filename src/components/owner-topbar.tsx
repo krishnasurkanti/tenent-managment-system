@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeft, Bell, House, Menu, Search } from "lucide-react";
+import { ArrowLeft, Bell, ChevronDown, House, Menu, Search } from "lucide-react";
 import { HostelSwitcher } from "@/components/hostel-switcher";
 import { useHostelContext } from "@/components/hostel-context-provider";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
@@ -12,7 +12,7 @@ import { getDueStatus } from "@/lib/payment-utils";
 export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { currentHostel } = useHostelContext();
+  const { currentHostel, hostels } = useHostelContext();
   const { tenants } = useOwnerTenants();
   const isDashboard = pathname === "/owner/dashboard";
   const isNotifications = pathname === "/owner/notifications";
@@ -39,7 +39,7 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 isolate flex items-center justify-between border-b border-white/70 bg-white/78 px-3 py-3 backdrop-blur-xl md:px-5 xl:px-6">
+    <header className="sticky top-0 z-50 isolate flex items-center justify-between border-b border-white/80 bg-white/92 px-3 py-2.5 backdrop-blur-xl md:px-5 xl:px-6">
       <div className="flex min-w-0 items-center gap-2.5">
         <button
           type="button"
@@ -68,7 +68,20 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         >
           <House className="h-4 w-4" />
         </Link>
-        <HostelSwitcher />
+        <div className="hidden xl:block">
+          <HostelSwitcher />
+        </div>
+        <button
+          type="button"
+          onClick={() => router.push("/owner/settings")}
+          className="min-w-0 rounded-2xl border border-white/80 bg-[var(--surface-gradient)] px-3 py-2 text-left shadow-sm xl:hidden"
+        >
+          <p className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Hostel</p>
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-[13px] font-semibold text-slate-800">{currentHostel?.hostelName ?? "Select"}</p>
+            {hostels.length > 1 ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" /> : null}
+          </div>
+        </button>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-2.5">
