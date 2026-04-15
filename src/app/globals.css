@@ -268,3 +268,27 @@
     }
   }
 }
+
+@layer components {
+  .app-page-frame {
+    min-height: 100%;
+  }
+
+  .app-page-frame > * {
+    min-height: 100%;
+  }
+
+  @media (min-width: 1024px) {
+    .app-page-frame > * {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      justify-content: flex-start;
+      min-height: 100%;
+    }
+
+    .app-page-frame > * > :last-child {
+      margin-top: auto;
+    }
+  }
+}

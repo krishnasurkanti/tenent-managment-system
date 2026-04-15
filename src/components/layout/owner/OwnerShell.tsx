@@ -20,8 +20,8 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
         <OwnerSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
           <OwnerTopbar onOpenSidebar={() => setSidebarOpen(true)} />
-          <main className="min-h-0 flex-1 overflow-y-auto animate-[float-up_var(--motion-large)_var(--ease-enter)] px-2.5 py-2.5 pb-18 sm:px-3 sm:py-3 md:px-4 md:py-3 xl:px-5">
-            <div className="mx-auto w-full max-w-[1380px] pb-2 sm:pb-3">{children}</div>
+          <main className="min-h-0 flex-1 overflow-y-auto animate-[float-up_var(--motion-large)_var(--ease-enter)] px-2.5 py-2 pb-18 sm:px-3 sm:py-2.5 md:px-4 md:py-3 xl:px-5 xl:py-4">
+            <div className="app-page-frame mx-auto flex w-full max-w-[1380px] flex-1 flex-col pb-2 sm:pb-3">{children}</div>
           </main>
         </div>
         <OwnerMobileNav />

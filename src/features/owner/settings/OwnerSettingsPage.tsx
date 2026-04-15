@@ -33,7 +33,7 @@ export default async function OwnerSettingsPage() {
   const totalRooms = hostel?.floors.reduce((sum, floor) => sum + floor.rooms.length, 0) ?? 0;
 
   return (
-    <div className="space-y-3 lg:space-y-4">
+    <div className="flex min-h-full flex-col gap-3 lg:gap-4">
       <Card className={`overflow-hidden p-4 ${ownerHeroCardClass}`}>
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Settings</p>
         <h1 className="mt-1 text-xl font-semibold text-white lg:text-[1.9rem] lg:tracking-tight">Hostel settings</h1>
@@ -65,7 +65,7 @@ export default async function OwnerSettingsPage() {
         </div>
       </Card>
 
-      <Card className={`rounded-[24px] p-4 ${ownerPanelClass}`}>
+      <Card className={`mt-auto rounded-[24px] p-4 ${ownerPanelClass}`}>
         <p className="text-sm font-semibold text-white">Missing UI</p>
         <p className="mt-1 text-sm text-[color:var(--fg-secondary)]">Advanced editable preferences, notification rules, and account-level owner settings are not implemented yet.</p>
       </Card>

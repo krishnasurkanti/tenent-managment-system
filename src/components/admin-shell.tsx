@@ -52,8 +52,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </nav>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden p-3 sm:p-4 lg:p-5">
-          <header className="mb-3 flex shrink-0 items-center justify-between rounded-[24px] border border-[color:var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bg-surface)_90%,white)_0%,var(--bg-surface)_100%)] px-4 py-3 shadow-sm">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden p-3 sm:p-4 lg:p-4">
+          <header className="mb-2.5 flex shrink-0 items-center justify-between rounded-[24px] border border-[color:var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bg-surface)_90%,white)_0%,var(--bg-surface)_100%)] px-4 py-3 shadow-sm">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Platform Owner</p>
               <p className="text-sm font-semibold text-[color:var(--fg-primary)]">Admin Profile</p>
@@ -68,7 +68,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </button>
           </header>
           <main className="min-h-0 flex-1 overflow-y-auto pr-1">
-            <div className="pb-3 sm:pb-4">
+            <div className="app-page-frame flex min-h-full flex-col pb-3 sm:pb-4">
               {children}
             </div>
           </main>

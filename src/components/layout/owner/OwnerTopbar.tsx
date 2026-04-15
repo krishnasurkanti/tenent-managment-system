@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Bell, ChevronDown, House, Menu, Search } from "lucide-react";
 import { HostelSwitcher } from "@/components/layout/owner/HostelSwitcher";
 import { useHostelContext } from "@/store/hostel-context";
@@ -12,10 +12,12 @@ import { getDueStatus } from "@/utils/payment";
 export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { currentHostel, hostels } = useHostelContext();
   const { tenants } = useOwnerTenants();
   const isDashboard = pathname === "/owner/dashboard";
   const isNotifications = pathname === "/owner/notifications";
+  const currentSearchQuery = pathname === "/owner/tenants" ? (searchParams.get("q") ?? "") : "";
 
   const alerts = useMemo(() => {
     if (!currentHostel) {
@@ -36,6 +38,20 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
     }
 
     router.push("/owner/dashboard");
+  };
+
+  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const rawQuery = formData.get("global-search");
+    const nextQuery = typeof rawQuery === "string" ? rawQuery.trim() : "";
+
+    if (!nextQuery) {
+      router.push("/owner/tenants");
+      return;
+    }
+
+    router.push(`/owner/tenants?q=${encodeURIComponent(nextQuery)}`);
   };
 
   return (
@@ -85,14 +101,19 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <label className="relative hidden xl:block">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[color:var(--accent)]" />
-          <input
-            type="text"
-            placeholder="Search tenants, rooms, payments..."
-            className="w-72 rounded-[var(--radius-pill)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] py-2 pl-10 pr-4 text-[13px] text-[color:var(--fg-primary)] outline-none transition-[border-color,box-shadow] duration-[var(--motion-small)] ease-[var(--ease-standard)] placeholder:text-[color:var(--fg-secondary)] focus:border-[color:color-mix(in_srgb,var(--warning)_45%,transparent)] focus:shadow-[0_0_0_1px_rgba(249,193,42,0.16),0_12px_28px_rgba(249,193,42,0.1)]"
-          />
-        </label>
+        <form onSubmit={handleSearchSubmit} className="hidden xl:block">
+          <label className="relative block">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[color:var(--accent)]" />
+            <input
+              name="global-search"
+              type="text"
+              key={`${pathname}-${currentSearchQuery}`}
+              defaultValue={currentSearchQuery}
+              placeholder="Search tenants, rooms, phones..."
+              className="w-72 rounded-[var(--radius-pill)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] py-2 pl-10 pr-4 text-[13px] text-[color:var(--fg-primary)] outline-none transition-[border-color,box-shadow] duration-[var(--motion-small)] ease-[var(--ease-standard)] placeholder:text-[color:var(--fg-secondary)] focus:border-[color:color-mix(in_srgb,var(--warning)_45%,transparent)] focus:shadow-[0_0_0_1px_rgba(249,193,42,0.16),0_12px_28px_rgba(249,193,42,0.1)]"
+            />
+          </label>
+        </form>
 
         <Link
           href="/owner/notifications"

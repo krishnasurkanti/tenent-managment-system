@@ -93,12 +93,33 @@ function OwnerTenantsPageContent() {
     return [...scopedCreatedTenants, ...scopedExistingTenants];
   }, [allTenants, createdTenants, currentHostel, tenantOverrides]);
 
-  const dueSoonCount = tenants.filter((tenant) => {
+  const directoryQuery = (searchParams.get("q") ?? "").trim().toLowerCase();
+  const filteredTenants = useMemo(() => {
+    if (!directoryQuery) {
+      return tenants;
+    }
+
+    return tenants.filter((tenant) => {
+      const floor = tenant.assignment?.floorNumber ? String(tenant.assignment.floorNumber) : "";
+      const room = tenant.assignment?.roomNumber?.toLowerCase() ?? "";
+
+      return (
+        tenant.tenantId.toLowerCase().includes(directoryQuery) ||
+        tenant.fullName.toLowerCase().includes(directoryQuery) ||
+        tenant.phone.toLowerCase().includes(directoryQuery) ||
+        tenant.email.toLowerCase().includes(directoryQuery) ||
+        floor.includes(directoryQuery) ||
+        room.includes(directoryQuery)
+      );
+    });
+  }, [directoryQuery, tenants]);
+
+  const dueSoonCount = filteredTenants.filter((tenant) => {
     const tone = getDueStatus(tenant.nextDueDate).tone;
     return tone === "orange" || tone === "yellow";
   }).length;
-  const overdueCount = tenants.filter((tenant) => getDueStatus(tenant.nextDueDate).tone === "red").length;
-  const assignedCount = tenants.filter((tenant) => tenant.assignment).length;
+  const overdueCount = filteredTenants.filter((tenant) => getDueStatus(tenant.nextDueDate).tone === "red").length;
+  const assignedCount = filteredTenants.filter((tenant) => tenant.assignment).length;
 
   if (hostelLoading || tenantLoading) {
     return <LoadingState />;
@@ -139,7 +160,7 @@ function OwnerTenantsPageContent() {
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-2.5">
-            <SummaryTile icon={UserRound} label="Total" value={String(tenants.length)} />
+            <SummaryTile icon={UserRound} label="Total" value={String(filteredTenants.length)} />
             <SummaryTile icon={Wallet} label="Due soon" value={String(dueSoonCount)} tone="warning" />
             <SummaryTile icon={Wallet} label="Overdue" value={String(overdueCount)} tone="danger" />
             <SummaryTile icon={UserCheck} label="Assigned" value={String(assignedCount)} tone="success" />
@@ -147,12 +168,12 @@ function OwnerTenantsPageContent() {
         </Card>
 
         <div className="space-y-2.5">
-          {tenants.length === 0 ? (
+          {filteredTenants.length === 0 ? (
             <Card className={`${ownerPanelClass} rounded-[24px] p-4 text-center text-sm text-[color:var(--fg-secondary)]`}>
-              No tenants yet for this hostel.
+              {directoryQuery ? "No tenants matched that search." : "No tenants yet for this hostel."}
             </Card>
           ) : (
-            tenants.map((tenant) => {
+            filteredTenants.map((tenant) => {
               const status = getDueStatus(tenant.nextDueDate);
 
               return (
@@ -203,7 +224,7 @@ function OwnerTenantsPageContent() {
         </div>
 
         <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryTile icon={UserRound} label="Total Tenants" value={String(tenants.length)} />
+          <SummaryTile icon={UserRound} label="Total Tenants" value={String(filteredTenants.length)} />
           <SummaryTile icon={Wallet} label="Due Soon" value={String(dueSoonCount)} tone="warning" />
           <SummaryTile icon={Wallet} label="Overdue" value={String(overdueCount)} tone="danger" />
           <SummaryTile icon={UserCheck} label="Assigned" value={String(assignedCount)} tone="success" />
@@ -224,14 +245,14 @@ function OwnerTenantsPageContent() {
                 </tr>
               </thead>
               <tbody>
-                {tenants.length === 0 ? (
+                {filteredTenants.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-3 py-7 text-center text-sm text-[color:var(--fg-secondary)]">
-                      No tenants created yet for this hostel.
+                      {directoryQuery ? "No tenants matched that search." : "No tenants created yet for this hostel."}
                     </td>
                   </tr>
                 ) : (
-                  tenants.map((tenant) => {
+                  filteredTenants.map((tenant) => {
                     const status = getDueStatus(tenant.nextDueDate);
 
                     return (
