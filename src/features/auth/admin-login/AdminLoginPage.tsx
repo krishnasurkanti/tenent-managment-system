@@ -106,7 +106,7 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
-            <div className="mt-6 hidden xl:block [@media(max-height:920px)]:hidden">
+            <div className="mt-6 hidden 2xl:block [@media(max-height:1180px)]:hidden">
               <div className="rounded-[24px] border border-[#253556] bg-[linear-gradient(180deg,rgba(12,17,34,0.96)_0%,rgba(8,11,22,0.96)_100%)] p-4 shadow-[0_28px_60px_rgba(0,0,0,0.32)]">
                 <div className="flex items-center justify-between">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">Desktop Preview</div>
