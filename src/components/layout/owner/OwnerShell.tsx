@@ -1,6 +1,6 @@
- "use client";
+"use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { OwnerMobileNav } from "@/components/layout/owner/OwnerMobileNav";
 import { OwnerSidebar } from "@/components/layout/owner/OwnerSidebar";
 import { OwnerTopbar } from "@/components/layout/owner/OwnerTopbar";
@@ -19,7 +19,9 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
         </div>
         <OwnerSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
-          <OwnerTopbar onOpenSidebar={() => setSidebarOpen(true)} />
+          <Suspense fallback={<OwnerTopbarFallback />}>
+            <OwnerTopbar onOpenSidebar={() => setSidebarOpen(true)} />
+          </Suspense>
           <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain animate-[float-up_var(--motion-large)_var(--ease-enter)] px-2.5 py-2 pb-[calc(env(safe-area-inset-bottom)+4rem)] sm:px-3 sm:py-2.5 sm:pb-[calc(env(safe-area-inset-bottom)+4.25rem)] md:px-4 md:py-3 xl:px-5 xl:py-4">
             <div className="app-page-frame mx-auto flex w-full max-w-[1380px] flex-1 flex-col">{children}</div>
           </main>
@@ -27,5 +29,24 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
         <OwnerMobileNav />
       </div>
     </HostelContextProvider>
+  );
+}
+
+function OwnerTopbarFallback() {
+  return (
+    <div className="sticky top-0 z-50 isolate border-b border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.84)_100%)] px-3 py-2 backdrop-blur-2xl md:px-4 xl:px-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <div className="h-9 w-9 animate-pulse rounded-full bg-[color:var(--surface-soft)]" />
+          <div className="h-9 w-9 animate-pulse rounded-full bg-[color:var(--surface-soft)]" />
+          <div className="hidden h-9 w-40 animate-pulse rounded-full bg-[color:var(--surface-soft)] xl:block" />
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="hidden h-9 w-72 animate-pulse rounded-full bg-[color:var(--surface-soft)] xl:block" />
+          <div className="h-9 w-9 animate-pulse rounded-full bg-[color:var(--surface-soft)]" />
+          <div className="h-9 w-9 animate-pulse rounded-full bg-[color:var(--surface-soft)]" />
+        </div>
+      </div>
+    </div>
   );
 }

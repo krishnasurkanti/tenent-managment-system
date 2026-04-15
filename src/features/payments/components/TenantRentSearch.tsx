@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { CalendarDays, ImageUp, Search, WalletCards, X } from "lucide-react";
@@ -11,6 +11,14 @@ import { recordTenantPayment, uploadTenantPaymentProof } from "@/services/tenant
 import type { TenantRecord } from "@/types/tenant";
 
 export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
+  return (
+    <Suspense fallback={<TenantRentSearchButton disabled />}>
+      <TenantRentSearchContent tenants={tenants} />
+    </Suspense>
+  );
+}
+
+function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -212,17 +220,13 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
 
   return (
     <>
-      <Button
+      <TenantRentSearchButton
         disabled={submitting}
-        className="min-h-12 w-full rounded-2xl border border-blue-500 bg-blue-600 px-4 text-[13px] font-semibold text-white shadow-[var(--shadow-soft)] hover:text-white hover:opacity-95"
         onClick={() => {
           resetState();
           setOpen(true);
         }}
-      >
-        <WalletCards className="mr-2 h-4 w-4" />
-        Pay Rent
-      </Button>
+      />
 
       {open && mounted
         ? createPortal(
@@ -453,6 +457,25 @@ export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
       )
         : null}
     </>
+  );
+}
+
+function TenantRentSearchButton({
+  disabled = false,
+  onClick,
+}: {
+  disabled?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <Button
+      disabled={disabled}
+      className="min-h-12 w-full rounded-2xl border border-blue-500 bg-blue-600 px-4 text-[13px] font-semibold text-white shadow-[var(--shadow-soft)] hover:text-white hover:opacity-95"
+      onClick={onClick}
+    >
+      <WalletCards className="mr-2 h-4 w-4" />
+      Pay Rent
+    </Button>
   );
 }
 
