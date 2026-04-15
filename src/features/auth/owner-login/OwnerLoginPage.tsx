@@ -106,8 +106,8 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <section className="smart-scroll-area smart-scroll-fade relative grid gap-4 px-3 py-3 sm:px-5 sm:py-5 lg:grid-cols-[1fr_0.92fr] lg:items-center lg:gap-6 lg:px-8 lg:py-5">
-          <div className="hidden lg:flex lg:flex-col lg:justify-center">
+        <section className="smart-scroll-area smart-scroll-fade relative grid gap-4 px-3 py-3 sm:px-5 sm:py-5 lg:grid-cols-[1fr_0.92fr] lg:items-start lg:gap-6 lg:px-8 lg:pt-4 lg:pb-6">
+          <div className="hidden lg:flex lg:flex-col lg:justify-start lg:pt-2">
             <div className="max-w-xl">
               <div className="inline-flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#ffcc4d_0%,#d9941c_100%)] text-[#18120a] shadow-[0_18px_40px_rgba(245,177,52,0.18)]">
@@ -119,7 +119,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <h1 className="mt-8 text-[clamp(2.8rem,5vw,3.75rem)] font-semibold leading-[0.96] tracking-[-0.05em] text-[#f8f3eb]">
+              <h1 className="mt-7 text-[clamp(2.55rem,4.4vw,3.5rem)] font-semibold leading-[0.96] tracking-[-0.05em] text-[#f8f3eb]">
                 Manage tenants.
                 <span className="mt-1.5 block text-[#ffd15a]">Never miss rent.</span>
               </h1>
@@ -136,7 +136,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="mt-7 hidden xl:block [@media(max-height:860px)]:hidden">
+            <div className="mt-6 hidden xl:block [@media(max-height:920px)]:hidden">
               <div className="rounded-[24px] border border-[#253556] bg-[linear-gradient(180deg,rgba(12,17,34,0.96)_0%,rgba(8,11,22,0.96)_100%)] p-4 shadow-[0_28px_60px_rgba(0,0,0,0.32)]">
                 <div className="flex items-center justify-between">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">Desktop Preview</div>
@@ -171,7 +171,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex items-start justify-center py-1 lg:items-center lg:justify-end">
+          <div className="flex items-start justify-center py-1 lg:sticky lg:top-6 lg:justify-end">
             <div className="w-full max-w-md">
               <div className="rounded-[22px] border border-white/12 bg-[linear-gradient(180deg,rgba(18,22,38,0.92)_0%,rgba(15,17,31,0.96)_100%)] p-3.5 shadow-[0_30px_80px_rgba(0,0,0,0.4)] backdrop-blur-xl sm:p-5 lg:rounded-[26px] lg:p-5 xl:p-6">
                 <div className="lg:hidden">
