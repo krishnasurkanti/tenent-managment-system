@@ -65,8 +65,8 @@ export default function OwnerRegisterPage() {
   };
 
   return (
-    <main className="h-full overflow-y-auto bg-[linear-gradient(180deg,var(--bg-primary)_0%,color-mix(in_srgb,var(--bg-surface)_88%,white)_42%,color-mix(in_srgb,var(--bg-elevated)_85%,white)_100%)] px-4 py-3 text-[color:var(--fg-primary)] lg:px-6 lg:py-5">
-      <div className="mx-auto flex w-full max-w-6xl flex-col">
+    <main className="min-h-dvh overflow-y-auto overscroll-y-contain bg-[linear-gradient(180deg,var(--bg-primary)_0%,color-mix(in_srgb,var(--bg-surface)_88%,white)_42%,color-mix(in_srgb,var(--bg-elevated)_85%,white)_100%)] px-4 py-3 text-[color:var(--fg-primary)] lg:px-6 lg:py-5">
+      <div className="mx-auto flex min-h-[calc(100dvh-1.5rem)] w-full max-w-6xl flex-col lg:min-h-[calc(100dvh-2.5rem)]">
         <header className="relative z-10 flex items-center justify-between">
           <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--accent-electric)] shadow-sm backdrop-blur">
             <Sparkles className="h-3.5 w-3.5" />
