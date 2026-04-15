@@ -25,8 +25,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-dvh overflow-hidden bg-[linear-gradient(180deg,var(--bg-primary)_0%,var(--bg-surface)_38%,var(--bg-elevated)_100%)] text-[color:var(--fg-primary)]">
-      <div className="mx-auto flex min-h-dvh w-full max-w-[1400px]">
+    <div className="smart-scroll-shell bg-[linear-gradient(180deg,var(--bg-primary)_0%,var(--bg-surface)_38%,var(--bg-elevated)_100%)] text-[color:var(--fg-primary)]">
+      <div className="mx-auto flex min-h-full w-full max-w-[1400px]">
         <aside className="hidden h-full w-[260px] shrink-0 border-r border-[color:var(--border)] bg-[linear-gradient(180deg,var(--bg-surface)_0%,var(--bg-primary)_100%)] p-4 shadow-[0_24px_50px_rgba(0,0,0,0.18)] lg:block">
           <div className="mb-5 rounded-[28px] border border-[color:var(--border)] bg-[linear-gradient(180deg,var(--bg-elevated)_0%,color-mix(in_srgb,var(--bg-surface)_72%,black)_100%)] px-3 py-3">
             <p className="text-xl font-bold tracking-tight text-[color:var(--fg-primary)]">MyPG Control</p>
@@ -53,7 +53,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden p-3 sm:p-4 lg:p-4">
-          <header className="mb-2.5 flex shrink-0 items-center justify-between rounded-[24px] border border-[color:var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bg-surface)_90%,white)_0%,var(--bg-surface)_100%)] px-4 py-3 shadow-sm">
+          <header className="smart-scroll-header mb-2.5 flex items-center justify-between rounded-[24px] border border-[color:var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bg-surface)_90%,white)_0%,var(--bg-surface)_100%)] px-4 py-3 shadow-sm">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Platform Owner</p>
               <p className="text-sm font-semibold text-[color:var(--fg-primary)]">Admin Profile</p>
@@ -67,7 +67,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               Logout
             </button>
           </header>
-          <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pr-1">
+          <main className="smart-scroll-area smart-scroll-fade pr-1">
             <div className="app-page-frame flex min-h-full flex-col">
               {children}
             </div>

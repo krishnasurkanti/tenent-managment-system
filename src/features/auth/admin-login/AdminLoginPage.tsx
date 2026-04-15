@@ -62,11 +62,11 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="min-h-dvh overflow-y-auto overscroll-y-contain bg-[#090912] px-2 py-2 text-white sm:px-4 sm:py-4 lg:px-6 lg:py-6">
-      <div className="relative mx-auto flex min-h-[calc(100dvh-1rem)] w-full max-w-7xl flex-col overflow-hidden rounded-[22px] border border-white/10 bg-[radial-gradient(circle_at_18%_36%,rgba(57,77,160,0.22),transparent_24%),radial-gradient(circle_at_60%_75%,rgba(236,172,66,0.18),transparent_18%),linear-gradient(180deg,#0d0f1a_0%,#090b14_100%)] shadow-[0_36px_100px_rgba(0,0,0,0.42)] sm:min-h-[calc(100dvh-2rem)] lg:rounded-[28px]">
+    <main className="smart-scroll-shell bg-[#090912] px-2 py-2 text-white sm:px-4 sm:py-4 lg:px-6 lg:py-6">
+      <div className="relative mx-auto flex min-h-[calc(100vh-1rem)] min-h-[calc(100dvh-1rem)] w-full max-w-7xl flex-1 flex-col overflow-hidden rounded-[22px] border border-white/10 bg-[radial-gradient(circle_at_18%_36%,rgba(57,77,160,0.22),transparent_24%),radial-gradient(circle_at_60%_75%,rgba(236,172,66,0.18),transparent_18%),linear-gradient(180deg,#0d0f1a_0%,#090b14_100%)] shadow-[0_36px_100px_rgba(0,0,0,0.42)] sm:min-h-[calc(100vh-2rem)] sm:min-h-[calc(100dvh-2rem)] lg:rounded-[28px]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[length:14px_14px] opacity-20" />
 
-        <div className="relative z-10 flex items-center justify-end border-b border-white/8 px-3 py-2.5 sm:px-5 lg:px-6">
+        <div className="smart-scroll-header relative z-10 flex items-center justify-end border-b border-white/8 px-3 py-2.5 sm:px-5 lg:px-6">
           <Link
             href="/login"
             className="inline-flex items-center gap-2 rounded-full border border-[#f2bb4d]/55 bg-[#1d1a19]/80 px-3.5 py-2 text-xs font-semibold text-[#ffd26a] shadow-[0_0_0_1px_rgba(255,214,120,0.08)_inset] sm:text-sm"
@@ -76,7 +76,7 @@ export default function AdminLoginPage() {
           </Link>
         </div>
 
-        <section className="relative grid flex-1 gap-4 px-3 py-3 sm:px-5 sm:py-5 lg:grid-cols-[1fr_0.92fr] lg:items-center lg:gap-6 lg:px-8 lg:py-6">
+        <section className="smart-scroll-area smart-scroll-fade relative grid gap-4 px-3 py-3 sm:px-5 sm:py-5 lg:grid-cols-[1fr_0.92fr] lg:items-center lg:gap-6 lg:px-8 lg:py-5">
           <div className="hidden lg:flex lg:flex-col lg:justify-center">
             <div className="max-w-xl">
               <div className="inline-flex items-center gap-3">
@@ -89,7 +89,7 @@ export default function AdminLoginPage() {
                 </div>
               </div>
 
-              <h1 className="mt-8 text-[3.25rem] font-semibold leading-[0.96] tracking-[-0.05em] text-[#f8f3eb] xl:text-[3.75rem]">
+              <h1 className="mt-8 text-[clamp(2.8rem,5vw,3.75rem)] font-semibold leading-[0.96] tracking-[-0.05em] text-[#f8f3eb]">
                 Control billing.
                 <span className="mt-1.5 block text-[#ffd15a]">Review every hostel.</span>
               </h1>
@@ -106,7 +106,7 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
-            <div className="mt-7 hidden xl:block">
+            <div className="mt-7 hidden xl:block [@media(max-height:860px)]:hidden">
               <div className="rounded-[24px] border border-[#253556] bg-[linear-gradient(180deg,rgba(12,17,34,0.96)_0%,rgba(8,11,22,0.96)_100%)] p-4 shadow-[0_28px_60px_rgba(0,0,0,0.32)]">
                 <div className="flex items-center justify-between">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">Desktop Preview</div>
@@ -142,7 +142,7 @@ export default function AdminLoginPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-center py-1 lg:justify-end">
+          <div className="flex items-start justify-center py-1 lg:items-center lg:justify-end">
             <div className="w-full max-w-md">
               <div className="rounded-[22px] border border-white/12 bg-[linear-gradient(180deg,rgba(18,22,38,0.92)_0%,rgba(15,17,31,0.96)_100%)] p-3.5 shadow-[0_30px_80px_rgba(0,0,0,0.4)] backdrop-blur-xl sm:p-5 lg:rounded-[26px] lg:p-5 xl:p-6">
                 <div className="lg:hidden">
