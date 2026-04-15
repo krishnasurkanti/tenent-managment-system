@@ -1,5 +1,5 @@
 import { DEMO_OWNER_HOSTEL_ID, getOwnerHostelInventory } from "@/data/ownerHostelStore";
-import { calculateNextDueDate, getDueStatus } from "@/lib/payment-utils";
+import { calculateNextDueDate, getDueStatus } from "@/utils/payment";
 import type { TenantAssignment, TenantRecord } from "@/types/tenant";
 import fs from "node:fs";
 import path from "node:path";

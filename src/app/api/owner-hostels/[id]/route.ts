@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getOwnerHostel, updateOwnerHostel } from "@/data/ownerHostelStore";
 import type { OwnerFloor } from "@/types/owner-hostel";
+import { getOwnerSession } from "@/lib/session-mode";
+import { backendFetch } from "@/services/core/backend-api";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,19 @@ type RouteContext = {
 
 export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
+  const session = await getOwnerSession();
+
+  if (session.isLive) {
+    const backendResponse = await backendFetch(`/api/hostels/${id}`);
+    const payload = (await backendResponse.json()) as { hostel?: unknown; message?: string };
+
+    if (!backendResponse.ok) {
+      return NextResponse.json({ message: payload.message || "Hostel not found." }, { status: backendResponse.status });
+    }
+
+    return NextResponse.json({ hostel: payload.hostel });
+  }
+
   const hostel = getOwnerHostel(id);
 
   if (!hostel) {
@@ -23,6 +38,32 @@ export async function GET(_request: Request, context: RouteContext) {
 
 export async function PUT(request: Request, context: RouteContext) {
   const { id } = await context.params;
+  const session = await getOwnerSession();
+
+  if (session.isLive) {
+    const body = (await request.json()) as {
+      hostelName?: string;
+      address?: string;
+      floors?: OwnerFloor[];
+    };
+
+    const backendResponse = await backendFetch(`/api/hostels/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        name: body.hostelName?.trim() ?? "",
+        address: body.address?.trim() ?? "",
+        floors: body.floors ?? [],
+      }),
+    });
+    const payload = (await backendResponse.json()) as { hostel?: unknown; message?: string };
+
+    if (!backendResponse.ok) {
+      return NextResponse.json({ message: payload.message || "Unable to update hostel." }, { status: backendResponse.status });
+    }
+
+    return NextResponse.json({ hostel: payload.hostel });
+  }
+
   const existingHostel = getOwnerHostel(id);
 
   if (!existingHostel) {

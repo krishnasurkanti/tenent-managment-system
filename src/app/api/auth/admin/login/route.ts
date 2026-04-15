@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getApiBaseUrl } from "@/lib/api-config";
 import { createDemoSessionToken, getDemoAdminProfile, matchesDemoCredentials } from "@/lib/demo-auth";
-import { setAuthCookies } from "@/lib/backend-api";
+import { setAuthCookies } from "@/services/core/backend-api";
 
 export const dynamic = "force-dynamic";
 

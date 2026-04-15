@@ -72,3 +72,61 @@ export type UpgradeRequest = {
   requestedAt: string;
   decidedAt?: string;
 };
+
+export type AdminOverview = {
+  totals: {
+    hostels: number;
+    activeTenants: number;
+    monthlyRevenue: number;
+    activeHostels: number;
+    inactiveHostels: number;
+  };
+  growth: {
+    newTenantsThisMonth: number;
+    newHostelsThisMonth: number;
+    tenantGrowthDelta: number;
+  };
+};
+
+export type AdminAnalyticsData = {
+  tenantsPerHostel: Array<{ hostelName: string; tenantCount: number }>;
+  revenuePerHostel: Array<{ hostelName: string; revenue: number }>;
+  growthTrends: { monthKey: string; newHostels: number; newTenants: number };
+  mostActiveHostels: Array<{ hostelName: string; tenantCount: number }>;
+};
+
+export type AdminHostelRow = {
+  hostelId: string;
+  hostelName: string;
+  address: string;
+  tenantCount: number;
+  owner: {
+    ownerId: string;
+    ownerName: string;
+    ownerEmail: string;
+    ownerUsername: string;
+    failedLoginAttempts: number;
+    lockedUntil: string | null;
+    ownerSuspended: boolean;
+    ownerHostelCount: number;
+  };
+  status: {
+    hostelActive: boolean;
+    planId: string;
+  };
+};
+
+export type AdminBillingRow = {
+  hostelId: string;
+  hostelName: string;
+  plan: { id: string; name: string; basePrice: number; limit: number };
+  control: {
+    planId: string;
+    pricingOverride: number | null;
+    discountPercent: number;
+    freeMonthsRemaining: number;
+  };
+  billing: BillingBreakdown;
+};
+
+export type AdminSettingsFeatures = Record<string, boolean>;

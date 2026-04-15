@@ -10,7 +10,7 @@ export default function NotFound() {
         <p className="mt-3 text-sm text-[var(--muted-foreground)]">The page you requested is not available in the current hostel owner workspace.</p>
         <Link
           href="/login"
-          className="mt-6 inline-flex items-center justify-center rounded-2xl bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+          className="mt-6 inline-flex items-center justify-center rounded-2xl bg-[color:var(--accent)] px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
         >
           Back to login
         </Link>

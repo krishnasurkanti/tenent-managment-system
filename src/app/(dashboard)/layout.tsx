@@ -1,4 +1,4 @@
-import { OwnerShell } from "@/components/owner-shell";
+import { OwnerShell } from "@/components/layout/owner/OwnerShell";
 
 export default function DashboardLayout({
   children,

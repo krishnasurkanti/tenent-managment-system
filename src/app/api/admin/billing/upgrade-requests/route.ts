@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { backendFetch } from "@/lib/backend-api";
+import { backendFetch } from "@/services/core/backend-api";
 
 export const dynamic = "force-dynamic";
 

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getApiBaseUrl } from "@/lib/api-config";
-import { setAuthCookies } from "@/lib/backend-api";
-import { createDemoSessionToken, getDemoOwnerProfile, matchesDemoCredentials } from "@/lib/demo-auth";
+import { setAuthCookies } from "@/services/core/backend-api";
 
 export const dynamic = "force-dynamic";
 
@@ -14,12 +13,6 @@ export async function POST(request: Request) {
 
   const identifier = body.username?.trim() || body.email?.trim() || "";
   const password = body.password?.trim() ?? "";
-
-  if (matchesDemoCredentials(identifier, password)) {
-    const response = NextResponse.json({ ok: true, owner: getDemoOwnerProfile() });
-    setAuthCookies(response, createDemoSessionToken("owner"));
-    return response;
-  }
 
   let backendResponse: Response;
   let payload: {

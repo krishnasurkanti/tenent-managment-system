@@ -15,8 +15,20 @@ async function initializeDatabase() {
       id BIGSERIAL PRIMARY KEY,
       owner_id BIGINT NOT NULL REFERENCES owners(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
+      address TEXT NOT NULL DEFAULT '',
+      data JSONB NOT NULL DEFAULT '{}'::jsonb,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
+  `);
+
+  await query(`
+    ALTER TABLE hostels
+    ADD COLUMN IF NOT EXISTS address TEXT NOT NULL DEFAULT ''
+  `);
+
+  await query(`
+    ALTER TABLE hostels
+    ADD COLUMN IF NOT EXISTS data JSONB NOT NULL DEFAULT '{}'::jsonb
   `);
 
   await query(`

@@ -3,10 +3,6 @@ const jwt = require("jsonwebtoken");
 const { query } = require("../config/db");
 const { createHttpError } = require("../utils/httpErrors");
 
-const DEMO_USERNAME = "surkanti1703";
-const DEMO_EMAIL = "surkanti1703@demo.local";
-const DEMO_PASSWORD = "Kk17030202@";
-
 function signToken(owner) {
   return jwt.sign(
     {
@@ -47,28 +43,7 @@ async function register(req, res) {
 }
 
 async function login(req, res) {
-  const { email, username, password } = req.validatedBody;
-  const normalizedIdentifier = (email || username || "").trim().toLowerCase();
-
-  if (
-    password === DEMO_PASSWORD &&
-    (normalizedIdentifier === DEMO_EMAIL || normalizedIdentifier === DEMO_USERNAME)
-  ) {
-    return res.json({
-      message: "Login successful.",
-      token: signToken({
-        id: "demo-owner",
-        email: DEMO_EMAIL,
-      }),
-      owner: {
-        id: "demo-owner",
-        email: DEMO_EMAIL,
-        username: DEMO_USERNAME,
-        created_at: "2026-04-09T00:00:00.000Z",
-      },
-    });
-  }
-
+  const { email, password } = req.validatedBody;
   if (!email) {
     throw createHttpError(401, "Invalid email or password.");
   }

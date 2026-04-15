@@ -16,6 +16,21 @@ const authLoginSchema = z.object({
 
 const hostelCreateSchema = z.object({
   name: z.string().trim().min(1).max(160),
+  address: z.string().trim().min(1).max(280),
+  floors: z.array(
+    z.object({
+      id: z.string().trim().min(1).max(160),
+      floorLabel: z.string().trim().min(1).max(160),
+      rooms: z.array(
+        z.object({
+          id: z.string().trim().min(1).max(160),
+          roomNumber: z.string().trim().min(1).max(40),
+          bedCount: z.coerce.number().int().positive(),
+          sharingType: z.string().trim().min(1).max(120),
+        }),
+      ).min(1),
+    }),
+  ).min(1),
 });
 
 const tenantCreateSchema = z

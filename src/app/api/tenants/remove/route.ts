@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { removeTenantRecord } from "@/data/tenantStore";
+import { getOwnerSession } from "@/lib/session-mode";
+import { backendFetch } from "@/services/core/backend-api";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  const session = await getOwnerSession();
   const body = (await request.json()) as {
     tenantId?: string;
   };
@@ -13,6 +16,19 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (session.isLive) {
+      const backendResponse = await backendFetch(`/api/tenants/${encodeURIComponent(body.tenantId)}`, {
+        method: "DELETE",
+      });
+      const payload = (await backendResponse.json()) as { tenant?: unknown; message?: string };
+
+      if (!backendResponse.ok) {
+        return NextResponse.json({ message: payload.message || "Unable to remove tenant." }, { status: backendResponse.status });
+      }
+
+      return NextResponse.json({ tenant: payload.tenant });
+    }
+
     const tenant = removeTenantRecord(body.tenantId);
     return NextResponse.json({ tenant });
   } catch (error) {

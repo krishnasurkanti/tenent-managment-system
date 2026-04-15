@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchOwnerTenants } from "@/services/tenants/tenants.service";
 import type { TenantRecord } from "@/types/tenant";
 
 export function useOwnerTenants() {
@@ -12,8 +13,7 @@ export function useOwnerTenants() {
 
     const loadTenants = async () => {
       try {
-        const response = await fetch("/api/tenants", { cache: "no-store" });
-        const data = (await response.json()) as { tenants?: TenantRecord[] };
+        const { data } = await fetchOwnerTenants();
 
         if (active) {
           setTenants(data.tenants ?? []);
