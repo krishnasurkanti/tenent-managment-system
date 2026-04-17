@@ -76,7 +76,8 @@ export default function AdminLoginPage() {
           </Link>
         </div>
 
-        <section className="smart-scroll-area smart-scroll-fade relative grid gap-4 px-3 py-3 sm:px-5 sm:py-5 lg:grid-cols-[1fr_0.92fr] lg:items-start lg:gap-6 lg:px-8 lg:pt-4 lg:pb-6">
+        <section className="smart-scroll-area smart-scroll-fade relative">
+          <div className="grid gap-4 px-3 py-3 sm:px-5 sm:py-5 lg:grid-cols-[1fr_0.92fr] lg:items-start lg:gap-6 lg:px-8 lg:pt-4 lg:pb-6">
           <div className="hidden lg:flex lg:flex-col lg:justify-start lg:pt-2">
             <div className="max-w-xl">
               <div className="inline-flex items-center gap-3">
@@ -230,6 +231,7 @@ export default function AdminLoginPage() {
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </section>
       </div>
