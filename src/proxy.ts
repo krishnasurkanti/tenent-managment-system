@@ -22,8 +22,21 @@ export function proxy(request: NextRequest) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
       }
 
-      return NextResponse.redirect(new URL("/login", request.url));
+      const url = new URL("/owner/login", request.url);
+      if (pathname !== "/owner/login") url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
     }
+  }
+
+  if (pathname.startsWith("/super-admin") && pathname !== "/super-admin/login") {
+    const isSuperAdmin = role === "super_admin";
+    if (!isSuperAdmin) {
+      return NextResponse.redirect(new URL("/super-admin/login", request.url));
+    }
+  }
+
+  if (pathname.startsWith("/api/super-admin") && role !== "super_admin") {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   if (pathname.startsWith("/admin")) {
@@ -36,7 +49,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  if (pathname === "/login" && ownerAuthenticated) {
+  if ((pathname === "/login" || pathname === "/owner/login") && ownerAuthenticated) {
     return NextResponse.redirect(new URL("/owner/dashboard", request.url));
   }
 
@@ -48,5 +61,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/login", "/owner/:path*", "/admin/:path*", "/api/admin/:path*", "/api/owner-hostel", "/api/owner-hostels/:path*", "/api/tenants/:path*", "/api/owner-billing/:path*"],
+  matcher: ["/login", "/owner/:path*", "/super-admin/:path*", "/admin/:path*", "/api/admin/:path*", "/api/super-admin/:path*", "/api/owner-hostel", "/api/owner-hostels/:path*", "/api/tenants/:path*", "/api/owner-billing/:path*"],
 };
