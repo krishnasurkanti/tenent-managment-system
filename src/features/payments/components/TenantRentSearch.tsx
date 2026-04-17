@@ -12,15 +12,15 @@ import { recordTenantPayment, uploadTenantPaymentProof } from "@/services/tenant
 import { formatPaymentDate } from "@/utils/payment";
 import type { TenantRecord } from "@/types/tenant";
 
-export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
+export function TenantRentSearch({ tenants, hideButton }: { tenants: TenantRecord[]; hideButton?: boolean }) {
   return (
-    <Suspense fallback={<TenantRentSearchButton disabled />}>
-      <TenantRentSearchContent tenants={tenants} />
+    <Suspense fallback={hideButton ? null : <TenantRentSearchButton disabled />}>
+      <TenantRentSearchContent tenants={tenants} hideButton={hideButton} />
     </Suspense>
   );
 }
 
-function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
+function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecord[]; hideButton?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -232,13 +232,15 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
 
   return (
     <>
-      <TenantRentSearchButton
-        disabled={submitting}
-        onClick={() => {
-          resetState();
-          setOpen(true);
-        }}
-      />
+      {!hideButton && (
+        <TenantRentSearchButton
+          disabled={submitting}
+          onClick={() => {
+            resetState();
+            setOpen(true);
+          }}
+        />
+      )}
 
       {open && mounted
         ? createPortal(

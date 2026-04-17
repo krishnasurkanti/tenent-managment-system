@@ -9,6 +9,7 @@ import { useOwnerTenants } from "@/hooks/use-owner-tenants";
 import { ownerStatusClass } from "@/components/ui/owner-theme";
 import { formatPaymentDate, getDueStatus } from "@/utils/payment";
 import { getHostelOccupancySummary } from "@/utils/hostel-occupancy";
+import { TenantRentSearch } from "@/features/payments/components/TenantRentSearch";
 
 export default function OwnerDashboardPage() {
   const { currentHostel, currentHostelId, loading: hostelLoading, isSwitching } = useHostelContext();
@@ -145,7 +146,7 @@ export default function OwnerDashboardPage() {
 
             <div className="grid grid-cols-2 gap-2.5">
               <ActionTile href="/owner/tenants?action=add-tenant" icon={Users} label="Add Tenant" note="New check-in" variant="desktop" />
-              <ActionTile href="/owner/payments" icon={CreditCard} label="Payments" note="Ledger and dues" variant="desktop" />
+              <ActionTile href="?action=pay-rent" icon={CreditCard} label="Pay Rent" note="Collect rent" variant="desktop" />
               <ActionTile href="/owner/rooms?view=available" icon={DoorOpen} label="Available" note={isResidence ? "Vacant units" : "Open beds"} variant="desktop" />
               <ActionTile href="/owner/notifications" icon={AlertTriangle} label="Alerts" note={`${overdue.length} overdue`} variant="desktop" />
             </div>
@@ -217,6 +218,8 @@ export default function OwnerDashboardPage() {
           </Card>
         </div>
       </section>
+
+      <TenantRentSearch tenants={tenants} hideButton />
     </div>
   );
 }
