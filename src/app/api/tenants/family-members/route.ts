@@ -61,26 +61,28 @@ export async function POST(request: Request) {
   return NextResponse.json({ tenant: updated });
 }
 
-function sanitizeFamilyMembers(input: TenantFamilyMember[] | undefined) {
+function sanitizeFamilyMembers(input: TenantFamilyMember[] | undefined): TenantFamilyMember[] {
   if (!Array.isArray(input)) {
     return [];
   }
 
-  return input
-    .map((member) => {
-      const name = String(member.name ?? "").trim();
-      const relation = String(member.relation ?? "").trim();
-      const age = member.age === undefined || member.age === null ? undefined : Number(member.age);
+  const sanitized: TenantFamilyMember[] = [];
 
-      if (!name || !relation || (age !== undefined && (!Number.isFinite(age) || age < 0))) {
-        return null;
-      }
+  for (const member of input) {
+    const name = String(member.name ?? "").trim();
+    const relation = String(member.relation ?? "").trim();
+    const age = member.age === undefined || member.age === null ? undefined : Number(member.age);
 
-      return {
-        name,
-        relation,
-        age,
-      };
-    })
-    .filter((member): member is TenantFamilyMember => Boolean(member));
+    if (!name || !relation || (age !== undefined && (!Number.isFinite(age) || age < 0))) {
+      continue;
+    }
+
+    sanitized.push({
+      name,
+      relation,
+      age,
+    });
+  }
+
+  return sanitized;
 }

@@ -125,6 +125,8 @@ export async function POST(request: Request) {
     const moveInDate = String(formData.get("moveInDate") ?? "").trim();
     const bedId = String(formData.get("bedId") ?? "").trim();
     const bedLabel = String(formData.get("bedLabel") ?? "").trim();
+    const propertyTypeRaw = String(formData.get("propertyType") ?? "").trim();
+    const propertyType = propertyTypeRaw === "RESIDENCE" ? "RESIDENCE" : propertyTypeRaw === "PG" ? "PG" : undefined;
     const hasAssignment = Boolean(hostelId && floorNumber && roomNumber && moveInDate);
 
     if (!hostelId) {

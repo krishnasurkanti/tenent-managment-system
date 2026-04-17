@@ -3,6 +3,7 @@ import { getOwnerHostel, saveOwnerHostel, updateOwnerHostel } from "@/data/owner
 import type { OwnerFloor } from "@/types/owner-hostel";
 import { getOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
+import { normalizeFloors } from "@/utils/hostel-occupancy";
 
 export const dynamic = "force-dynamic";
 
@@ -38,12 +39,15 @@ async function saveOrUpdateHostel(request: Request, mode: "create" | "update") {
     hostelId?: string;
     hostelName?: string;
     address?: string;
+    type?: string;
     floors?: OwnerFloor[];
   };
 
   const hostelName = body.hostelName?.trim() ?? "";
   const address = body.address?.trim() ?? "";
-  const floors = body.floors ?? [];
+  const type = body.type === "RESIDENCE" ? "RESIDENCE" : "PG";
+  const normalizeId = body.hostelId ?? `draft-${Date.now()}`;
+  const floors = normalizeFloors(normalizeId, type, body.floors ?? []);
 
   if (!hostelName || !address || floors.length === 0) {
     return NextResponse.json({ message: "Please complete hostel name, address, and at least one floor." }, { status: 400 });
@@ -56,13 +60,12 @@ async function saveOrUpdateHostel(request: Request, mode: "create" | "update") {
         (room) =>
           !room.roomNumber.trim() ||
           !room.bedCount ||
-          room.bedCount < 1 ||
-          !room.sharingType.trim(),
+          room.bedCount < 1,
       ),
   );
 
   if (hasInvalidRoom) {
-    return NextResponse.json({ message: "Each floor must have valid room number, bed count, and sharing type." }, { status: 400 });
+    return NextResponse.json({ message: "Each floor must have valid room or unit labels and capacity." }, { status: 400 });
   }
 
   if (session.isLive) {
@@ -71,6 +74,7 @@ async function saveOrUpdateHostel(request: Request, mode: "create" | "update") {
       body: JSON.stringify({
         name: hostelName,
         address,
+        type,
         floors,
       }),
     });
@@ -88,11 +92,13 @@ async function saveOrUpdateHostel(request: Request, mode: "create" | "update") {
       ? updateOwnerHostel({
           hostelName,
           address,
+          type,
           floors,
         }, body.hostelId)
       : saveOwnerHostel({
           hostelName,
           address,
+          type,
           floors,
         });
 

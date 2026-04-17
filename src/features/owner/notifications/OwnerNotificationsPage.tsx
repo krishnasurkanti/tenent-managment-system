@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { AlertCircle, Bell, Clock3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
@@ -137,4 +138,3 @@ function LoadingState() {
     </div>
   );
 }
-

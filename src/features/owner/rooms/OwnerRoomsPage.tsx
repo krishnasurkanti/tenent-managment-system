@@ -87,7 +87,7 @@ function OwnerRoomsPageContent() {
         </Card>
 
         <div className="space-y-2.5">
-          {inventory.floors.map((floor) => {
+          {inventory.floors.map((floor, floorIndex) => {
             const floorRooms = floor.rooms
               .map((room) => {
                 const roomTenants = tenants.filter(
@@ -114,7 +114,7 @@ function OwnerRoomsPageContent() {
                           <Layers3 className="h-4 w-4" />
                         </div>
                         <div>
-                          <h2 className="text-sm font-semibold text-white">{floor.floorLabel}</h2>
+                          <h2 className="text-sm font-semibold text-white">{`Floor ${floor.floorNumber}`}</h2>
                           <p className="text-[11px] text-[color:var(--fg-secondary)]">{floorRooms.length} active room cards</p>
                         </div>
                       </div>
@@ -136,7 +136,7 @@ function OwnerRoomsPageContent() {
                             </div>
                             <div className="text-right">
                               <p className="text-xs font-semibold text-white">
-                                {occupied}/{isResidence ? 1 : room.bedCount}
+                                {occupied}/{isResidence ? 1 : room.capacity}
                               </p>
                               <p className="text-[11px] text-[color:var(--fg-secondary)]">{available} free</p>
                             </div>
@@ -251,7 +251,7 @@ function OwnerRoomsPageContent() {
         </div>
 
         <div className="space-y-2.5">
-          {inventory.floors.map((floor) => {
+          {inventory.floors.map((floor, floorIndex) => {
             const floorRooms = floor.rooms
               .map((room) => {
                 const roomTenants = tenants.filter(
@@ -274,7 +274,7 @@ function OwnerRoomsPageContent() {
                   <summary className="list-none cursor-pointer bg-[color:var(--surface-soft)] px-3.5 py-2.5 marker:hidden">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <h2 className="text-sm font-semibold text-white">{floor.floorLabel}</h2>
+                        <h2 className="text-sm font-semibold text-white">{`Floor ${floor.floorNumber}`}</h2>
                         <p className="text-[11px] text-[color:var(--fg-secondary)]">{floorRooms.length} room cards</p>
                       </div>
                       <ChevronDown className="h-4 w-4 text-[color:var(--fg-secondary)] transition-transform group-open:rotate-180" />
