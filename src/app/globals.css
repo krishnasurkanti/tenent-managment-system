@@ -44,8 +44,8 @@
     --pill-gradient: var(--brand-soft);
     --hero-gradient: #162033;
     --danger-soft: var(--error-soft);
-    --radius-card: 40px;
-    --radius-pill: 32px;
+    --radius-card: 20px;
+    --radius-pill: 12px;
     --motion-micro: 100ms;
     --motion-small: 200ms;
     --motion-medium: 300ms;
@@ -303,8 +303,8 @@
 
 @layer components {
   .smart-scroll-shell {
-    min-height: 100vh;
-    min-height: 100dvh;
+    position: fixed;
+    inset: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -366,11 +366,6 @@
       flex-direction: column;
       flex: 1 1 auto;
       justify-content: flex-start;
-      min-height: 100%;
-    }
-
-    .app-page-frame > * > :last-child {
-      margin-top: auto;
     }
   }
 }
