@@ -106,8 +106,8 @@ function OwnerRoomsPageContent() {
 
             return (
               <Card key={floor.id} className={`overflow-hidden rounded-[22px] ${ownerPanelClass}`}>
-                <details open={floorIndex === 0}>
-                  <summary className="list-none px-3 py-3 marker:hidden">
+                <details className="group" open={floorIndex === 0}>
+                  <summary className="list-none cursor-pointer px-3 py-3 marker:hidden">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5">
                         <div className="rounded-xl bg-[color:var(--brand-soft)] p-2 text-[#9edcff]">
@@ -118,7 +118,7 @@ function OwnerRoomsPageContent() {
                           <p className="text-[11px] text-[color:var(--fg-secondary)]">{floorRooms.length} active room cards</p>
                         </div>
                       </div>
-                      <ChevronDown className="h-4 w-4 text-[color:var(--fg-secondary)]" />
+                      <ChevronDown className="h-4 w-4 text-[color:var(--fg-secondary)] transition-transform group-open:rotate-180" />
                     </div>
                   </summary>
 

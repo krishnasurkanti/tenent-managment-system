@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, UserCheck, UserRound, Wallet } from "lucide-react";
 import { TenantFormModal } from "@/features/tenants/components/TenantFormModal";
 import { TenantRoomAssignmentModal } from "@/features/tenants/components/TenantRoomAssignmentModal";
-import { TenantFamilyMembersModal } from "@/features/tenants/components/TenantFamilyMembersModal";
 import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
 import { SkeletonBlock } from "@/components/ui/skeleton";
@@ -40,7 +39,6 @@ function OwnerTenantsPageContent() {
   const [createdTenants, setCreatedTenants] = useState<TenantRecord[]>([]);
   const [tenantOverrides, setTenantOverrides] = useState<Record<string, TenantRecord>>({});
   const [modalOpen, setModalOpen] = useState(false);
-  const [familyModalOpen, setFamilyModalOpen] = useState(false);
   const [assignmentOpen, setAssignmentOpen] = useState(false);
   const [pendingTenant, setPendingTenant] = useState<TenantRecord | null>(null);
 
@@ -291,21 +289,9 @@ function OwnerTenantsPageContent() {
         open={modalOpen}
         onClose={closeModal}
         hostelId={currentHostel.id}
+        propertyType={currentHostel.type}
         onCreated={async (tenant) => {
-          const requiresFamilyStep = currentHostel.type === "RESIDENCE";
-
           if (shouldAutoAssign) {
-            if (requiresFamilyStep) {
-              setCreatedTenants((current) => {
-                const filtered = current.filter((item) => item.tenantId !== tenant.tenantId);
-                return [tenant, ...filtered];
-              });
-              setPendingTenant(tenant);
-              setFamilyModalOpen(true);
-              closeModal();
-              return;
-            }
-
             const {
               hostelId,
               floorNumber,
@@ -354,34 +340,8 @@ function OwnerTenantsPageContent() {
             return [tenant, ...filtered];
           });
           setPendingTenant(tenant);
-          if (requiresFamilyStep) {
-            setFamilyModalOpen(true);
-          } else {
-            setAssignmentOpen(true);
-          }
+          setAssignmentOpen(true);
           closeModal();
-        }}
-      />
-
-      <TenantFamilyMembersModal
-        open={familyModalOpen}
-        tenant={pendingTenant}
-        onClose={() => {
-          setFamilyModalOpen(false);
-          setAssignmentOpen(true);
-        }}
-        onSaved={(tenant) => {
-          setCreatedTenants((current) => {
-            const filtered = current.filter((item) => item.tenantId !== tenant.tenantId);
-            return [tenant, ...filtered];
-          });
-          setTenantOverrides((current) => ({
-            ...current,
-            [tenant.tenantId]: tenant,
-          }));
-          setPendingTenant(tenant);
-          setFamilyModalOpen(false);
-          setAssignmentOpen(true);
         }}
       />
 

@@ -75,7 +75,7 @@ export default function OwnerPaymentsPage() {
   const collectedTotal = tenants.reduce((sum, tenant) => sum + tenant.rentPaid, 0);
 
   return (
-    <main className={`space-y-3 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
+    <div className={`space-y-3 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
       <section className="space-y-3 lg:hidden">
         <Card className={`${ownerHeroCardClass} rounded-[24px] p-4`}>
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Payments</p>
@@ -303,7 +303,7 @@ export default function OwnerPaymentsPage() {
           }}
         />
       ) : null}
-    </main>
+    </div>
   );
 }
 

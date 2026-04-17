@@ -240,16 +240,16 @@ function ActionTile({
       className={
         variant === "desktop"
           ? "rounded-[22px] border border-white/12 bg-white/10 px-3 py-2.5 text-white shadow-[0_14px_30px_rgba(8,18,37,0.1)] backdrop-blur transition hover:-translate-y-1 hover:bg-white/14"
-          : "rounded-[20px] border border-slate-100 bg-white px-3 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5"
+          : "rounded-[20px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 shadow-[0_10px_24px_rgba(2,6,23,0.16)] transition hover:-translate-y-0.5"
       }
     >
       <div className="flex items-start gap-3">
-        <div className={variant === "desktop" ? "rounded-2xl bg-white/12 p-2 text-sky-200 ring-1 ring-white/10" : "rounded-2xl bg-blue-50 p-2.5 text-[var(--accent)]"}>
+        <div className={variant === "desktop" ? "rounded-2xl bg-white/12 p-2 text-sky-200 ring-1 ring-white/10" : "rounded-2xl bg-[color:var(--brand-soft)] p-2.5 text-[color:var(--accent-electric)]"}>
           <Icon className="h-4 w-4" />
         </div>
         <div className="min-w-0">
-          <p className={variant === "desktop" ? "text-[15px] font-semibold text-white" : "text-sm font-semibold text-slate-900"}>{label}</p>
-          <p className={variant === "desktop" ? "mt-0.5 text-[10px] text-blue-100/78" : "mt-1 text-[11px] text-slate-500"}>{note}</p>
+          <p className={variant === "desktop" ? "text-[15px] font-semibold text-white" : "text-sm font-semibold text-[color:var(--fg-primary)]"}>{label}</p>
+          <p className={variant === "desktop" ? "mt-0.5 text-[10px] text-blue-100/78" : "mt-1 text-[11px] text-[color:var(--fg-secondary)]"}>{note}</p>
         </div>
       </div>
     </Link>

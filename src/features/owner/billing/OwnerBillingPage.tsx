@@ -135,7 +135,7 @@ export default function OwnerBillingPage() {
   void nextPlan;
 
   return (
-    <main className="space-y-5 text-white">
+    <div className="space-y-5 text-white">
       <section className="relative overflow-hidden rounded-[40px] border border-[color:var(--border)] bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.22),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(34,197,94,0.12),transparent_26%),linear-gradient(180deg,#090b15_0%,#0d1120_48%,#11172a_100%)] p-5 shadow-[0_32px_90px_rgba(2,6,23,0.42)] sm:p-7">
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--accent-electric)]">
@@ -150,7 +150,7 @@ export default function OwnerBillingPage() {
         </div>
 
         <div className="mt-8 grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
             {planCards.map((card) => {
               const active = data.planId === card.key;
               const anchor = "anchor" in card ? card.anchor : null;
@@ -273,7 +273,7 @@ export default function OwnerBillingPage() {
           {pageError}
         </div>
       ) : null}
-    </main>
+    </div>
   );
 }
 

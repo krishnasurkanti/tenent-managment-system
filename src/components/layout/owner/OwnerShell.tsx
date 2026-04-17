@@ -11,7 +11,7 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
 
   return (
     <HostelContextProvider>
-      <div className="smart-scroll-shell relative bg-[linear-gradient(180deg,var(--bg-primary)_0%,#132033_42%,#0f172a_100%)] lg:flex">
+      <div className="smart-scroll-shell relative bg-[linear-gradient(180deg,var(--bg-primary)_0%,#132033_42%,#0f172a_100%)] lg:flex lg:flex-row">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute left-[-8rem] top-[-6rem] h-80 w-80 rounded-full bg-[radial-gradient(circle,var(--glow-accent)_0%,transparent_70%)] blur-3xl animate-[panel-glow_9s_ease-in-out_infinite]" />
           <div className="absolute right-[-6rem] top-24 h-96 w-96 rounded-full bg-[radial-gradient(circle,var(--glow-brand)_0%,transparent_72%)] blur-3xl animate-[panel-glow_11s_ease-in-out_infinite]" />

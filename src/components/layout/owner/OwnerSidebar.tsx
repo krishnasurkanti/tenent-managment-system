@@ -66,7 +66,7 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
       />
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex min-h-screen w-[288px] max-w-[84vw] flex-col bg-[linear-gradient(180deg,var(--bg-surface)_0%,var(--sidebar)_46%,var(--hero-gradient)_100%)] text-[color:var(--fg-primary)] shadow-[0_30px_90px_rgba(8,18,37,0.34)] backdrop-blur-xl transition-transform duration-[var(--motion-medium)] ease-[var(--ease-standard)] lg:sticky lg:top-0 lg:z-auto lg:w-[280px] lg:max-w-none lg:translate-x-0 lg:border-r lg:border-[color:var(--border)] lg:shadow-none xl:w-[296px]",
+          "fixed inset-y-0 left-0 z-40 flex w-[288px] max-w-[84vw] flex-col bg-[linear-gradient(180deg,var(--bg-surface)_0%,var(--sidebar)_46%,var(--hero-gradient)_100%)] text-[color:var(--fg-primary)] shadow-[0_30px_90px_rgba(8,18,37,0.34)] backdrop-blur-xl transition-transform duration-[var(--motion-medium)] ease-[var(--ease-standard)] lg:sticky lg:top-0 lg:z-auto lg:h-dvh lg:max-h-dvh lg:w-[280px] lg:max-w-none lg:translate-x-0 lg:border-r lg:border-[color:var(--border)] lg:shadow-none xl:w-[296px]",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >

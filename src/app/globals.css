@@ -306,9 +306,15 @@
   .smart-scroll-area::after {
     content: "";
     display: block;
-    height: clamp(80px, 10vh, 110px);
+    height: clamp(96px, 14vh, 128px);
     width: 100%;
     flex-shrink: 0;
+  }
+
+  @media (min-width: 1280px) {
+    .smart-scroll-area::after {
+      height: clamp(48px, 6vh, 80px);
+    }
   }
 
   .smart-scroll-fade::before {

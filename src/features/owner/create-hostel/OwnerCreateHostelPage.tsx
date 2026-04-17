@@ -432,7 +432,7 @@ function CreateHostelPageContent() {
   }
 
   return (
-    <main className="bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_45%,#ffffff_100%)] px-3 py-3 sm:px-5 sm:py-4">
+    <div className="bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_45%,#ffffff_100%)] rounded-[22px] px-3 py-3 sm:px-5 sm:py-4">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 sm:gap-4">
         {error ? (
           <div className="rounded-xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-3 py-2.5 text-sm font-medium text-[color:var(--error)]">
@@ -891,19 +891,19 @@ function CreateHostelPageContent() {
           </Card>
         ) : null}
       </div>
-    </main>
+    </div>
   );
 }
 
 function CreateHostelLoadingState() {
   return (
-    <main className="bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_45%,#ffffff_100%)] px-4 py-4 sm:px-6">
+    <div className="bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_45%,#ffffff_100%)] rounded-[22px] px-4 py-4 sm:px-6">
       <div className="mx-auto w-full max-w-6xl">
         <Card className="border-slate-200 bg-white p-4 text-center text-sm text-slate-600">
           Loading hostel details...
         </Card>
       </div>
-    </main>
+    </div>
   );
 }
 

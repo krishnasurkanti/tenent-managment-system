@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, CreditCard, FileBadge2, ImageIcon, IndianRupee, Mail, Phone, ShieldAlert, User, X } from "lucide-react";
+import { CalendarDays, CreditCard, FileBadge2, ImageIcon, IndianRupee, Mail, Phone, Plus, ShieldAlert, Trash2, User, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
-import { createTenant } from "@/services/tenants/tenants.service";
+import { createTenant, updateTenantFamilyMembers } from "@/services/tenants/tenants.service";
 import type { TenantRecord } from "@/types/tenant";
 
 const initialState = {
@@ -20,9 +20,13 @@ const initialState = {
   emergencyContact: "",
 };
 
-
-type TenantStep = 1 | 2 | 3;
+type TenantStep = 1 | 2 | 3 | 4;
 type TenantType = "new" | "old";
+type FamilyMemberForm = { id: string; name: string; relation: string; age: string };
+
+function createFamilyMember(): FamilyMemberForm {
+  return { id: `fm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: "", relation: "", age: "" };
+}
 
 function getMissingFields(fields: Array<[label: string, valid: boolean]>) {
   return fields.filter(([, valid]) => !valid).map(([label]) => label);
@@ -33,16 +37,20 @@ export function TenantFormModal({
   onClose,
   onCreated,
   hostelId,
+  propertyType,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: (tenant: TenantRecord) => void;
   hostelId?: string;
+  propertyType?: "PG" | "RESIDENCE";
 }) {
+  const isResidence = propertyType === "RESIDENCE";
   const [step, setStep] = useState<TenantStep>(1);
   const [tenantType, setTenantType] = useState<TenantType>("new");
   const [form, setForm] = useState(initialState);
   const [idImage, setIdImage] = useState<File | null>(null);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMemberForm[]>([createFamilyMember()]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -57,6 +65,7 @@ export function TenantFormModal({
     setTenantType("new");
     setForm(initialState);
     setIdImage(null);
+    setFamilyMembers([createFamilyMember()]);
     setSubmitting(false);
     setError("");
   };
@@ -104,6 +113,26 @@ export function TenantFormModal({
 
     setError("");
     setStep(3);
+  };
+
+  const handleNextFromPayment = () => {
+    const missingFields = getMissingFields([
+      ["monthly rent", Boolean(form.monthlyRent) && Number(form.monthlyRent) > 0],
+      ["rent paid amount", Boolean(form.rentPaid) && Number(form.rentPaid) >= 0],
+      ["joining date", Boolean(form.paidOnDate)],
+    ]);
+
+    if (missingFields.length > 0) {
+      setError(`Cannot continue. Missing: ${missingFields.join(", ")}.`);
+      return;
+    }
+
+    setError("");
+    setStep(4);
+  };
+
+  const updateFamilyMember = (id: string, key: keyof Omit<FamilyMemberForm, "id">, value: string) => {
+    setFamilyMembers((current) => current.map((member) => member.id === id ? { ...member, [key]: value } : member));
   };
 
   const handleSubmit = async () => {
@@ -164,7 +193,28 @@ export function TenantFormModal({
       return;
     }
 
-    onCreated(data.tenant as TenantRecord);
+    const createdTenant = data.tenant as TenantRecord;
+
+    // For RESIDENCE tenants, save valid family members after tenant creation
+    if (isResidence) {
+      const validMembers = familyMembers
+        .filter((member) => member.name.trim() && member.relation.trim())
+        .map((member) => ({
+          name: member.name.trim(),
+          relation: member.relation.trim(),
+          age: member.age ? Number(member.age) : undefined,
+        }));
+
+      if (validMembers.length > 0) {
+        try {
+          await updateTenantFamilyMembers({ tenantId: createdTenant.tenantId, familyMembers: validMembers });
+        } catch {
+          // family save failure is non-fatal — tenant was created successfully
+        }
+      }
+    }
+
+    onCreated(createdTenant);
     resetFormState();
     onClose();
   };
@@ -172,8 +222,8 @@ export function TenantFormModal({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/40 px-3 py-4 animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:px-4 sm:py-8">
       <div className="flex min-h-full items-center justify-center">
-        <Card className="max-h-[min(94vh,920px)] w-full max-w-2xl overflow-hidden border-slate-100 bg-white p-0 shadow-[0_28px_70px_rgba(15,23,42,0.14)] backdrop-blur animate-[float-up_var(--motion-medium)_var(--ease-enter)]">
-          <div className="relative flex max-h-[min(94vh,920px)] flex-col overflow-hidden">
+        <Card className="flex max-h-[min(92dvh,900px)] w-full max-w-2xl flex-col overflow-hidden border-slate-100 bg-white p-0 shadow-[0_28px_70px_rgba(15,23,42,0.14)] backdrop-blur animate-[float-up_var(--motion-medium)_var(--ease-enter)]">
+          <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(90deg,rgba(37,99,235,0.08)_0%,rgba(14,165,233,0.08)_100%)]" />
 
             <div className="relative flex items-start justify-between gap-4 px-4 pb-2 pt-4 sm:px-5 sm:pt-5">
@@ -191,12 +241,13 @@ export function TenantFormModal({
               </Button>
             </div>
 
-            <div className="relative flex-1 overflow-y-auto px-4 pb-4 sm:px-5 sm:pb-5">
+            <div className="relative min-h-0 flex-1 overflow-y-auto px-4 pt-0 pb-2 sm:px-5">
               <div className="space-y-4 rounded-[var(--radius-card)] border border-slate-100 bg-slate-50 p-3 shadow-sm sm:p-4">
                 <div className="flex flex-wrap gap-2">
                   <StepPill label="1. Personal" active={step === 1} done={step > 1} />
                   <StepPill label="2. ID Proof" active={step === 2} done={step > 2} />
-                  <StepPill label="3. Payment" active={step === 3} done={false} />
+                  <StepPill label="3. Payment" active={step === 3} done={isResidence && step > 3} />
+                  {isResidence ? <StepPill label="4. Family" active={step === 4} done={false} /> : null}
                 </div>
 
                 {step === 1 ? (
@@ -330,11 +381,88 @@ export function TenantFormModal({
                   </>
                 ) : null}
 
+                {step === 4 ? (
+                  <>
+                    <div>
+                      <h3 className="text-[15px] font-semibold text-slate-800">Family Members</h3>
+                      <p className="mt-1 text-[11px] text-slate-500">Add the people living in this unit. You can skip this and add later.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      {familyMembers.map((member, index) => (
+                        <div key={member.id} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                          <div className="mb-2 flex items-center justify-between">
+                            <span className="text-[12px] font-semibold text-slate-600">Member {index + 1}</span>
+                            {familyMembers.length > 1 ? (
+                              <button
+                                type="button"
+                                onClick={() => setFamilyMembers((current) => current.filter((m) => m.id !== member.id))}
+                                disabled={submitting}
+                                className="rounded-full p-1 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            ) : null}
+                          </div>
+                          <div className="grid gap-2 sm:grid-cols-3">
+                            <Field label="Name *">
+                              <InputShell icon={<User className="h-4 w-4 text-[var(--accent)]" />}>
+                                <input
+                                  value={member.name}
+                                  onChange={(e) => updateFamilyMember(member.id, "name", e.target.value)}
+                                  disabled={submitting}
+                                  className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
+                                  placeholder="Full name"
+                                />
+                              </InputShell>
+                            </Field>
+                            <Field label="Relation *">
+                              <InputShell icon={<Users className="h-4 w-4 text-purple-500" />}>
+                                <input
+                                  value={member.relation}
+                                  onChange={(e) => updateFamilyMember(member.id, "relation", e.target.value)}
+                                  disabled={submitting}
+                                  className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
+                                  placeholder="e.g. Spouse"
+                                />
+                              </InputShell>
+                            </Field>
+                            <Field label="Age (Optional)">
+                              <InputShell icon={<CalendarDays className="h-4 w-4 text-amber-500" />}>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="120"
+                                  value={member.age}
+                                  onChange={(e) => updateFamilyMember(member.id, "age", e.target.value)}
+                                  disabled={submitting}
+                                  className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
+                                  placeholder="Age"
+                                />
+                              </InputShell>
+                            </Field>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setFamilyMembers((current) => [...current, createFamilyMember()])}
+                      disabled={submitting}
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-300 bg-blue-50/60 px-3 py-2.5 text-[13px] font-medium text-blue-600 transition hover:bg-blue-50"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Member
+                    </button>
+                  </>
+                ) : null}
+
                 {step === 3 ? (
                   <>
                     <div>
                       <h3 className="text-[15px] font-semibold text-slate-800">Payment Details</h3>
-                      <p className="mt-1 text-[11px] text-slate-500">Final step. Joining date and billing date will be treated as the same date.</p>
+                      <p className="mt-1 text-[11px] text-slate-500">{isResidence ? "Next, add family members." : "Final step."} Joining date and billing date will be treated as the same date.</p>
                     </div>
 
                     <div className="grid gap-3 md:grid-cols-2">
@@ -381,17 +509,21 @@ export function TenantFormModal({
                   </>
                 ) : null}
 
+              </div>
+            </div>
+
+            <div className="shrink-0 border-t border-slate-100 bg-white px-4 py-3 sm:px-5">
                 {error ? (
-                  <div className="rounded-2xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-3 py-2.5 text-sm font-medium text-[color:var(--error)]">
+                  <div className="mb-3 rounded-2xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-3 py-2.5 text-sm font-medium text-[color:var(--error)]">
                     {error}
                   </div>
                 ) : null}
-                {submitting ? <ProcessingPill label="Creating tenant and preparing assignment" /> : null}
+                {submitting ? <ProcessingPill label="Creating tenant and preparing assignment" className="mb-3" /> : null}
 
-                <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
+                <div className="flex flex-col-reverse gap-3 sm:flex-row">
                   <Button
                     variant="secondary"
-                    onClick={step === 1 ? handleClose : () => setStep((current) => (current === 3 ? 2 : 1))}
+                    onClick={step === 1 ? handleClose : () => setStep((current) => (current - 1) as TenantStep)}
                     disabled={submitting}
                     className="w-full rounded-2xl border-slate-200 bg-white text-slate-700 shadow-sm sm:flex-1"
                   >
@@ -411,12 +543,23 @@ export function TenantFormModal({
                   ) : null}
 
                   {step === 3 ? (
+                    isResidence ? (
+                      <Button onClick={handleNextFromPayment} disabled={submitting} className="w-full rounded-2xl sm:flex-1">
+                        Next: Family
+                      </Button>
+                    ) : (
+                      <Button onClick={handleSubmit} disabled={submitting} loading={submitting} className="w-full rounded-2xl sm:flex-1">
+                        {submitting ? "Creating..." : "Save Tenant"}
+                      </Button>
+                    )
+                  ) : null}
+
+                  {step === 4 ? (
                     <Button onClick={handleSubmit} disabled={submitting} loading={submitting} className="w-full rounded-2xl sm:flex-1">
                       {submitting ? "Creating..." : "Save Tenant"}
                     </Button>
                   ) : null}
                 </div>
-              </div>
             </div>
           </div>
         </Card>

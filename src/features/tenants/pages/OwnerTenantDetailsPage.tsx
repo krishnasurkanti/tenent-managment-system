@@ -38,7 +38,7 @@ export default async function OwnerTenantDetailsPage({
   const currentStatus = getDueStatus(tenant.nextDueDate);
 
   return (
-    <main className="px-3 py-3 text-white sm:px-5 sm:py-4">
+    <div className="text-white">
       <div className="mx-auto w-full max-w-5xl space-y-4">
         <Link
           href="/owner/tenants"
@@ -164,7 +164,7 @@ export default async function OwnerTenantDetailsPage({
           </div>
         </Card>
       </div>
-    </main>
+    </div>
   );
 }
 
