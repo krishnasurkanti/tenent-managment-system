@@ -27,8 +27,8 @@ import { formatPaymentDate, getDueStatus } from "@/utils/payment";
 import type { TenantRecord } from "@/types/tenant";
 
 export default function OwnerPaymentsPage() {
-  const { currentHostel, loading: hostelLoading, isSwitching } = useHostelContext();
-  const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants();
+  const { currentHostel, currentHostelId, loading: hostelLoading, isSwitching } = useHostelContext();
+  const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants(currentHostelId);
   const [tenantOverrides, setTenantOverrides] = useState<Record<string, TenantRecord>>({});
   const [proofModal, setProofModal] = useState<{
     tenantId: string;

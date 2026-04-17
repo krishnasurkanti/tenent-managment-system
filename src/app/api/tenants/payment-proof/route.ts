@@ -8,6 +8,11 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const session = await getOwnerSession();
+
+  if (session.mode === "guest") {
+    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+  }
+
   const formData = await request.formData();
 
   const tenantId = String(formData.get("tenantId") ?? "").trim();
@@ -19,10 +24,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Tenant and payment record are required." }, { status: 400 });
   }
 
-  const hasProofImage = proofImage instanceof File && proofImage.name;
+  const hasProofImage = proofImage instanceof File && !!proofImage.name;
 
   if (!txnId && !hasProofImage) {
     return NextResponse.json({ message: "Add a transaction id or payment proof image." }, { status: 400 });
+  }
+
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+  const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
+
+  if (hasProofImage && proofImage instanceof File) {
+    if (proofImage.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ message: "Proof file is too large. Maximum size is 5 MB." }, { status: 400 });
+    }
+    if (!ALLOWED_MIME_TYPES.includes(proofImage.type)) {
+      return NextResponse.json({ message: "Invalid file type. Allowed: JPEG, PNG, WebP, GIF, PDF." }, { status: 400 });
+    }
   }
 
   try {

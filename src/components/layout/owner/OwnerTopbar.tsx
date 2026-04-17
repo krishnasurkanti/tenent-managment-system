@@ -13,8 +13,8 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { currentHostel, hostels } = useHostelContext();
-  const { tenants } = useOwnerTenants();
+  const { currentHostel, currentHostelId, hostels } = useHostelContext();
+  const { tenants } = useOwnerTenants(currentHostelId);
   const isDashboard = pathname === "/owner/dashboard";
   const isNotifications = pathname === "/owner/notifications";
   const currentSearchQuery = pathname === "/owner/tenants" ? (searchParams.get("q") ?? "") : "";

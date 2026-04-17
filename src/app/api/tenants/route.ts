@@ -13,6 +13,10 @@ export async function GET(request: Request) {
   const tenantId = searchParams.get("tenantId");
   const session = await getOwnerSession();
 
+  if (session.mode === "guest") {
+    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+  }
+
   if (session.isLive) {
     if (hostelId) {
       const backendResponse = await backendFetch(`/api/tenants?hostel_id=${encodeURIComponent(hostelId)}`);
@@ -59,11 +63,16 @@ export async function GET(request: Request) {
       ? allTenants.filter((tenant) => tenant.assignment?.hostelId === hostelId)
       : allTenants;
 
-  return NextResponse.json({ tenants, hostels: getOwnerHostelInventory() });
+  return NextResponse.json({ tenants, hostels: getOwnerHostelInventory(allTenants) });
 }
 
 export async function POST(request: Request) {
   const session = await getOwnerSession();
+
+  if (session.mode === "guest") {
+    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+  }
+
   const formData = await request.formData();
 
   const tenantType = String(formData.get("tenantType") ?? "new").trim().toLowerCase();
@@ -79,6 +88,18 @@ export async function POST(request: Request) {
   const idImage = formData.get("idImage");
 
   const hasValidIdImage = idImage instanceof File && !!idImage.name;
+
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+  const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
+
+  if (hasValidIdImage && idImage instanceof File) {
+    if (idImage.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ message: "ID proof file is too large. Maximum size is 5 MB." }, { status: 400 });
+    }
+    if (!ALLOWED_MIME_TYPES.includes(idImage.type)) {
+      return NextResponse.json({ message: "Invalid ID file type. Allowed: JPEG, PNG, WebP, GIF, PDF." }, { status: 400 });
+    }
+  }
 
   if (
     !fullName ||
@@ -102,9 +123,12 @@ export async function POST(request: Request) {
     const roomNumber = String(formData.get("roomNumber") ?? "").trim();
     const sharingType = String(formData.get("sharingType") ?? "").trim();
     const moveInDate = String(formData.get("moveInDate") ?? "").trim();
+    const bedId = String(formData.get("bedId") ?? "").trim();
+    const bedLabel = String(formData.get("bedLabel") ?? "").trim();
+    const hasAssignment = Boolean(hostelId && floorNumber && roomNumber && moveInDate);
 
-    if (!hostelId || !floorNumber || !roomNumber || !sharingType || !moveInDate) {
-      return NextResponse.json({ message: "Please choose hostel, room, floor, sharing type, and move-in date." }, { status: 400 });
+    if (!hostelId) {
+      return NextResponse.json({ message: "Please choose a hostel before creating the tenant." }, { status: 400 });
     }
 
     const backendResponse = await backendFetch("/api/tenants", {
@@ -117,18 +141,23 @@ export async function POST(request: Request) {
         monthlyRent,
         rentPaid,
         paidOnDate,
-        billingAnchorDate: moveInDate,
-        nextDueDate: calculateNextDueDate(paidOnDate, moveInDate),
+        billingAnchorDate: hasAssignment ? moveInDate : paidOnDate,
+        nextDueDate: calculateNextDueDate(paidOnDate, hasAssignment ? moveInDate : paidOnDate),
         idNumber: idNumber || "PENDING-ID",
         emergencyContact: emergencyContact || "To be added later",
         idImageName: hasValidIdImage ? idImage.name : "pending-id-upload",
-        assignment: {
-          hostelId,
-          floorNumber,
-          roomNumber,
-          sharingType,
-          moveInDate,
-        },
+        assignment: hasAssignment
+          ? {
+              hostelId,
+              floorNumber,
+              roomNumber,
+              sharingType,
+              moveInDate,
+              propertyType,
+              bedId: bedId || undefined,
+              bedLabel: bedLabel || undefined,
+            }
+          : undefined,
         paymentHistory: [],
       }),
     });

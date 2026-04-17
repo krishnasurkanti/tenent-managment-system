@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getOwnerBilling } from "@/data/adminStore";
+import { getOwnerSession } from "@/lib/session-mode";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  const session = await getOwnerSession();
+
+  if (session.mode === "guest") {
+    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+  }
+
   const hostelId = request.nextUrl.searchParams.get("hostelId");
 
   if (!hostelId) {

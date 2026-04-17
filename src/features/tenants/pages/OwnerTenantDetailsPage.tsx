@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarDays, IdCard, Phone, User2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, IdCard, Mail, Phone, User2, Users2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { fetchTenantById } from "@/services/tenants/tenants.service";
+import { getOwnerSession } from "@/lib/session-mode";
+import { backendFetch } from "@/services/core/backend-api";
+import { getTenantRecords } from "@/data/tenantStore";
 import { formatPaymentDate, getDueStatus } from "@/utils/payment";
+import type { TenantRecord } from "@/types/tenant";
 
 export const dynamic = "force-dynamic";
 
@@ -14,16 +16,23 @@ export default async function OwnerTenantDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const headersList = await headers();
-  const host = headersList.get("x-forwarded-host") ?? headersList.get("host");
-  const protocol = (headersList.get("x-forwarded-proto") ?? "http").split(",")[0].trim();
+  const session = await getOwnerSession();
 
-  if (!host) notFound();
+  if (session.mode === "guest") notFound();
 
-  const { response, data } = await fetchTenantById(id, `${protocol}://${host}`);
-  if (!response.ok) notFound();
+  let tenant: TenantRecord | undefined;
 
-  const tenant = data.tenants?.[0];
+  if (session.isLive) {
+    // Call the backend directly — never build URLs from user-supplied headers
+    const backendResponse = await backendFetch(`/api/tenants/${encodeURIComponent(id)}`);
+    if (!backendResponse.ok) notFound();
+    const payload = (await backendResponse.json()) as { tenant?: TenantRecord };
+    tenant = payload.tenant;
+  } else {
+    const allTenants = getTenantRecords();
+    tenant = allTenants.find((t) => t.tenantId === id);
+  }
+
   if (!tenant) notFound();
 
   const currentStatus = getDueStatus(tenant.nextDueDate);
@@ -46,7 +55,7 @@ export default async function OwnerTenantDetailsPage({
               <h1 className="text-[1.9rem] font-semibold tracking-tight text-white">{tenant.fullName}</h1>
               <p className="mt-1 text-sm text-[color:var(--fg-secondary)]">Tenant ID {tenant.tenantId}</p>
               <p className="mt-2 max-w-xl text-sm leading-6 text-[color:var(--fg-secondary)]">
-                Review identity details, stay assignment, and the tenant&apos;s full payment cycle from one premium dark profile page.
+                Identity details, room assignment, and full payment history.
               </p>
             </div>
             <span className={getStatusClassName(currentStatus.tone)}>{currentStatus.label}</span>
@@ -64,7 +73,7 @@ export default async function OwnerTenantDetailsPage({
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <InfoCard icon={User2} label="Full Name" value={tenant.fullName} />
               <InfoCard icon={Phone} label="Phone" value={tenant.phone} />
-              <InfoCard icon={IdCard} label="Email" value={tenant.email} />
+              <InfoCard icon={Mail} label="Email" value={tenant.email} />
               <InfoCard icon={IdCard} label="ID Number" value={tenant.idNumber} />
               <InfoCard icon={Phone} label="Emergency Contact" value={tenant.emergencyContact} />
               <InfoCard icon={CalendarDays} label="Joined On" value={formatPaymentDate(tenant.createdAt.slice(0, 10))} />
@@ -83,6 +92,22 @@ export default async function OwnerTenantDetailsPage({
             </div>
           </Card>
         </div>
+
+        {tenant.familyMembers && tenant.familyMembers.length > 0 ? (
+          <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-5 text-white">
+            <h2 className="text-base font-semibold text-white">Family members</h2>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {tenant.familyMembers.map((member, index) => (
+                <InfoCard
+                  key={`${member.name}-${member.relation}-${index}`}
+                  icon={Users2}
+                  label={`${member.relation}${member.age !== undefined ? ` • ${member.age} yrs` : ""}`}
+                  value={member.name}
+                />
+              ))}
+            </div>
+          </Card>
+        ) : null}
 
         <Card className="overflow-hidden bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] text-white">
           <div className="border-b border-[color:var(--border)] px-4 py-4">

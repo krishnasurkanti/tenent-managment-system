@@ -2,7 +2,11 @@ import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from "@/lib/auth";
 import { getApiBaseUrl } from "@/lib/api-config";
 
-export async function backendFetch(path: string, init: RequestInit = {}) {
+export async function backendFetch(
+  path: string,
+  init: RequestInit = {},
+  cacheStrategy: RequestCache = "no-store",
+) {
   const accessToken = (await cookies()).get(ACCESS_TOKEN_COOKIE_NAME)?.value;
   const headers = new Headers(init.headers ?? {});
   if (accessToken) {
@@ -15,7 +19,7 @@ export async function backendFetch(path: string, init: RequestInit = {}) {
   return fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
     headers,
-    cache: "no-store",
+    cache: cacheStrategy,
   });
 }
 

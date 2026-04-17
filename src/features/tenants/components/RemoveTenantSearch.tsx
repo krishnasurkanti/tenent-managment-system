@@ -14,6 +14,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedTenantId, setSelectedTenantId] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -44,6 +45,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
     setOpen(false);
     setQuery("");
     setSelectedTenantId("");
+    setConfirmed(false);
     setSubmitting(false);
     setMessage("");
     setError("");
@@ -52,6 +54,11 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
   const handleRemove = async () => {
     if (!selectedTenant) {
       setError("Select a tenant before removing. Search and choose the tenant first.");
+      return;
+    }
+
+    if (!confirmed) {
+      setError("Please confirm you understand this action before proceeding.");
       return;
     }
 
@@ -110,7 +117,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                   Search by tenant ID or name, confirm room and floor details, then remove the tenant from the hostel.
                 </p>
               </div>
-              <Button variant="ghost" disabled={submitting} className="rounded-2xl px-3" onClick={closeModal}>
+              <Button variant="ghost" disabled={submitting} aria-label="Close" className="rounded-2xl px-3" onClick={closeModal}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -125,6 +132,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                     onChange={(event) => {
                       setQuery(event.target.value);
                       setSelectedTenantId("");
+                      setConfirmed(false);
                       setMessage("");
                       setError("");
                     }}
@@ -155,6 +163,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                         disabled={submitting}
                         onClick={() => {
                           setSelectedTenantId(tenant.tenantId);
+                          setConfirmed(false);
                           setMessage("");
                           setError("");
                         }}
@@ -178,14 +187,28 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
               )}
 
               {selectedTenant ? (
-                <div className="rounded-2xl border border-[color:var(--error)] bg-[linear-gradient(180deg,rgba(220,38,38,0.14)_0%,rgba(254,226,226,0.92)_100%)] p-4 text-sm text-[color:var(--error)]">
-                  <p className="font-semibold text-[#991b1b]">{selectedTenant.fullName}</p>
-                  <p className="mt-1">Tenant ID: {selectedTenant.tenantId}</p>
-                  <p className="mt-1">
-                    Floor {selectedTenant.assignment?.floorNumber ?? "-"} / Room {selectedTenant.assignment?.roomNumber ?? "-"}
-                  </p>
-                  <p className="mt-1">Removing this tenant will free the assigned room/bed for reuse.</p>
-                </div>
+                <>
+                  <div className="rounded-2xl border border-[color:var(--error)] bg-[linear-gradient(180deg,rgba(220,38,38,0.14)_0%,rgba(254,226,226,0.92)_100%)] p-4 text-sm text-[color:var(--error)]">
+                    <p className="font-semibold text-[#991b1b]">{selectedTenant.fullName}</p>
+                    <p className="mt-1">Tenant ID: {selectedTenant.tenantId}</p>
+                    <p className="mt-1">
+                      Floor {selectedTenant.assignment?.floorNumber ?? "-"} / Room {selectedTenant.assignment?.roomNumber ?? "-"}
+                    </p>
+                    <p className="mt-1">Removing this tenant will free the assigned room/bed for reuse. Payment history is preserved.</p>
+                  </div>
+                  <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[color:var(--error)] bg-[linear-gradient(180deg,rgba(220,38,38,0.08)_0%,rgba(254,226,226,0.7)_100%)] p-4 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={confirmed}
+                      onChange={(e) => setConfirmed(e.target.checked)}
+                      disabled={submitting}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-red-600"
+                    />
+                    <span className="text-[#991b1b]">
+                      I understand that <strong>{selectedTenant.fullName}</strong> will be removed from this hostel. This cannot be undone.
+                    </span>
+                  </label>
+                </>
               ) : null}
             </div>
 

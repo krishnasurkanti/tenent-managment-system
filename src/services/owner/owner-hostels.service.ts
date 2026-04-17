@@ -27,6 +27,7 @@ export async function saveOwnerHostel(params: {
   isEditMode?: boolean;
   hostelName: string;
   address: string;
+  type?: "PG" | "RESIDENCE";
   floors: OwnerFloor[];
 }) {
   const { hostelId, isEditMode, ...payload } = params;

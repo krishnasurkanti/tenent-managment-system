@@ -6,7 +6,6 @@ import { Building2, CheckCircle2, ChevronRight, Home, MapPin, Plus, Trash2 } fro
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { fetchOwnerHostel, saveOwnerHostel } from "@/services/owner/owner-hostels.service";
-import type { OwnerHostel } from "@/types/owner-hostel";
 
 type RoomForm = {
   id: string;
@@ -68,6 +67,7 @@ function CreateHostelPageContent() {
   const [editingHostelId, setEditingHostelId] = useState<string | null>(null);
   const [hostelName, setHostelName] = useState("");
   const [address, setAddress] = useState("");
+  const [hostelType, setHostelType] = useState<"PG" | "RESIDENCE">("PG");
   const [floors, setFloors] = useState<FloorForm[]>([createFloor(1)]);
   const [activeFloorId, setActiveFloorId] = useState<string | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
@@ -114,6 +114,7 @@ function CreateHostelPageContent() {
 
         setHostelName(data.hostel.hostelName);
         setAddress(data.hostel.address);
+        setHostelType(data.hostel.type === "RESIDENCE" ? "RESIDENCE" : "PG");
         setFloors(nextFloors);
         setActiveFloorId(nextFloors[0]?.id ?? null);
         setActiveRoomId(nextFloors[0]?.rooms[0]?.id ?? null);
@@ -158,6 +159,22 @@ function CreateHostelPageContent() {
     }
   }, [activeFloorId, activeRoomId, floors]);
 
+  useEffect(() => {
+    if (hostelType !== "RESIDENCE") {
+      return;
+    }
+
+    setFloors((current) =>
+      current.map((floor) => ({
+        ...floor,
+        rooms: floor.rooms.map((room) => ({
+          ...room,
+          bedCount: "1",
+        })),
+      })),
+    );
+  }, [hostelType]);
+
   const activeFloor = useMemo(
     () => floors.find((floor) => floor.id === activeFloorId) ?? floors[0] ?? null,
     [activeFloorId, floors],
@@ -165,6 +182,7 @@ function CreateHostelPageContent() {
   const activeRoom = activeFloor?.rooms.find((room) => room.id === activeRoomId) ?? activeFloor?.rooms[0] ?? null;
   const completedFloors = floors.filter((floor) => floor.rooms.length > 0 && floor.rooms.every(isRoomComplete));
   const activeFloorCompleted = Boolean(activeFloor && activeFloor.rooms.length > 0 && activeFloor.rooms.every(isRoomComplete));
+  const roomLabel = hostelType === "RESIDENCE" ? "Unit" : "Room";
 
   const updateFloor = (floorId: string, updater: (floor: FloorForm) => FloorForm) => {
     setFloors((current) => current.map((floor) => (floor.id === floorId ? updater(floor) : floor)));
@@ -342,8 +360,8 @@ function CreateHostelPageContent() {
         rooms: floor.rooms.map((room) => ({
           id: room.id,
           roomNumber: room.roomNumber,
-          bedCount: Number(room.bedCount),
-          sharingType: getSharingLabel(room.bedCount),
+          bedCount: hostelType === "RESIDENCE" ? 1 : Number(room.bedCount),
+          sharingType: hostelType === "RESIDENCE" ? "Private unit" : getSharingLabel(room.bedCount),
         })),
       })),
     };
@@ -353,6 +371,7 @@ function CreateHostelPageContent() {
       isEditMode,
       hostelName: payload.hostelName,
       address: payload.address,
+      type: hostelType,
       floors: payload.floors,
     });
 
@@ -468,6 +487,39 @@ function CreateHostelPageContent() {
               </div>
             </Field>
           </div>
+
+          <div className="px-4 pb-4 sm:px-5">
+            <Field label="Property Type">
+              <div className="flex gap-2 pt-0.5">
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => setHostelType("PG")}
+                  className={`flex-1 rounded-2xl border px-4 py-3 text-left text-[13px] font-semibold transition ${
+                    hostelType === "PG"
+                      ? "border-blue-400 bg-blue-50 text-[var(--accent)] shadow-sm"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-blue-200"
+                  }`}
+                >
+                  <p>PG</p>
+                  <p className="mt-0.5 text-[11px] font-normal text-slate-500">Bed-based sharing rooms</p>
+                </button>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => setHostelType("RESIDENCE")}
+                  className={`flex-1 rounded-2xl border px-4 py-3 text-left text-[13px] font-semibold transition ${
+                    hostelType === "RESIDENCE"
+                      ? "border-blue-400 bg-blue-50 text-[var(--accent)] shadow-sm"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-blue-200"
+                  }`}
+                >
+                  <p>Residence</p>
+                  <p className="mt-0.5 text-[11px] font-normal text-slate-500">Self-contained units</p>
+                </button>
+              </div>
+            </Field>
+          </div>
           <div className="flex flex-col gap-2 border-t border-white/70 px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
             <Button
               variant="secondary"
@@ -497,7 +549,11 @@ function CreateHostelPageContent() {
               </div>
               <div>
                 <h2 className="text-sm font-semibold text-slate-800">Floor and Room Setup</h2>
-                <p className="text-[11px] text-slate-500">Add floor, room number, and bed count. Sharing is automatic from beds.</p>
+                <p className="text-[11px] text-slate-500">
+                  {hostelType === "RESIDENCE"
+                    ? "Add floors and units. Residence units are treated as single-allocation spaces."
+                    : "Add floor, room number, and bed count. Sharing is automatic from beds."}
+                </p>
               </div>
             </div>
           </div>
@@ -575,9 +631,11 @@ function CreateHostelPageContent() {
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Active Room</p>
                         <h4 className="mt-1 text-sm font-semibold text-slate-800">
-                          Room {activeFloor.rooms.findIndex((room) => room.id === activeRoom.id) + 1}
+                          {roomLabel} {activeFloor.rooms.findIndex((room) => room.id === activeRoom.id) + 1}
                         </h4>
-                        <p className="text-[11px] text-slate-500">Enter room number and how many beds this room has.</p>
+                        <p className="text-[11px] text-slate-500">
+                          {hostelType === "RESIDENCE" ? "Enter the unit number for this residence." : "Enter room number and how many beds this room has."}
+                        </p>
                       </div>
                       {activeFloor.rooms.length > 1 ? (
                         <Button
@@ -593,23 +651,24 @@ function CreateHostelPageContent() {
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <Field label="Room Number">
+                      <Field label={`${roomLabel} Number`}>
                         <input
                           value={activeRoom.roomNumber}
                           onChange={(event) => updateRoom(activeFloor.id, activeRoom.id, "roomNumber", event.target.value)}
                           disabled={saving}
-                          placeholder="Ex: 101"
+                          placeholder={hostelType === "RESIDENCE" ? "Ex: A-101" : "Ex: 101"}
                           className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-[13px] text-slate-700 outline-none shadow-sm transition focus:border-blue-300"
                         />
                       </Field>
-                      <Field label="Number of Beds">
+                      <Field label={hostelType === "RESIDENCE" ? "Occupancy" : "Number of Beds"}>
                         <input
                           type="number"
                           min="1"
-                          value={activeRoom.bedCount}
+                          value={hostelType === "RESIDENCE" ? "1" : activeRoom.bedCount}
                           onChange={(event) => updateRoom(activeFloor.id, activeRoom.id, "bedCount", event.target.value)}
                           disabled={saving}
-                          placeholder="Ex: 3"
+                          placeholder={hostelType === "RESIDENCE" ? "1" : "Ex: 3"}
+                          readOnly={hostelType === "RESIDENCE"}
                           className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-[13px] text-slate-700 outline-none shadow-sm transition focus:border-blue-300"
                         />
                       </Field>
@@ -623,7 +682,7 @@ function CreateHostelPageContent() {
                           onClick={handleAddRoom}
                         >
                           <Plus className="mr-2 h-4 w-4" />
-                        Save and Add New Room
+                        {`Save and Add New ${roomLabel}`}
                         </Button>
                         <Button
                           variant="secondary"
@@ -668,13 +727,15 @@ function CreateHostelPageContent() {
                           }`}
                         >
                           <div>
-                            <p className="text-[12px] font-semibold text-slate-800">Room {index + 1}</p>
-                            <p className="text-[11px] text-slate-500">
-                              {room.roomNumber.trim()
-                                ? [room.roomNumber, `${room.bedCount || 0} beds`, getSharingLabel(room.bedCount)].join(" - ")
-                                : "Room details pending"}
-                            </p>
-                          </div>
+                              <p className="text-[12px] font-semibold text-slate-800">{roomLabel} {index + 1}</p>
+                              <p className="text-[11px] text-slate-500">
+                                {room.roomNumber.trim()
+                                ? hostelType === "RESIDENCE"
+                                  ? [room.roomNumber, "Private unit"].join(" - ")
+                                  : [room.roomNumber, `${room.bedCount || 0} beds`, getSharingLabel(room.bedCount)].join(" - ")
+                                : `${roomLabel} details pending`}
+                              </p>
+                            </div>
                           {isComplete ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <ChevronRight className="h-4 w-4 text-slate-400" />}
                         </button>
                       );
@@ -700,7 +761,7 @@ function CreateHostelPageContent() {
                     <div>
                       <p className="text-[12px] font-semibold text-slate-800">{floor.floorLabel}</p>
                       <p className="text-[11px] text-slate-500">
-                        {floor.rooms.length} room{floor.rooms.length > 1 ? "s" : ""} added
+                        {floor.rooms.length} {roomLabel.toLowerCase()}{floor.rooms.length > 1 ? "s" : ""} added
                       </p>
                     </div>
                     {floor.rooms.every(isRoomComplete) ? (
@@ -792,7 +853,7 @@ function CreateHostelPageContent() {
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Structure</p>
                     <h3 className="mt-1 text-sm font-semibold text-slate-800">
-                      {floors.length} floor{floors.length > 1 ? "s" : ""} • {floors.reduce((sum, floor) => sum + floor.rooms.length, 0)} room{floors.reduce((sum, floor) => sum + floor.rooms.length, 0) > 1 ? "s" : ""}
+                      {floors.length} floor{floors.length > 1 ? "s" : ""} • {floors.reduce((sum, floor) => sum + floor.rooms.length, 0)} {roomLabel.toLowerCase()}{floors.reduce((sum, floor) => sum + floor.rooms.length, 0) > 1 ? "s" : ""}
                     </h3>
                   </div>
                   <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-indigo-700">
@@ -808,8 +869,8 @@ function CreateHostelPageContent() {
                         {floor.rooms.map((room) => (
                           <div key={room.id} className="flex items-center justify-between gap-3 text-[11px] text-slate-600">
                             <span>{room.roomNumber}</span>
-                            <span>{room.bedCount} beds</span>
-                            <span className="font-medium text-indigo-700">{getSharingLabel(room.bedCount)}</span>
+                            <span>{hostelType === "RESIDENCE" ? "1 occupant" : `${room.bedCount} beds`}</span>
+                            <span className="font-medium text-indigo-700">{hostelType === "RESIDENCE" ? "Private unit" : getSharingLabel(room.bedCount)}</span>
                           </div>
                         ))}
                       </div>

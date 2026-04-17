@@ -37,6 +37,7 @@ export function TenantRoomAssignmentModal({
   const [floorNumber, setFloorNumber] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
   const [sharingType, setSharingType] = useState("");
+  const [bedId, setBedId] = useState("");
   const [moveInDate, setMoveInDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -66,6 +67,7 @@ export function TenantRoomAssignmentModal({
       setFloorNumber(preferredFloor ? String(preferredFloor.floorNumber) : "");
       setRoomNumber("");
       setSharingType("");
+      setBedId("");
       setMoveInDate(new Date().toISOString().slice(0, 10));
       setStep(1);
       setHostelMenuOpen(false);
@@ -78,6 +80,7 @@ export function TenantRoomAssignmentModal({
   }, [open, preferredAssignment?.floorNumber, preferredAssignment?.hostelId, preferredAssignment?.roomNumber]);
 
   const selectedHostel = useMemo(() => hostels.find((item) => item.hostelId === hostelId), [hostelId, hostels]);
+  const isResidence = selectedHostel?.type === "RESIDENCE";
   const selectedFloor = useMemo(
     () => selectedHostel?.floors.find((item) => item.floorNumber === Number(floorNumber)),
     [floorNumber, selectedHostel],
@@ -89,16 +92,6 @@ export function TenantRoomAssignmentModal({
   const availableBeds = selectedRoom ? selectedRoom.capacity - selectedRoom.occupied : 0;
   const availableRooms = selectedFloor?.rooms.filter((room) => room.occupied < room.capacity) ?? [];
   const filteredRooms = availableRooms.filter((room) => room.roomNumber.toLowerCase().includes(roomNumber.toLowerCase()));
-
-  useEffect(() => {
-    setHostelMenuOpen(false);
-    setFloorMenuOpen(false);
-    setRoomMenuOpen(false);
-  }, [floorNumber, hostelId, open]);
-
-  useEffect(() => {
-    setSharingType(selectedRoom?.sharingType ?? "");
-  }, [selectedRoom]);
 
   if (!open || !tenant) {
     return null;
@@ -112,6 +105,11 @@ export function TenantRoomAssignmentModal({
 
     if (!moveInDate) {
       setError("Choose the move-in date before assigning the room.");
+      return;
+    }
+
+    if (!isResidence && !bedId) {
+      setError("Choose the bed before assigning the room.");
       return;
     }
 
@@ -129,6 +127,9 @@ export function TenantRoomAssignmentModal({
       roomNumber,
       sharingType,
       moveInDate,
+      propertyType: selectedHostel?.type,
+      bedId: isResidence ? undefined : bedId,
+      bedLabel: isResidence ? undefined : selectedRoom?.beds?.find((bed) => bed.id === bedId)?.label,
     });
 
     if (!response.ok) {
@@ -143,6 +144,7 @@ export function TenantRoomAssignmentModal({
     setFloorNumber("");
     setRoomNumber("");
     setSharingType("");
+    setBedId("");
     setMoveInDate("");
     setStep(1);
     onClose();
@@ -156,6 +158,11 @@ export function TenantRoomAssignmentModal({
 
     if (!selectedRoom) {
       setError("Please choose a valid available room from the list.");
+      return;
+    }
+
+    if (!isResidence && !bedId) {
+      setError("Please choose an available bed before continuing.");
       return;
     }
 
@@ -273,7 +280,7 @@ export function TenantRoomAssignmentModal({
                         </CustomDropdown>
                       </Field>
 
-                      <Field label="Room" icon={DoorClosed} helper="Only rooms with available beds are shown">
+                      <Field label={isResidence ? "Unit" : "Room"} icon={DoorClosed} helper={isResidence ? "Only vacant units are shown" : "Only rooms with available beds are shown"}>
                         <div className="relative">
                           <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition focus-within:border-blue-300">
                             <input
@@ -289,7 +296,7 @@ export function TenantRoomAssignmentModal({
                                 }
                               }}
                               disabled={saving}
-                              placeholder="Enter room number"
+                              placeholder={isResidence ? "Enter unit number" : "Enter room number"}
                               className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
                             />
                             <button
@@ -339,23 +346,46 @@ export function TenantRoomAssignmentModal({
                         </div>
                       </Field>
                     </div>
+                    {!isResidence && selectedRoom ? (
+                      <div className="mt-4 max-w-sm">
+                        <Field label="Bed" icon={Users2} helper="Choose an available bed inside this room">
+                          <select
+                            value={bedId}
+                            onChange={(event) => setBedId(event.target.value)}
+                            disabled={saving}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm transition focus:border-blue-300 focus:bg-white"
+                          >
+                            <option value="">Select bed</option>
+                            {(selectedRoom.beds ?? [])
+                              .filter((bed) => !bed.occupied)
+                              .map((bed) => (
+                                <option key={bed.id} value={bed.id}>
+                                  {bed.label}
+                                </option>
+                              ))}
+                          </select>
+                        </Field>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 
                 {step === 2 ? (
                   <>
                     <div className="grid gap-4 lg:grid-cols-2">
-                      <Field label="Sharing Type" icon={Users2} helper="Auto-filled from the selected room">
-                        <input
-                          value={sharingType}
-                          onChange={(event) => setSharingType(event.target.value)}
-                          disabled={saving}
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm transition focus:border-blue-300 focus:bg-white"
-                          placeholder="Ex: Double Sharing"
-                        />
-                      </Field>
+                      {!isResidence ? (
+                        <Field label="Sharing Type" icon={Users2} helper="Auto-filled from the selected room">
+                          <input
+                            value={sharingType}
+                            onChange={(event) => setSharingType(event.target.value)}
+                            disabled={saving}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm transition focus:border-blue-300 focus:bg-white"
+                            placeholder="Ex: Double Sharing"
+                          />
+                        </Field>
+                      ) : null}
 
-                      <Field label="Move-in Date" icon={CalendarDays} helper="The date the tenant starts staying in this room">
+                      <Field label="Move-in Date" icon={CalendarDays} helper={isResidence ? "The date the tenant moves into this unit" : "The date the tenant starts staying in this room"}>
                         <input
                           type="date"
                           value={moveInDate}
@@ -369,19 +399,24 @@ export function TenantRoomAssignmentModal({
                     {selectedRoom ? (
                       <div className="grid gap-4 rounded-3xl border border-slate-100 bg-slate-50 p-5 md:grid-cols-3">
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Selected Room</p>
-                          <p className="mt-2 text-lg font-semibold text-slate-900">Room {selectedRoom.roomNumber}</p>
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">{isResidence ? "Selected Unit" : "Selected Room"}</p>
+                          <p className="mt-2 text-lg font-semibold text-slate-900">{isResidence ? "Unit" : "Room"} {selectedRoom.roomNumber}</p>
                         </div>
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Availability</p>
                           <p className="mt-2 text-lg font-semibold text-slate-900">
-                            {availableBeds} of {selectedRoom.capacity} bed{selectedRoom.capacity === 1 ? "" : "s"} available
+                            {isResidence
+                              ? availableBeds > 0 ? "Vacant" : "Occupied"
+                              : `${availableBeds} of ${selectedRoom.capacity} bed${selectedRoom.capacity === 1 ? "" : "s"} available`
+                            }
                           </p>
                         </div>
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Sharing</p>
-                          <p className="mt-2 text-lg font-semibold text-slate-900">{selectedRoom.sharingType || sharingType || "Not set"}</p>
-                        </div>
+                        {!isResidence ? (
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Sharing</p>
+                            <p className="mt-2 text-lg font-semibold text-slate-900">{selectedRoom.sharingType || sharingType || "Not set"}</p>
+                          </div>
+                        ) : null}
                       </div>
                     ) : null}
                   </>
@@ -399,7 +434,7 @@ export function TenantRoomAssignmentModal({
               {step === 1 ? "Later" : "Back"}
             </Button>
             <Button disabled={saving} loading={saving && step === 2} onClick={step === 1 ? handleNext : handleAssign} className="rounded-2xl">
-              {step === 1 ? "Next: Review" : saving ? "Assigning..." : "Assign Room"}
+              {step === 1 ? "Next: Review" : saving ? "Assigning..." : isResidence ? "Assign Unit" : "Assign Room"}
             </Button>
           </div>
         </Card>
@@ -412,15 +447,23 @@ function mapHostelInventory(hostel: OwnerHostel): HostelRoomInventory {
   return {
     hostelId: hostel.id,
     hostelName: hostel.hostelName,
+    type: hostel.type ?? "PG",
     floors: hostel.floors.map((floor, floorIndex) => ({
       id: floor.id,
       floorNumber: floorIndex + 1,
       rooms: floor.rooms.map((room) => ({
         id: room.id,
+        unitId: room.unitId,
         roomNumber: room.roomNumber,
-        capacity: room.bedCount,
+        capacity: hostel.type === "RESIDENCE" ? 1 : room.bedCount,
         occupied: 0,
         sharingType: room.sharingType,
+        propertyType: hostel.type ?? "PG",
+        beds: room.beds?.map((bed) => ({
+          id: bed.id,
+          label: bed.label,
+          occupied: false,
+        })),
       })),
     })),
   };

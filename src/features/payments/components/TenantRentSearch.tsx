@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { recordTenantPayment, uploadTenantPaymentProof } from "@/services/tenants/tenants.service";
+import { formatPaymentDate } from "@/utils/payment";
 import type { TenantRecord } from "@/types/tenant";
 
 export function TenantRentSearch({ tenants }: { tenants: TenantRecord[] }) {
@@ -56,7 +57,10 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
     });
   }, [normalizedQuery, tenants]);
 
-  const selectedTenant = matches.find((tenant) => tenant.tenantId === selectedTenantId) ?? null;
+  // Look up in the full list so the selection survives query being cleared on later steps
+  const selectedTenant = selectedTenantId
+    ? (tenants.find((tenant) => tenant.tenantId === selectedTenantId) ?? null)
+    : null;
 
   useEffect(() => {
     const action = searchParams.get("action");
@@ -244,7 +248,7 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
                   <h2 className="mt-3 text-2xl font-semibold text-slate-800">Pay Rent</h2>
                   <p className="mt-1 text-sm text-[var(--muted-foreground)]">Select tenant, record payment, then attach proof if needed.</p>
                 </div>
-                <Button variant="ghost" disabled={submitting} className="rounded-2xl px-3" onClick={resetState}>
+                <Button variant="ghost" disabled={submitting} aria-label="Close" className="rounded-2xl px-3" onClick={resetState}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -265,8 +269,10 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
                         <input
                           value={query}
                           onChange={(event) => {
-                            setQuery(event.target.value);
-                            setSelectedTenantId("");
+                            const next = event.target.value;
+                            setQuery(next);
+                            // Clear selection when the user edits the search box on step 1
+                            if (step === 1) setSelectedTenantId("");
                             setMessage("");
                             setError("");
                           }}
@@ -325,7 +331,7 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
                     <p className="font-semibold text-[var(--foreground)]">{selectedTenant.fullName}</p>
                     <p className="mt-1">Tenant ID: {selectedTenant.tenantId}</p>
                     <p className="mt-1">Floor {selectedTenant.assignment?.floorNumber ?? "-"} / Room {selectedTenant.assignment?.roomNumber ?? "-"}</p>
-                    <p className="mt-1">Current next due: {selectedTenant.nextDueDate}</p>
+                    <p className="mt-1">Next due: {formatPaymentDate(selectedTenant.nextDueDate)}</p>
                   </div>
                 ) : null}
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Check, ShieldAlert, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useHostelContext } from "@/store/hostel-context";
@@ -13,33 +13,42 @@ import {
   type OwnerBillingData,
 } from "@/services/owner/owner-billing.service";
 
+// Plan card keys now match the backend plan IDs exactly.
 const planOrder: OwnerBillingData["planId"][] = ["starter", "growth", "pro", "scale"];
 
 const planCards = [
   {
-    key: "basic",
-    title: "Basic",
+    key: "starter" as const,
+    title: "Starter",
     price: 499,
-    blurb: "Just the basics",
+    blurb: "For hostels just getting started",
     tenantLimit: "Up to 30 tenants",
     accent: "border-[color:var(--border)] bg-[linear-gradient(180deg,#101524_0%,#0a0e18_100%)] text-white/92 opacity-75",
   },
   {
-    key: "pro",
-    title: "Pro",
+    key: "growth" as const,
+    title: "Growth",
     price: 1499,
     anchor: 1999,
-    blurb: "The obvious smart choice for active hostels",
+    blurb: "The right plan for most active hostels",
     tenantLimit: "Up to 100 tenants",
     accent:
       "border-[color:color-mix(in_srgb,var(--success)_50%,var(--brand))] bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.22),transparent_40%),linear-gradient(180deg,#13182b_0%,#0b1020_100%)] text-white shadow-[0_0_0_1px_rgba(34,197,94,0.18),0_24px_70px_rgba(99,102,241,0.22)]",
     popular: true,
   },
   {
-    key: "premium",
-    title: "Premium",
+    key: "pro" as const,
+    title: "Pro",
+    price: 1999,
+    blurb: "For established hostels needing more capacity",
+    tenantLimit: "Up to 100 tenants",
+    accent: "border-[color:var(--border)] bg-[linear-gradient(180deg,#15111f_0%,#0c1018_100%)] text-white/92 opacity-85",
+  },
+  {
+    key: "scale" as const,
+    title: "Scale",
     price: 2499,
-    blurb: "For growing hostels",
+    blurb: "Unlimited tenants for large operations",
     tenantLimit: "Unlimited tenants",
     accent: "border-[color:var(--border)] bg-[linear-gradient(180deg,#15111f_0%,#0c1018_100%)] text-white/92 opacity-85",
   },
@@ -54,19 +63,19 @@ export default function OwnerBillingPage() {
   const [pageError, setPageError] = useState("");
   const [actionLoading, setActionLoading] = useState<"pay" | "autopay" | "upgrade" | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!currentHostel?.id) return;
     const { response, data: next } = await fetchOwnerBilling(currentHostel.id);
     if (!response.ok) throw new Error(next.message || "Unable to load billing.");
     setPageError("");
     setData(next);
-  };
+  }, [currentHostel?.id]);
 
   useEffect(() => {
     void load().catch((error: unknown) => {
       setPageError(error instanceof Error ? error.message : "Unable to load billing.");
     });
-  }, [currentHostel?.id]);
+  }, [load]);
 
   const nextPlan = useMemo(() => {
     if (!data) return null;
@@ -86,7 +95,7 @@ export default function OwnerBillingPage() {
     setActionLoading("pay");
     try {
       const { response, data: payload } = await payOwnerBilling(currentHostel.id);
-      setMessage(response.ok ? "Payment successful. Account is active again." : payload.message || "Unable to process payment.");
+      setMessage(response.ok ? "Payment successful. Account is active." : payload.message || "Unable to process payment.");
       await load().catch(() => {});
     } finally {
       setActionLoading(null);
@@ -111,7 +120,7 @@ export default function OwnerBillingPage() {
       const { response, data: payload } = await requestOwnerPlanUpgrade(currentHostel.id, data.planId, requestedPlanId);
       setMessage(
         response.ok
-          ? `Plan change request sent for ${requestedPlanId.toUpperCase()}.`
+          ? `Plan change request submitted for ${requestedPlanId.toUpperCase()}.`
           : payload.message || "Unable to request plan change.",
       );
       await load().catch(() => {});
@@ -120,8 +129,10 @@ export default function OwnerBillingPage() {
     }
   };
 
-  const currentPlanCard = planCards.find((card) => matchesPlan(card.key, data.planId));
   const annualSavings = (1999 - 1499) * 12;
+
+  // suppress unused variable warning for nextPlan (kept for future use)
+  void nextPlan;
 
   return (
     <main className="space-y-5 text-white">
@@ -129,31 +140,30 @@ export default function OwnerBillingPage() {
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--accent-electric)]">
             <Sparkles className="h-3.5 w-3.5" />
-            Pricing engineered for conversion
+            Plans &amp; Billing
           </div>
-          <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Pricing & billing</p>
+          <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Pricing &amp; billing</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">{data.hostelName}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[color:color-mix(in_srgb,var(--fg-primary)_72%,transparent)] sm:text-base">
-            Dark, high-contrast pricing built to make the upgrade path obvious, reduce hesitation, and protect against missed rent losses.
+            Choose the plan that fits your hostel size. You can request a change at any time.
           </p>
         </div>
 
         <div className="mt-8 grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             {planCards.map((card) => {
-              const active = currentPlanCard?.key === card.key;
+              const active = data.planId === card.key;
               const anchor = "anchor" in card ? card.anchor : null;
               const popular = "popular" in card && Boolean(card.popular);
-              const requestedPlanId = getRequestedPlanId(card.key, data.planId);
-              const hasPendingRequest = data.upgradePending && requestedPlanId !== data.planId;
+              const hasPendingRequest = data.upgradePending && !active;
               return (
                 <article
                   key={card.key}
-                  className={`relative flex min-h-[360px] flex-col rounded-[36px] border p-5 ${card.accent} ${popular ? "scale-[1.01]" : ""}`}
+                  className={`relative flex min-h-[320px] flex-col rounded-[36px] border p-5 ${card.accent} ${popular ? "scale-[1.01]" : ""}`}
                 >
                   {popular ? (
                     <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,var(--cta)_0%,var(--cta-strong)_100%)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_14px_36px_color-mix(in_srgb,var(--cta)_26%,transparent)]">
-                      Fire Most Popular
+                      Most Popular
                     </div>
                   ) : null}
 
@@ -161,7 +171,7 @@ export default function OwnerBillingPage() {
                     <p className="text-sm font-semibold uppercase tracking-[0.16em]">{card.title}</p>
                     {active ? (
                       <span className="rounded-full border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_12px_24px_rgba(34,197,94,0.24)]">
-                        Current plan
+                        Current
                       </span>
                     ) : null}
                   </div>
@@ -181,24 +191,12 @@ export default function OwnerBillingPage() {
                     )}
 
                     <p className="mt-3 text-sm text-[color:var(--fg-secondary)]">{card.tenantLimit}</p>
-                    <p className="mt-1 text-sm text-[color:var(--fg-secondary)]">All features included</p>
                     <p className="mt-3 text-sm font-medium text-white/90">{card.blurb}</p>
                   </div>
 
                   {popular ? (
-                    <div className="mt-5 space-y-3">
-                      <div className="rounded-[28px] border border-[#ef4444] bg-[linear-gradient(180deg,rgba(220,38,38,0.26)_0%,rgba(127,29,29,0.38)_100%)] px-4 py-3 text-sm font-semibold text-white shadow-[0_16px_34px_rgba(220,38,38,0.18)]">
-                        <div className="flex items-center gap-2">
-                          <ShieldAlert className="h-4 w-4 text-[color:var(--error)]" />
-                          <span>Don&apos;t lose this</span>
-                        </div>
-                        <p className="mt-2 text-sm font-medium text-[#fee2e2]">
-                          Missing even 1 rent payment costs more than this.
-                        </p>
-                      </div>
-                      <div className="inline-flex rounded-full border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white shadow-[0_12px_24px_rgba(34,197,94,0.24)]">
-                        Save ₹{annualSavings.toLocaleString("en-IN")}/year
-                      </div>
+                    <div className="mt-4 inline-flex rounded-full border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white shadow-[0_12px_24px_rgba(34,197,94,0.24)]">
+                      Save ₹{annualSavings.toLocaleString("en-IN")}/year
                     </div>
                   ) : null}
 
@@ -210,22 +208,16 @@ export default function OwnerBillingPage() {
                   <div className="mt-auto pt-6">
                     {active ? (
                       <div className="rounded-[28px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-center text-sm font-medium text-[color:var(--fg-secondary)]">
-                        Current active plan
+                        Active plan
                       </div>
                     ) : (
                       <Button
                         className="min-h-14 w-full text-sm"
-                        onClick={() => requestPlanChange(requestedPlanId)}
+                        onClick={() => requestPlanChange(card.key)}
                         disabled={hasPendingRequest}
                         loading={actionLoading === "upgrade"}
                       >
-                        {hasPendingRequest
-                          ? "Request Pending"
-                          : card.key === "basic"
-                            ? "Choose Basic"
-                            : card.key === "premium"
-                              ? "Choose Premium"
-                              : "Choose Pro"}
+                        {hasPendingRequest ? "Request pending" : `Switch to ${card.title}`}
                       </Button>
                     )}
                   </div>
@@ -236,7 +228,7 @@ export default function OwnerBillingPage() {
 
           <div className="space-y-4">
             <Card className="bg-[linear-gradient(180deg,#101523_0%,#0c1018_100%)] p-5 text-white shadow-[0_26px_70px_rgba(2,6,23,0.28)]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Live billing status</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Current billing</p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <InfoPill label="Current plan" value={data.planId.toUpperCase()} />
                 <InfoPill label="Status" value={data.paymentStatus.toUpperCase()} tone={data.paymentStatus === "paid" ? "success" : "warning"} />
@@ -244,9 +236,13 @@ export default function OwnerBillingPage() {
                 <InfoPill label="Due date" value={new Date(data.dueDate).toLocaleDateString("en-IN")} />
               </div>
               <div className="mt-4 rounded-[28px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
-                <p className="text-sm font-medium text-white">Loss aversion in plain terms</p>
+                <p className="text-sm font-medium text-white">Plan details</p>
                 <p className="mt-2 text-sm leading-6 text-[color:var(--fg-secondary)]">
-                  Missing rent means losing income. The Pro plan costs less than a single missed collection cycle in most hostels.
+                  {data.billing.blockedAtNextPlan
+                    ? `Your tenant count has reached the limit for the current plan. Upgrade to continue adding tenants.`
+                    : data.billing.upgradeSuggested
+                      ? "You are approaching the tenant limit for your current plan. Consider upgrading soon."
+                      : "Your current plan covers your active tenant count."}
                 </p>
               </div>
             </Card>
@@ -255,18 +251,11 @@ export default function OwnerBillingPage() {
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Actions</p>
               <div className="mt-4 grid gap-3">
                 <Button onClick={payNow} loading={actionLoading === "pay"} className="min-h-12 w-full">
-                  Pay Online
+                  Pay Now
                 </Button>
                 <Button variant="secondary" onClick={() => toggleAutoPay(!data.autoPayEnabled)} loading={actionLoading === "autopay"} className="min-h-12 w-full border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white hover:bg-[color:var(--surface-strong)]">
                   {data.autoPayEnabled ? "Disable Auto-Pay" : "Enable Auto-Pay"}
                 </Button>
-              </div>
-              <div className="mt-4 rounded-[28px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 text-sm text-[color:var(--fg-secondary)]">
-                {data.billing.blockedAtNextPlan
-                  ? `Tenant count has reached the next plan boundary (${data.billing.nextPlanName}). Upgrade is required.`
-                  : data.billing.upgradeSuggested
-                    ? "Usage indicates you are close to the smarter upgrade tier."
-                    : "Current plan is still sufficient for your current occupancy."}
               </div>
             </Card>
           </div>
@@ -321,16 +310,4 @@ function InfoPill({
       <p className="mt-2 text-lg font-semibold tracking-[-0.02em]">{value}</p>
     </div>
   );
-}
-
-function matchesPlan(cardKey: string, planId: OwnerBillingData["planId"]) {
-  if (cardKey === "basic") return planId === "starter";
-  if (cardKey === "pro") return planId === "growth" || planId === "pro";
-  return planId === "scale";
-}
-
-function getRequestedPlanId(cardKey: PlanCard["key"], currentPlanId: OwnerBillingData["planId"]): OwnerBillingData["planId"] {
-  if (cardKey === "basic") return "starter";
-  if (cardKey === "premium") return "scale";
-  return currentPlanId === "starter" ? "growth" : "pro";
 }

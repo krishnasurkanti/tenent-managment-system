@@ -1,16 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { AlertCircle, Bell, Clock3 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useHostelContext } from "@/store/hostel-context";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
+import { ownerStatusClass } from "@/components/ui/owner-theme";
 import { formatPaymentDate, getDueStatus } from "@/utils/payment";
 
 export default function OwnerNotificationsPage() {
-  const { currentHostel, loading: hostelLoading, isSwitching } = useHostelContext();
-  const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants();
+  const router = useRouter();
+  const { currentHostel, currentHostelId, loading: hostelLoading, isSwitching } = useHostelContext();
+  const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants(currentHostelId);
 
   if (hostelLoading || tenantLoading) {
     return <LoadingState />;
@@ -42,7 +44,7 @@ export default function OwnerNotificationsPage() {
             <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">Notifications</h1>
             <p className="mt-1 text-sm text-[color:var(--fg-secondary)]">{currentHostel.hostelName}</p>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[color:var(--fg-secondary)]">
-              Overdue rent alerts and urgent payment follow-ups now use the same dark operational cockpit styling.
+              Tenants with overdue or upcoming rent that need a payment follow-up.
             </p>
           </div>
           <div className="grid min-w-22 gap-2 text-right lg:min-w-36">
@@ -88,7 +90,7 @@ export default function OwnerNotificationsPage() {
                         Room {tenant.assignment?.roomNumber} / Floor {tenant.assignment?.floorNumber}
                       </p>
                     </div>
-                    <span className={status.tone === "red" ? dangerChip : warningChip}>{status.label}</span>
+                    <span className={ownerStatusClass(status.tone)}>{status.label}</span>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <MiniInfo label="Phone" value={tenant.phone} />
@@ -99,8 +101,11 @@ export default function OwnerNotificationsPage() {
                       <Clock3 className="h-3.5 w-3.5" />
                       Needs payment follow-up
                     </div>
-                    <Button className="min-h-9 px-3 text-[12px]">
-                      <Link href="/owner/payments">Pay</Link>
+                    <Button
+                      className="min-h-9 px-3 text-[12px]"
+                      onClick={() => router.push(`/owner/payments?action=pay-rent&tenantId=${tenant.tenantId}`)}
+                    >
+                      Pay now
                     </Button>
                   </div>
                 </div>
@@ -133,7 +138,3 @@ function LoadingState() {
   );
 }
 
-const warningChip =
-  "inline-flex rounded-full border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-2 py-1 text-[10px] font-semibold text-[#422006] shadow-[0_12px_24px_rgba(250,204,21,0.24)]";
-const dangerChip =
-  "inline-flex rounded-full border border-[#ef4444] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] px-2 py-1 text-[10px] font-semibold text-white shadow-[0_12px_24px_rgba(220,38,38,0.28)]";

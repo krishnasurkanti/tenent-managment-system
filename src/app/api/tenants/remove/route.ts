@@ -7,6 +7,11 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const session = await getOwnerSession();
+
+  if (session.mode === "guest") {
+    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+  }
+
   const body = (await request.json()) as {
     tenantId?: string;
   };

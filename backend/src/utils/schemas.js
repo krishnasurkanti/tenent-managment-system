@@ -17,6 +17,7 @@ const authLoginSchema = z.object({
 const hostelCreateSchema = z.object({
   name: z.string().trim().min(1).max(160),
   address: z.string().trim().min(1).max(280),
+  type: z.enum(["PG", "RESIDENCE"]).optional(),
   floors: z.array(
     z.object({
       id: z.string().trim().min(1).max(160),
@@ -26,7 +27,15 @@ const hostelCreateSchema = z.object({
           id: z.string().trim().min(1).max(160),
           roomNumber: z.string().trim().min(1).max(40),
           bedCount: z.coerce.number().int().positive(),
-          sharingType: z.string().trim().min(1).max(120),
+          sharingType: z.string().trim().min(1).max(120).optional(),
+          unitId: z.string().trim().min(1).max(160).optional(),
+          propertyType: z.enum(["PG", "RESIDENCE"]).optional(),
+          beds: z.array(
+            z.object({
+              id: z.string().trim().min(1).max(160),
+              label: z.string().trim().min(1).max(80),
+            }),
+          ).optional(),
         }),
       ).min(1),
     }),

@@ -3,6 +3,7 @@ import { getOwnerHostel, updateOwnerHostel } from "@/data/ownerHostelStore";
 import type { OwnerFloor } from "@/types/owner-hostel";
 import { getOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
+import { normalizeFloors } from "@/utils/hostel-occupancy";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,10 @@ type RouteContext = {
 export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
   const session = await getOwnerSession();
+
+  if (session.mode === "guest") {
+    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+  }
 
   if (session.isLive) {
     const backendResponse = await backendFetch(`/api/hostels/${id}`);
@@ -40,18 +45,25 @@ export async function PUT(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const session = await getOwnerSession();
 
+  if (session.mode === "guest") {
+    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+  }
+
   if (session.isLive) {
     const body = (await request.json()) as {
       hostelName?: string;
       address?: string;
+      type?: string;
       floors?: OwnerFloor[];
     };
+    const liveType = body.type === "RESIDENCE" ? "RESIDENCE" : "PG";
 
     const backendResponse = await backendFetch(`/api/hostels/${id}`, {
       method: "PUT",
       body: JSON.stringify({
         name: body.hostelName?.trim() ?? "",
         address: body.address?.trim() ?? "",
+        type: liveType,
         floors: body.floors ?? [],
       }),
     });
@@ -73,12 +85,14 @@ export async function PUT(request: Request, context: RouteContext) {
   const body = (await request.json()) as {
     hostelName?: string;
     address?: string;
+    type?: string;
     floors?: OwnerFloor[];
   };
 
   const hostelName = body.hostelName?.trim() ?? "";
   const address = body.address?.trim() ?? "";
-  const floors = body.floors ?? [];
+  const type = body.type === "RESIDENCE" ? "RESIDENCE" : "PG";
+  const floors = normalizeFloors(id, type, body.floors ?? []);
 
   if (!hostelName || !address || floors.length === 0) {
     return NextResponse.json({ message: "Please complete hostel name, address, and at least one floor." }, { status: 400 });
@@ -87,17 +101,18 @@ export async function PUT(request: Request, context: RouteContext) {
   const hasInvalidRoom = floors.some(
     (floor) =>
       floor.rooms.length === 0 ||
-      floor.rooms.some((room) => !room.roomNumber.trim() || !room.bedCount || room.bedCount < 1 || !room.sharingType.trim()),
+      floor.rooms.some((room) => !room.roomNumber.trim() || !room.bedCount || room.bedCount < 1),
   );
 
   if (hasInvalidRoom) {
-    return NextResponse.json({ message: "Each floor must have valid room number, bed count, and sharing type." }, { status: 400 });
+    return NextResponse.json({ message: "Each floor must have valid room or unit labels and capacity." }, { status: 400 });
   }
 
   const hostel = updateOwnerHostel(
     {
       hostelName,
       address,
+      type,
       floors,
     },
     id,

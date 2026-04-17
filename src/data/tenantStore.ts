@@ -1,6 +1,6 @@
 import { DEMO_OWNER_HOSTEL_ID, getOwnerHostelInventory } from "@/data/ownerHostelStore";
 import { calculateNextDueDate, getDueStatus } from "@/utils/payment";
-import type { TenantAssignment, TenantRecord } from "@/types/tenant";
+import type { TenantAssignment, TenantFamilyMember, TenantRecord } from "@/types/tenant";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -341,6 +341,22 @@ export function getAssignedTenantCount(hostelId: string, floorNumber: number, ro
   ).length;
 }
 
+function getOccupiedBedIds(hostelId: string, floorNumber: number, roomNumber: string, exceptTenantId?: string) {
+  return new Set(
+    tenantRecords
+      .filter(
+        (tenant) =>
+          tenant.tenantId !== exceptTenantId &&
+          tenant.assignment?.hostelId === hostelId &&
+          tenant.assignment.floorNumber === floorNumber &&
+          tenant.assignment.roomNumber === roomNumber &&
+          tenant.assignment.bedId,
+      )
+      .map((tenant) => tenant.assignment?.bedId)
+      .filter((bedId): bedId is string => Boolean(bedId)),
+  );
+}
+
 export function createTenantRecord(input: Omit<TenantRecord, "tenantId" | "createdAt" | "paymentHistory">) {
   const status = getDueStatus(input.nextDueDate);
   const tenant: TenantRecord = {
@@ -375,7 +391,7 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
     throw new Error("Tenant not found.");
   }
 
-  const hostel = getOwnerHostelInventory().find((item) => item.hostelId === assignment.hostelId);
+  const hostel = getOwnerHostelInventory(tenantRecords).find((item) => item.hostelId === assignment.hostelId);
 
   if (!hostel) {
     throw new Error("Hostel room inventory not found.");
@@ -393,15 +409,45 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
     throw new Error("Selected room was not found.");
   }
 
-  const assignedCount = getAssignedTenantCount(assignment.hostelId, assignment.floorNumber, assignment.roomNumber);
+  const propertyType = hostel.type ?? "PG";
+  const currentActiveAssignment = tenant.assignment;
 
-  if (assignedCount >= room.capacity) {
-    throw new Error("Selected room is already full.");
+  if (
+    currentActiveAssignment &&
+    (currentActiveAssignment.hostelId !== assignment.hostelId ||
+      currentActiveAssignment.floorNumber !== assignment.floorNumber ||
+      currentActiveAssignment.roomNumber !== assignment.roomNumber ||
+      currentActiveAssignment.bedId !== assignment.bedId)
+  ) {
+    throw new Error("Tenant already has an active allocation. Clear the existing assignment before reassigning.");
+  }
+
+  if (propertyType === "RESIDENCE") {
+    const assignedCount = getAssignedTenantCount(assignment.hostelId, assignment.floorNumber, assignment.roomNumber);
+    const adjustedCount = currentActiveAssignment ? Math.max(assignedCount - 1, 0) : assignedCount;
+
+    if (adjustedCount >= 1) {
+      throw new Error("Selected unit is already occupied.");
+    }
+  } else {
+    const roomBeds = room.beds ?? [];
+    const occupiedBedIds = getOccupiedBedIds(assignment.hostelId, assignment.floorNumber, assignment.roomNumber, tenantId);
+    const availableBed = assignment.bedId
+      ? roomBeds.find((bed) => bed.id === assignment.bedId && !occupiedBedIds.has(bed.id))
+      : roomBeds.find((bed) => !occupiedBedIds.has(bed.id));
+
+    if (!availableBed) {
+      throw new Error("Selected bed is not available.");
+    }
+
+    assignment.bedId = availableBed.id;
+    assignment.bedLabel = availableBed.label;
   }
 
   tenant.assignment = {
     ...assignment,
     hostelName: hostel.hostelName,
+    propertyType,
   };
 
   tenant.billingAnchorDate = assignment.moveInDate;
@@ -475,6 +521,18 @@ export function removeTenantRecord(tenantId: string) {
   return removedTenant;
 }
 
+export function updateTenantFamilyMembersRecord(tenantId: string, familyMembers: TenantFamilyMember[]) {
+  const tenant = tenantRecords.find((item) => item.tenantId === tenantId);
+
+  if (!tenant) {
+    throw new Error("Tenant not found.");
+  }
+
+  tenant.familyMembers = familyMembers;
+  persistTenantRecords(tenantRecords);
+  return tenant;
+}
+
 export function addPaymentProof(
   tenantId: string,
   paymentId: string,
@@ -505,7 +563,7 @@ export function addPaymentProof(
 }
 
 export function seedDemoTenantsForHostel(hostelId: string) {
-  const hostel = getOwnerHostelInventory().find((item) => item.hostelId === hostelId);
+  const hostel = getOwnerHostelInventory(tenantRecords).find((item) => item.hostelId === hostelId);
 
   if (!hostel) {
     return [];
@@ -518,10 +576,13 @@ export function seedDemoTenantsForHostel(hostelId: string) {
 
   const availableSlots = hostel.floors.flatMap((floor) =>
     floor.rooms.flatMap((room) =>
-      Array.from({ length: room.capacity }, () => ({
+      Array.from({ length: room.capacity }, (_, bedIndex) => ({
         floorNumber: floor.floorNumber,
         roomNumber: room.roomNumber,
         sharingType: room.sharingType ?? `${room.capacity} sharing`,
+        propertyType: hostel.type,
+        bedId: hostel.type === "PG" ? room.beds?.[bedIndex]?.id : undefined,
+        bedLabel: hostel.type === "PG" ? room.beds?.[bedIndex]?.label : undefined,
       })),
     ),
   );
@@ -591,6 +652,9 @@ export function seedDemoTenantsForHostel(hostelId: string) {
       roomNumber: slot.roomNumber,
       sharingType: slot.sharingType,
       moveInDate,
+      propertyType: slot.propertyType,
+      bedId: slot.bedId,
+      bedLabel: slot.bedLabel,
     });
 
     return tenant;

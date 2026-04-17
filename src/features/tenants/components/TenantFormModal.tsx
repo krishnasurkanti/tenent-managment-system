@@ -20,6 +20,7 @@ const initialState = {
   emergencyContact: "",
 };
 
+
 type TenantStep = 1 | 2 | 3;
 type TenantType = "new" | "old";
 
@@ -31,10 +32,12 @@ export function TenantFormModal({
   open,
   onClose,
   onCreated,
+  hostelId,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: (tenant: TenantRecord) => void;
+  hostelId?: string;
 }) {
   const [step, setStep] = useState<TenantStep>(1);
   const [tenantType, setTenantType] = useState<TenantType>("new");
@@ -129,6 +132,9 @@ export function TenantFormModal({
     const payload = new FormData();
     payload.append("fullName", form.fullName);
     payload.append("tenantType", tenantType);
+    if (hostelId) {
+      payload.append("hostelId", hostelId);
+    }
     payload.append("phone", form.phone);
     payload.append("email", form.email);
     payload.append("monthlyRent", form.monthlyRent);
@@ -140,7 +146,17 @@ export function TenantFormModal({
       payload.append("idImage", idImage);
     }
 
-    const { response, data } = await createTenant(payload);
+    let response: Response;
+    let data: { tenant?: TenantRecord; message?: string };
+    try {
+      const result = await createTenant(payload);
+      response = result.response;
+      data = result.data;
+    } catch {
+      setError("Network error. Please check your connection and try again.");
+      setSubmitting(false);
+      return;
+    }
 
     if (!response.ok) {
       setError(data.message ?? "Unable to create tenant.");
@@ -170,7 +186,7 @@ export function TenantFormModal({
                 </div>
                 <p className="mt-2 text-[11px] leading-5 text-slate-500">Go one section at a time: personal details, ID proof, then payment.</p>
               </div>
-              <Button variant="ghost" disabled={submitting} className="rounded-[var(--radius-pill)] px-3 text-slate-500 hover:bg-white/70" onClick={handleClose}>
+              <Button variant="ghost" disabled={submitting} aria-label="Close" className="rounded-[var(--radius-pill)] px-3 text-slate-500 hover:bg-white/70" onClick={handleClose}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -234,7 +250,8 @@ export function TenantFormModal({
                             onChange={(event) => setForm({ ...form, phone: event.target.value })}
                             disabled={submitting}
                             className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
-                            placeholder="Enter phone number"
+                            type="tel"
+                          placeholder="Enter phone number"
                           />
                         </InputShell>
                       </Field>
@@ -260,7 +277,8 @@ export function TenantFormModal({
                             onChange={(event) => setForm({ ...form, emergencyContact: event.target.value })}
                             disabled={submitting}
                             className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
-                            placeholder="Enter emergency contact number"
+                            type="tel"
+                          placeholder="Enter emergency contact number"
                           />
                         </InputShell>
                       </Field>
@@ -334,7 +352,7 @@ export function TenantFormModal({
                         </InputShell>
                       </Field>
 
-                      <Field label="Rent Paid">
+                      <Field label="First Payment Collected">
                         <InputShell icon={<CreditCard className="h-4 w-4 text-[var(--accent)]" />}>
                           <input
                             type="number"

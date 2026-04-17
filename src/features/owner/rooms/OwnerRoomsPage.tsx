@@ -16,6 +16,7 @@ import {
   ownerSubtlePanelClass,
 } from "@/components/ui/owner-theme";
 import { getDueStatus } from "@/utils/payment";
+import { buildHostelInventory, getHostelOccupancySummary } from "@/utils/hostel-occupancy";
 
 export default function OwnerRoomsPage() {
   return (
@@ -26,8 +27,8 @@ export default function OwnerRoomsPage() {
 }
 
 function OwnerRoomsPageContent() {
-  const { currentHostel, loading: hostelLoading, isSwitching } = useHostelContext();
-  const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants();
+  const { currentHostel, currentHostelId, loading: hostelLoading, isSwitching } = useHostelContext();
+  const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants(currentHostelId);
   const searchParams = useSearchParams();
   const showAvailableOnly = searchParams.get("view") === "available";
 
@@ -39,25 +40,16 @@ function OwnerRoomsPageContent() {
     return <Card className="rounded-[24px] p-4 text-center text-sm text-[color:var(--fg-secondary)]">Create a hostel first to manage rooms.</Card>;
   }
 
+  const isResidence = currentHostel.type === "RESIDENCE";
   const tenants = allTenants.filter((tenant) => tenant.assignment?.hostelId === currentHostel.id);
-  const totalRooms = currentHostel.floors.reduce((sum, floor) => sum + floor.rooms.length, 0);
-  const totalBeds = currentHostel.floors.reduce(
-    (sum, floor) => sum + floor.rooms.reduce((roomSum, room) => roomSum + room.bedCount, 0),
-    0,
-  );
-  const occupiedBeds = tenants.length;
-  const availableBeds = Math.max(totalBeds - occupiedBeds, 0);
-  const availableRoomsCount = currentHostel.floors.reduce(
-    (sum, floor, floorIndex) =>
-      sum +
-      floor.rooms.filter((room) => {
-        const occupied = tenants.filter(
-          (tenant) =>
-            tenant.assignment?.floorNumber === floorIndex + 1 &&
-            tenant.assignment.roomNumber === room.roomNumber,
-        ).length;
-        return room.bedCount - occupied > 0;
-      }).length,
+  const inventory = buildHostelInventory(currentHostel, tenants);
+  const occupancy = getHostelOccupancySummary(currentHostel, tenants);
+  const totalRooms = occupancy.totalRooms;
+  const totalBeds = occupancy.totalBeds;
+  const occupiedBeds = isResidence ? occupancy.occupiedUnits : occupancy.occupiedBeds;
+  const availableBeds = isResidence ? occupancy.vacantUnits : occupancy.vacantBeds;
+  const availableRoomsCount = inventory.floors.reduce(
+    (sum, floor) => sum + floor.rooms.filter((room) => room.occupied < room.capacity).length,
     0,
   );
 
@@ -82,29 +74,29 @@ function OwnerRoomsPageContent() {
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-2.5">
-            <MetricTile icon={Building2} label="Rooms" value={String(totalRooms)} />
+            <MetricTile icon={Building2} label={isResidence ? "Units" : "Rooms"} value={String(totalRooms)} />
             <MetricTile icon={Users} label="Occupied" value={String(occupiedBeds)} tone="success" />
-            <MetricTile icon={BedDouble} label="Beds" value={String(totalBeds)} />
+            <MetricTile icon={BedDouble} label={isResidence ? "Total Units" : "Beds"} value={isResidence ? String(totalRooms) : String(totalBeds)} />
             <MetricTile
               icon={DoorOpen}
-              label={showAvailableOnly ? "Open rooms" : "Open beds"}
-              value={showAvailableOnly ? String(availableRoomsCount) : String(availableBeds)}
+              label={showAvailableOnly ? (isResidence ? "Open units" : "Open rooms") : (isResidence ? "Vacant units" : "Open beds")}
+              value={showAvailableOnly ? String(availableRoomsCount) : isResidence ? String(availableRoomsCount) : String(availableBeds)}
               tone="warning"
             />
           </div>
         </Card>
 
         <div className="space-y-2.5">
-          {currentHostel.floors.map((floor, floorIndex) => {
+          {inventory.floors.map((floor) => {
             const floorRooms = floor.rooms
               .map((room) => {
                 const roomTenants = tenants.filter(
                   (tenant) =>
-                    tenant.assignment?.floorNumber === floorIndex + 1 &&
+                    tenant.assignment?.floorNumber === floor.floorNumber &&
                     tenant.assignment.roomNumber === room.roomNumber,
                 );
-                const occupied = roomTenants.length;
-                const available = Math.max(room.bedCount - occupied, 0);
+                const occupied = room.occupied;
+                const available = Math.max(room.capacity - occupied, 0);
                 const status = occupied === 0 ? "Available" : available === 0 ? "Full" : "Partly Occupied";
                 return { room, occupied, available, roomTenants, status };
               })
@@ -137,49 +129,75 @@ function OwnerRoomsPageContent() {
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <div className="flex items-center gap-2">
-                                <h3 className="text-sm font-semibold text-white">Room {room.roomNumber}</h3>
+                                <h3 className="text-sm font-semibold text-white">{isResidence ? "Unit" : "Room"} {room.roomNumber}</h3>
                                 <span className={roomStatus(status)}>{status}</span>
                               </div>
-                              <p className="mt-1 text-[11px] text-[color:var(--fg-secondary)]">{room.sharingType}</p>
+                              {!isResidence ? <p className="mt-1 text-[11px] text-[color:var(--fg-secondary)]">{room.sharingType}</p> : null}
                             </div>
                             <div className="text-right">
                               <p className="text-xs font-semibold text-white">
-                                {occupied}/{room.bedCount}
+                                {occupied}/{isResidence ? 1 : room.bedCount}
                               </p>
                               <p className="text-[11px] text-[color:var(--fg-secondary)]">{available} free</p>
                             </div>
                           </div>
 
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            {Array.from({ length: room.bedCount }).map((_, index) => {
-                              const assignedTenant = roomTenants[index];
-                              const paymentStatus = assignedTenant ? getDueStatus(assignedTenant.nextDueDate) : null;
-                              const toneClass = !assignedTenant
-                                ? "border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]"
-                                : paymentStatus?.tone === "red"
-                                  ? "border border-[#ef4444] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] text-white shadow-[0_12px_24px_rgba(220,38,38,0.24)]"
-                                  : paymentStatus?.tone === "orange" || paymentStatus?.tone === "yellow"
-                                    ? "border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]"
-                                    : "border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white shadow-[0_10px_22px_rgba(34,197,94,0.24)]";
-
-                              return (
-                                <div key={`${room.id}-bed-${index + 1}`} className={`rounded-2xl px-2.5 py-2 ${toneClass}`}>
-                                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em]">Bed {index + 1}</p>
-                                  <p className="mt-1 truncate text-[11px] font-semibold">
-                                    {assignedTenant ? assignedTenant.fullName : "Available"}
-                                  </p>
+                          {isResidence ? (
+                            <div className="mt-3">
+                              {roomTenants[0] ? (
+                                (() => {
+                                  const paymentStatus = getDueStatus(roomTenants[0].nextDueDate);
+                                  const toneClass = paymentStatus.tone === "red"
+                                    ? "border border-[#ef4444] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] text-white"
+                                    : paymentStatus.tone === "orange" || paymentStatus.tone === "yellow"
+                                      ? "border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] text-[#422006]"
+                                      : "border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white";
+                                  return (
+                                    <div className={`rounded-2xl px-2.5 py-2 ${toneClass}`}>
+                                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em]">Occupant</p>
+                                      <p className="mt-1 truncate text-[11px] font-semibold">{roomTenants[0].fullName}</p>
+                                    </div>
+                                  );
+                                })()
+                              ) : (
+                                <div className="rounded-2xl border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-2.5 py-2 text-[#422006]">
+                                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em]">Status</p>
+                                  <p className="mt-1 text-[11px] font-semibold">Vacant</p>
                                 </div>
-                              );
-                            })}
-                          </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="mt-3 grid grid-cols-2 gap-2">
+                                {(room.beds ?? []).map((bed, index) => {
+                                const assignedTenant = roomTenants.find((tenant) => tenant.assignment?.bedId === bed.id) ?? roomTenants[index];
+                                const paymentStatus = assignedTenant ? getDueStatus(assignedTenant.nextDueDate) : null;
+                                const toneClass = !assignedTenant
+                                  ? "border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]"
+                                  : paymentStatus?.tone === "red"
+                                    ? "border border-[#ef4444] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] text-white shadow-[0_12px_24px_rgba(220,38,38,0.24)]"
+                                    : paymentStatus?.tone === "orange" || paymentStatus?.tone === "yellow"
+                                      ? "border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]"
+                                      : "border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white shadow-[0_10px_22px_rgba(34,197,94,0.24)]";
+
+                                return (
+                                  <div key={`${room.id}-bed-${index + 1}`} className={`rounded-2xl px-2.5 py-2 ${toneClass}`}>
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em]">{bed.label}</p>
+                                    <p className="mt-1 truncate text-[11px] font-semibold">
+                                      {assignedTenant ? assignedTenant.fullName : "Available"}
+                                    </p>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
 
                           {available > 0 ? (
                             <div className="mt-3">
                               <Link
-                                href={`/owner/tenants?action=add-tenant&hostelId=${currentHostel.id}&floor=${floorIndex + 1}&room=${room.roomNumber}&sharingType=${encodeURIComponent(room.sharingType)}`}
+                                href={`/owner/tenants?action=add-tenant&hostelId=${currentHostel.id}&floor=${floor.floorNumber}&room=${room.roomNumber}&sharingType=${encodeURIComponent(room.sharingType ?? "")}`}
                                 className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.22)]"
                               >
-                                Add tenant
+                                {isResidence ? "Assign tenant" : "Add tenant"}
                               </Link>
                             </div>
                           ) : null}
@@ -222,27 +240,27 @@ function OwnerRoomsPageContent() {
 
         <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
           <MetricTile icon={Building2} label="Hostel" value={currentHostel.hostelName} />
-          <MetricTile icon={DoorOpen} label="Total Rooms" value={String(totalRooms)} />
-          <MetricTile icon={Users} label="Occupied Beds" value={String(occupiedBeds)} tone="success" />
+          <MetricTile icon={DoorOpen} label={isResidence ? "Total Units" : "Total Rooms"} value={String(totalRooms)} />
+          <MetricTile icon={Users} label={isResidence ? "Occupied Units" : "Occupied Beds"} value={String(occupiedBeds)} tone="success" />
           <MetricTile
             icon={BedDouble}
-            label={showAvailableOnly ? "Available Rooms" : "Available Beds"}
-            value={showAvailableOnly ? String(availableRoomsCount) : String(availableBeds)}
+            label={showAvailableOnly ? (isResidence ? "Vacant Units" : "Available Rooms") : (isResidence ? "Vacant Units" : "Available Beds")}
+            value={showAvailableOnly ? String(availableRoomsCount) : isResidence ? String(availableRoomsCount) : String(availableBeds)}
             tone="warning"
           />
         </div>
 
         <div className="space-y-2.5">
-          {currentHostel.floors.map((floor, floorIndex) => {
+          {inventory.floors.map((floor) => {
             const floorRooms = floor.rooms
               .map((room) => {
                 const roomTenants = tenants.filter(
                   (tenant) =>
-                    tenant.assignment?.floorNumber === floorIndex + 1 &&
+                    tenant.assignment?.floorNumber === floor.floorNumber &&
                     tenant.assignment.roomNumber === room.roomNumber,
                 );
-                const occupied = roomTenants.length;
-                const available = Math.max(room.bedCount - occupied, 0);
+                const occupied = room.occupied;
+                const available = Math.max(room.capacity - occupied, 0);
                 const status = occupied === 0 ? "Available" : available === 0 ? "Full" : "Partly Occupied";
                 return { room, occupied, available, roomTenants, status };
               })
@@ -268,23 +286,30 @@ function OwnerRoomsPageContent() {
                         <div key={room.id} className={`rounded-[20px] p-3 ${ownerSubtlePanelClass}`}>
                           <div className="flex items-start justify-between gap-2.5">
                             <div>
-                              <h3 className="text-[13px] font-semibold text-white">Room {room.roomNumber}</h3>
-                              <p className="mt-0.5 text-[11px] text-[color:var(--fg-secondary)]">{room.sharingType}</p>
+                              <h3 className="text-[13px] font-semibold text-white">{isResidence ? "Unit" : "Room"} {room.roomNumber}</h3>
+                              {!isResidence ? <p className="mt-0.5 text-[11px] text-[color:var(--fg-secondary)]">{room.sharingType}</p> : null}
                             </div>
                             <span className={roomStatus(status)}>{status}</span>
                           </div>
-                          <div className="mt-3 grid grid-cols-3 gap-1.5">
-                            <SmallInfo label="Beds" value={String(room.bedCount)} />
-                            <SmallInfo label="Used" value={String(occupied)} />
-                            <SmallInfo label="Free" value={String(available)} />
-                          </div>
+                          {isResidence ? (
+                            <div className="mt-3 grid grid-cols-2 gap-1.5">
+                              <SmallInfo label="Status" value={occupied > 0 ? "Occupied" : "Vacant"} />
+                              <SmallInfo label="Free" value={String(available)} />
+                            </div>
+                          ) : (
+                            <div className="mt-3 grid grid-cols-3 gap-1.5">
+                              <SmallInfo label="Beds" value={String(room.capacity)} />
+                              <SmallInfo label="Used" value={String(occupied)} />
+                              <SmallInfo label="Free" value={String(available)} />
+                            </div>
+                          )}
                           {available > 0 ? (
                             <div className="mt-3">
                               <Link
-                                href={`/owner/tenants?action=add-tenant&hostelId=${currentHostel.id}&floor=${floorIndex + 1}&room=${room.roomNumber}&sharingType=${encodeURIComponent(room.sharingType)}`}
+                                href={`/owner/tenants?action=add-tenant&hostelId=${currentHostel.id}&floor=${floor.floorNumber}&room=${room.roomNumber}&sharingType=${encodeURIComponent(room.sharingType ?? "")}`}
                                 className="inline-flex min-h-9 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-3 text-[12px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.2)]"
                               >
-                                Add tenant
+                                {isResidence ? "Assign tenant" : "Add tenant"}
                               </Link>
                             </div>
                           ) : null}

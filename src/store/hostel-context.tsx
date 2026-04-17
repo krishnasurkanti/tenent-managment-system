@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -35,6 +36,13 @@ export function HostelContextProvider({ children }: { children: React.ReactNode 
   const [loading, setLoading] = useState(true);
   const [isSwitching, setIsSwitching] = useState(false);
 
+  // Use a ref so refreshHostels can read the latest hostelId without being
+  // recreated on every hostel switch (which would cause an infinite effect loop).
+  const currentHostelIdRef = useRef(currentHostelId);
+  useEffect(() => {
+    currentHostelIdRef.current = currentHostelId;
+  }, [currentHostelId]);
+
   const refreshHostels = useCallback(async () => {
     setLoading(true);
 
@@ -45,7 +53,8 @@ export function HostelContextProvider({ children }: { children: React.ReactNode 
       setHostels(nextHostels);
 
       const storedHostelId = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
-      const preferredId = currentHostelId ?? storedHostelId;
+      // Read from ref — no stale-closure risk, no dependency on currentHostelId
+      const preferredId = currentHostelIdRef.current ?? storedHostelId;
       const fallbackHostel = nextHostels.find((hostel) => hostel.id === preferredId) ?? nextHostels[0] ?? null;
       const nextHostelId = fallbackHostel?.id ?? null;
 
@@ -61,11 +70,11 @@ export function HostelContextProvider({ children }: { children: React.ReactNode 
     } finally {
       setLoading(false);
     }
-  }, [currentHostelId]);
+  }, []); // stable — no deps that change across renders
 
   useEffect(() => {
-    refreshHostels();
-  }, [refreshHostels]);
+    void refreshHostels();
+  }, [refreshHostels]); // runs once on mount
 
   useEffect(() => {
     if (loading) {

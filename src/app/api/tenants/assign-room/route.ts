@@ -8,6 +8,11 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const session = await getOwnerSession();
+
+  if (session.mode === "guest") {
+    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+  }
+
   const body = (await request.json()) as {
     tenantId?: string;
     hostelId?: string;
@@ -15,6 +20,9 @@ export async function POST(request: Request) {
     roomNumber?: string;
     sharingType?: string;
     moveInDate?: string;
+    propertyType?: "PG" | "RESIDENCE";
+    bedId?: string;
+    bedLabel?: string;
   };
 
   if (!body.tenantId || !body.hostelId || !body.floorNumber || !body.roomNumber || !body.sharingType || !body.moveInDate) {
@@ -45,6 +53,9 @@ export async function POST(request: Request) {
             roomNumber: body.roomNumber,
             sharingType: body.sharingType,
             moveInDate: body.moveInDate,
+            propertyType: body.propertyType,
+            bedId: body.bedId,
+            bedLabel: body.bedLabel,
           },
         }),
       });
@@ -63,6 +74,9 @@ export async function POST(request: Request) {
       roomNumber: body.roomNumber,
       sharingType: body.sharingType,
       moveInDate: body.moveInDate,
+      propertyType: body.propertyType,
+      bedId: body.bedId,
+      bedLabel: body.bedLabel,
     });
 
     return NextResponse.json({ tenant });

@@ -6,11 +6,13 @@ import { useHostelContext } from "@/store/hostel-context";
 import { Card } from "@/components/ui/card";
 import { SkeletonBlock } from "@/components/ui/skeleton";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
+import { ownerStatusClass } from "@/components/ui/owner-theme";
 import { formatPaymentDate, getDueStatus } from "@/utils/payment";
+import { getHostelOccupancySummary } from "@/utils/hostel-occupancy";
 
 export default function OwnerDashboardPage() {
-  const { currentHostel, loading: hostelLoading, isSwitching } = useHostelContext();
-  const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants();
+  const { currentHostel, currentHostelId, loading: hostelLoading, isSwitching } = useHostelContext();
+  const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants(currentHostelId);
 
   if (hostelLoading || tenantLoading) {
     return <LoadingState />;
@@ -28,13 +30,12 @@ export default function OwnerDashboardPage() {
   }
 
   const tenants = allTenants.filter((tenant) => tenant.assignment?.hostelId === currentHostel.id);
-  const totalRooms = currentHostel.floors.reduce((sum, floor) => sum + floor.rooms.length, 0);
-  const totalBeds = currentHostel.floors.reduce(
-    (sum, floor) => sum + floor.rooms.reduce((roomSum, room) => roomSum + room.bedCount, 0),
-    0,
-  );
-  const occupiedBeds = tenants.length;
-  const availableBeds = Math.max(totalBeds - occupiedBeds, 0);
+  const isResidence = currentHostel.type === "RESIDENCE";
+  const occupancy = getHostelOccupancySummary(currentHostel, tenants);
+  const totalRooms = occupancy.totalRooms;
+  const totalBeds = occupancy.totalBeds;
+  const occupiedBeds = isResidence ? occupancy.occupiedUnits : occupancy.occupiedBeds;
+  const availableBeds = isResidence ? occupancy.vacantUnits : occupancy.vacantBeds;
   const totalCollected = tenants.reduce((sum, tenant) => sum + tenant.rentPaid, 0);
   const dueSoon = tenants.filter((tenant) => {
     const tone = getDueStatus(tenant.nextDueDate).tone;
@@ -45,7 +46,8 @@ export default function OwnerDashboardPage() {
     .map((tenant) => ({ tenant, status: getDueStatus(tenant.nextDueDate) }))
     .sort((left, right) => left.status.priority - right.status.priority)
     .slice(0, 4);
-  const occupancyPercent = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
+  const capacityBase = isResidence ? totalRooms : totalBeds;
+  const occupancyPercent = capacityBase > 0 ? Math.round((occupiedBeds / capacityBase) * 100) : 0;
 
   return (
     <div className={`space-y-3 transition-opacity lg:space-y-3 ${isSwitching ? "opacity-70" : "opacity-100"}`}>
@@ -65,9 +67,9 @@ export default function OwnerDashboardPage() {
             </div>
           </div>
           <div className="mt-2.5 grid grid-cols-3 gap-2 text-center">
-            <MiniMetric label="Beds" value={String(totalBeds)} />
+            <MiniMetric label={isResidence ? "Units" : "Beds"} value={String(isResidence ? totalRooms : totalBeds)} />
             <MiniMetric label="Free" value={String(availableBeds)} />
-            <MiniMetric label="Rooms" value={String(totalRooms)} />
+            <MiniMetric label={isResidence ? "Floors" : "Rooms"} value={String(isResidence ? currentHostel.floors.length : totalRooms)} />
           </div>
         </Card>
 
@@ -84,7 +86,7 @@ export default function OwnerDashboardPage() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">Recent Activity</p>
               <h2 className="text-sm font-semibold text-white">Next actions</h2>
             </div>
-            <Link href="/owner/payments" className="text-[11px] font-semibold text-[var(--accent)]">
+            <Link href="/owner/payments?filter=due" className="text-[11px] font-semibold text-[var(--accent)]">
               View all
             </Link>
           </div>
@@ -101,7 +103,7 @@ export default function OwnerDashboardPage() {
                         Room {tenant.assignment?.roomNumber ?? "-"} / Due {formatPaymentDate(tenant.nextDueDate)}
                       </p>
                     </Link>
-                    <span className={statusChip(status.tone)}>{status.label}</span>
+                    <span className={ownerStatusClass(status.tone)}>{status.label}</span>
                   </div>
                   {status.tone !== "green" ? (
                     <div className="mt-2.5 flex justify-end">
@@ -135,8 +137,8 @@ export default function OwnerDashboardPage() {
 
               <div className="mt-4 grid gap-2.5 sm:grid-cols-4">
                 <DesktopMetric icon={CreditCard} label="Collected" value={`Rs ${totalCollected.toLocaleString("en-IN")}`} />
-                <DesktopMetric icon={Users} label="Occupied" value={String(occupiedBeds)} />
-                <DesktopMetric icon={BedDouble} label="Beds" value={String(totalBeds)} />
+                <DesktopMetric icon={Users} label={isResidence ? "Occupied Units" : "Occupied"} value={String(occupiedBeds)} />
+                <DesktopMetric icon={BedDouble} label={isResidence ? "Units" : "Beds"} value={String(isResidence ? totalRooms : totalBeds)} />
                 <DesktopMetric icon={DoorOpen} label="Free" value={String(availableBeds)} />
               </div>
             </div>
@@ -144,7 +146,7 @@ export default function OwnerDashboardPage() {
             <div className="grid grid-cols-2 gap-2.5">
               <ActionTile href="/owner/tenants?action=add-tenant" icon={Users} label="Add Tenant" note="New check-in" variant="desktop" />
               <ActionTile href="/owner/payments" icon={CreditCard} label="Payments" note="Ledger and dues" variant="desktop" />
-              <ActionTile href="/owner/rooms?view=available" icon={DoorOpen} label="Available" note="Open beds" variant="desktop" />
+              <ActionTile href="/owner/rooms?view=available" icon={DoorOpen} label="Available" note={isResidence ? "Vacant units" : "Open beds"} variant="desktop" />
               <ActionTile href="/owner/notifications" icon={AlertTriangle} label="Alerts" note={`${overdue.length} overdue`} variant="desktop" />
             </div>
           </div>
@@ -180,7 +182,7 @@ export default function OwnerDashboardPage() {
                         <td className="px-4 py-2.5 text-[color:var(--fg-secondary)]">{tenant.assignment?.roomNumber ?? "-"}</td>
                         <td className="px-4 py-2.5 text-[color:var(--fg-secondary)]">{formatPaymentDate(tenant.nextDueDate)}</td>
                         <td className="px-4 py-2.5">
-                          <span className={statusChip(status.tone)}>{status.label}</span>
+                          <span className={ownerStatusClass(status.tone)}>{status.label}</span>
                         </td>
                         <td className="px-4 py-2.5 text-right">
                           {status.tone !== "green" ? (
@@ -206,9 +208,9 @@ export default function OwnerDashboardPage() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Hostel snapshot</p>
             <div className="mt-2.5 grid gap-2.5">
               <SnapshotRow label="Floors" value={String(currentHostel.floors.length)} />
-              <SnapshotRow label="Rooms" value={String(totalRooms)} />
-              <SnapshotRow label="Beds" value={String(totalBeds)} />
-              <SnapshotRow label="Vacancy" value={`${availableBeds} beds`} />
+              <SnapshotRow label={isResidence ? "Units" : "Rooms"} value={String(totalRooms)} />
+              <SnapshotRow label={isResidence ? "Capacity" : "Beds"} value={String(isResidence ? totalRooms : totalBeds)} />
+              <SnapshotRow label="Vacancy" value={isResidence ? `${availableBeds} units` : `${availableBeds} beds`} />
               <SnapshotRow label="Due soon" value={String(dueSoon.length)} />
               <SnapshotRow label="Overdue" value={String(overdue.length)} />
             </div>
@@ -372,12 +374,4 @@ function LoadingState() {
       </div>
     </div>
   );
-}
-
-function statusChip(tone: string) {
-  if (tone === "red") return "inline-flex rounded-full border border-[#ef4444] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] px-2.5 py-1 text-[10px] font-semibold text-white shadow-[0_12px_24px_rgba(220,38,38,0.28)]";
-  if (tone === "orange" || tone === "yellow") {
-    return "inline-flex rounded-full border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-2.5 py-1 text-[10px] font-semibold text-[#422006] shadow-[0_12px_24px_rgba(250,204,21,0.24)]";
-  }
-  return "inline-flex rounded-full border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] px-2.5 py-1 text-[10px] font-semibold text-white shadow-[0_12px_24px_rgba(34,197,94,0.24)]";
 }

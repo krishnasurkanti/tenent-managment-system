@@ -11,9 +11,16 @@ export type TenantRecord = {
   idNumber: string;
   idImageName: string;
   emergencyContact: string;
+  familyMembers?: TenantFamilyMember[];
   createdAt: string;
   assignment?: TenantAssignment;
   paymentHistory: TenantPaymentHistory[];
+};
+
+export type TenantFamilyMember = {
+  name: string;
+  relation: string;
+  age?: number;
 };
 
 export type TenantPaymentHistory = {
@@ -36,14 +43,29 @@ export type TenantAssignment = {
   roomNumber: string;
   sharingType: string;
   moveInDate: string;
+  propertyType?: "PG" | "RESIDENCE";
+  unitId?: string;
+  bedId?: string;
+  bedLabel?: string;
+};
+
+export type HostelBed = {
+  id: string;
+  label: string;
+  occupied: boolean;
+  tenantId?: string;
+  tenantName?: string;
 };
 
 export type HostelRoom = {
   id?: string;
+  unitId?: string;
   roomNumber: string;
   capacity: number;
   occupied: number;
   sharingType?: string;
+  propertyType?: "PG" | "RESIDENCE";
+  beds?: HostelBed[];
 };
 
 export type HostelFloor = {
@@ -55,5 +77,6 @@ export type HostelFloor = {
 export type HostelRoomInventory = {
   hostelId: string;
   hostelName: string;
+  type: "PG" | "RESIDENCE";
   floors: HostelFloor[];
 };

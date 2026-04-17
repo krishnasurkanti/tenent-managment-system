@@ -1,5 +1,6 @@
 import type { OwnerHostel } from "@/types/owner-hostel";
-import type { HostelRoomInventory } from "@/types/tenant";
+import type { HostelRoomInventory, TenantRecord } from "@/types/tenant";
+import { buildHostelInventory, normalizeHostel } from "@/utils/hostel-occupancy";
 
 export const DEMO_OWNER_HOSTEL_ID = "owner-hostel-aurora";
 
@@ -25,6 +26,7 @@ const demoOwnerHostels: OwnerHostel[] = [
     id: DEMO_OWNER_HOSTEL_ID,
     hostelName: "Aurora Residency",
     address: "Madhapur Main Road, Hyderabad",
+    type: "PG",
     createdAt: "2026-04-01T10:00:00.000Z",
     floors: [1, 2, 3, 4].map((floorNumber) => ({
       id: `floor-aurora-${floorNumber}`,
@@ -36,6 +38,7 @@ const demoOwnerHostels: OwnerHostel[] = [
     id: "owner-hostel-lotus",
     hostelName: "Lotus Elite Stay",
     address: "Kukatpally Housing Board, Hyderabad",
+    type: "PG",
     createdAt: "2026-04-03T10:00:00.000Z",
     floors: [1, 2, 3, 4].map((floorNumber) => ({
       id: `floor-lotus-${floorNumber}`,
@@ -47,6 +50,7 @@ const demoOwnerHostels: OwnerHostel[] = [
     id: "owner-hostel-skyline",
     hostelName: "Skyline Comforts",
     address: "Gachibowli Financial District, Hyderabad",
+    type: "PG",
     createdAt: "2026-04-05T10:00:00.000Z",
     floors: [1, 2, 3, 4].map((floorNumber) => ({
       id: `floor-skyline-${floorNumber}`,
@@ -59,13 +63,16 @@ const demoOwnerHostels: OwnerHostel[] = [
 let ownerHostels: OwnerHostel[] = getDemoOwnerHostels();
 
 function cloneHostel(hostel: OwnerHostel): OwnerHostel {
-  return {
+  return normalizeHostel({
     ...hostel,
     floors: hostel.floors.map((floor) => ({
       ...floor,
-      rooms: floor.rooms.map((room) => ({ ...room })),
+      rooms: floor.rooms.map((room) => ({
+        ...room,
+        beds: room.beds?.map((bed) => ({ ...bed })),
+      })),
     })),
-  };
+  });
 }
 
 export function getDemoOwnerHostels(): OwnerHostel[] {
@@ -89,11 +96,11 @@ export function getOwnerHostel(hostelId?: string) {
 }
 
 export function saveOwnerHostel(hostel: Omit<OwnerHostel, "id" | "createdAt">) {
-  const nextHostel: OwnerHostel = {
+  const nextHostel = normalizeHostel({
     id: `owner-hostel-${Date.now()}`,
     createdAt: new Date().toISOString(),
     ...hostel,
-  };
+  });
 
   ownerHostels = [nextHostel, ...ownerHostels];
   return cloneHostel(nextHostel);
@@ -129,20 +136,6 @@ export function resetOwnerHostel() {
   return getOwnerHostels();
 }
 
-export function getOwnerHostelInventory(): HostelRoomInventory[] {
-  return ownerHostels.map((hostel) => ({
-    hostelId: hostel.id,
-    hostelName: hostel.hostelName,
-    floors: hostel.floors.map((floor, floorIndex) => ({
-      id: floor.id,
-      floorNumber: floorIndex + 1,
-      rooms: floor.rooms.map((room) => ({
-        id: room.id,
-        roomNumber: room.roomNumber,
-        capacity: room.bedCount,
-        occupied: 0,
-        sharingType: room.sharingType,
-      })),
-    })),
-  }));
+export function getOwnerHostelInventory(tenants: TenantRecord[] = []): HostelRoomInventory[] {
+  return ownerHostels.map((hostel) => buildHostelInventory(hostel, tenants));
 }
