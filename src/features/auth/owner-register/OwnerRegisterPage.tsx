@@ -82,7 +82,7 @@ export default function OwnerRegisterPage() {
 
         <section className="relative flex flex-1 items-center py-3 lg:py-5">
           <div className="relative grid w-full gap-6 lg:grid-cols-[1.02fr_0.98fr] lg:items-center xl:gap-10">
-            <div className="rounded-[36px] border border-[color:var(--border)] bg-[linear-gradient(180deg,var(--hero-gradient)_0%,var(--brand)_100%)] p-8 text-white shadow-[0_34px_90px_color-mix(in_srgb,var(--brand)_24%,transparent)]">
+            <div className="rounded-[14px] border border-[color:var(--border)] bg-[linear-gradient(180deg,var(--hero-gradient)_0%,var(--brand)_100%)] p-8 text-white shadow-[0_34px_90px_color-mix(in_srgb,var(--brand)_24%,transparent)]">
               <div className="inline-flex items-center gap-2 rounded-full bg-[color:var(--surface-soft)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-primary)]">
                 <Building2 className="h-3.5 w-3.5" />
                 Live Backend Access
@@ -95,7 +95,7 @@ export default function OwnerRegisterPage() {
               </p>
               <div className="mt-6 grid gap-3">
                 {reasons.map((reason) => (
-                  <div key={reason} className="flex items-center gap-3 rounded-[22px] bg-[color:var(--surface-soft)] px-4 py-3 backdrop-blur">
+                  <div key={reason} className="flex items-center gap-3 rounded-[8px] bg-[color:var(--surface-soft)] px-4 py-3 backdrop-blur">
                     <CheckCircle2 className="h-5 w-5 shrink-0 text-[color:var(--fg-primary)]" />
                     <p className="text-sm text-white">{reason}</p>
                   </div>
@@ -105,7 +105,7 @@ export default function OwnerRegisterPage() {
 
             <form
               onSubmit={handleSubmit}
-              className="rounded-[30px] border border-[color:var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bg-elevated)_82%,white)_0%,color-mix(in_srgb,var(--bg-surface)_70%,white)_100%)] p-4 shadow-[0_24px_50px_rgba(15,23,42,0.16)] backdrop-blur lg:p-6"
+              className="rounded-[12px] border border-[color:var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bg-elevated)_82%,white)_0%,color-mix(in_srgb,var(--bg-surface)_70%,white)_100%)] p-4 shadow-[0_24px_50px_rgba(15,23,42,0.16)] backdrop-blur lg:p-6"
             >
               <div className="mb-5">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Owner sign up</p>
@@ -192,7 +192,7 @@ export default function OwnerRegisterPage() {
                 ) : null}
               </div>
 
-              <div className="mt-4 rounded-[22px] border border-dashed border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
+              <div className="mt-4 rounded-[8px] border border-dashed border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">Already have an account?</p>
                 <Link href="/login" className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-[color:var(--accent-electric)]">
                   Go to owner login

@@ -92,7 +92,7 @@ export default function AdminBillingPage() {
                 <select
                   value={row.control.planId}
                   onChange={(event) => updateControl(row.hostelId, { planId: event.target.value })}
-                  className="mt-1 w-full rounded-[20px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white"
+                  className="mt-1 w-full rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white"
                 >
                   {plans.map((plan) => (
                     <option key={plan} value={plan}>
@@ -108,7 +108,7 @@ export default function AdminBillingPage() {
                   defaultValue={row.control.pricingOverride ?? ""}
                   onBlur={(event) => updateControl(row.hostelId, { pricingOverride: event.target.value ? Number(event.target.value) : null })}
                   placeholder="Auto"
-                  className="mt-1 w-full rounded-[20px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white placeholder:text-[color:var(--fg-secondary)]"
+                  className="mt-1 w-full rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white placeholder:text-[color:var(--fg-secondary)]"
                 />
               </AdminField>
 
@@ -117,7 +117,7 @@ export default function AdminBillingPage() {
                   type="number"
                   defaultValue={row.control.discountPercent}
                   onBlur={(event) => updateControl(row.hostelId, { discountPercent: Number(event.target.value || 0) })}
-                  className="mt-1 w-full rounded-[20px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white"
+                  className="mt-1 w-full rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white"
                 />
               </AdminField>
 
@@ -126,7 +126,7 @@ export default function AdminBillingPage() {
                   type="number"
                   defaultValue={row.control.freeMonthsRemaining}
                   onBlur={(event) => updateControl(row.hostelId, { freeMonthsRemaining: Number(event.target.value || 0) })}
-                  className="mt-1 w-full rounded-[20px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white"
+                  className="mt-1 w-full rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white"
                 />
               </AdminField>
 
@@ -147,7 +147,7 @@ export default function AdminBillingPage() {
             <p className="text-sm text-[color:var(--fg-secondary)]">No upgrade requests yet.</p>
           ) : (
             upgradeRequests.map((request) => (
-              <div key={request.requestId} className="flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
+              <div key={request.requestId} className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
                 <div className="text-sm text-white">
                   {request.hostelName}: {request.currentPlanId.toUpperCase()} {"->"} {request.requestedPlanId.toUpperCase()} ({request.status})
                 </div>
@@ -174,7 +174,7 @@ export default function AdminBillingPage() {
             <p className="text-sm text-[color:var(--fg-secondary)]">No invoices generated yet.</p>
           ) : (
             history.map((invoice) => (
-              <div key={invoice.invoiceId} className="flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
+              <div key={invoice.invoiceId} className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
                 <div className="text-sm text-white">
                   {invoice.invoiceId} • {invoice.monthKey} • Rs{invoice.finalAmount.toLocaleString("en-IN")}
                 </div>

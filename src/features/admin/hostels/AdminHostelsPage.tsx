@@ -120,7 +120,7 @@ export default function AdminHostelsPage() {
                   }))
                 }
                 placeholder="Owner username"
-                className="rounded-[20px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white placeholder:text-[color:var(--fg-secondary)]"
+                className="rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white placeholder:text-[color:var(--fg-secondary)]"
               />
               <input
                 type="password"
@@ -135,7 +135,7 @@ export default function AdminHostelsPage() {
                   }))
                 }
                 placeholder="New owner password"
-                className="rounded-[20px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white placeholder:text-[color:var(--fg-secondary)]"
+                className="rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white placeholder:text-[color:var(--fg-secondary)]"
               />
               <Button onClick={() => saveCredentials(row.hostelId)} className="min-h-12">
                 Save Credentials
@@ -173,7 +173,7 @@ function ActionButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-[20px] px-3 py-2 text-xs font-semibold ${
+      className={`rounded-[8px] px-3 py-2 text-xs font-semibold ${
         tone === "danger"
           ? "border border-[#ef4444] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] text-white shadow-[0_12px_24px_rgba(220,38,38,0.24)]"
           : "border border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white"

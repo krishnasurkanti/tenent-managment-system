@@ -110,7 +110,7 @@ export default function OwnerBillingPage() {
 
   if (error || !data) {
     return (
-      <div className="rounded-[28px] border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-400">
+      <div className="rounded-[10px] border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-400">
         {error || "Unable to load pricing."}
       </div>
     );
@@ -124,7 +124,7 @@ export default function OwnerBillingPage() {
   return (
     <div className="space-y-6 text-white">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[radial-gradient(ellipse_at_top_left,rgba(56,189,248,0.12),transparent_40%),radial-gradient(ellipse_at_bottom_right,rgba(249,193,42,0.1),transparent_40%),linear-gradient(180deg,#0d1525_0%,#080e1a_100%)] p-5 shadow-[0_32px_80px_rgba(2,6,23,0.4)] sm:p-7">
+      <section className="relative overflow-hidden rounded-[14px] border border-white/10 bg-[radial-gradient(ellipse_at_top_left,rgba(56,189,248,0.12),transparent_40%),radial-gradient(ellipse_at_bottom_right,rgba(249,193,42,0.1),transparent_40%),linear-gradient(180deg,#0d1525_0%,#080e1a_100%)] p-5 shadow-[0_32px_80px_rgba(2,6,23,0.4)] sm:p-7">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#38bdf8]/30 to-transparent" />
 
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -144,7 +144,7 @@ export default function OwnerBillingPage() {
 
           <div className="flex flex-col gap-3 sm:min-w-56">
             {/* Trial badge */}
-            <div className="rounded-[22px] border border-[#38bdf8]/30 bg-[#38bdf8]/8 p-4">
+            <div className="rounded-[8px] border border-[#38bdf8]/30 bg-[#38bdf8]/8 p-4">
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-[#38bdf8]" />
                 <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#38bdf8]">Free Trial</span>
@@ -154,7 +154,7 @@ export default function OwnerBillingPage() {
             </div>
 
             {/* Founding offer */}
-            <div className="rounded-[22px] border border-[#f59e0b]/40 bg-[#f59e0b]/8 p-4">
+            <div className="rounded-[8px] border border-[#f59e0b]/40 bg-[#f59e0b]/8 p-4">
               <div className="flex items-center gap-2">
                 <Star className="h-4 w-4 text-[#fbbf24]" />
                 <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#fbbf24]">Founding Offer</span>
@@ -200,7 +200,7 @@ export default function OwnerBillingPage() {
           return (
             <article
               key={plan.key}
-              className={`relative flex flex-col rounded-[32px] border p-5 ${plan.accent} ${"popular" in plan && plan.popular ? "ring-1 ring-[#38bdf8]/30" : ""}`}
+              className={`relative flex flex-col rounded-[12px] border p-5 ${plan.accent} ${"popular" in plan && plan.popular ? "ring-1 ring-[#38bdf8]/30" : ""}`}
             >
               {"popular" in plan && plan.popular ? (
                 <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#38bdf8]/50 bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_10px_28px_rgba(37,99,235,0.3)]">
@@ -279,7 +279,7 @@ export default function OwnerBillingPage() {
       </section>
 
       {/* Free daily/weekly callout */}
-      <section className="rounded-[28px] border border-white/10 bg-white/[0.03] px-5 py-5">
+      <section className="rounded-[10px] border border-white/10 bg-white/[0.03] px-5 py-5">
         <div className="flex items-start gap-4">
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border border-[#4ade80]/40 bg-[#22c55e]/10">
             <Check className="h-5 w-5 text-[#4ade80]" />
@@ -309,7 +309,7 @@ function TenantCountCard({
 }) {
   return (
     <div
-      className={`rounded-[22px] border p-4 ${
+      className={`rounded-[8px] border p-4 ${
         tone === "brand"
           ? "border-[#38bdf8]/20 bg-[#38bdf8]/[0.06]"
           : "border-[#4ade80]/20 bg-[#22c55e]/[0.05]"
@@ -334,10 +334,10 @@ function TenantCountCard({
 function LoadingState() {
   return (
     <div className="space-y-5">
-      <SkeletonBlock className="h-64 rounded-[36px]" />
+      <SkeletonBlock className="h-64 rounded-[14px]" />
       <div className="grid gap-4 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <SkeletonBlock key={i} className="h-80 rounded-[32px]" />
+          <SkeletonBlock key={i} className="h-80 rounded-[12px]" />
         ))}
       </div>
     </div>

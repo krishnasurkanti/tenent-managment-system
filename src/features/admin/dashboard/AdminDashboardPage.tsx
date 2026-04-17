@@ -16,7 +16,7 @@ export default function AdminDashboardPage() {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="rounded-[24px] border border-white/80 bg-white/90 p-5 shadow-sm">
+        <div className="rounded-[10px] border border-white/80 bg-white/90 p-5 shadow-sm">
           <div className="flex items-center gap-2">
             <div className="h-2.5 w-2.5 rounded-full bg-[var(--cta)] animate-[status-breathe_1s_ease-in-out_infinite]" />
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Preparing admin overview</p>
@@ -45,7 +45,7 @@ export default function AdminDashboardPage() {
     return (
       <div
         role="alert"
-        className="rounded-[24px] border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-700"
+        className="rounded-[10px] border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-700"
       >
         Failed to load dashboard. Refresh the page to try again.
       </div>
@@ -54,7 +54,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-[24px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(240,249,255,0.95)_100%)] p-5 shadow-[0_20px_44px_rgba(14,165,233,0.1)]">
+      <div className="rounded-[10px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(240,249,255,0.95)_100%)] p-5 shadow-[0_20px_44px_rgba(14,165,233,0.1)]">
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Control Center</p>
         <h1 className="mt-2 text-2xl font-semibold text-slate-900">Admin Dashboard</h1>
         <p className="mt-1 text-sm text-slate-600">Platform-wide metrics across all businesses, hostels, and tenants.</p>

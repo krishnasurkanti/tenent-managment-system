@@ -109,7 +109,7 @@ export function PaymentCollectionModal({
       style={{ background: "rgba(2,6,23,0.72)", backdropFilter: "blur(6px)" }}
     >
       <div
-        className="w-full max-w-lg overflow-hidden rounded-[28px] border border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-[float-up_var(--motion-medium)_var(--ease-enter)]"
+        className="w-full max-w-lg overflow-hidden rounded-[10px] border border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-[float-up_var(--motion-medium)_var(--ease-enter)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -141,7 +141,7 @@ export function PaymentCollectionModal({
         <div className="max-h-[calc(100dvh-12rem)] overflow-y-auto overscroll-contain px-5 pb-2 sm:px-6">
           {/* Tenant info card */}
           {tenant ? (
-            <div className="mb-5 rounded-[20px] border border-white/10 bg-white/[0.04] p-4">
+            <div className="mb-5 rounded-[8px] border border-white/10 bg-white/[0.04] p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">Tenant</p>
               <p className="mt-1.5 text-base font-semibold text-white">{tenant.fullName}</p>
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">

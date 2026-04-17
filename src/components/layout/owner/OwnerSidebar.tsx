@@ -73,7 +73,7 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
       <div className="border-b border-[color:var(--border)] px-5 py-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-          <div className="rounded-[18px] bg-[color:var(--surface-strong)] p-2.5 text-[color:var(--fg-primary)] ring-1 ring-[color:var(--border)]">
+          <div className="rounded-[6px] bg-[color:var(--surface-strong)] p-2.5 text-[color:var(--fg-primary)] ring-1 ring-[color:var(--border)]">
             <Building2 className="h-4.5 w-4.5" />
           </div>
           <div>

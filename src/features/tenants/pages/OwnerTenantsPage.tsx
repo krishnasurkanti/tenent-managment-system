@@ -129,7 +129,7 @@ function OwnerTenantsPageContent() {
 
   if (!currentHostel) {
     return (
-      <Card className="rounded-[24px] p-5 text-center">
+      <Card className="rounded-[10px] p-5 text-center">
         <p className="text-sm font-semibold text-white">No hostel selected.</p>
         <Link
           href="/owner/create-hostel"
@@ -145,7 +145,7 @@ function OwnerTenantsPageContent() {
     <div className={`space-y-3 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
       {/* ── Mobile view ── */}
       <section className="space-y-3 lg:hidden">
-        <Card className={`${ownerHeroCardClass} rounded-[24px] p-4`}>
+        <Card className={`${ownerHeroCardClass} rounded-[10px] p-4`}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Tenant hub</p>
@@ -183,7 +183,7 @@ function OwnerTenantsPageContent() {
 
         <div className="space-y-2.5">
           {filteredTenants.length === 0 ? (
-            <Card className={`${ownerPanelClass} rounded-[24px] p-4 text-center text-sm text-[color:var(--fg-secondary)]`}>
+            <Card className={`${ownerPanelClass} rounded-[10px] p-4 text-center text-sm text-[color:var(--fg-secondary)]`}>
               {searchQuery ? "No tenants matched that search." : "No tenants yet for this hostel."}
             </Card>
           ) : (
@@ -194,7 +194,7 @@ function OwnerTenantsPageContent() {
               return (
                 <div
                   key={tenant.tenantId}
-                  className={`grid grid-cols-[1fr_auto] gap-3 rounded-[22px] px-3 py-3 ${ownerPanelClass}`}
+                  className={`grid grid-cols-[1fr_auto] gap-3 rounded-[8px] px-3 py-3 ${ownerPanelClass}`}
                 >
                   <Link href={`/owner/tenants/${tenant.tenantId}`} className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -249,7 +249,7 @@ function OwnerTenantsPageContent() {
           <SummaryTile icon={UserCheck} label="Assigned" value={String(assignedCount)} tone="success" />
         </div>
 
-        <Card className={`rounded-[24px] ${ownerPanelClass}`}>
+        <Card className={`rounded-[10px] ${ownerPanelClass}`}>
           {/* Search bar */}
           <div className="border-b border-[color:var(--border)] px-4 py-3">
             <div className="relative max-w-sm">
@@ -435,7 +435,7 @@ function SummaryTile({
   tone?: "default" | "warning" | "danger" | "success";
 }) {
   return (
-    <Card className={`rounded-[20px] border p-3 ${ownerMetricToneClass(tone)}`}>
+    <Card className={`rounded-[8px] border p-3 ${ownerMetricToneClass(tone)}`}>
       <div className="flex items-start gap-2.5">
         <div className="rounded-xl bg-black/10 p-2 ring-1 ring-white/8">
           <Icon className="h-4 w-4" />
@@ -462,7 +462,7 @@ function LoadingState() {
   return (
     <div className="space-y-4">
       {/* Header skeleton */}
-      <SkeletonBlock className="h-24 rounded-[28px]" />
+      <SkeletonBlock className="h-24 rounded-[10px]" />
 
       {/* Stat cards skeleton */}
       <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
@@ -472,7 +472,7 @@ function LoadingState() {
       </div>
 
       {/* Table skeleton */}
-      <div className="overflow-hidden rounded-[24px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(30,41,59,0.94)_0%,rgba(15,23,42,0.98)_100%)]">
+      <div className="overflow-hidden rounded-[10px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(30,41,59,0.94)_0%,rgba(15,23,42,0.98)_100%)]">
         {/* Search bar skeleton */}
         <div className="border-b border-white/[0.06] px-4 py-3">
           <SkeletonBlock className="h-10 w-64 rounded-2xl" />
@@ -502,7 +502,7 @@ function LoadingState() {
         <div className="space-y-2.5 p-4 lg:hidden">
           <ProcessingPill label="Preparing tenant directory" />
           {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonBlock key={i} className="h-28 rounded-[22px]" />
+            <SkeletonBlock key={i} className="h-28 rounded-[8px]" />
           ))}
         </div>
       </div>

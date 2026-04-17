@@ -39,7 +39,7 @@ export function SkeletonTableRow() {
 
 export function SkeletonStatCard({ className }: { className?: string }) {
   return (
-    <div className={cn("rounded-[20px] border border-white/[0.08] bg-[#1e293b] p-3", className)}>
+    <div className={cn("rounded-[8px] border border-white/[0.08] bg-[#1e293b] p-3", className)}>
       <div className="flex items-start gap-2.5">
         <SkeletonBlock className="h-8 w-8 flex-shrink-0 rounded-xl" />
         <div className="flex-1 space-y-1.5 pt-0.5">

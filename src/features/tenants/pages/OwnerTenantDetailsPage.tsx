@@ -42,7 +42,7 @@ export default async function OwnerTenantDetailsPage({
       <div className="mx-auto w-full max-w-5xl space-y-4">
         <Link
           href="/owner/tenants"
-          className="inline-flex items-center gap-2 rounded-[24px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-2.5 text-sm font-medium text-[color:var(--fg-primary)]"
+          className="inline-flex items-center gap-2 rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-2.5 text-sm font-medium text-[color:var(--fg-primary)]"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to tenants
@@ -117,7 +117,7 @@ export default async function OwnerTenantDetailsPage({
 
           <div className="space-y-3 p-3 md:hidden">
             {tenant.paymentHistory.map((payment) => (
-              <div key={payment.paymentId} className="rounded-[24px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4">
+              <div key={payment.paymentId} className="rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-white">{payment.paymentId}</p>
@@ -170,7 +170,7 @@ export default async function OwnerTenantDetailsPage({
 
 function TopMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[20px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3">
+    <div className="rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3">
       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--fg-secondary)]">{label}</p>
       <p className="mt-1 text-sm font-semibold text-white">{value}</p>
     </div>
@@ -187,7 +187,7 @@ function InfoCard({
   value: string;
 }) {
   return (
-    <div className="rounded-[24px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+    <div className="rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
       <Icon className="h-4 w-4 text-[color:var(--accent)]" />
       <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">{label}</p>
       <p className="mt-1 text-sm font-semibold text-white">{value}</p>
@@ -197,7 +197,7 @@ function InfoCard({
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-[22px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
+    <div className="flex items-center justify-between gap-4 rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
       <span className="text-sm text-[color:var(--fg-secondary)]">{label}</span>
       <span className="text-sm font-semibold text-right text-white">{value}</span>
     </div>

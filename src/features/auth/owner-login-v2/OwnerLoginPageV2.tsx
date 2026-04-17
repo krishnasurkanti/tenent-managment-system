@@ -50,7 +50,7 @@ export default function OwnerLoginPageV2() {
 
   return (
     <main className="smart-scroll-shell bg-[#090912] px-2 py-2 text-white sm:px-4 sm:py-4 lg:px-6 lg:py-6">
-      <div className="relative mx-auto flex min-h-[calc(100dvh-1rem)] w-full max-w-7xl flex-1 flex-col overflow-hidden rounded-[22px] border border-white/10 bg-[radial-gradient(circle_at_20%_38%,rgba(33,76,142,0.22),transparent_22%),radial-gradient(circle_at_56%_72%,rgba(245,168,39,0.18),transparent_18%),linear-gradient(180deg,#0d0f1a_0%,#090b14_100%)] shadow-[0_36px_100px_rgba(0,0,0,0.42)] sm:min-h-[calc(100dvh-2rem)] lg:rounded-[28px]">
+      <div className="relative mx-auto flex min-h-[calc(100dvh-1rem)] w-full max-w-7xl flex-1 flex-col overflow-hidden rounded-[8px] border border-white/10 bg-[radial-gradient(circle_at_20%_38%,rgba(33,76,142,0.22),transparent_22%),radial-gradient(circle_at_56%_72%,rgba(245,168,39,0.18),transparent_18%),linear-gradient(180deg,#0d0f1a_0%,#090b14_100%)] shadow-[0_36px_100px_rgba(0,0,0,0.42)] sm:min-h-[calc(100dvh-2rem)] lg:rounded-[10px]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[length:14px_14px] opacity-20" />
 
         <div className="smart-scroll-header relative z-10 border-b border-white/8 px-3 py-2.5 sm:px-5" />
@@ -89,7 +89,7 @@ export default function OwnerLoginPageV2() {
 
             <div className="flex items-start justify-center py-1 lg:sticky lg:top-6 lg:justify-end">
               <div className="w-full max-w-md">
-                <div className="rounded-[22px] border border-white/12 bg-[linear-gradient(180deg,rgba(18,22,38,0.92)_0%,rgba(15,17,31,0.96)_100%)] p-3.5 shadow-[0_30px_80px_rgba(0,0,0,0.4)] backdrop-blur-xl sm:p-5 lg:rounded-[26px]">
+                <div className="rounded-[8px] border border-white/12 bg-[linear-gradient(180deg,rgba(18,22,38,0.92)_0%,rgba(15,17,31,0.96)_100%)] p-3.5 shadow-[0_30px_80px_rgba(0,0,0,0.4)] backdrop-blur-xl sm:p-5 lg:rounded-[10px]">
                   <div className="lg:hidden flex items-center gap-2.5 mb-4">
                     <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#ffcc4d_0%,#d9941c_100%)] text-[#18120a]">
                       <Building2 className="h-5 w-5" />

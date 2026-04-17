@@ -63,7 +63,7 @@ export default function AdminLoginPage() {
 
   return (
     <main className="smart-scroll-shell bg-[#090912] px-2 py-2 text-white sm:px-4 sm:py-4 lg:px-6 lg:py-6">
-      <div className="relative mx-auto flex min-h-[calc(100vh-1rem)] min-h-[calc(100dvh-1rem)] w-full max-w-7xl flex-1 flex-col overflow-hidden rounded-[22px] border border-white/10 bg-[radial-gradient(circle_at_18%_36%,rgba(57,77,160,0.22),transparent_24%),radial-gradient(circle_at_60%_75%,rgba(236,172,66,0.18),transparent_18%),linear-gradient(180deg,#0d0f1a_0%,#090b14_100%)] shadow-[0_36px_100px_rgba(0,0,0,0.42)] sm:min-h-[calc(100vh-2rem)] sm:min-h-[calc(100dvh-2rem)] lg:rounded-[28px]">
+      <div className="relative mx-auto flex min-h-[calc(100vh-1rem)] min-h-[calc(100dvh-1rem)] w-full max-w-7xl flex-1 flex-col overflow-hidden rounded-[8px] border border-white/10 bg-[radial-gradient(circle_at_18%_36%,rgba(57,77,160,0.22),transparent_24%),radial-gradient(circle_at_60%_75%,rgba(236,172,66,0.18),transparent_18%),linear-gradient(180deg,#0d0f1a_0%,#090b14_100%)] shadow-[0_36px_100px_rgba(0,0,0,0.42)] sm:min-h-[calc(100vh-2rem)] sm:min-h-[calc(100dvh-2rem)] lg:rounded-[10px]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[length:14px_14px] opacity-20" />
 
         <div className="smart-scroll-header relative z-10 flex items-center justify-end border-b border-white/8 px-3 py-2.5 sm:px-5 lg:px-6">
@@ -108,7 +108,7 @@ export default function AdminLoginPage() {
             </div>
 
             <div className="mt-6 hidden 2xl:block [@media(max-height:1180px)]:hidden">
-              <div className="rounded-[24px] border border-[#253556] bg-[linear-gradient(180deg,rgba(12,17,34,0.96)_0%,rgba(8,11,22,0.96)_100%)] p-4 shadow-[0_28px_60px_rgba(0,0,0,0.32)]">
+              <div className="rounded-[10px] border border-[#253556] bg-[linear-gradient(180deg,rgba(12,17,34,0.96)_0%,rgba(8,11,22,0.96)_100%)] p-4 shadow-[0_28px_60px_rgba(0,0,0,0.32)]">
                 <div className="flex items-center justify-between">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">Desktop Preview</div>
                   <div className="rounded-full border border-[#f2bb4d]/30 bg-[#231c15] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#f7bf53]">
@@ -116,7 +116,7 @@ export default function AdminLoginPage() {
                   </div>
                 </div>
                 <div className="mt-3 grid gap-3 xl:grid-cols-[190px_minmax(0,1fr)]">
-                  <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3.5">
+                  <div className="rounded-[8px] border border-white/8 bg-white/[0.03] p-3.5">
                     <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/32">Billing Queue</div>
                     <div className="mt-2 text-2xl font-semibold text-[#f7f0e8]">12 Pending</div>
                     <div className="mt-3 grid grid-cols-2 gap-2">
@@ -124,7 +124,7 @@ export default function AdminLoginPage() {
                       <MetricCard value="7" label="Flags" />
                     </div>
                   </div>
-                  <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3.5">
+                  <div className="rounded-[8px] border border-white/8 bg-white/[0.03] p-3.5">
                     <div className="space-y-2">
                       {[
                         ["Aurora Residency", "Pending"],
@@ -145,7 +145,7 @@ export default function AdminLoginPage() {
 
           <div className="flex items-start justify-center py-1 lg:sticky lg:top-6 lg:justify-end">
             <div className="w-full max-w-md">
-              <div className="rounded-[22px] border border-white/12 bg-[linear-gradient(180deg,rgba(18,22,38,0.92)_0%,rgba(15,17,31,0.96)_100%)] p-3.5 shadow-[0_30px_80px_rgba(0,0,0,0.4)] backdrop-blur-xl sm:p-5 lg:rounded-[26px] lg:p-5 xl:p-6">
+              <div className="rounded-[8px] border border-white/12 bg-[linear-gradient(180deg,rgba(18,22,38,0.92)_0%,rgba(15,17,31,0.96)_100%)] p-3.5 shadow-[0_30px_80px_rgba(0,0,0,0.4)] backdrop-blur-xl sm:p-5 lg:rounded-[10px] lg:p-5 xl:p-6">
                 <div className="lg:hidden">
                   <div className="flex items-center gap-2.5">
                     <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#ffcc4d_0%,#d9941c_100%)] text-[#18120a] shadow-[0_16px_36px_rgba(245,177,52,0.18)]">

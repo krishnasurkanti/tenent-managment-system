@@ -56,7 +56,7 @@ export default function OwnerDashboardPage() {
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">{currentHostel.hostelName}</p>
           <p className="mt-1 truncate text-xs text-[color:var(--fg-secondary)]">{currentHostel.address}</p>
           <div className="mt-3 grid grid-cols-[1.5fr_1fr] gap-2.5">
-            <div className="rounded-[20px] bg-[linear-gradient(180deg,var(--cta)_0%,var(--cta-strong)_100%)] px-3 py-3 text-[#1c1400] shadow-[0_16px_34px_rgba(249,193,42,0.18)]">
+            <div className="rounded-[8px] bg-[linear-gradient(180deg,var(--cta)_0%,var(--cta-strong)_100%)] px-3 py-3 text-[#1c1400] shadow-[0_16px_34px_rgba(249,193,42,0.18)]">
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5a4200]">Collected</p>
               <p className="mt-1 text-[1.65rem] font-semibold leading-none">Rs {totalCollected.toLocaleString("en-IN")}</p>
               <p className="mt-2 text-[11px] text-[#6c5000]">{occupancyPercent}% occupied</p>
@@ -123,7 +123,7 @@ export default function OwnerDashboardPage() {
       </section>
 
       <section className="hidden gap-3 lg:grid">
-        <div className="relative overflow-hidden rounded-[30px] border border-[color:var(--border)] bg-[radial-gradient(circle_at_top_right,rgba(249,193,42,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(56,189,248,0.14),transparent_28%),linear-gradient(180deg,#16284d_0%,#1b43b4_100%)] p-5 text-white shadow-[0_28px_70px_rgba(29,78,216,0.24)]">
+        <div className="relative overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[radial-gradient(circle_at_top_right,rgba(249,193,42,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(56,189,248,0.14),transparent_28%),linear-gradient(180deg,#16284d_0%,#1b43b4_100%)] p-5 text-white shadow-[0_28px_70px_rgba(29,78,216,0.24)]">
           <div className="pointer-events-none absolute -right-12 top-0 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(255,230,150,0.2)_0%,rgba(255,255,255,0)_70%)] blur-2xl animate-[dashboard-glow_8s_ease-in-out_infinite]" />
           <div className="pointer-events-none absolute bottom-[-6rem] left-[-3rem] h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.24)_0%,rgba(56,189,248,0)_70%)] blur-3xl" />
           <div className="relative grid items-start gap-4 xl:grid-cols-[1.15fr_0.85fr]">
@@ -239,8 +239,8 @@ function ActionTile({
       href={href}
       className={
         variant === "desktop"
-          ? "rounded-[22px] border border-white/12 bg-white/10 px-3 py-2.5 text-white shadow-[0_14px_30px_rgba(8,18,37,0.1)] backdrop-blur transition hover:-translate-y-1 hover:bg-white/14"
-          : "rounded-[20px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 shadow-[0_10px_24px_rgba(2,6,23,0.16)] transition hover:-translate-y-0.5"
+          ? "rounded-[8px] border border-white/12 bg-white/10 px-3 py-2.5 text-white shadow-[0_14px_30px_rgba(8,18,37,0.1)] backdrop-blur transition hover:-translate-y-1 hover:bg-white/14"
+          : "rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 shadow-[0_10px_24px_rgba(2,6,23,0.16)] transition hover:-translate-y-0.5"
       }
     >
       <div className="flex items-start gap-3">
@@ -267,7 +267,7 @@ function MetricTile({
 }) {
   return (
     <div
-      className={`rounded-[18px] px-3 py-2.5 ${
+      className={`rounded-[6px] px-3 py-2.5 ${
         tone === "warning"
           ? "border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] text-[#422006] shadow-[0_18px_36px_rgba(250,204,21,0.24)]"
           : "border border-[#ef4444] bg-[linear-gradient(180deg,rgba(220,38,38,0.32)_0%,rgba(127,29,29,0.42)_100%)] text-white shadow-[0_18px_36px_rgba(220,38,38,0.18)]"
@@ -281,7 +281,7 @@ function MetricTile({
 
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[18px] border border-[color:rgba(255,255,255,0.16)] bg-white/12 px-2 py-2 shadow-sm backdrop-blur">
+    <div className="rounded-[6px] border border-[color:rgba(255,255,255,0.16)] bg-white/12 px-2 py-2 shadow-sm backdrop-blur">
       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">{label}</p>
       <p className="mt-1 text-sm font-semibold text-white">{value}</p>
     </div>
@@ -298,7 +298,7 @@ function DesktopMetric({
   value: string;
 }) {
   return (
-    <div className="rounded-[22px] border border-white/12 bg-white/10 px-3.5 py-3 shadow-[0_16px_34px_rgba(8,18,37,0.12)] backdrop-blur">
+    <div className="rounded-[8px] border border-white/12 bg-white/10 px-3.5 py-3 shadow-[0_16px_34px_rgba(8,18,37,0.12)] backdrop-blur">
       <div className="flex items-center gap-2">
         <div className="rounded-xl bg-white/12 p-1.5 text-sky-200 ring-1 ring-white/10">
           <Icon className="h-4 w-4" />
@@ -355,21 +355,21 @@ function LoadingState() {
         <SkeletonBlock className="mt-4 h-4 w-24" />
         <SkeletonBlock className="mt-2 h-7 w-44" />
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <SkeletonBlock className="h-24 rounded-[20px]" />
+          <SkeletonBlock className="h-24 rounded-[8px]" />
           <div className="grid gap-2">
-            <SkeletonBlock className="h-11 rounded-[18px]" />
-            <SkeletonBlock className="h-11 rounded-[18px]" />
+            <SkeletonBlock className="h-11 rounded-[6px]" />
+            <SkeletonBlock className="h-11 rounded-[6px]" />
           </div>
         </div>
       </Card>
       <div className="grid grid-cols-2 gap-2.5">
         {Array.from({ length: 4 }).map((_, index) => (
-          <SkeletonBlock key={index} className="h-24 rounded-[20px]" />
+          <SkeletonBlock key={index} className="h-24 rounded-[8px]" />
         ))}
       </div>
       <div className="space-y-2">
         {Array.from({ length: 3 }).map((_, index) => (
-          <SkeletonBlock key={index} className="h-16 rounded-[20px]" />
+          <SkeletonBlock key={index} className="h-16 rounded-[8px]" />
         ))}
       </div>
     </div>

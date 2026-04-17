@@ -22,7 +22,7 @@ export default function AdminAnalyticsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-sm">
+      <div className="rounded-[10px] border border-white/70 bg-white/90 p-5 shadow-sm">
         <h1 className="text-2xl font-semibold text-slate-900">Analytics</h1>
         <p className="mt-1 text-sm text-slate-600">Tenants, revenue, growth trends, and most active hostels.</p>
       </div>

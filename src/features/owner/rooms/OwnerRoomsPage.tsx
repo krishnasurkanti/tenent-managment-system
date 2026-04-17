@@ -37,7 +37,7 @@ function OwnerRoomsPageContent() {
   }
 
   if (!currentHostel) {
-    return <Card className="rounded-[24px] p-4 text-center text-sm text-[color:var(--fg-secondary)]">Create a hostel first to manage rooms.</Card>;
+    return <Card className="rounded-[10px] p-4 text-center text-sm text-[color:var(--fg-secondary)]">Create a hostel first to manage rooms.</Card>;
   }
 
   const isResidence = currentHostel.type === "RESIDENCE";
@@ -56,7 +56,7 @@ function OwnerRoomsPageContent() {
   return (
     <div className={`space-y-3 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
       <section className="space-y-3 lg:hidden">
-        <Card className={`${ownerHeroCardClass} rounded-[24px] p-4`}>
+        <Card className={`${ownerHeroCardClass} rounded-[10px] p-4`}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Rooms</p>
@@ -105,7 +105,7 @@ function OwnerRoomsPageContent() {
             if (floorRooms.length === 0) return null;
 
             return (
-              <Card key={floor.id} className={`overflow-hidden rounded-[22px] ${ownerPanelClass}`}>
+              <Card key={floor.id} className={`overflow-hidden rounded-[8px] ${ownerPanelClass}`}>
                 <details className="group" open={floorIndex === 0}>
                   <summary className="list-none cursor-pointer px-3 py-3 marker:hidden">
                     <div className="flex items-center justify-between gap-3">
@@ -125,7 +125,7 @@ function OwnerRoomsPageContent() {
                   <div className="border-t border-[color:var(--border)] px-3 py-3">
                     <div className="space-y-2.5">
                       {floorRooms.map(({ room, occupied, available, roomTenants, status }) => (
-                        <div key={room.id} className={`rounded-[20px] px-3 py-3 ${ownerSubtlePanelClass}`}>
+                        <div key={room.id} className={`rounded-[8px] px-3 py-3 ${ownerSubtlePanelClass}`}>
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <div className="flex items-center gap-2">
@@ -283,7 +283,7 @@ function OwnerRoomsPageContent() {
                   <div className="border-t border-[color:var(--border)] p-3">
                     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                       {floorRooms.map(({ room, occupied, available, roomTenants, status }) => (
-                        <div key={room.id} className={`rounded-[20px] p-3 ${ownerSubtlePanelClass}`}>
+                        <div key={room.id} className={`rounded-[8px] p-3 ${ownerSubtlePanelClass}`}>
                           <div className="flex items-start justify-between gap-2.5">
                             <div>
                               <h3 className="text-[13px] font-semibold text-white">{isResidence ? "Unit" : "Room"} {room.roomNumber}</h3>
@@ -350,7 +350,7 @@ function MetricTile({
   const toneClass = ownerMetricToneClass(tone);
 
   return (
-    <Card className={`rounded-[20px] border p-3 ${toneClass}`}>
+    <Card className={`rounded-[8px] border p-3 ${toneClass}`}>
       <div className="flex items-start gap-2.5">
         <div className="rounded-xl bg-black/10 p-2 ring-1 ring-white/8">
           <Icon className="h-4 w-4" />
@@ -401,15 +401,15 @@ function roomStatus(status: string) {
 function LoadingState() {
   return (
     <div className="space-y-3">
-      <div className="h-36 animate-pulse rounded-[24px] bg-[color:var(--surface-soft)]" />
+      <div className="h-36 animate-pulse rounded-[10px] bg-[color:var(--surface-soft)]" />
       <div className="grid grid-cols-2 gap-2.5">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-20 animate-pulse rounded-[20px] bg-[color:var(--surface-soft)]" />
+          <div key={index} className="h-20 animate-pulse rounded-[8px] bg-[color:var(--surface-soft)]" />
         ))}
       </div>
       <div className="space-y-2.5">
         {Array.from({ length: 3 }).map((_, index) => (
-          <div key={index} className="h-40 animate-pulse rounded-[22px] bg-[color:var(--surface-soft)]" />
+          <div key={index} className="h-40 animate-pulse rounded-[8px] bg-[color:var(--surface-soft)]" />
         ))}
       </div>
     </div>

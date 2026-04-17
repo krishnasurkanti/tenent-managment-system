@@ -97,7 +97,7 @@ export function TenantFamilyMembersModal({
           <div className="flex items-start justify-between gap-4 px-4 pb-2 pt-4 sm:px-5 sm:pt-5">
             <div>
               <div className="inline-flex items-center gap-2 rounded-[var(--radius-pill)] bg-white/72 px-3 py-1.5 text-[13px] font-semibold text-slate-700 shadow-sm">
-                <span className="rounded-[20px] bg-blue-600 p-1 text-white">
+                <span className="rounded-[8px] bg-blue-600 p-1 text-white">
                   <Users2 className="h-3.5 w-3.5" />
                 </span>
                 Family Members

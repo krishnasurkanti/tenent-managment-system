@@ -51,12 +51,12 @@ export default async function OwnerSettingsPage() {
         <InfoTile icon={Layers3} label="Total Floors" value={String(hostel?.floors.length ?? 0)} />
       </div>
 
-      <Card className={`rounded-[24px] p-4 ${ownerPanelClass}`}>
+      <Card className={`rounded-[10px] p-4 ${ownerPanelClass}`}>
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Demo preferences</p>
         <h2 className="mt-1 text-base font-semibold text-white">Mock owner settings</h2>
         <div className="mt-3 grid gap-2.5 xl:grid-cols-3">
           {preferenceCards.map((item) => (
-            <div key={item.label} className={`rounded-[20px] px-4 py-3 ${ownerSubtlePanelClass}`}>
+            <div key={item.label} className={`rounded-[8px] px-4 py-3 ${ownerSubtlePanelClass}`}>
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--fg-secondary)]">{item.label}</p>
               <p className="mt-2 text-sm font-semibold text-white">{item.value}</p>
               <p className="mt-1 text-sm text-[color:var(--fg-secondary)]">{item.helper}</p>
@@ -65,7 +65,7 @@ export default async function OwnerSettingsPage() {
         </div>
       </Card>
 
-      <Card className={`mt-auto rounded-[24px] p-4 ${ownerPanelClass}`}>
+      <Card className={`mt-auto rounded-[10px] p-4 ${ownerPanelClass}`}>
         <p className="text-sm font-semibold text-white">Missing UI</p>
         <p className="mt-1 text-sm text-[color:var(--fg-secondary)]">Advanced editable preferences, notification rules, and account-level owner settings are not implemented yet.</p>
       </Card>
@@ -83,7 +83,7 @@ function InfoTile({
   value: string;
 }) {
   return (
-    <Card className={`rounded-[22px] p-3 ${ownerPanelClass}`}>
+    <Card className={`rounded-[8px] p-3 ${ownerPanelClass}`}>
       <div className="flex items-start gap-3">
         <div className="rounded-xl bg-[color:var(--brand-soft)] p-2 text-[#9edcff]">
           <Icon className="h-4 w-4" />
@@ -99,7 +99,7 @@ function InfoTile({
 
 function MetricTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className={`rounded-[18px] border px-3 py-2.5 ${ownerMetricToneClass("default")}`}>
+    <div className={`rounded-[6px] border px-3 py-2.5 ${ownerMetricToneClass("default")}`}>
       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-80">{label}</p>
       <p className="mt-1 text-sm font-semibold">{value}</p>
     </div>

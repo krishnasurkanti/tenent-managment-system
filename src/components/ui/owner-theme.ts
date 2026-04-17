@@ -1,5 +1,5 @@
 export const ownerHeroCardClass =
-  "rounded-[28px] border border-[color:var(--border)] bg-[radial-gradient(circle_at_top_right,rgba(249,193,42,0.12),transparent_28%),linear-gradient(180deg,rgba(30,41,59,0.96)_0%,rgba(15,23,42,0.98)_100%)] shadow-[0_24px_60px_rgba(2,6,23,0.24)]";
+  "rounded-[10px] border border-[color:var(--border)] bg-[radial-gradient(circle_at_top_right,rgba(249,193,42,0.12),transparent_28%),linear-gradient(180deg,rgba(30,41,59,0.96)_0%,rgba(15,23,42,0.98)_100%)] shadow-[0_24px_60px_rgba(2,6,23,0.24)]";
 
 export const ownerPanelClass =
   "border border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(30,41,59,0.94)_0%,rgba(15,23,42,0.98)_100%)] shadow-[0_20px_48px_rgba(2,6,23,0.2)]";

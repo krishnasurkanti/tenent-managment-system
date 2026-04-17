@@ -232,7 +232,7 @@ export function TenantFormModal({
             <div className="relative flex items-start justify-between gap-4 px-4 pb-2 pt-4 sm:px-5 sm:pt-5">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-[var(--radius-pill)] bg-white/72 px-3 py-1.5 text-[13px] font-semibold text-slate-700 shadow-sm">
-                  <span className="rounded-[20px] bg-blue-600 p-1 text-white">
+                  <span className="rounded-[8px] bg-blue-600 p-1 text-white">
                     <User className="h-3.5 w-3.5" />
                   </span>
                   Add Tenant
@@ -355,7 +355,7 @@ export function TenantFormModal({
                       <UploadCard icon={ImageIcon} title="Photo Optional" subtitle="You can add tenant photo later" tone="blue" disabled />
                       <label className={`block ${submitting ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}>
                         <span className="sr-only">Upload ID</span>
-                        <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-3 shadow-sm transition hover:opacity-95">
+                        <div className="rounded-[8px] border border-slate-200 bg-slate-50 p-3 shadow-sm transition hover:opacity-95">
                           <div className="flex items-center gap-3">
                             <div className="rounded-2xl bg-white p-2.5 text-[var(--accent)] shadow-sm">
                               <FileBadge2 className="h-4 w-4" />
@@ -653,7 +653,7 @@ function UploadCard({
 
   return (
     <div
-      className={`rounded-[22px] border border-slate-200 p-3 shadow-sm ${toneClass} ${
+      className={`rounded-[8px] border border-slate-200 p-3 shadow-sm ${toneClass} ${
         disabled ? "opacity-80" : ""
       }`}
     >

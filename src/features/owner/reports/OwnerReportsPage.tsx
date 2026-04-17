@@ -13,7 +13,7 @@ export default function OwnerReportsPage() {
       </Card>
 
       <Card className="flex flex-col items-center justify-center gap-4 bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-12 text-center text-white">
-        <div className="flex h-14 w-14 items-center justify-center rounded-[28px] bg-[color:var(--brand-soft)] text-[color:var(--accent-electric)]">
+        <div className="flex h-14 w-14 items-center justify-center rounded-[10px] bg-[color:var(--brand-soft)] text-[color:var(--accent-electric)]">
           <FileBarChart2 className="h-6 w-6" />
         </div>
         <div>

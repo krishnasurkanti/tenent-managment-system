@@ -53,7 +53,7 @@ export default function OwnerNotificationsPage() {
               <Bell className="h-3.5 w-3.5" />
               {alerts.length}
             </div>
-            <div className="rounded-[22px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5 shadow-sm">
+            <div className="rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5 shadow-sm">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--fg-secondary)]">State</p>
               <p className="mt-1 text-sm font-semibold text-white">{alerts.length === 0 ? "Clear" : "Active"}</p>
             </div>
@@ -121,7 +121,7 @@ export default function OwnerNotificationsPage() {
 
 function MiniInfo({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[20px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
+    <div className="rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--fg-secondary)]">{label}</p>
       <p className="mt-1 text-[11px] font-semibold text-white">{value}</p>
     </div>
@@ -131,9 +131,9 @@ function MiniInfo({ label, value }: { label: string; value: string }) {
 function LoadingState() {
   return (
     <div className="space-y-3">
-      <div className="h-24 animate-pulse rounded-[24px] bg-[color:var(--surface-soft)]" />
+      <div className="h-24 animate-pulse rounded-[10px] bg-[color:var(--surface-soft)]" />
       {Array.from({ length: 3 }).map((_, index) => (
-        <div key={index} className="h-36 animate-pulse rounded-[22px] bg-[color:var(--surface-soft)]" />
+        <div key={index} className="h-36 animate-pulse rounded-[8px] bg-[color:var(--surface-soft)]" />
       ))}
     </div>
   );

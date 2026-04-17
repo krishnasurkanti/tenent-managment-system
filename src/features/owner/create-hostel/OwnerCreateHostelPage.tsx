@@ -416,7 +416,7 @@ function CreateHostelPageContent() {
   }
 
   return (
-    <div className="bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_45%,#ffffff_100%)] rounded-[22px] px-3 py-3 sm:px-5 sm:py-4">
+    <div className="bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_45%,#ffffff_100%)] rounded-[8px] px-3 py-3 sm:px-5 sm:py-4">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 sm:gap-4">
         {error ? (
           <div className="rounded-xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-3 py-2.5 text-sm font-medium text-[color:var(--error)]">
@@ -553,7 +553,7 @@ function CreateHostelPageContent() {
 
             {activeFloor && activeRoom ? (
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.9fr)]">
-                <div className="rounded-[28px] border border-slate-100 bg-slate-50 p-3 shadow-sm sm:p-4">
+                <div className="rounded-[10px] border border-slate-100 bg-slate-50 p-3 shadow-sm sm:p-4">
                   <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Current Floor</p>
@@ -588,7 +588,7 @@ function CreateHostelPageContent() {
                     />
                   </Field>
 
-                  <div className="mt-4 rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+                  <div className="mt-4 rounded-[10px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
                     <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Active Room</p>
@@ -660,7 +660,7 @@ function CreateHostelPageContent() {
                   </div>
                 </div>
 
-                <div className="rounded-[28px] border border-slate-100 bg-white p-3 shadow-sm sm:p-4">
+                <div className="rounded-[10px] border border-slate-100 bg-white p-3 shadow-sm sm:p-4">
                   <div className="mb-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Room Progress</p>
                     <h3 className="mt-1 text-sm font-semibold text-slate-800">{activeFloor.floorLabel}</h3>
@@ -680,7 +680,7 @@ function CreateHostelPageContent() {
                           type="button"
                           disabled={saving}
                           onClick={() => setActiveRoomId(room.id)}
-                          className={`flex w-full items-center justify-between rounded-[22px] border px-3 py-3 text-left shadow-sm transition ${
+                          className={`flex w-full items-center justify-between rounded-[8px] border px-3 py-3 text-left shadow-sm transition ${
                             isActive
                               ? "border-blue-200 bg-blue-50"
                               : isComplete
@@ -704,7 +704,7 @@ function CreateHostelPageContent() {
                     })}
                   </div>
 
-                  <div className="mt-4 rounded-[22px] border border-dashed border-blue-100 bg-blue-50 px-3 py-3">
+                  <div className="mt-4 rounded-[8px] border border-dashed border-blue-100 bg-blue-50 px-3 py-3">
                     <p className="text-[11px] font-semibold text-slate-700">Completed floors</p>
                     <p className="mt-1 text-[11px] leading-5 text-slate-500">
                       {completedFloors.length > 0
@@ -718,7 +718,7 @@ function CreateHostelPageContent() {
 
             <div className="space-y-2">
               {floors.map((floor) => (
-                <div key={floor.id} className="rounded-[22px] border border-slate-100 bg-white px-3 py-3 shadow-sm">
+                <div key={floor.id} className="rounded-[8px] border border-slate-100 bg-white px-3 py-3 shadow-sm">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-[12px] font-semibold text-slate-800">{floor.floorLabel}</p>
@@ -810,7 +810,7 @@ function CreateHostelPageContent() {
                 <ReviewCard label="Address" value={address} />
               </div>
 
-              <div className="rounded-[24px] border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] p-4 shadow-sm">
+              <div className="rounded-[10px] border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] p-4 shadow-sm">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Structure</p>
@@ -859,7 +859,7 @@ function CreateHostelPageContent() {
 
 function CreateHostelLoadingState() {
   return (
-    <div className="bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_45%,#ffffff_100%)] rounded-[22px] px-4 py-4 sm:px-6">
+    <div className="bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_45%,#ffffff_100%)] rounded-[8px] px-4 py-4 sm:px-6">
       <div className="mx-auto w-full max-w-6xl">
         <Card className="border-slate-200 bg-white p-4 text-center text-sm text-slate-600">
           Loading hostel details...
@@ -910,7 +910,7 @@ function WizardPill({
 
 function ReviewCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[22px] border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] px-4 py-3 shadow-sm">
+    <div className="rounded-[8px] border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] px-4 py-3 shadow-sm">
       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</p>
       <p className="mt-1 text-[13px] font-semibold text-slate-800">{value}</p>
     </div>

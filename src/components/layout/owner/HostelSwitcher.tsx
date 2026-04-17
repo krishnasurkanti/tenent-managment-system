@@ -92,7 +92,7 @@ export function HostelSwitcher() {
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-[calc(100%+0.65rem)] z-[70] w-[22rem] rounded-[24px] border border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(15,23,42,0.96)_0%,rgba(30,41,59,0.96)_100%)] p-3 shadow-[0_24px_60px_rgba(2,6,23,0.4)]">
+        <div className="absolute right-0 top-[calc(100%+0.65rem)] z-[70] w-[22rem] rounded-[10px] border border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(15,23,42,0.96)_0%,rgba(30,41,59,0.96)_100%)] p-3 shadow-[0_24px_60px_rgba(2,6,23,0.4)]">
           <div className="mb-2 flex items-center gap-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">
             <Building2 className="h-3 w-3" />
             All Hostels
