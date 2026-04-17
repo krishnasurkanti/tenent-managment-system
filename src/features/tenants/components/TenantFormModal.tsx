@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { createTenant, updateTenantFamilyMembers } from "@/services/tenants/tenants.service";
-import type { TenantRecord } from "@/types/tenant";
+import type { BillingCycle, TenantRecord } from "@/types/tenant";
 
 const initialState = {
   fullName: "",
@@ -48,6 +48,7 @@ export function TenantFormModal({
   const isResidence = propertyType === "RESIDENCE";
   const [step, setStep] = useState<TenantStep>(1);
   const [tenantType, setTenantType] = useState<TenantType>("new");
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   const [form, setForm] = useState(initialState);
   const [idImage, setIdImage] = useState<File | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMemberForm[]>([createFamilyMember()]);
@@ -63,6 +64,7 @@ export function TenantFormModal({
   const resetFormState = () => {
     setStep(1);
     setTenantType("new");
+    setBillingCycle("monthly");
     setForm(initialState);
     setIdImage(null);
     setFamilyMembers([createFamilyMember()]);
@@ -171,6 +173,7 @@ export function TenantFormModal({
     payload.append("paidOnDate", form.paidOnDate);
     payload.append("idNumber", form.idNumber);
     payload.append("emergencyContact", form.emergencyContact);
+    payload.append("billingCycle", billingCycle);
     if (idImage) {
       payload.append("idImage", idImage);
     }
@@ -466,7 +469,7 @@ export function TenantFormModal({
                     </div>
 
                     <div className="grid gap-3 md:grid-cols-2">
-                      <Field label="Monthly Rent">
+                      <Field label={billingCycle === "daily" ? "Daily Rate" : billingCycle === "weekly" ? "Weekly Rate" : "Monthly Rent"}>
                         <InputShell icon={<IndianRupee className="h-4 w-4 text-[var(--accent)]" />}>
                           <input
                             type="number"
@@ -475,7 +478,7 @@ export function TenantFormModal({
                             onChange={(event) => setForm({ ...form, monthlyRent: event.target.value })}
                             disabled={submitting}
                             className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
-                            placeholder="Enter monthly rent"
+                            placeholder={billingCycle === "daily" ? "Enter daily rate" : billingCycle === "weekly" ? "Enter weekly rate" : "Enter monthly rent"}
                           />
                         </InputShell>
                       </Field>
@@ -489,7 +492,7 @@ export function TenantFormModal({
                             onChange={(event) => setForm({ ...form, rentPaid: event.target.value })}
                             disabled={submitting}
                             className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
-                            placeholder="Enter rent paid amount"
+                            placeholder="Enter amount paid"
                           />
                         </InputShell>
                       </Field>
@@ -505,6 +508,46 @@ export function TenantFormModal({
                           />
                         </InputShell>
                       </Field>
+                    </div>
+
+                    <div>
+                      <span className="mb-2 block text-[12px] font-semibold text-slate-700">Billing Cycle</span>
+                      <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
+                        {(["monthly", "weekly", "daily"] as const).map((cycle) => {
+                          const labels = { monthly: "Monthly", weekly: "Weekly", daily: "Daily" };
+                          const hints = { monthly: "Calendar month", weekly: "7 days", daily: "Per night" };
+                          const isActive = billingCycle === cycle;
+                          return (
+                            <button
+                              key={cycle}
+                              type="button"
+                              disabled={submitting}
+                              onClick={() => setBillingCycle(cycle)}
+                              className={`flex flex-col items-center rounded-xl px-2 py-2 text-[11px] font-semibold transition ${
+                                isActive
+                                  ? cycle === "monthly"
+                                    ? "bg-blue-600 text-white shadow-sm"
+                                    : cycle === "weekly"
+                                      ? "bg-emerald-600 text-white shadow-sm"
+                                      : "bg-amber-500 text-white shadow-sm"
+                                  : "text-slate-500 hover:bg-slate-50"
+                              }`}
+                            >
+                              {labels[cycle]}
+                              <span className={`mt-0.5 text-[9px] font-medium ${isActive ? "text-white/75" : "text-slate-400"}`}>
+                                {hints[cycle]}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {billingCycle !== "monthly" ? (
+                        <p className="mt-2 text-[11px] text-emerald-600 font-medium">
+                          {billingCycle === "daily"
+                            ? "Daily tenants are managed free — no plan limit counted."
+                            : "Weekly tenants are managed free — no plan limit counted."}
+                        </p>
+                      ) : null}
                     </div>
                   </>
                 ) : null}

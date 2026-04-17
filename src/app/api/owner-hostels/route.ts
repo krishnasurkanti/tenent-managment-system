@@ -86,6 +86,7 @@ export async function POST(request: Request) {
     address,
     type,
     floors,
+    ownerId: session.ownerId ?? undefined,
   });
 
   const seededTenants = seedDemoTenantsForHostel(hostel.id);

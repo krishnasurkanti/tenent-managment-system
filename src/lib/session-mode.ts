@@ -14,10 +14,12 @@ export async function getOwnerSession() {
         ? payload.sub
         : null;
 
+  const isLocalOwner = payload?.source === "local";
+
   const mode: OwnerSessionMode =
     role !== "owner" && role !== "staff"
       ? "guest"
-      : ownerId === "demo-owner"
+      : ownerId === "demo-owner" || isLocalOwner
         ? "demo"
         : "live";
 

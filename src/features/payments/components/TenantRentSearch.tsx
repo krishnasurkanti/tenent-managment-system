@@ -7,6 +7,7 @@ import { CalendarDays, ImageUp, Search, WalletCards, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
+import { useToast } from "@/components/ui/toast";
 import { recordTenantPayment, uploadTenantPaymentProof } from "@/services/tenants/tenants.service";
 import { formatPaymentDate } from "@/utils/payment";
 import type { TenantRecord } from "@/types/tenant";
@@ -36,6 +37,8 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
+
+  const { toast } = useToast();
 
   useLockBodyScroll(open);
 
@@ -153,7 +156,9 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
     const { response, data } = await recordTenantPayment(payload);
 
     if (!response.ok) {
-      setError(data.message ?? "Unable to record payment.");
+      const msg = data.message ?? "Unable to record payment.";
+      setError(msg);
+      toast(msg, "error");
       setSubmitting(false);
       return;
     }
@@ -162,11 +167,11 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
     const latestPayment = updatedTenant.paymentHistory[0];
 
     setPendingProofPaymentId(latestPayment?.paymentId ?? "");
-    setMessage(
-      proofFile
-        ? `Payment recorded for ${selectedTenant.fullName}.`
-        : `Payment recorded for ${selectedTenant.fullName}. Add proof now or do it later from Payments.`,
-    );
+    const successMsg = proofFile
+      ? `Payment recorded for ${selectedTenant.fullName}.`
+      : `Payment recorded for ${selectedTenant.fullName}. Add proof now or do it later from Payments.`;
+    setMessage(successMsg);
+    toast(successMsg, "success");
     setSubmitting(false);
     setStep(3);
     router.refresh();
@@ -202,11 +207,14 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
     const { response, data } = await uploadTenantPaymentProof(payload);
 
     if (!response.ok) {
-      setError(data.message ?? "Unable to save payment proof.");
+      const msg = data.message ?? "Unable to save payment proof.";
+      setError(msg);
+      toast(msg, "error");
       setSubmitting(false);
       return;
     }
 
+    toast("Payment proof saved.", "success");
     setSubmitting(false);
     router.refresh();
     resetState();
@@ -234,21 +242,24 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
 
       {open && mounted
         ? createPortal(
-        <div className="fixed inset-0 z-[80] overflow-y-auto overscroll-contain bg-slate-950/40 px-4 py-4 sm:py-8">
-          <div className="flex min-h-full items-start justify-center sm:items-center">
-            <Card className="flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden border-slate-100 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.14)] sm:max-h-[min(92dvh,760px)]">
+        <div
+          className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto overscroll-contain px-4 py-4 sm:items-center sm:py-8"
+          style={{ background: "rgba(2,6,23,0.72)", backdropFilter: "blur(6px)" }}
+        >
+          <div className="flex min-h-full w-full max-w-2xl items-start justify-center sm:items-center">
+            <Card className="flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-6 shadow-[0_40px_100px_rgba(0,0,0,0.6)] sm:max-h-[min(92dvh,760px)]">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="inline-flex items-center gap-2 rounded-full bg-white/72 px-3 py-1.5 text-[13px] font-semibold text-slate-700 shadow-sm">
-                    <span className="rounded-full bg-blue-600 p-1 text-white">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-[13px] font-semibold text-white/70">
+                    <span className="rounded-xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] p-1 text-white shadow-[0_8px_16px_rgba(37,99,235,0.28)]">
                       <WalletCards className="h-3.5 w-3.5" />
                     </span>
-                    Payments
+                    Payment Collection
                   </div>
-                  <h2 className="mt-3 text-2xl font-semibold text-slate-800">Pay Rent</h2>
-                  <p className="mt-1 text-sm text-[var(--muted-foreground)]">Select tenant, record payment, then attach proof if needed.</p>
+                  <h2 className="mt-3 text-2xl font-semibold text-white">Collect Rent</h2>
+                  <p className="mt-1 text-sm text-white/45">Collect rent, record payment, and attach proof if needed.</p>
                 </div>
-                <Button variant="ghost" disabled={submitting} aria-label="Close" className="rounded-2xl px-3" onClick={resetState}>
+                <Button variant="ghost" disabled={submitting} aria-label="Close" className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={resetState}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -263,7 +274,7 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
                 {step === 1 ? (
                   <>
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium text-slate-800">Search by tenant ID or name</span>
+                      <span className="mb-2 block text-sm font-medium text-white/70">Search by tenant ID or name</span>
                       <div className="relative">
                         <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
                         <input
@@ -278,17 +289,17 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
                           }}
                           disabled={submitting}
                           placeholder="Type last 5-digit ID or tenant name"
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm placeholder:text-slate-400"
+                          className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#38bdf8]/40"
                         />
                       </div>
                     </label>
 
                     {!normalizedQuery ? (
-                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-[var(--muted-foreground)] shadow-sm">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 text-sm text-white/40">
                         Start typing a tenant ID or name to find the correct tenant.
                       </div>
                     ) : matches.length === 0 ? (
-                      <div className="rounded-2xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-4 py-4 text-sm text-[color:var(--error)]">
+                      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-4 text-sm text-red-400">
                         No tenant matched that search.
                       </div>
                     ) : (
@@ -309,13 +320,13 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
                               }}
                               className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
                                 active
-                                  ? "border-blue-200 bg-blue-50"
-                                  : "border-slate-200 bg-white hover:border-blue-200"
+                                  ? "border-[#38bdf8]/40 bg-[#38bdf8]/10"
+                                  : "border-white/10 bg-white/[0.03] hover:border-white/20"
                               }`}
                             >
-                              <p className="font-semibold text-[var(--foreground)]">{tenant.fullName}</p>
-                              <p className="mt-1 text-sm text-[var(--muted-foreground)]">Tenant ID {tenant.tenantId} • {tenant.phone}</p>
-                              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                              <p className="font-semibold text-white">{tenant.fullName}</p>
+                              <p className="mt-1 text-sm text-white/50">Tenant ID {tenant.tenantId} • {tenant.phone}</p>
+                              <p className="mt-1 text-sm text-white/50">
                                 Floor {tenant.assignment?.floorNumber ?? "-"} • Room {tenant.assignment?.roomNumber ?? "-"}
                               </p>
                             </button>
@@ -327,8 +338,8 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
                 ) : null}
 
                 {selectedTenant && step >= 2 ? (
-                  <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] p-4 text-sm text-[var(--muted-foreground)] shadow-sm">
-                    <p className="font-semibold text-[var(--foreground)]">{selectedTenant.fullName}</p>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-white/50">
+                    <p className="font-semibold text-white">{selectedTenant.fullName}</p>
                     <p className="mt-1">Tenant ID: {selectedTenant.tenantId}</p>
                     <p className="mt-1">Floor {selectedTenant.assignment?.floorNumber ?? "-"} / Room {selectedTenant.assignment?.roomNumber ?? "-"}</p>
                     <p className="mt-1">Next due: {formatPaymentDate(selectedTenant.nextDueDate)}</p>
@@ -338,52 +349,52 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
                 {selectedTenant && step === 2 ? (
                   <div className="grid gap-4 md:grid-cols-2">
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium text-slate-800">Paid Amount</span>
+                      <span className="mb-2 block text-sm font-medium text-white/70">Paid Amount</span>
                       <input
                         type="number"
                         min="0"
                         value={amount}
                         onChange={(event) => setAmount(event.target.value)}
                         disabled={submitting}
-                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm text-slate-700 outline-none shadow-sm"
+                        className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none focus:border-[#38bdf8]/40 [color-scheme:dark]"
                       />
                     </label>
 
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium text-slate-800">Paid On Date</span>
+                      <span className="mb-2 block text-sm font-medium text-white/70">Paid On Date</span>
                       <div className="relative">
-                        <CalendarDays className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                        <CalendarDays className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                         <input
                           type="date"
                           value={paidOnDate}
                           onChange={(event) => setPaidOnDate(event.target.value)}
                           disabled={submitting}
-                          className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm"
+                          className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none focus:border-[#38bdf8]/40 [color-scheme:dark]"
                         />
                       </div>
                     </label>
 
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium text-slate-800">Payment Mode</span>
+                      <span className="mb-2 block text-sm font-medium text-white/70">Payment Mode</span>
                       <select
                         value={paymentMethod}
                         onChange={(event) => setPaymentMethod(event.target.value === "online" ? "online" : "cash")}
                         disabled={submitting}
-                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm text-slate-700 outline-none shadow-sm"
+                        className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none focus:border-[#38bdf8]/40 [color-scheme:dark]"
                       >
                         <option value="cash">Cash</option>
-                        <option value="online">Online</option>
+                        <option value="online">Online / UPI</option>
                       </select>
                     </label>
 
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium text-slate-800">Txn ID (Optional)</span>
+                      <span className="mb-2 block text-sm font-medium text-white/70">Txn ID (Optional)</span>
                       <input
                         value={txnId}
                         onChange={(event) => setTxnId(event.target.value.toUpperCase())}
                         disabled={submitting}
-                        placeholder={paymentMethod === "online" ? "Enter online transaction id" : "Optional for cash payment"}
-                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm text-slate-700 outline-none shadow-sm placeholder:text-slate-400"
+                        placeholder={paymentMethod === "online" ? "Enter transaction ID" : "Optional for cash"}
+                        className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#38bdf8]/40"
                       />
                     </label>
                   </div>
@@ -391,55 +402,55 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
 
                 {step === 3 ? (
                   <div className="space-y-4">
-                    <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-4 text-sm text-[var(--muted-foreground)] shadow-sm">
+                    <div className="rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-4 text-sm text-green-400">
                       Payment recorded. Add proof now or skip and do it later from the payments page.
                     </div>
 
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium text-slate-800">Txn ID (Optional)</span>
+                      <span className="mb-2 block text-sm font-medium text-white/70">Txn ID (Optional)</span>
                       <input
                         value={txnId}
                         onChange={(event) => setTxnId(event.target.value.toUpperCase())}
                         disabled={submitting}
-                        placeholder="Enter transaction id"
-                        className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 text-sm text-slate-700 outline-none shadow-sm placeholder:text-slate-400"
+                        placeholder="Enter transaction ID"
+                        className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#38bdf8]/40"
                       />
                     </label>
 
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium text-slate-800">Proof File (Optional)</span>
+                      <span className="mb-2 block text-sm font-medium text-white/70">Proof File (Optional)</span>
                       <div className="relative">
-                        <ImageUp className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                        <ImageUp className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                         <input
                           type="file"
                           onChange={(event) => setProofFile(event.target.files?.[0] ?? null)}
                           accept="image/*,.pdf"
                           disabled={submitting}
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm file:mr-3 file:rounded-xl file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white"
+                          className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none file:mr-3 file:rounded-xl file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white"
                         />
                       </div>
-                      {proofFile ? <p className="mt-1 text-xs text-slate-500">{proofFile.name}</p> : null}
+                      {proofFile ? <p className="mt-1 text-xs text-white/40">{proofFile.name}</p> : null}
                     </label>
                   </div>
                 ) : null}
               </div>
 
-              {error ? <p className="mt-4 text-sm text-[color:var(--error)]">{error}</p> : null}
-              {message ? <p className="mt-4 text-sm text-emerald-600">{message}</p> : null}
+              {error ? <p role="alert" className="mt-4 text-sm text-red-400">{error}</p> : null}
+              {message ? <p role="status" className="mt-4 text-sm text-emerald-400">{message}</p> : null}
 
-              <div className="mt-6 flex flex-col-reverse gap-3 border-t border-[var(--border)] pt-4 sm:flex-row sm:justify-end">
+              <div className="mt-6 flex flex-col-reverse gap-3 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
                 <Button
                   variant="secondary"
                   onClick={step === 1 ? resetState : () => setStep((current) => (current === 3 ? 2 : 1))}
                   disabled={submitting}
-                  className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]"
+                  className="rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white"
                 >
                   {step === 1 ? "Cancel" : "Back"}
                 </Button>
 
                 {step === 3 && pendingProofPaymentId ? (
                   <>
-                    <Button variant="secondary" disabled={submitting} onClick={resetState} className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]">
+                    <Button variant="secondary" disabled={submitting} onClick={resetState} className="rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white">
                       Add Later
                     </Button>
                     <Button disabled={submitting} onClick={handleUploadProof} className={`rounded-2xl bg-blue-600 text-white hover:text-white ${submitting ? "opacity-70" : ""}`}>
@@ -450,7 +461,7 @@ function TenantRentSearchContent({ tenants }: { tenants: TenantRecord[] }) {
                   <Button
                     disabled={submitting}
                     onClick={step === 1 ? handleNextFromTenant : handleRecordPayment}
-                    className={`rounded-2xl bg-blue-600 text-white hover:text-white ${submitting ? "opacity-70" : ""}`}
+                    className={`rounded-2xl bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] text-white hover:text-white hover:brightness-110 ${submitting ? "opacity-70" : ""}`}
                   >
                     {step === 1 ? "Next: Payment" : submitting ? "Recording..." : "Record Payment"}
                   </Button>
@@ -498,10 +509,10 @@ function StepPill({
     <span
       className={`inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-semibold ${
         active
-          ? "border border-blue-500 bg-blue-600 text-white shadow-sm"
+          ? "border border-blue-500/60 bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)]"
           : done
-            ? "border border-emerald-200 bg-[linear-gradient(180deg,#ecfdf5_0%,#d1fae5_100%)] text-emerald-700"
-            : "border border-blue-100 bg-blue-50 text-[var(--accent)]"
+            ? "border border-emerald-500/40 bg-emerald-500/15 text-emerald-400"
+            : "border border-white/12 bg-white/[0.05] text-white/40"
       }`}
     >
       {label}

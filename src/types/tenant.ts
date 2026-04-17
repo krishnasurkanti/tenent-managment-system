@@ -1,3 +1,5 @@
+export type BillingCycle = "daily" | "weekly" | "monthly";
+
 export type TenantRecord = {
   tenantId: string;
   fullName: string;
@@ -8,6 +10,7 @@ export type TenantRecord = {
   paidOnDate: string;
   billingAnchorDate: string;
   nextDueDate: string;
+  billingCycle?: BillingCycle;
   idNumber: string;
   idImageName: string;
   emergencyContact: string;

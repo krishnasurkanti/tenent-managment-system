@@ -1,41 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { fetchOwnerTenants } from "@/services/tenants/tenants.service";
 import type { TenantRecord } from "@/types/tenant";
 
-/**
- * Fetches tenants for a specific hostel and re-fetches when hostelId changes.
- * Pass the current hostelId so only one targeted request is made (avoids N+1).
- */
 export function useOwnerTenants(hostelId?: string | null) {
-  const [tenants, setTenants] = useState<TenantRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useQuery({
+    queryKey: ["owner-tenants", hostelId ?? null],
+    queryFn: async () => {
+      const { data } = await fetchOwnerTenants(hostelId ?? undefined);
+      return (data.tenants ?? []) as TenantRecord[];
+    },
+    staleTime: 20_000,
+  });
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-
-    const loadTenants = async () => {
-      try {
-        const { data } = await fetchOwnerTenants(hostelId ?? undefined);
-
-        if (active) {
-          setTenants(data.tenants ?? []);
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void loadTenants();
-
-    return () => {
-      active = false;
-    };
-  }, [hostelId]); // re-fetch whenever the selected hostel changes
-
-  return { tenants, loading };
+  return { tenants: data ?? [], loading: isLoading };
 }

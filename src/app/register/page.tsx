@@ -1,1 +1,5 @@
-export { default } from "@/features/auth/owner-register/OwnerRegisterPage";
+import { redirect } from "next/navigation";
+
+export default function RegisterPage() {
+  redirect("/owner/login");
+}

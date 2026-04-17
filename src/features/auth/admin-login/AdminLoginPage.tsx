@@ -52,7 +52,7 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.replace("/admin/dashboard");
+      router.replace("/super-admin/dashboard");
       router.refresh();
     } catch {
       setError("Unable to sign in right now. Please try again.");
@@ -68,7 +68,7 @@ export default function AdminLoginPage() {
 
         <div className="smart-scroll-header relative z-10 flex items-center justify-end border-b border-white/8 px-3 py-2.5 sm:px-5 lg:px-6">
           <Link
-            href="/login"
+            href="/owner/login"
             className="inline-flex items-center gap-2 rounded-full border border-[#f2bb4d]/55 bg-[#1d1a19]/80 px-3.5 py-2 text-xs font-semibold text-[#ffd26a] shadow-[0_0_0_1px_rgba(255,214,120,0.08)_inset] sm:text-sm"
           >
             <Shield className="h-4 w-4" />

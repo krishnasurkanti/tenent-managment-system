@@ -1,22 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { SkeletonBlock } from "@/components/ui/skeleton";
 import { fetchAdminOverview } from "@/services/admin/admin.service";
-import type { AdminOverview } from "@/types/admin";
 
 export default function AdminDashboardPage() {
-  const [data, setData] = useState<AdminOverview | null>(null);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["admin-overview"],
+    queryFn: async () => {
+      const { data } = await fetchAdminOverview();
+      return data;
+    },
+  });
 
-  useEffect(() => {
-    const load = async () => {
-      const { data: next } = await fetchAdminOverview();
-      setData(next);
-    };
-    void load();
-  }, []);
-
-  if (!data) {
+  if (isLoading) {
     return (
       <div className="space-y-4">
         <div className="rounded-[24px] border border-white/80 bg-white/90 p-5 shadow-sm">
@@ -40,6 +37,17 @@ export default function AdminDashboardPage() {
             <SkeletonBlock key={index} className="h-28" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div
+        role="alert"
+        className="rounded-[24px] border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-700"
+      >
+        Failed to load dashboard. Refresh the page to try again.
       </div>
     );
   }

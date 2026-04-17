@@ -58,7 +58,7 @@ export default function DesignSystemPage() {
             <AtomicButton variant="primary" size="large">Primary L</AtomicButton>
             <AtomicButton variant="secondary" size="medium">Secondary</AtomicButton>
             <AtomicButton variant="ghost" size="medium">Ghost</AtomicButton>
-            <AtomicButton variant="destructive" size="medium">Destructive</AtomicButton>
+            <AtomicButton variant="danger" size="medium">Destructive</AtomicButton>
           </div>
         </section>
 

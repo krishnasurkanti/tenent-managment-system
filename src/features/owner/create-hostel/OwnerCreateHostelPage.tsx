@@ -67,7 +67,8 @@ function CreateHostelPageContent() {
   const [editingHostelId, setEditingHostelId] = useState<string | null>(null);
   const [hostelName, setHostelName] = useState("");
   const [address, setAddress] = useState("");
-  const [hostelType, setHostelType] = useState<"PG" | "RESIDENCE">("PG");
+  // Scoped to Hostel/PG only — Residence disabled
+  const [hostelType] = useState<"PG" | "RESIDENCE">("PG");
   const [floors, setFloors] = useState<FloorForm[]>([createFloor(1)]);
   const [activeFloorId, setActiveFloorId] = useState<string | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
@@ -114,7 +115,6 @@ function CreateHostelPageContent() {
 
         setHostelName(data.hostel.hostelName);
         setAddress(data.hostel.address);
-        setHostelType(data.hostel.type === "RESIDENCE" ? "RESIDENCE" : "PG");
         setFloors(nextFloors);
         setActiveFloorId(nextFloors[0]?.id ?? null);
         setActiveRoomId(nextFloors[0]?.rooms[0]?.id ?? null);
@@ -158,22 +158,6 @@ function CreateHostelPageContent() {
       setActiveRoomId(currentFloor.rooms[0]?.id ?? null);
     }
   }, [activeFloorId, activeRoomId, floors]);
-
-  useEffect(() => {
-    if (hostelType !== "RESIDENCE") {
-      return;
-    }
-
-    setFloors((current) =>
-      current.map((floor) => ({
-        ...floor,
-        rooms: floor.rooms.map((room) => ({
-          ...room,
-          bedCount: "1",
-        })),
-      })),
-    );
-  }, [hostelType]);
 
   const activeFloor = useMemo(
     () => floors.find((floor) => floor.id === activeFloorId) ?? floors[0] ?? null,
@@ -491,32 +475,10 @@ function CreateHostelPageContent() {
           <div className="px-4 pb-4 sm:px-5">
             <Field label="Property Type">
               <div className="flex gap-2 pt-0.5">
-                <button
-                  type="button"
-                  disabled={saving}
-                  onClick={() => setHostelType("PG")}
-                  className={`flex-1 rounded-2xl border px-4 py-3 text-left text-[13px] font-semibold transition ${
-                    hostelType === "PG"
-                      ? "border-blue-400 bg-blue-50 text-[var(--accent)] shadow-sm"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-blue-200"
-                  }`}
-                >
-                  <p>PG</p>
+                <div className="flex-1 rounded-2xl border border-blue-400 bg-blue-50 px-4 py-3 text-[13px] font-semibold text-[var(--accent)] shadow-sm">
+                  <p>Hostel / PG</p>
                   <p className="mt-0.5 text-[11px] font-normal text-slate-500">Bed-based sharing rooms</p>
-                </button>
-                <button
-                  type="button"
-                  disabled={saving}
-                  onClick={() => setHostelType("RESIDENCE")}
-                  className={`flex-1 rounded-2xl border px-4 py-3 text-left text-[13px] font-semibold transition ${
-                    hostelType === "RESIDENCE"
-                      ? "border-blue-400 bg-blue-50 text-[var(--accent)] shadow-sm"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-blue-200"
-                  }`}
-                >
-                  <p>Residence</p>
-                  <p className="mt-0.5 text-[11px] font-normal text-slate-500">Self-contained units</p>
-                </button>
+                </div>
               </div>
             </Field>
           </div>

@@ -21,6 +21,7 @@ export type OwnerFloor = {
 
 export type OwnerHostel = {
   id: string;
+  ownerId?: string;
   hostelName: string;
   address: string;
   type: "PG" | "RESIDENCE";

@@ -6,7 +6,7 @@
     --bg-surface: #1e293b;
     --bg-elevated: #18181b;
     --fg-primary: #f8fafc;
-    --fg-secondary: #94a3b8;
+    --fg-secondary: #b8c8d8;
     --brand: #38bdf8;
     --brand-soft: rgba(56, 189, 248, 0.12);
     --success: #22c55e;
@@ -70,10 +70,14 @@
     --text-3xl-weight: 700;
     --text-2xl-size: 22px;
     --text-2xl-weight: 600;
-    --text-lg-size: 24px;
+    --text-lg-size: 18px;
     --text-lg-weight: 400;
-    --text-base-size: 20px;
+    --text-base-size: 15px;
     --text-base-weight: 400;
+    --text-sm-size: 13px;
+    --text-sm-weight: 400;
+    --line-height-body: 1.6;
+    --line-height-tight: 1.3;
   }
 
   :root[data-theme="dark"] {
@@ -152,8 +156,27 @@
     font-weight: var(--text-base-weight);
   }
 
+  .text-token-sm {
+    font-size: var(--text-sm-size);
+    font-weight: var(--text-sm-weight);
+  }
+
   ::selection {
     background: var(--brand-soft);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  p, li, td, th, label, span {
+    line-height: var(--line-height-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    line-height: var(--line-height-tight);
   }
 
   button,

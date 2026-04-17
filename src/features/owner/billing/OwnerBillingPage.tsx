@@ -1,313 +1,345 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { useCallback, useEffect, useState } from "react";
+import { Check, Clock, Sparkles, Star, Zap } from "lucide-react";
 import { useHostelContext } from "@/store/hostel-context";
-import {
-  fetchOwnerBilling,
-  payOwnerBilling,
-  requestOwnerPlanUpgrade,
-  setOwnerAutoPay,
-  type OwnerBillingData,
-} from "@/services/owner/owner-billing.service";
+import { SkeletonBlock } from "@/components/ui/skeleton";
 
-// Plan card keys now match the backend plan IDs exactly.
-const planOrder: OwnerBillingData["planId"][] = ["starter", "growth", "pro", "scale"];
+type LocalBillingData = {
+  hostelName: string;
+  plan: string;
+  trialActive: boolean;
+  trialEndsAt: string;
+  monthlyTenantCount: number;
+  weeklyTenantCount: number;
+  dailyTenantCount: number;
+  totalTenants: number;
+};
 
-const planCards = [
+const PLANS = [
   {
-    key: "starter" as const,
-    title: "Starter",
-    price: 499,
-    blurb: "For hostels just getting started",
-    tenantLimit: "Up to 30 tenants",
-    accent: "border-[color:var(--border)] bg-[linear-gradient(180deg,#101524_0%,#0a0e18_100%)] text-white/92 opacity-75",
+    key: "basic",
+    title: "Basic",
+    price: 999,
+    tenantLimit: 50,
+    tenantLimitLabel: "Up to 50 monthly tenants",
+    blurb: "For small PGs just getting started",
+    accent: "border-white/10 bg-[linear-gradient(180deg,#111827_0%,#0c1018_100%)]",
+    features: [
+      "Up to 50 monthly tenants",
+      "Unlimited daily & weekly (free)",
+      "Rent tracking & reminders",
+      "Room management",
+      "Payment history",
+    ],
   },
   {
-    key: "growth" as const,
+    key: "growth",
     title: "Growth",
-    price: 1499,
-    anchor: 1999,
-    blurb: "The right plan for most active hostels",
-    tenantLimit: "Up to 100 tenants",
-    accent:
-      "border-[color:color-mix(in_srgb,var(--success)_50%,var(--brand))] bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.22),transparent_40%),linear-gradient(180deg,#13182b_0%,#0b1020_100%)] text-white shadow-[0_0_0_1px_rgba(34,197,94,0.18),0_24px_70px_rgba(99,102,241,0.22)]",
-    popular: true,
-  },
-  {
-    key: "pro" as const,
-    title: "Pro",
     price: 1999,
-    blurb: "For established hostels needing more capacity",
-    tenantLimit: "Up to 100 tenants",
-    accent: "border-[color:var(--border)] bg-[linear-gradient(180deg,#15111f_0%,#0c1018_100%)] text-white/92 opacity-85",
+    tenantLimit: 150,
+    tenantLimitLabel: "Up to 150 monthly tenants",
+    blurb: "The right plan for most active hostels",
+    popular: true,
+    accent:
+      "border-[color:color-mix(in_srgb,var(--success)_40%,var(--brand)_60%)] bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.12),transparent_50%),linear-gradient(180deg,#0e1a2e_0%,#0b101c_100%)] shadow-[0_0_0_1px_rgba(56,189,248,0.15),0_32px_80px_rgba(37,99,235,0.2)]",
+    features: [
+      "Up to 150 monthly tenants",
+      "Unlimited daily & weekly (free)",
+      "All Basic features",
+      "Advanced reports",
+      "Priority support",
+    ],
   },
   {
-    key: "scale" as const,
-    title: "Scale",
-    price: 2499,
-    blurb: "Unlimited tenants for large operations",
-    tenantLimit: "Unlimited tenants",
-    accent: "border-[color:var(--border)] bg-[linear-gradient(180deg,#15111f_0%,#0c1018_100%)] text-white/92 opacity-85",
+    key: "pro",
+    title: "Pro",
+    price: 2999,
+    tenantLimit: Infinity,
+    tenantLimitLabel: "Unlimited monthly tenants",
+    blurb: "For large operations — no limits",
+    accent: "border-[#f59e0b]/30 bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.1),transparent_50%),linear-gradient(180deg,#151208_0%,#0c1018_100%)]",
+    features: [
+      "Unlimited monthly tenants",
+      "Unlimited daily & weekly (free)",
+      "All Growth features",
+      "Multi-hostel support",
+      "Dedicated support",
+    ],
   },
 ] as const;
 
-type PlanCard = (typeof planCards)[number];
+const FOUNDING_OFFER_SLOTS = 20;
+const FOUNDING_SLOTS_REMAINING = 7;
 
 export default function OwnerBillingPage() {
-  const { currentHostel, loading } = useHostelContext();
-  const [data, setData] = useState<OwnerBillingData | null>(null);
-  const [message, setMessage] = useState("");
-  const [pageError, setPageError] = useState("");
-  const [actionLoading, setActionLoading] = useState<"pay" | "autopay" | "upgrade" | null>(null);
+  const { currentHostel, loading: hostelLoading } = useHostelContext();
+  const [data, setData] = useState<LocalBillingData | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     if (!currentHostel?.id) return;
-    const { response, data: next } = await fetchOwnerBilling(currentHostel.id);
-    if (!response.ok) throw new Error(next.message || "Unable to load billing.");
-    setPageError("");
-    setData(next);
+    setDataLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/owner-billing?hostelId=${encodeURIComponent(currentHostel.id)}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        const json = (await res.json()) as { message?: string };
+        setError(json.message ?? "Unable to load billing.");
+        return;
+      }
+      const json = (await res.json()) as LocalBillingData;
+      setData(json);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load billing.");
+    } finally {
+      setDataLoading(false);
+    }
   }, [currentHostel?.id]);
 
   useEffect(() => {
-    void load().catch((error: unknown) => {
-      setPageError(error instanceof Error ? error.message : "Unable to load billing.");
-    });
+    void load();
   }, [load]);
 
-  const nextPlan = useMemo(() => {
-    if (!data) return null;
-    const idx = planOrder.indexOf(data.planId);
-    return idx >= 0 ? planOrder[idx + 1] ?? null : null;
-  }, [data]);
-
-  if (loading || !currentHostel) {
-    return <Card className="p-6 text-center text-sm text-[color:var(--fg-secondary)]">Loading billing...</Card>;
+  if (hostelLoading || dataLoading) {
+    return <LoadingState />;
   }
 
-  if (!data) {
-    return <Card className="p-6 text-center text-sm text-[color:var(--fg-secondary)]">{pageError || "Loading billing..."}</Card>;
+  if (error || !data) {
+    return (
+      <div className="rounded-[28px] border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-400">
+        {error || "Unable to load pricing."}
+      </div>
+    );
   }
 
-  const payNow = async () => {
-    setActionLoading("pay");
-    try {
-      const { response, data: payload } = await payOwnerBilling(currentHostel.id);
-      setMessage(response.ok ? "Payment successful. Account is active." : payload.message || "Unable to process payment.");
-      await load().catch(() => {});
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const toggleAutoPay = async (enabled: boolean) => {
-    setActionLoading("autopay");
-    try {
-      const { response, data: payload } = await setOwnerAutoPay(currentHostel.id, enabled);
-      setMessage(response.ok ? `Auto-pay ${enabled ? "enabled" : "disabled"}.` : payload.message || "Unable to update auto-pay.");
-      await load().catch(() => {});
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const requestPlanChange = async (requestedPlanId: OwnerBillingData["planId"]) => {
-    if (requestedPlanId === data.planId) return;
-    setActionLoading("upgrade");
-    try {
-      const { response, data: payload } = await requestOwnerPlanUpgrade(currentHostel.id, data.planId, requestedPlanId);
-      setMessage(
-        response.ok
-          ? `Plan change request submitted for ${requestedPlanId.toUpperCase()}.`
-          : payload.message || "Unable to request plan change.",
-      );
-      await load().catch(() => {});
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const annualSavings = (1999 - 1499) * 12;
-
-  // suppress unused variable warning for nextPlan (kept for future use)
-  void nextPlan;
+  const trialDaysLeft = Math.max(
+    0,
+    Math.ceil((new Date(data.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+  );
 
   return (
-    <div className="space-y-5 text-white">
-      <section className="relative overflow-hidden rounded-[40px] border border-[color:var(--border)] bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.22),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(34,197,94,0.12),transparent_26%),linear-gradient(180deg,#090b15_0%,#0d1120_48%,#11172a_100%)] p-5 shadow-[0_32px_90px_rgba(2,6,23,0.42)] sm:p-7">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--accent-electric)]">
-            <Sparkles className="h-3.5 w-3.5" />
-            Plans &amp; Billing
+    <div className="space-y-6 text-white">
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[radial-gradient(ellipse_at_top_left,rgba(56,189,248,0.12),transparent_40%),radial-gradient(ellipse_at_bottom_right,rgba(249,193,42,0.1),transparent_40%),linear-gradient(180deg,#0d1525_0%,#080e1a_100%)] p-5 shadow-[0_32px_80px_rgba(2,6,23,0.4)] sm:p-7">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#38bdf8]/30 to-transparent" />
+
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#fbbf24]">
+              <Sparkles className="h-3.5 w-3.5" />
+              Plans &amp; Pricing
+            </div>
+            <h1 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
+              Simple, transparent<br />
+              <span className="text-[#38bdf8]">pricing.</span>
+            </h1>
+            <p className="mt-3 max-w-md text-sm leading-6 text-white/50">
+              Pay only for your monthly tenants. Daily and weekly guests are completely free — they're managed, reminded, and tracked at no extra cost.
+            </p>
           </div>
-          <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Pricing &amp; billing</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">{data.hostelName}</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-[color:color-mix(in_srgb,var(--fg-primary)_72%,transparent)] sm:text-base">
-            Choose the plan that fits your hostel size. You can request a change at any time.
-          </p>
+
+          <div className="flex flex-col gap-3 sm:min-w-56">
+            {/* Trial badge */}
+            <div className="rounded-[22px] border border-[#38bdf8]/30 bg-[#38bdf8]/8 p-4">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-[#38bdf8]" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#38bdf8]">Free Trial</span>
+              </div>
+              <p className="mt-2 text-2xl font-semibold text-white">{trialDaysLeft} days left</p>
+              <p className="mt-1 text-xs text-white/40">No payment required. Try everything free.</p>
+            </div>
+
+            {/* Founding offer */}
+            <div className="rounded-[22px] border border-[#f59e0b]/40 bg-[#f59e0b]/8 p-4">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-[#fbbf24]" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#fbbf24]">Founding Offer</span>
+              </div>
+              <p className="mt-2 text-base font-semibold text-white">50% lifetime discount</p>
+              <p className="mt-1 text-xs text-white/50">
+                Only {FOUNDING_SLOTS_REMAINING} of {FOUNDING_OFFER_SLOTS} slots remaining. Lock in forever.
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="mt-8 grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-            {planCards.map((card) => {
-              const active = data.planId === card.key;
-              const anchor = "anchor" in card ? card.anchor : null;
-              const popular = "popular" in card && Boolean(card.popular);
-              const hasPendingRequest = data.upgradePending && !active;
-              return (
-                <article
-                  key={card.key}
-                  className={`relative flex min-h-[320px] flex-col rounded-[36px] border p-5 ${card.accent} ${popular ? "scale-[1.01]" : ""}`}
-                >
-                  {popular ? (
-                    <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,var(--cta)_0%,var(--cta-strong)_100%)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_14px_36px_color-mix(in_srgb,var(--cta)_26%,transparent)]">
-                      Most Popular
-                    </div>
-                  ) : null}
-
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold uppercase tracking-[0.16em]">{card.title}</p>
-                    {active ? (
-                      <span className="rounded-full border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_12px_24px_rgba(34,197,94,0.24)]">
-                        Current
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <div className="mt-6">
-                    {anchor ? (
-                      <div className="mb-2 flex items-end gap-3">
-                        <span className="text-base font-medium text-[color:var(--fg-secondary)] line-through">₹{anchor}</span>
-                        <span className="text-4xl font-semibold tracking-[-0.04em] text-white">₹{card.price}</span>
-                        <span className="pb-1 text-sm text-[color:var(--fg-secondary)]">/ month</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-end gap-2">
-                        <span className="text-4xl font-semibold tracking-[-0.04em] text-white">₹{card.price}</span>
-                        <span className="pb-1 text-sm text-[color:var(--fg-secondary)]">/ month</span>
-                      </div>
-                    )}
-
-                    <p className="mt-3 text-sm text-[color:var(--fg-secondary)]">{card.tenantLimit}</p>
-                    <p className="mt-3 text-sm font-medium text-white/90">{card.blurb}</p>
-                  </div>
-
-                  {popular ? (
-                    <div className="mt-4 inline-flex rounded-full border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white shadow-[0_12px_24px_rgba(34,197,94,0.24)]">
-                      Save ₹{annualSavings.toLocaleString("en-IN")}/year
-                    </div>
-                  ) : null}
-
-                  <ul className="mt-6 space-y-3">
-                    <FeatureItem>All features included</FeatureItem>
-                    <FeatureItem>{card.tenantLimit}</FeatureItem>
-                  </ul>
-
-                  <div className="mt-auto pt-6">
-                    {active ? (
-                      <div className="rounded-[28px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-center text-sm font-medium text-[color:var(--fg-secondary)]">
-                        Active plan
-                      </div>
-                    ) : (
-                      <Button
-                        className="min-h-14 w-full text-sm"
-                        onClick={() => requestPlanChange(card.key)}
-                        disabled={hasPendingRequest}
-                        loading={actionLoading === "upgrade"}
-                      >
-                        {hasPendingRequest ? "Request pending" : `Switch to ${card.title}`}
-                      </Button>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-
-          <div className="space-y-4">
-            <Card className="bg-[linear-gradient(180deg,#101523_0%,#0c1018_100%)] p-5 text-white shadow-[0_26px_70px_rgba(2,6,23,0.28)]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Current billing</p>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <InfoPill label="Current plan" value={data.planId.toUpperCase()} />
-                <InfoPill label="Status" value={data.paymentStatus.toUpperCase()} tone={data.paymentStatus === "paid" ? "success" : "warning"} />
-                <InfoPill label="Payable now" value={`₹${data.payableAmount.toLocaleString("en-IN")}`} />
-                <InfoPill label="Due date" value={new Date(data.dueDate).toLocaleDateString("en-IN")} />
-              </div>
-              <div className="mt-4 rounded-[28px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
-                <p className="text-sm font-medium text-white">Plan details</p>
-                <p className="mt-2 text-sm leading-6 text-[color:var(--fg-secondary)]">
-                  {data.billing.blockedAtNextPlan
-                    ? `Your tenant count has reached the limit for the current plan. Upgrade to continue adding tenants.`
-                    : data.billing.upgradeSuggested
-                      ? "You are approaching the tenant limit for your current plan. Consider upgrading soon."
-                      : "Your current plan covers your active tenant count."}
-                </p>
-              </div>
-            </Card>
-
-            <Card className="bg-[linear-gradient(180deg,#101523_0%,#0c1018_100%)] p-5 text-white shadow-[0_26px_70px_rgba(2,6,23,0.28)]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Actions</p>
-              <div className="mt-4 grid gap-3">
-                <Button onClick={payNow} loading={actionLoading === "pay"} className="min-h-12 w-full">
-                  Pay Now
-                </Button>
-                <Button variant="secondary" onClick={() => toggleAutoPay(!data.autoPayEnabled)} loading={actionLoading === "autopay"} className="min-h-12 w-full border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white hover:bg-[color:var(--surface-strong)]">
-                  {data.autoPayEnabled ? "Disable Auto-Pay" : "Enable Auto-Pay"}
-                </Button>
-              </div>
-            </Card>
-          </div>
+        {/* Tenant breakdown */}
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <TenantCountCard
+            label="Monthly Tenants"
+            sublabel="Counted toward plan limit"
+            value={data.monthlyTenantCount}
+            tone="brand"
+          />
+          <TenantCountCard
+            label="Weekly Tenants"
+            sublabel="Managed free, not counted"
+            value={data.weeklyTenantCount}
+            tone="free"
+          />
+          <TenantCountCard
+            label="Daily Tenants"
+            sublabel="Managed free, not counted"
+            value={data.dailyTenantCount}
+            tone="free"
+          />
         </div>
       </section>
 
-      {message ? (
-        <div className="rounded-[28px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-sm text-[color:var(--fg-primary)]">
-          {message}
-        </div>
-      ) : null}
+      {/* Plan cards */}
+      <section className="grid gap-4 sm:grid-cols-3">
+        {PLANS.map((plan) => {
+          const isTrial = data.plan === "trial";
+          const isCurrentPlan = data.plan === plan.key;
+          const foundingPrice = Math.round(plan.price * 0.5);
 
-      {pageError ? (
-        <div className="rounded-[28px] border border-[color:var(--error)] bg-[color:var(--error-soft)] px-4 py-3 text-sm text-[color:var(--error)]">
-          {pageError}
+          return (
+            <article
+              key={plan.key}
+              className={`relative flex flex-col rounded-[32px] border p-5 ${plan.accent} ${"popular" in plan && plan.popular ? "ring-1 ring-[#38bdf8]/30" : ""}`}
+            >
+              {"popular" in plan && plan.popular ? (
+                <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#38bdf8]/50 bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_10px_28px_rgba(37,99,235,0.3)]">
+                  Most Popular
+                </div>
+              ) : null}
+
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-white/80">{plan.title}</p>
+                {isCurrentPlan && !isTrial ? (
+                  <span className="rounded-full border border-[#4ade80] bg-[#22c55e]/20 px-2.5 py-1 text-[10px] font-semibold uppercase text-[#4ade80]">
+                    Current
+                  </span>
+                ) : null}
+              </div>
+
+              {/* Pricing */}
+              <div className="mt-5">
+                <div className="flex items-end gap-2">
+                  <span className="text-[2.4rem] font-semibold leading-none tracking-[-0.04em] text-white">
+                    ₹{foundingPrice.toLocaleString("en-IN")}
+                  </span>
+                  <span className="mb-1 text-sm text-white/40">/ mo</span>
+                </div>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <span className="text-sm text-white/30 line-through">₹{plan.price.toLocaleString("en-IN")}</span>
+                  <span className="rounded-full border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-2 py-0.5 text-[10px] font-semibold text-[#fbbf24]">
+                    50% OFF — Founding
+                  </span>
+                </div>
+              </div>
+
+              <p className="mt-3 text-sm text-white/50">{plan.tenantLimitLabel}</p>
+              <p className="mt-2 text-sm font-medium text-white/80">{plan.blurb}</p>
+
+              <ul className="mt-5 space-y-2.5">
+                {plan.features.map((feat) => (
+                  <li key={feat} className="flex items-center gap-2.5 text-[13px] text-white/70">
+                    <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-[#4ade80]/50 bg-[#22c55e]/15">
+                      <Check className="h-3 w-3 text-[#4ade80]" />
+                    </span>
+                    {feat}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-auto pt-6">
+                {isTrial ? (
+                  <button
+                    type="button"
+                    className={`inline-flex min-h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold transition ${
+                      "popular" in plan && plan.popular
+                        ? "bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] text-white shadow-[0_14px_32px_rgba(37,99,235,0.3)] hover:brightness-110"
+                        : "border border-white/12 bg-white/[0.05] text-white/70 hover:bg-white/[0.10] hover:text-white"
+                    }`}
+                  >
+                    <Zap className="mr-2 h-4 w-4" />
+                    Choose {plan.title}
+                  </button>
+                ) : isCurrentPlan ? (
+                  <div className="flex min-h-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-medium text-white/40">
+                    Current Plan
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl border border-white/12 bg-white/[0.05] text-sm font-semibold text-white/70 transition hover:bg-white/[0.10] hover:text-white"
+                  >
+                    Switch to {plan.title}
+                  </button>
+                )}
+              </div>
+            </article>
+          );
+        })}
+      </section>
+
+      {/* Free daily/weekly callout */}
+      <section className="rounded-[28px] border border-white/10 bg-white/[0.03] px-5 py-5">
+        <div className="flex items-start gap-4">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border border-[#4ade80]/40 bg-[#22c55e]/10">
+            <Check className="h-5 w-5 text-[#4ade80]" />
+          </div>
+          <div>
+            <p className="font-semibold text-white">Daily &amp; weekly guests are always free</p>
+            <p className="mt-1 text-sm text-white/50">
+              Daily tenants (per night) and weekly tenants (7-day stays) are fully managed — reminders, dashboards, overdue alerts — at zero cost. They never count against your plan limit.
+            </p>
+          </div>
         </div>
-      ) : null}
+      </section>
     </div>
   );
 }
 
-function FeatureItem({ children }: { children: React.ReactNode }) {
+function TenantCountCard({
+  label,
+  sublabel,
+  value,
+  tone,
+}: {
+  label: string;
+  sublabel: string;
+  value: number;
+  tone: "brand" | "free";
+}) {
   return (
-    <li className="flex items-center gap-3 text-sm text-white/88">
-      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white shadow-[0_10px_20px_rgba(34,197,94,0.22)]">
-        <Check className="h-3.5 w-3.5" />
-      </span>
-      {children}
-    </li>
+    <div
+      className={`rounded-[22px] border p-4 ${
+        tone === "brand"
+          ? "border-[#38bdf8]/20 bg-[#38bdf8]/[0.06]"
+          : "border-[#4ade80]/20 bg-[#22c55e]/[0.05]"
+      }`}
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40">{label}</p>
+      <p
+        className={`mt-2 text-2xl font-semibold ${
+          tone === "brand" ? "text-[#38bdf8]" : "text-[#4ade80]"
+        }`}
+      >
+        {value}
+        {tone === "free" ? (
+          <span className="ml-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#4ade80]/70">free</span>
+        ) : null}
+      </p>
+      <p className="mt-1 text-[11px] text-white/35">{sublabel}</p>
+    </div>
   );
 }
 
-function InfoPill({
-  label,
-  value,
-  tone = "default",
-}: {
-  label: string;
-  value: string;
-  tone?: "default" | "success" | "warning";
-}) {
-  const toneClass =
-    tone === "success"
-      ? "border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white shadow-[0_14px_28px_rgba(34,197,94,0.22)]"
-      : tone === "warning"
-        ? "border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] text-[#422006] shadow-[0_14px_28px_rgba(250,204,21,0.22)]"
-        : "border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white";
-
+function LoadingState() {
   return (
-    <div className={`rounded-[26px] border px-4 py-3 ${toneClass}`}>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-75">{label}</p>
-      <p className="mt-2 text-lg font-semibold tracking-[-0.02em]">{value}</p>
+    <div className="space-y-5">
+      <SkeletonBlock className="h-64 rounded-[36px]" />
+      <div className="grid gap-4 sm:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <SkeletonBlock key={i} className="h-80 rounded-[32px]" />
+        ))}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,11 @@
+import fs from "node:fs";
+import path from "node:path";
 import type { OwnerHostel } from "@/types/owner-hostel";
 import type { HostelRoomInventory, TenantRecord } from "@/types/tenant";
 import { buildHostelInventory, normalizeHostel } from "@/utils/hostel-occupancy";
+
+const DATA_DIR = path.join(process.cwd(), ".data");
+const HOSTELS_FILE = path.join(DATA_DIR, "hostels.json");
 
 export const DEMO_OWNER_HOSTEL_ID = "owner-hostel-aurora";
 
@@ -60,7 +65,22 @@ const demoOwnerHostels: OwnerHostel[] = [
   },
 ];
 
-let ownerHostels: OwnerHostel[] = getDemoOwnerHostels();
+// In-memory store — demo hostels always present; persisted real hostels loaded at startup
+let ownerHostels: OwnerHostel[] = [...getDemoOwnerHostels(), ...loadPersistedHostels()];
+
+function loadPersistedHostels(): OwnerHostel[] {
+  try {
+    if (!fs.existsSync(HOSTELS_FILE)) return [];
+    return JSON.parse(fs.readFileSync(HOSTELS_FILE, "utf8")) as OwnerHostel[];
+  } catch {
+    return [];
+  }
+}
+
+function persistHostels(hostels: OwnerHostel[]) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(HOSTELS_FILE, JSON.stringify(hostels, null, 2), "utf8");
+}
 
 function cloneHostel(hostel: OwnerHostel): OwnerHostel {
   return normalizeHostel({
@@ -95,7 +115,16 @@ export function getOwnerHostel(hostelId?: string) {
   return hostel ? cloneHostel(hostel) : null;
 }
 
-export function saveOwnerHostel(hostel: Omit<OwnerHostel, "id" | "createdAt">) {
+export function getHostelsByOwnerId(ownerId: string): OwnerHostel[] {
+  const persisted = loadPersistedHostels();
+  return persisted.filter((h) => h.ownerId === ownerId).map(cloneHostel);
+}
+
+export function getAllPersistedHostels(): OwnerHostel[] {
+  return loadPersistedHostels().map(cloneHostel);
+}
+
+export function saveOwnerHostel(hostel: Omit<OwnerHostel, "id" | "createdAt"> & { ownerId?: string }) {
   const nextHostel = normalizeHostel({
     id: `owner-hostel-${Date.now()}`,
     createdAt: new Date().toISOString(),
@@ -103,10 +132,18 @@ export function saveOwnerHostel(hostel: Omit<OwnerHostel, "id" | "createdAt">) {
   });
 
   ownerHostels = [nextHostel, ...ownerHostels];
+
+  // Persist non-demo real owner hostels to disk
+  if (hostel.ownerId) {
+    const persisted = loadPersistedHostels();
+    persisted.unshift(nextHostel);
+    persistHostels(persisted);
+  }
+
   return cloneHostel(nextHostel);
 }
 
-export function updateOwnerHostel(hostel: Omit<OwnerHostel, "id" | "createdAt">, hostelId?: string) {
+export function updateOwnerHostel(hostel: Omit<OwnerHostel, "id" | "createdAt"> & { ownerId?: string }, hostelId?: string) {
   const targetId = hostelId ?? ownerHostels[0]?.id;
 
   if (!targetId) {
@@ -127,6 +164,16 @@ export function updateOwnerHostel(hostel: Omit<OwnerHostel, "id" | "createdAt">,
 
     return updatedHostel;
   });
+
+  // Update persisted hostels too
+  if (updatedHostel) {
+    const persisted = loadPersistedHostels();
+    const persistedIndex = persisted.findIndex((h) => h.id === targetId);
+    if (persistedIndex !== -1) {
+      persisted[persistedIndex] = updatedHostel;
+      persistHostels(persisted);
+    }
+  }
 
   return updatedHostel ? cloneHostel(updatedHostel) : saveOwnerHostel(hostel);
 }

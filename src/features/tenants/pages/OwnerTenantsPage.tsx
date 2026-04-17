@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, UserCheck, UserRound, Wallet } from "lucide-react";
+import { Plus, Search, UserCheck, UserRound, Wallet } from "lucide-react";
 import { TenantFormModal } from "@/features/tenants/components/TenantFormModal";
 import { TenantRoomAssignmentModal } from "@/features/tenants/components/TenantRoomAssignmentModal";
+import { PaymentCollectionModal } from "@/components/ui/payment-collection-modal";
 import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
-import { SkeletonBlock } from "@/components/ui/skeleton";
+import { SkeletonBlock, SkeletonStatCard, SkeletonTableRow } from "@/components/ui/skeleton";
 import { assignTenantRoom } from "@/services/tenants/tenants.service";
 import { useHostelContext } from "@/store/hostel-context";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
@@ -16,7 +17,6 @@ import {
   ownerHeroCardClass,
   ownerMetricToneClass,
   ownerPanelClass,
-  ownerStatusClass,
   ownerSubtlePanelClass,
   ownerTableHeadClass,
 } from "@/components/ui/owner-theme";
@@ -36,11 +36,14 @@ function OwnerTenantsPageContent() {
   const searchParams = useSearchParams();
   const { currentHostel, currentHostelId, loading: hostelLoading, isSwitching } = useHostelContext();
   const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants(currentHostelId);
+
   const [createdTenants, setCreatedTenants] = useState<TenantRecord[]>([]);
   const [tenantOverrides, setTenantOverrides] = useState<Record<string, TenantRecord>>({});
   const [modalOpen, setModalOpen] = useState(false);
   const [assignmentOpen, setAssignmentOpen] = useState(false);
   const [pendingTenant, setPendingTenant] = useState<TenantRecord | null>(null);
+  const [paymentTenant, setPaymentTenant] = useState<TenantRecord | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const preferredAssignment = useMemo(
     () => ({
@@ -64,66 +67,65 @@ function OwnerTenantsPageContent() {
     setModalOpen(searchParams.get("action") === "add-tenant");
   }, [searchParams]);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setModalOpen(false);
     router.replace("/owner/tenants");
-  };
+  }, [router]);
 
   const tenants = useMemo(() => {
-    if (!currentHostel) {
-      return [];
-    }
+    if (!currentHostel) return [];
 
     const visibleTenantIds = new Set<string>();
-    const scopedExistingTenants = allTenants
-      .filter((tenant) => tenant.assignment?.hostelId === currentHostel.id)
-      .map((tenant) => {
-        visibleTenantIds.add(tenant.tenantId);
-        return tenantOverrides[tenant.tenantId] ?? tenant;
+    const scopedExisting = allTenants
+      .filter((t) => t.assignment?.hostelId === currentHostel.id)
+      .map((t) => {
+        visibleTenantIds.add(t.tenantId);
+        return tenantOverrides[t.tenantId] ?? t;
       });
 
-    const scopedCreatedTenants = createdTenants.filter((tenant) => {
-      if (visibleTenantIds.has(tenant.tenantId)) {
-        return false;
-      }
-
-      return tenant.assignment?.hostelId === currentHostel.id || !tenant.assignment;
+    const scopedCreated = createdTenants.filter((t) => {
+      if (visibleTenantIds.has(t.tenantId)) return false;
+      return t.assignment?.hostelId === currentHostel.id || !t.assignment;
     });
 
-    return [...scopedCreatedTenants, ...scopedExistingTenants];
+    return [...scopedCreated, ...scopedExisting];
   }, [allTenants, createdTenants, currentHostel, tenantOverrides]);
 
-  const directoryQuery = (searchParams.get("q") ?? "").trim().toLowerCase();
   const filteredTenants = useMemo(() => {
-    if (!directoryQuery) {
-      return tenants;
-    }
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return tenants;
 
-    return tenants.filter((tenant) => {
-      const floor = tenant.assignment?.floorNumber ? String(tenant.assignment.floorNumber) : "";
-      const room = tenant.assignment?.roomNumber?.toLowerCase() ?? "";
-
+    return tenants.filter((t) => {
+      const floor = t.assignment?.floorNumber ? String(t.assignment.floorNumber) : "";
+      const room = t.assignment?.roomNumber?.toLowerCase() ?? "";
       return (
-        tenant.tenantId.toLowerCase().includes(directoryQuery) ||
-        tenant.fullName.toLowerCase().includes(directoryQuery) ||
-        tenant.phone.toLowerCase().includes(directoryQuery) ||
-        tenant.email.toLowerCase().includes(directoryQuery) ||
-        floor.includes(directoryQuery) ||
-        room.includes(directoryQuery)
+        t.tenantId.toLowerCase().includes(query) ||
+        t.fullName.toLowerCase().includes(query) ||
+        t.phone.toLowerCase().includes(query) ||
+        t.email.toLowerCase().includes(query) ||
+        floor.includes(query) ||
+        room.includes(query)
       );
     });
-  }, [directoryQuery, tenants]);
+  }, [searchQuery, tenants]);
 
-  const dueSoonCount = filteredTenants.filter((tenant) => {
-    const tone = getDueStatus(tenant.nextDueDate).tone;
+  const dueSoonCount = filteredTenants.filter((t) => {
+    const tone = getDueStatus(t.nextDueDate).tone;
     return tone === "orange" || tone === "yellow";
   }).length;
-  const overdueCount = filteredTenants.filter((tenant) => getDueStatus(tenant.nextDueDate).tone === "red").length;
-  const assignedCount = filteredTenants.filter((tenant) => tenant.assignment).length;
+  const overdueCount = filteredTenants.filter((t) => getDueStatus(t.nextDueDate).tone === "red").length;
+  const assignedCount = filteredTenants.filter((t) => t.assignment).length;
 
-  if (hostelLoading || tenantLoading) {
-    return <LoadingState />;
-  }
+  const openPayment = useCallback((tenant: TenantRecord) => {
+    setPaymentTenant(tenant);
+  }, []);
+
+  const handlePaymentSuccess = useCallback((updated: TenantRecord) => {
+    setTenantOverrides((prev) => ({ ...prev, [updated.tenantId]: updated }));
+    setPaymentTenant(null);
+  }, []);
+
+  if (hostelLoading || tenantLoading) return <LoadingState />;
 
   if (!currentHostel) {
     return (
@@ -141,6 +143,7 @@ function OwnerTenantsPageContent() {
 
   return (
     <div className={`space-y-3 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
+      {/* ── Mobile view ── */}
       <section className="space-y-3 lg:hidden">
         <Card className={`${ownerHeroCardClass} rounded-[24px] p-4`}>
           <div className="flex items-start justify-between gap-3">
@@ -159,6 +162,17 @@ function OwnerTenantsPageContent() {
             </button>
           </div>
 
+          {/* Mobile search */}
+          <div className="relative mt-3">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search name, room, contact…"
+              className="w-full rounded-2xl border border-white/12 bg-white/[0.05] px-3 py-2.5 pl-9 text-sm text-white outline-none placeholder:text-white/30 focus:border-white/20"
+            />
+          </div>
+
           <div className="mt-3 grid grid-cols-2 gap-2.5">
             <SummaryTile icon={UserRound} label="Total" value={String(filteredTenants.length)} />
             <SummaryTile icon={Wallet} label="Due soon" value={String(dueSoonCount)} tone="warning" />
@@ -170,19 +184,19 @@ function OwnerTenantsPageContent() {
         <div className="space-y-2.5">
           {filteredTenants.length === 0 ? (
             <Card className={`${ownerPanelClass} rounded-[24px] p-4 text-center text-sm text-[color:var(--fg-secondary)]`}>
-              {directoryQuery ? "No tenants matched that search." : "No tenants yet for this hostel."}
+              {searchQuery ? "No tenants matched that search." : "No tenants yet for this hostel."}
             </Card>
           ) : (
             filteredTenants.map((tenant) => {
               const status = getDueStatus(tenant.nextDueDate);
+              const isPaid = status.tone !== "red" && status.tone !== "orange" && status.tone !== "yellow";
 
               return (
-                <Link
+                <div
                   key={tenant.tenantId}
-                  href={`/owner/tenants/${tenant.tenantId}`}
                   className={`grid grid-cols-[1fr_auto] gap-3 rounded-[22px] px-3 py-3 ${ownerPanelClass}`}
                 >
-                  <div className="min-w-0">
+                  <Link href={`/owner/tenants/${tenant.tenantId}`} className="min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="truncate text-sm font-semibold text-white">{tenant.fullName}</p>
                       <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--fg-secondary)]">
@@ -196,15 +210,20 @@ function OwnerTenantsPageContent() {
                       <MiniInfo label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} />
                       <MiniInfo label="Next Due" value={formatPaymentDate(tenant.nextDueDate)} />
                     </div>
-                  </div>
-                  <span className={statusClass(status.tone)}>{status.label}</span>
-                </Link>
+                  </Link>
+                  <ActionButton
+                    tone={status.tone}
+                    isPaid={isPaid}
+                    onClick={() => openPayment(tenant)}
+                  />
+                </div>
               );
             })
           )}
         </div>
       </section>
 
+      {/* ── Desktop view ── */}
       <section className="hidden space-y-4 lg:block">
         <div className={`${ownerHeroCardClass} px-4 py-4 sm:px-5`}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -230,7 +249,21 @@ function OwnerTenantsPageContent() {
           <SummaryTile icon={UserCheck} label="Assigned" value={String(assignedCount)} tone="success" />
         </div>
 
-        <Card className={`overflow-hidden ${ownerPanelClass}`}>
+        <Card className={`rounded-[24px] ${ownerPanelClass}`}>
+          {/* Search bar */}
+          <div className="border-b border-[color:var(--border)] px-4 py-3">
+            <div className="relative max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name, room, contact…"
+                className="w-full rounded-2xl border border-white/12 bg-white/[0.05] px-3 py-2.5 pl-9 text-[13px] text-white outline-none placeholder:text-white/30 focus:border-white/20 focus:bg-white/[0.07]"
+              />
+            </div>
+          </div>
+
+          {/* Table — horizontal scroll only, page handles vertical */}
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-[13px]">
               <thead className={ownerTableHeadClass}>
@@ -241,22 +274,23 @@ function OwnerTenantsPageContent() {
                   <th className="px-3 py-2.5 font-medium">Room</th>
                   <th className="px-3 py-2.5 font-medium">Monthly Rent</th>
                   <th className="px-3 py-2.5 font-medium">Next Due</th>
-                  <th className="px-3 py-2.5 font-medium">Status</th>
+                  <th className="px-3 py-2.5 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredTenants.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-3 py-7 text-center text-sm text-[color:var(--fg-secondary)]">
-                      {directoryQuery ? "No tenants matched that search." : "No tenants created yet for this hostel."}
+                      {searchQuery ? "No tenants matched that search." : "No tenants created yet for this hostel."}
                     </td>
                   </tr>
                 ) : (
                   filteredTenants.map((tenant) => {
                     const status = getDueStatus(tenant.nextDueDate);
+                    const isPaid = status.tone !== "red" && status.tone !== "orange" && status.tone !== "yellow";
 
                     return (
-                      <tr key={tenant.tenantId} className="border-t border-[color:var(--border)]">
+                      <tr key={tenant.tenantId} className="border-t border-[color:var(--border)] transition hover:bg-white/[0.02]">
                         <td className="px-3 py-3 font-semibold text-[color:var(--fg-secondary)]">{tenant.tenantId}</td>
                         <td className="px-3 py-3">
                           <Link href={`/owner/tenants/${tenant.tenantId}`} className="font-medium text-white transition hover:text-[var(--accent-electric)]">
@@ -273,7 +307,11 @@ function OwnerTenantsPageContent() {
                         <td className="px-3 py-3 text-[color:var(--fg-primary)]">Rs {tenant.monthlyRent.toLocaleString("en-IN")}</td>
                         <td className="px-3 py-3 text-[color:var(--fg-primary)]">{formatPaymentDate(tenant.nextDueDate)}</td>
                         <td className="px-3 py-3">
-                          <span className={statusClass(status.tone)}>{status.label}</span>
+                          <ActionButton
+                            tone={status.tone}
+                            isPaid={isPaid}
+                            onClick={() => openPayment(tenant)}
+                          />
                         </td>
                       </tr>
                     );
@@ -285,6 +323,7 @@ function OwnerTenantsPageContent() {
         </Card>
       </section>
 
+      {/* Modals */}
       <TenantFormModal
         open={modalOpen}
         onClose={closeModal}
@@ -292,16 +331,8 @@ function OwnerTenantsPageContent() {
         propertyType={currentHostel.type}
         onCreated={async (tenant) => {
           if (shouldAutoAssign) {
-            const {
-              hostelId,
-              floorNumber,
-              roomNumber,
-              sharingType,
-            } = preferredAssignment as {
-              hostelId: string;
-              floorNumber: number;
-              roomNumber: string;
-              sharingType: string;
+            const { hostelId, floorNumber, roomNumber, sharingType } = preferredAssignment as {
+              hostelId: string; floorNumber: number; roomNumber: string; sharingType: string;
             };
 
             const { response, data } = await assignTenantRoom({
@@ -314,31 +345,17 @@ function OwnerTenantsPageContent() {
             });
 
             if (response.ok) {
-              const assignedTenant = data.tenant as TenantRecord | undefined;
-
-              if (!assignedTenant) {
-                closeModal();
-                return;
-              }
-
-              setCreatedTenants((current) => {
-                const filtered = current.filter((item) => item.tenantId !== assignedTenant.tenantId);
-                return [assignedTenant, ...filtered];
-              });
-              setTenantOverrides((current) => ({
-                ...current,
-                [assignedTenant.tenantId]: assignedTenant,
-              }));
-              setPendingTenant(assignedTenant);
+              const assigned = data.tenant as TenantRecord | undefined;
+              if (!assigned) { closeModal(); return; }
+              setCreatedTenants((prev) => [assigned, ...prev.filter((t) => t.tenantId !== assigned.tenantId)]);
+              setTenantOverrides((prev) => ({ ...prev, [assigned.tenantId]: assigned }));
+              setPendingTenant(assigned);
               closeModal();
               return;
             }
           }
 
-          setCreatedTenants((current) => {
-            const filtered = current.filter((item) => item.tenantId !== tenant.tenantId);
-            return [tenant, ...filtered];
-          });
+          setCreatedTenants((prev) => [tenant, ...prev.filter((t) => t.tenantId !== tenant.tenantId)]);
           setPendingTenant(tenant);
           setAssignmentOpen(true);
           closeModal();
@@ -350,22 +367,61 @@ function OwnerTenantsPageContent() {
         tenant={pendingTenant}
         onClose={() => setAssignmentOpen(false)}
         onAssigned={(tenant) => {
-          setCreatedTenants((current) => {
-            const filtered = current.filter((item) => item.tenantId !== tenant.tenantId);
-            return [tenant, ...filtered];
-          });
-          setTenantOverrides((current) => ({
-            ...current,
-            [tenant.tenantId]: tenant,
-          }));
+          setCreatedTenants((prev) => [tenant, ...prev.filter((t) => t.tenantId !== tenant.tenantId)]);
+          setTenantOverrides((prev) => ({ ...prev, [tenant.tenantId]: tenant }));
           setPendingTenant(tenant);
           setAssignmentOpen(false);
         }}
         preferredAssignment={preferredAssignment}
       />
+
+      <PaymentCollectionModal
+        open={!!paymentTenant}
+        tenant={paymentTenant}
+        onClose={() => setPaymentTenant(null)}
+        onSuccess={handlePaymentSuccess}
+      />
     </div>
   );
 }
+
+// ── Action button ──────────────────────────────────────────────────────────
+
+function ActionButton({
+  tone,
+  isPaid,
+  onClick,
+}: {
+  tone: string;
+  isPaid: boolean;
+  onClick: () => void;
+}) {
+  if (isPaid) {
+    return (
+      <span className="inline-flex h-8 items-center rounded-xl border border-[#4ade80]/40 bg-[#22c55e]/10 px-3 text-[11px] font-semibold text-[#4ade80]">
+        Paid
+      </span>
+    );
+  }
+
+  const isOverdue = tone === "red";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex h-8 items-center rounded-xl px-3 text-[11px] font-semibold transition hover:brightness-110 active:scale-95 ${
+        isOverdue
+          ? "border border-[#ef4444]/50 bg-[#dc2626]/15 text-[#ff7070] hover:bg-[#dc2626]/25"
+          : "border border-[#facc15]/50 bg-[#facc15]/10 text-[#fde047] hover:bg-[#facc15]/20"
+      }`}
+    >
+      {isOverdue ? "Pay Now" : "Collect Rent"}
+    </button>
+  );
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
 
 function SummaryTile({
   icon: Icon,
@@ -378,10 +434,8 @@ function SummaryTile({
   value: string;
   tone?: "default" | "warning" | "danger" | "success";
 }) {
-  const toneClass = ownerMetricToneClass(tone);
-
   return (
-    <Card className={`rounded-[20px] border p-3 ${toneClass}`}>
+    <Card className={`rounded-[20px] border p-3 ${ownerMetricToneClass(tone)}`}>
       <div className="flex items-start gap-2.5">
         <div className="rounded-xl bg-black/10 p-2 ring-1 ring-white/8">
           <Icon className="h-4 w-4" />
@@ -406,25 +460,52 @@ function MiniInfo({ label, value }: { label: string; value: string }) {
 
 function LoadingState() {
   return (
-    <div className="space-y-3">
-      <div className={`rounded-[24px] p-4 ${ownerPanelClass}`}>
-        <ProcessingPill label="Preparing tenant directory" />
-        <SkeletonBlock className="mt-4 h-24 rounded-[20px]" />
-      </div>
-      <div className="grid grid-cols-2 gap-2.5">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <SkeletonBlock key={index} className="h-20 rounded-[20px]" />
+    <div className="space-y-4">
+      {/* Header skeleton */}
+      <SkeletonBlock className="h-24 rounded-[28px]" />
+
+      {/* Stat cards skeleton */}
+      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <SkeletonStatCard key={i} />
         ))}
       </div>
-      <div className="space-y-2.5">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <SkeletonBlock key={index} className="h-28 rounded-[22px]" />
-        ))}
+
+      {/* Table skeleton */}
+      <div className="overflow-hidden rounded-[24px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(30,41,59,0.94)_0%,rgba(15,23,42,0.98)_100%)]">
+        {/* Search bar skeleton */}
+        <div className="border-b border-white/[0.06] px-4 py-3">
+          <SkeletonBlock className="h-10 w-64 rounded-2xl" />
+        </div>
+
+        {/* Table rows */}
+        <div className="hidden lg:block">
+          <table className="min-w-full">
+            <thead>
+              <tr className="bg-white/[0.03]">
+                {["Tenant ID", "Name", "Contact", "Room", "Monthly Rent", "Next Due", "Action"].map((col) => (
+                  <th key={col} className="px-3 py-2.5 text-left">
+                    <SkeletonBlock className="h-3 w-16 rounded-full" />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <SkeletonTableRow key={i} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile skeleton rows */}
+        <div className="space-y-2.5 p-4 lg:hidden">
+          <ProcessingPill label="Preparing tenant directory" />
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonBlock key={i} className="h-28 rounded-[22px]" />
+          ))}
+        </div>
       </div>
     </div>
   );
-}
-
-function statusClass(tone: string) {
-  return ownerStatusClass(tone);
 }

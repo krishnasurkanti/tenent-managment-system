@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BarChart3, Building2, LayoutDashboard, LogOut, Settings, Wallet } from "lucide-react";
 import { logoutAdmin } from "@/services/auth/auth.service";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { cn } from "@/utils/cn";
 
 const nav = [
@@ -69,7 +70,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </header>
           <main className="smart-scroll-area smart-scroll-fade pr-1">
             <div className="app-page-frame flex min-h-full flex-col">
-              {children}
+              <ErrorBoundary message="This page failed to load. Try refreshing.">
+                {children}
+              </ErrorBoundary>
             </div>
           </main>
         </div>

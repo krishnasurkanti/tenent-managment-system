@@ -86,6 +86,8 @@ export async function POST(request: Request) {
   const idNumber = String(formData.get("idNumber") ?? "").trim();
   const emergencyContact = String(formData.get("emergencyContact") ?? "").trim();
   const idImage = formData.get("idImage");
+  const billingCycleRaw = String(formData.get("billingCycle") ?? "monthly").trim();
+  const billingCycle = (billingCycleRaw === "daily" || billingCycleRaw === "weekly") ? billingCycleRaw : "monthly" as const;
 
   const hasValidIdImage = idImage instanceof File && !!idImage.name;
 
@@ -180,7 +182,8 @@ export async function POST(request: Request) {
     rentPaid,
     paidOnDate,
     billingAnchorDate: paidOnDate,
-    nextDueDate: calculateNextDueDate(paidOnDate, paidOnDate),
+    nextDueDate: calculateNextDueDate(paidOnDate, paidOnDate, billingCycle),
+    billingCycle,
     idNumber: idNumber || "PENDING-ID",
     emergencyContact: emergencyContact || "To be added later",
     idImageName: hasValidIdImage ? idImage.name : "pending-id-upload",

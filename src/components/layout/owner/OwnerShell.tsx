@@ -1,13 +1,20 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { usePathname } from "next/navigation";
 import { OwnerMobileNav } from "@/components/layout/owner/OwnerMobileNav";
 import { OwnerSidebar } from "@/components/layout/owner/OwnerSidebar";
 import { OwnerTopbar } from "@/components/layout/owner/OwnerTopbar";
 import { HostelContextProvider } from "@/store/hostel-context";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 export function OwnerShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  if (pathname === "/owner/login") {
+    return <>{children}</>;
+  }
 
   return (
     <HostelContextProvider>
@@ -25,7 +32,11 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
             </div>
           </Suspense>
           <main className="smart-scroll-area smart-scroll-fade animate-[float-up_var(--motion-large)_var(--ease-enter)] px-2.5 py-2 sm:px-3 sm:py-2.5 md:px-4 md:py-3 xl:px-5 xl:py-4">
-            <div className="app-page-frame mx-auto flex w-full max-w-[1380px] flex-1 flex-col">{children}</div>
+            <div className="app-page-frame mx-auto flex w-full max-w-[1380px] flex-1 flex-col">
+              <ErrorBoundary message="This page failed to load. Try refreshing.">
+                {children}
+              </ErrorBoundary>
+            </div>
           </main>
         </div>
         <OwnerMobileNav />

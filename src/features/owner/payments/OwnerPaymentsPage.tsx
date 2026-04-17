@@ -20,6 +20,7 @@ import {
   ownerTableHeadClass,
 } from "@/components/ui/owner-theme";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
+import { useToast } from "@/components/ui/toast";
 import { TenantRentSearch } from "@/features/payments/components/TenantRentSearch";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
 import { uploadTenantPaymentProof } from "@/services/tenants/tenants.service";
@@ -41,6 +42,7 @@ export default function OwnerPaymentsPage() {
   const [savingProof, setSavingProof] = useState(false);
   const [proofError, setProofError] = useState("");
   const [mounted, setMounted] = useState(false);
+  const { toast } = useToast();
 
   const tenants = useMemo(() => {
     if (!currentHostel) {
@@ -278,7 +280,9 @@ export default function OwnerPaymentsPage() {
             const { response, data } = await uploadTenantPaymentProof(payload);
 
             if (!response.ok) {
-              setProofError(data.message ?? "Unable to save payment proof.");
+              const msg = data.message ?? "Unable to save payment proof.";
+              setProofError(msg);
+              toast(msg, "error");
               setSavingProof(false);
               return;
             }
@@ -286,7 +290,9 @@ export default function OwnerPaymentsPage() {
             const updatedTenant = data.tenant as TenantRecord | undefined;
 
             if (!updatedTenant) {
-              setProofError("Payment proof saved, but the updated tenant record was missing from the response.");
+              const msg = "Payment proof saved, but the updated tenant record was missing from the response.";
+              setProofError(msg);
+              toast(msg, "warning");
               setSavingProof(false);
               return;
             }
@@ -295,6 +301,7 @@ export default function OwnerPaymentsPage() {
               ...current,
               [updatedTenant.tenantId]: updatedTenant,
             }));
+            toast("Payment proof saved.", "success");
             setSavingProof(false);
             setProofModal(null);
             setProofImage(null);
@@ -503,7 +510,7 @@ function AddProofModal({
             </label>
           </div>
 
-          {error ? <p className="mt-2.5 text-xs text-[color:var(--error)]">{error}</p> : null}
+          {error ? <p role="alert" className="mt-2.5 text-xs text-[color:var(--error)]">{error}</p> : null}
           {saving ? <ProcessingPill label="Saving proof and syncing payment record" className="mt-3" /> : null}
 
           <div className="mt-3 flex flex-col-reverse gap-2 border-t border-[var(--border)] pt-3 sm:flex-row sm:justify-end">
