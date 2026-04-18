@@ -177,25 +177,21 @@ export function TenantRoomAssignmentModal({
       style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
     >
       <div className="flex min-h-full w-full max-w-4xl items-start justify-center sm:items-center">
-        <Card className="flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-5 shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:max-h-[min(90dvh,820px)] sm:p-7">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <div className="inline-flex items-center rounded-full border border-white/12 bg-white/[0.06] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-                Room Assignment
+        <Card className="w-full overflow-visible border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-5 shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:p-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/50">Room Assignment</span>
+              <div className="flex gap-2">
+                <StepPill label="1. Location" active={step === 1} done={step > 1} />
+                <StepPill label="2. Review" active={step === 2} done={false} />
               </div>
-              <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">Assign room to tenant</h2>
             </div>
             <Button variant="ghost" disabled={saving} className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            <StepPill label="1. Location" active={step === 1} done={step > 1} />
-            <StepPill label="2. Review" active={step === 2} done={false} />
-          </div>
-
-          <div className="mt-4 flex-1 overflow-y-auto overscroll-contain pr-1">
+          <div>
             {loading ? (
               <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-5">
                 <ProcessingPill label="Loading room inventory" />
@@ -439,7 +435,7 @@ export function TenantRoomAssignmentModal({
 
           {saving ? <ProcessingPill label="Assigning room and updating tenant record" className="mt-4" /> : null}
 
-          <div className="mt-5 flex flex-col-reverse gap-3 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
+          <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Button variant="secondary" disabled={saving} onClick={step === 1 ? onClose : () => { setStep(1); setError(""); }} className="rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white">
               {step === 1 ? "Later" : "Back"}
             </Button>
