@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { useToast } from "@/components/ui/toast";
-import { recordTenantPayment, uploadTenantPaymentProof } from "@/services/tenants/tenants.service";
+import { recordTenantPayment } from "@/services/tenants/tenants.service";
 import { formatPaymentDate } from "@/utils/payment";
 import type { TenantRecord } from "@/types/tenant";
 
@@ -24,7 +24,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [query, setQuery] = useState("");
   const [selectedTenantId, setSelectedTenantId] = useState("");
   const [amount, setAmount] = useState("");
@@ -32,7 +32,6 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "online">("cash");
   const [txnId, setTxnId] = useState("");
   const [proofFile, setProofFile] = useState<File | null>(null);
-  const [pendingProofPaymentId, setPendingProofPaymentId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -102,7 +101,6 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
     setPaymentMethod("cash");
     setTxnId("");
     setProofFile(null);
-    setPendingProofPaymentId("");
     setError("");
     setMessage("");
     setSubmitting(false);
@@ -163,58 +161,8 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
       return;
     }
 
-    const updatedTenant = data.tenant as TenantRecord;
-    const latestPayment = updatedTenant.paymentHistory[0];
-
-    setPendingProofPaymentId(latestPayment?.paymentId ?? "");
-    const successMsg = proofFile
-      ? `Payment recorded for ${selectedTenant.fullName}.`
-      : `Payment recorded for ${selectedTenant.fullName}. Add proof now or do it later from Payments.`;
-    setMessage(successMsg);
+    const successMsg = `Payment recorded for ${selectedTenant.fullName}.`;
     toast(successMsg, "success");
-    setSubmitting(false);
-    setStep(3);
-    router.refresh();
-  };
-
-  const handleUploadProof = async () => {
-    if (!selectedTenant || !pendingProofPaymentId) {
-      setError("Payment record not found for proof upload.");
-      return;
-    }
-
-    if (submitting) {
-      return;
-    }
-
-    if (!txnId.trim() && !proofFile) {
-      setError("Cannot save proof yet. Add a transaction id or upload a receipt, screenshot, or proof file.");
-      return;
-    }
-
-    setSubmitting(true);
-    setError("");
-
-    const payload = new FormData();
-    payload.append("tenantId", selectedTenant.tenantId);
-    payload.append("paymentId", pendingProofPaymentId);
-    payload.append("txnId", txnId);
-
-    if (proofFile) {
-      payload.append("proofImage", proofFile);
-    }
-
-    const { response, data } = await uploadTenantPaymentProof(payload);
-
-    if (!response.ok) {
-      const msg = data.message ?? "Unable to save payment proof.";
-      setError(msg);
-      toast(msg, "error");
-      setSubmitting(false);
-      return;
-    }
-
-    toast("Payment proof saved.", "success");
     setSubmitting(false);
     router.refresh();
     resetState();
@@ -269,8 +217,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
               <div className="mt-6 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-1">
                 <div className="flex flex-wrap gap-2">
                   <StepPill label="1. Tenant" active={step === 1} done={step > 1} />
-                  <StepPill label="2. Payment" active={step === 2} done={step > 2} />
-                  <StepPill label="3. Proof" active={step === 3} done={false} />
+                  <StepPill label="2. Payment" active={step === 2} done={false} />
                 </div>
 
                 {step === 1 ? (
@@ -399,28 +346,9 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
                         className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#38bdf8]/40"
                       />
                     </label>
-                  </div>
-                ) : null}
 
-                {step === 3 ? (
-                  <div className="space-y-4">
-                    <div className="rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-4 text-sm text-green-400">
-                      Payment recorded. Add proof now or skip and do it later from the payments page.
-                    </div>
-
-                    <label className="block">
-                      <span className="mb-2 block text-sm font-medium text-white/70">Txn ID (Optional)</span>
-                      <input
-                        value={txnId}
-                        onChange={(event) => setTxnId(event.target.value.toUpperCase())}
-                        disabled={submitting}
-                        placeholder="Enter transaction ID"
-                        className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#38bdf8]/40"
-                      />
-                    </label>
-
-                    <label className="block">
-                      <span className="mb-2 block text-sm font-medium text-white/70">Proof File (Optional)</span>
+                    <label className="block md:col-span-2">
+                      <span className="mb-2 block text-sm font-medium text-white/70">Proof / Receipt (Optional)</span>
                       <div className="relative">
                         <ImageUp className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                         <input
@@ -428,7 +356,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
                           onChange={(event) => setProofFile(event.target.files?.[0] ?? null)}
                           accept="image/*,.pdf"
                           disabled={submitting}
-                          className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none file:mr-3 file:rounded-xl file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white"
+                          className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none file:mr-3 file:rounded-xl file:border-0 file:bg-blue-600/80 file:px-3 file:py-1.5 file:text-xs file:text-white"
                         />
                       </div>
                       {proofFile ? <p className="mt-1 text-xs text-white/40">{proofFile.name}</p> : null}
@@ -438,36 +366,24 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
               </div>
 
               {error ? <p role="alert" className="mt-4 text-sm text-red-400">{error}</p> : null}
-              {message ? <p role="status" className="mt-4 text-sm text-emerald-400">{message}</p> : null}
 
               <div className="mt-6 flex flex-col-reverse gap-3 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
                 <Button
                   variant="secondary"
-                  onClick={step === 1 ? resetState : () => setStep((current) => (current === 3 ? 2 : 1))}
+                  onClick={step === 1 ? resetState : () => setStep(1)}
                   disabled={submitting}
                   className="rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white"
                 >
                   {step === 1 ? "Cancel" : "Back"}
                 </Button>
 
-                {step === 3 && pendingProofPaymentId ? (
-                  <>
-                    <Button variant="secondary" disabled={submitting} onClick={resetState} className="rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white">
-                      Add Later
-                    </Button>
-                    <Button disabled={submitting} onClick={handleUploadProof} className={`rounded-2xl bg-blue-600 text-white hover:text-white ${submitting ? "opacity-70" : ""}`}>
-                      {submitting ? "Saving..." : "Save Proof"}
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    disabled={submitting}
-                    onClick={step === 1 ? handleNextFromTenant : handleRecordPayment}
-                    className={`rounded-2xl bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] text-white hover:text-white hover:brightness-110 ${submitting ? "opacity-70" : ""}`}
-                  >
-                    {step === 1 ? "Next: Payment" : submitting ? "Recording..." : "Record Payment"}
-                  </Button>
-                )}
+                <Button
+                  disabled={submitting}
+                  onClick={step === 1 ? handleNextFromTenant : handleRecordPayment}
+                  className={`rounded-2xl bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] text-white hover:text-white hover:brightness-110 ${submitting ? "opacity-70" : ""}`}
+                >
+                  {step === 1 ? "Next: Payment" : submitting ? "Recording..." : "Record Payment"}
+                </Button>
               </div>
             </Card>
           </div>
