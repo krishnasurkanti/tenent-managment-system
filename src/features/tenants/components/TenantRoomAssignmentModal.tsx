@@ -171,18 +171,21 @@ export function TenantRoomAssignmentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/40 px-4 py-4 animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:py-8">
-      <div className="flex min-h-full items-center justify-center">
-        <Card className="flex max-h-[min(92vh,920px)] w-full max-w-4xl flex-col overflow-hidden rounded-[var(--radius-card)] border-slate-100 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.14)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:p-8">
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-contain px-4 py-4 animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:py-8"
+      style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
+    >
+      <div className="flex min-h-full w-full max-w-4xl items-start justify-center sm:items-center">
+        <Card className="flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-6 shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:max-h-[min(92dvh,900px)] sm:p-8">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2">
-              <div className="inline-flex items-center rounded-[var(--radius-pill)] bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-700">
+              <div className="inline-flex items-center rounded-full border border-white/12 bg-white/[0.06] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
                 Room Assignment
               </div>
-              <h2 className="text-3xl font-semibold tracking-tight text-slate-900">Assign room to tenant</h2>
-              <p className="max-w-2xl text-sm leading-6 text-slate-500">Finish this in two small steps: choose location, then confirm move-in and review.</p>
+              <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Assign room to tenant</h2>
+              <p className="max-w-2xl text-sm leading-6 text-white/45">Finish this in two small steps: choose location, then confirm move-in and review.</p>
             </div>
-            <Button variant="ghost" disabled={saving} className="rounded-[var(--radius-pill)] px-3 text-slate-500 hover:bg-white/70" onClick={onClose}>
+            <Button variant="ghost" disabled={saving} className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -192,9 +195,9 @@ export function TenantRoomAssignmentModal({
             <StepPill label="2. Review" active={step === 2} done={false} />
           </div>
 
-          <div className="mt-8 flex-1 overflow-visible pr-1">
+          <div className="mt-6 flex-1 overflow-y-auto overscroll-contain pr-1">
             {loading ? (
-              <div className="space-y-3 rounded-[var(--radius-card)] border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-5 shadow-sm">
+              <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-5">
                 <ProcessingPill label="Loading room inventory" />
                 <SkeletonBlock className="h-16" />
                 <div className="grid gap-3 lg:grid-cols-3">
@@ -204,12 +207,12 @@ export function TenantRoomAssignmentModal({
                 </div>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-5">
                 {step === 1 ? (
-                    <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5 shadow-sm">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                     <div className="mb-4 flex items-center gap-2">
-                      <Info className="h-4 w-4 text-[var(--accent)]" />
-                      <p className="text-sm font-medium text-slate-700">Choose where the tenant will stay</p>
+                      <Info className="h-4 w-4 text-sky-400" />
+                      <p className="text-sm font-medium text-white/70">Choose where the tenant will stay</p>
                     </div>
                     <div className="grid gap-4 lg:grid-cols-3">
                       <Field label="Hostel" icon={Building2} helper="Select the hostel property">
@@ -282,7 +285,7 @@ export function TenantRoomAssignmentModal({
 
                       <Field label={isResidence ? "Unit" : "Room"} icon={DoorClosed} helper={isResidence ? "Only vacant units are shown" : "Only rooms with available beds are shown"}>
                         <div className="relative">
-                          <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition focus-within:border-blue-300">
+                          <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 transition focus-within:border-[#38bdf8]/40">
                             <input
                               value={roomNumber}
                               onChange={(event) => {
@@ -297,13 +300,13 @@ export function TenantRoomAssignmentModal({
                               }}
                               disabled={saving}
                               placeholder={isResidence ? "Enter unit number" : "Enter room number"}
-                              className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                              className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/25"
                             />
                             <button
                               type="button"
                               disabled={saving}
                               onClick={() => setRoomMenuOpen((value) => !value)}
-                              className="shrink-0 text-slate-500 transition hover:text-slate-700"
+                              className="shrink-0 text-white/40 transition hover:text-white/70"
                               aria-label="Toggle room list"
                             >
                               <ChevronDown className={`h-4 w-4 transition ${roomMenuOpen ? "rotate-180" : ""}`} />
@@ -312,7 +315,7 @@ export function TenantRoomAssignmentModal({
 
                           {roomMenuOpen ? (
                             <div
-                              className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 max-h-44 overflow-y-scroll rounded-2xl border border-slate-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.12)]"
+                              className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 max-h-44 overflow-y-scroll rounded-2xl border border-white/12 bg-[#0d1525] shadow-[0_18px_40px_rgba(0,0,0,0.5)]"
                               style={{ scrollbarGutter: "stable" }}
                             >
                               {filteredRooms.length > 0 ? (
@@ -330,7 +333,7 @@ export function TenantRoomAssignmentModal({
                                       }}
                                       className={cn(
                                         "flex w-full items-center justify-between px-4 py-3 text-left text-sm transition",
-                                        selected ? "bg-indigo-600 text-white" : "text-slate-700 hover:bg-blue-50",
+                                        selected ? "bg-blue-600 text-white" : "text-white/70 hover:bg-white/[0.08]",
                                       )}
                                     >
                                       <span>{room.roomNumber} ({room.occupied}/{room.capacity})</span>
@@ -339,7 +342,7 @@ export function TenantRoomAssignmentModal({
                                   );
                                 })
                               ) : (
-                                <div className="px-4 py-3 text-sm text-slate-500">No matching available rooms</div>
+                                <div className="px-4 py-3 text-sm text-white/40">No matching available rooms</div>
                               )}
                             </div>
                           ) : null}
@@ -353,7 +356,7 @@ export function TenantRoomAssignmentModal({
                             value={bedId}
                             onChange={(event) => setBedId(event.target.value)}
                             disabled={saving}
-                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm transition focus:border-blue-300 focus:bg-white"
+                            className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none transition focus:border-[#38bdf8]/40 [color-scheme:dark]"
                           >
                             <option value="">Select bed</option>
                             {(selectedRoom.beds ?? [])
@@ -379,7 +382,7 @@ export function TenantRoomAssignmentModal({
                             value={sharingType}
                             onChange={(event) => setSharingType(event.target.value)}
                             disabled={saving}
-                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm transition focus:border-blue-300 focus:bg-white"
+                            className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none transition focus:border-[#38bdf8]/40 placeholder:text-white/25"
                             placeholder="Ex: Double Sharing"
                           />
                         </Field>
@@ -391,20 +394,20 @@ export function TenantRoomAssignmentModal({
                           value={moveInDate}
                           onChange={(event) => setMoveInDate(event.target.value)}
                           disabled={saving}
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pl-11 text-sm text-slate-700 outline-none shadow-sm transition focus:border-blue-300 focus:bg-white"
+                          className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none transition focus:border-[#38bdf8]/40 [color-scheme:dark]"
                         />
                       </Field>
                     </div>
 
                     {selectedRoom ? (
-                      <div className="grid gap-4 rounded-3xl border border-slate-100 bg-slate-50 p-5 md:grid-cols-3">
+                      <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 md:grid-cols-3">
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">{isResidence ? "Selected Unit" : "Selected Room"}</p>
-                          <p className="mt-2 text-lg font-semibold text-slate-900">{isResidence ? "Unit" : "Room"} {selectedRoom.roomNumber}</p>
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">{isResidence ? "Selected Unit" : "Selected Room"}</p>
+                          <p className="mt-2 text-lg font-semibold text-white">{isResidence ? "Unit" : "Room"} {selectedRoom.roomNumber}</p>
                         </div>
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Availability</p>
-                          <p className="mt-2 text-lg font-semibold text-slate-900">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">Availability</p>
+                          <p className="mt-2 text-lg font-semibold text-white">
                             {isResidence
                               ? availableBeds > 0 ? "Vacant" : "Occupied"
                               : `${availableBeds} of ${selectedRoom.capacity} bed${selectedRoom.capacity === 1 ? "" : "s"} available`
@@ -413,8 +416,8 @@ export function TenantRoomAssignmentModal({
                         </div>
                         {!isResidence ? (
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Sharing</p>
-                            <p className="mt-2 text-lg font-semibold text-slate-900">{selectedRoom.sharingType || sharingType || "Not set"}</p>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">Sharing</p>
+                            <p className="mt-2 text-lg font-semibold text-white">{selectedRoom.sharingType || sharingType || "Not set"}</p>
                           </div>
                         ) : null}
                       </div>
@@ -425,15 +428,15 @@ export function TenantRoomAssignmentModal({
             )}
           </div>
 
-          {error ? <p className="mt-4 rounded-2xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-4 py-3 text-sm text-[color:var(--error)]">{error}</p> : null}
+          {error ? <p className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</p> : null}
 
-          {saving ? <ProcessingPill label="Assigning room and updating tenant record" className="mt-6" /> : null}
+          {saving ? <ProcessingPill label="Assigning room and updating tenant record" className="mt-4" /> : null}
 
-          <div className="mt-6 flex flex-col-reverse gap-3 border-t border-white/70 pt-4 sm:flex-row sm:justify-end">
-            <Button variant="secondary" disabled={saving} onClick={step === 1 ? onClose : () => setStep(1)} className="rounded-2xl border-slate-200 bg-white">
+          <div className="mt-5 flex flex-col-reverse gap-3 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
+            <Button variant="secondary" disabled={saving} onClick={step === 1 ? onClose : () => setStep(1)} className="rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white">
               {step === 1 ? "Later" : "Back"}
             </Button>
-            <Button disabled={saving} loading={saving && step === 2} onClick={step === 1 ? handleNext : handleAssign} className="rounded-2xl">
+            <Button disabled={saving} loading={saving && step === 2} onClick={step === 1 ? handleNext : handleAssign} className="rounded-2xl bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] text-white hover:text-white hover:brightness-110">
               {step === 1 ? "Next: Review" : saving ? "Assigning..." : isResidence ? "Assign Unit" : "Assign Room"}
             </Button>
           </div>
@@ -488,7 +491,7 @@ function CustomDropdown({
         type="button"
         onClick={onToggle}
         disabled={disabled}
-        className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm text-slate-700 shadow-sm transition hover:border-blue-200"
+        className="flex w-full items-center justify-between rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 text-left text-sm text-white transition hover:border-white/20"
       >
         <span className="truncate">{value}</span>
         <ChevronDown className={`h-4 w-4 shrink-0 transition ${open ? "rotate-180" : ""}`} />
@@ -496,7 +499,7 @@ function CustomDropdown({
 
       {open ? (
         <div
-          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 max-h-44 overflow-y-scroll rounded-2xl border border-slate-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.12)]"
+          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 max-h-44 overflow-y-scroll rounded-2xl border border-white/12 bg-[#0d1525] shadow-[0_18px_40px_rgba(0,0,0,0.5)]"
           style={{ scrollbarGutter: "stable" }}
         >
           {children}
@@ -523,12 +526,12 @@ function DropdownOption({
       onClick={onClick}
       className={cn(
         "flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition",
-        selected ? "bg-indigo-600 text-white" : "text-slate-700 hover:bg-blue-50",
+        selected ? "bg-blue-600 text-white" : "text-white/70 hover:bg-white/[0.08]",
       )}
     >
       <div className="min-w-0">
         <p className="truncate font-medium">{primary}</p>
-        {secondary ? <p className={cn("truncate text-xs", selected ? "text-white/80" : "text-slate-500")}>{secondary}</p> : null}
+        {secondary ? <p className={cn("truncate text-xs", selected ? "text-white/80" : "text-white/40")}>{secondary}</p> : null}
       </div>
       {selected ? <Check className="h-4 w-4 shrink-0" /> : null}
     </button>
@@ -548,10 +551,10 @@ function StepPill({
     <span
       className={`inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-semibold ${
         active
-          ? "bg-blue-600 text-white"
+          ? "border border-blue-500/60 bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)]"
           : done
-            ? "border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white shadow-[0_10px_22px_rgba(34,197,94,0.24)]"
-            : "bg-blue-50 text-indigo-700"
+            ? "border border-emerald-500/40 bg-emerald-500/15 text-emerald-400"
+            : "border border-white/12 bg-white/[0.05] text-white/40"
       }`}
     >
       {label}
@@ -572,11 +575,11 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-semibold text-slate-800">{label}</span>
-      {helper ? <span className="mb-3 block text-xs text-slate-500">{helper}</span> : null}
+      <span className="mb-2 block text-sm font-medium text-white/70">{label}</span>
+      {helper ? <span className="mb-3 block text-xs text-white/40">{helper}</span> : null}
       <div className="relative">
-        <Icon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <div className="[&_input]:pl-11 [&_select]:pl-11 [&_select]:text-slate-700 [&_select]:transition [&_select]:focus:border-blue-300 [&_select]:focus:bg-white [&_select]:border-slate-200 [&_select]:bg-white">{children}</div>
+        <Icon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+        <div className="[&_input]:pl-11 [&_select]:pl-11">{children}</div>
       </div>
     </label>
   );
