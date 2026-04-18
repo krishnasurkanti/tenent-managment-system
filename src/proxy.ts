@@ -16,7 +16,7 @@ export function proxy(request: NextRequest) {
   const ownerAuthenticated = role === "owner" || role === "staff";
   const adminAuthenticated = role === "super_admin";
 
-  if (pathname.startsWith("/owner") || pathname.startsWith("/api/owner-hostel") || pathname.startsWith("/api/owner-hostels") || pathname.startsWith("/api/tenants") || pathname.startsWith("/api/owner-billing")) {
+  if ((pathname.startsWith("/owner") && pathname !== "/owner/login") || pathname.startsWith("/api/owner-hostel") || pathname.startsWith("/api/owner-hostels") || pathname.startsWith("/api/tenants") || pathname.startsWith("/api/owner-billing")) {
     if (!ownerAuthenticated) {
       if (pathname.startsWith("/api/")) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
