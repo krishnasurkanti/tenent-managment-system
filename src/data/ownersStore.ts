@@ -5,6 +5,9 @@ import crypto from "node:crypto";
 const DATA_DIR = path.join(process.cwd(), ".data");
 const OWNERS_FILE = path.join(DATA_DIR, "owners.json");
 
+export type OwnerPlan = "starter" | "pro" | "founding";
+export type OwnerPlanStatus = "trial" | "active" | "due_soon" | "overdue";
+
 export type Owner = {
   id: string;
   name: string;
@@ -14,6 +17,9 @@ export type Owner = {
   passwordHash: string;
   status: "active" | "inactive";
   createdAt: string;
+  plan: OwnerPlan;
+  planStatus: OwnerPlanStatus;
+  trialStartDate: string;
 };
 
 type OwnersState = { owners: Owner[] };
@@ -28,6 +34,9 @@ const DEMO_OWNERS: Owner[] = [
     passwordHash: "cca5c7eadec305cbad3346bfe52c7db7:af55da9919528bc49d8e30849c73227bad489917892cb7214493b42a21923c53889f02edd9756c8e692b3f6fac1bb7dd03cd3d89653eb034e7ff570ea9646d2b",
     status: "active",
     createdAt: "2026-01-10T09:00:00.000Z",
+    plan: "founding",
+    planStatus: "active",
+    trialStartDate: "2026-01-10T09:00:00.000Z",
   },
   {
     id: "owner-demo-002",
@@ -38,6 +47,9 @@ const DEMO_OWNERS: Owner[] = [
     passwordHash: "de4c8230db0c58e2206d6c263709459a:da8fb3745451ec991a4ea6518517fdfd4978eb172b3dc5164da3c99398f8899235334772db15f5b7850d5c695f012304e2667c8723f2ff4e913f517922cc4cdd",
     status: "active",
     createdAt: "2026-02-03T11:30:00.000Z",
+    plan: "pro",
+    planStatus: "due_soon",
+    trialStartDate: "2026-02-03T11:30:00.000Z",
   },
   {
     id: "owner-demo-003",
@@ -48,6 +60,9 @@ const DEMO_OWNERS: Owner[] = [
     passwordHash: "8a3b23aa46bf2f92ace74b227c7c9815:82d5152e19bbc6c62673401a37fb82b30308fb89c5956e79ebb0ab2ee759692bc9d44a263f186b3c4b902137ad7e466a47b9a2f2074072e9faff516f9cc15b2a",
     status: "inactive",
     createdAt: "2026-03-15T14:00:00.000Z",
+    plan: "starter",
+    planStatus: "trial",
+    trialStartDate: "2026-03-15T14:00:00.000Z",
   },
 ];
 
@@ -116,6 +131,7 @@ export function createOwner(params: {
     throw new Error("Email already registered.");
   }
 
+  const now = new Date().toISOString();
   const owner: Owner = {
     id: `owner-${crypto.randomBytes(8).toString("hex")}`,
     name,
@@ -124,7 +140,10 @@ export function createOwner(params: {
     plainPassword: password,
     passwordHash: hashPassword(password),
     status: "active",
-    createdAt: new Date().toISOString(),
+    createdAt: now,
+    plan: "starter",
+    planStatus: "trial",
+    trialStartDate: now,
   };
 
   state.owners.push(owner);

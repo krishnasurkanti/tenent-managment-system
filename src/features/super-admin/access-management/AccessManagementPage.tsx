@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, Suspense, useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Eye, EyeOff, Mail, Plus, ServerCog, Trash2, User, Users, X } from "lucide-react";
+import { Eye, EyeOff, LogOut, Mail, Plus, ServerCog, Trash2, User, Users, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type OwnerRow = {
@@ -12,6 +12,9 @@ type OwnerRow = {
   plainPassword: string;
   status: "active" | "inactive";
   createdAt: string;
+  plan: "starter" | "pro" | "founding";
+  planStatus: "trial" | "active" | "due_soon" | "overdue";
+  trialStartDate: string;
 };
 
 type OwnerStats = {
@@ -20,6 +23,56 @@ type OwnerStats = {
   hostelNames: string[];
   tenantCount: number;
 };
+
+function trialDaysLeft(trialStartDate: string) {
+  const start = new Date(trialStartDate);
+  const end = new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  return Math.max(0, Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
+function PlanBadge({ owner }: { owner: OwnerRow }) {
+  if (owner.plan === "founding") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-[#f7bf53]/15 px-2.5 py-1 text-xs font-semibold text-[#f7bf53]">
+        ★ Gold Founder
+      </span>
+    );
+  }
+
+  if (owner.planStatus === "trial") {
+    const left = trialDaysLeft(owner.trialStartDate);
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 px-2.5 py-1 text-xs font-semibold text-blue-300">
+        {left}d Trial
+      </span>
+    );
+  }
+
+  if (owner.planStatus === "due_soon") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-300">
+        Due Soon
+      </span>
+    );
+  }
+
+  if (owner.planStatus === "overdue") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-red-400">
+        Overdue
+      </span>
+    );
+  }
+
+  // active / paid
+  const planLabel = owner.plan === "pro" ? "Pro · Paid" : "Starter · Paid";
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-green-400">
+      {planLabel}
+    </span>
+  );
+}
 
 export default function AccessManagementPage() {
   return (
@@ -75,6 +128,12 @@ function AccessManagementPageInner() {
     void load();
   }, [load]);
 
+  const handleLogout = async () => {
+    await fetch("/api/auth/admin/logout", { method: "POST" });
+    router.replace("/super-admin/login");
+    router.refresh();
+  };
+
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (saving) return;
@@ -99,10 +158,7 @@ function AccessManagementPageInner() {
         return;
       }
 
-      setName("");
-      setEmail("");
-      setUsername("");
-      setPassword("");
+      setName(""); setEmail(""); setUsername(""); setPassword("");
       setFormOpen(false);
       await load();
     } catch {
@@ -116,7 +172,6 @@ function AccessManagementPageInner() {
     if (togglingId) return;
     setTogglingId(owner.id);
     const nextStatus = owner.status === "active" ? "inactive" : "active";
-
     try {
       await fetch(`/api/super-admin/owners/${owner.id}`, {
         method: "PATCH",
@@ -154,33 +209,33 @@ function AccessManagementPageInner() {
       <header className="border-b border-white/10 bg-[#0d1526] px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => router.push("/super-admin/dashboard")}
-              className="inline-flex items-center justify-center rounded-xl border border-white/12 bg-white/[0.04] p-2 text-white/60 hover:text-white"
-              aria-label="Back to dashboard"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#ffcc4d_0%,#d9941c_100%)] text-[#18120a]">
-                <ServerCog className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-white">Access Management</p>
-                <p className="text-xs text-white/40">Super Admin</p>
-              </div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#ffcc4d_0%,#d9941c_100%)] text-[#18120a]">
+              <ServerCog className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">Super Admin</p>
+              <p className="text-xs text-white/40">Control Panel</p>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => { setFormOpen(true); setFormError(""); }}
-            className="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] px-4 py-2.5 text-sm font-semibold text-[#1b1207] shadow-[0_14px_28px_rgba(240,175,47,0.24)]"
-          >
-            <Plus className="h-4 w-4" />
-            Add New Owner
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => { setFormOpen(true); setFormError(""); }}
+              className="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] px-4 py-2.5 text-sm font-semibold text-[#1b1207] shadow-[0_14px_28px_rgba(240,175,47,0.24)]"
+            >
+              <Plus className="h-4 w-4" />
+              Add Owner
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/70 hover:text-white"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -298,12 +353,19 @@ function AccessManagementPageInner() {
           </div>
         ) : null}
 
-        {/* Summary bar */}
-        <div className="mb-5">
-          <h1 className="text-xl font-semibold text-white">Owner Accounts</h1>
-          <p className="mt-0.5 text-sm text-white/40">
-            {owners.length} owner{owners.length !== 1 ? "s" : ""} registered. Share credentials offline.
-          </p>
+        {/* Summary */}
+        <div className="mb-5 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-white">Owner Accounts</h1>
+            <p className="mt-0.5 text-sm text-white/40">
+              {owners.length} owner{owners.length !== 1 ? "s" : ""} registered. Share credentials offline.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5">
+            <Users className="h-4 w-4 text-[#f7bf53]" />
+            <span className="text-sm font-semibold text-white">{owners.length}</span>
+            <span className="text-xs text-white/40">owners</span>
+          </div>
         </div>
 
         {/* Table */}
@@ -317,7 +379,7 @@ function AccessManagementPageInner() {
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-12 text-center">
             <Users className="mx-auto h-9 w-9 text-white/20" />
             <p className="mt-3 text-sm font-medium text-white/40">No owner accounts yet.</p>
-            <p className="mt-1 text-xs text-white/25">Create an owner account and share credentials offline.</p>
+            <p className="mt-1 text-xs text-white/25">Click Add Owner to create an account and share credentials offline.</p>
           </div>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-white/10">
@@ -328,6 +390,7 @@ function AccessManagementPageInner() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Email</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Username</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Password</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Plan</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Hostels</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Tenants</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Status</th>
@@ -359,11 +422,14 @@ function AccessManagementPageInner() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
+                        <PlanBadge owner={owner} />
+                      </td>
+                      <td className="px-4 py-3">
                         {ownerStats && ownerStats.hostelCount > 0 ? (
                           <div>
                             <span className="text-white">{ownerStats.hostelCount}</span>
                             {ownerStats.hostelNames.length > 0 ? (
-                              <p className="mt-0.5 text-[11px] text-white/35 leading-tight">
+                              <p className="mt-0.5 text-[11px] leading-tight text-white/35">
                                 {ownerStats.hostelNames.join(", ")}
                               </p>
                             ) : null}

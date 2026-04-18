@@ -17,6 +17,9 @@ export async function GET(request: NextRequest) {
     plainPassword: o.plainPassword,
     status: o.status,
     createdAt: o.createdAt,
+    plan: o.plan ?? "starter",
+    planStatus: o.planStatus ?? "trial",
+    trialStartDate: o.trialStartDate ?? o.createdAt,
   }));
 
   return NextResponse.json({ owners });

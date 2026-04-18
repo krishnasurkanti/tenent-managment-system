@@ -1,1 +1,5 @@
-export { default } from "@/features/super-admin/dashboard/SuperAdminDashboardPage";
+import { redirect } from "next/navigation";
+
+export default function SuperAdminDashboardPage() {
+  redirect("/super-admin/access-management");
+}
