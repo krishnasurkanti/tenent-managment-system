@@ -61,7 +61,7 @@ export default function OwnerNotificationsPage() {
           <p className="mt-0.5 text-xs text-[color:var(--fg-secondary)]">No overdue or urgent alerts right now.</p>
         </Card>
       ) : (
-        <div className="grid gap-2.5 xl:grid-cols-2">
+        <div className="grid gap-2.5 sm:grid-cols-2">
           {alerts.map(({ tenant, status }) => (
             <div key={tenant.tenantId} className="rounded-[10px] border border-white/10 bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] px-3 py-3 shadow-[0_10px_24px_rgba(2,6,23,0.18)]">
               <div className="flex items-start gap-2.5">

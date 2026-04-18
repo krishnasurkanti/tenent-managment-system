@@ -44,7 +44,7 @@ export default async function OwnerSettingsPage() {
         </div>
       </div>
 
-      <div className="grid gap-2 xl:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         <InfoTile icon={Building2} label="Hostel Name" value={hostel?.hostelName ?? "Not created yet"} />
         <InfoTile icon={MapPin} label="Address" value={hostel?.address ?? "Not created yet"} />
         <InfoTile icon={Layers3} label="Total Floors" value={String(hostel?.floors.length ?? 0)} />
@@ -52,7 +52,7 @@ export default async function OwnerSettingsPage() {
 
       <Card className={`rounded-[10px] p-3 ${ownerPanelClass}`}>
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Demo preferences</p>
-        <div className="grid gap-2 xl:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {preferenceCards.map((item) => (
             <div key={item.label} className={`rounded-[8px] px-3 py-2.5 ${ownerSubtlePanelClass}`}>
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--fg-secondary)]">{item.label}</p>
