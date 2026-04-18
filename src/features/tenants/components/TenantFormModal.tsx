@@ -480,7 +480,7 @@ export function TenantFormModal({
                             value={form.paidOnDate}
                             onChange={(event) => setForm({ ...form, paidOnDate: event.target.value })}
                             disabled={submitting}
-                            className="w-full bg-transparent text-[13px] text-slate-700 outline-none"
+                            className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
                           />
                         </InputShell>
                       </Field>

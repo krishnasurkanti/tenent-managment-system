@@ -447,7 +447,7 @@ export function TenantRoomAssignmentModal({
           {saving ? <ProcessingPill label="Assigning room and updating tenant record" className="mt-4" /> : null}
 
           <div className="mt-5 flex flex-col-reverse gap-3 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
-            <Button variant="secondary" disabled={saving} onClick={step === 1 ? onClose : () => setStep(1)} className="rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white">
+            <Button variant="secondary" disabled={saving} onClick={step === 1 ? onClose : () => { setStep(1); setError(""); }} className="rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white">
               {step === 1 ? "Later" : "Back"}
             </Button>
             <Button disabled={saving} loading={saving && step === 2} onClick={step === 1 ? handleNext : handleAssign} className="rounded-2xl bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] text-white hover:text-white hover:brightness-110">
