@@ -45,6 +45,7 @@ export function TenantRoomAssignmentModal({
   const [hostelMenuOpen, setHostelMenuOpen] = useState(false);
   const [floorMenuOpen, setFloorMenuOpen] = useState(false);
   const [roomMenuOpen, setRoomMenuOpen] = useState(false);
+  const [bedMenuOpen, setBedMenuOpen] = useState(false);
 
   useLockBodyScroll(open);
 
@@ -130,6 +131,7 @@ export function TenantRoomAssignmentModal({
       propertyType: selectedHostel?.type,
       bedId: isResidence ? undefined : bedId,
       bedLabel: isResidence ? undefined : selectedRoom?.beds?.find((bed) => bed.id === bedId)?.label,
+      tenantRecord: tenant,
     });
 
     if (!response.ok) {
@@ -176,26 +178,25 @@ export function TenantRoomAssignmentModal({
       style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
     >
       <div className="flex min-h-full w-full max-w-4xl items-start justify-center sm:items-center">
-        <Card className="flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-6 shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:max-h-[min(92dvh,900px)] sm:p-8">
+        <Card className="flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-5 shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:max-h-[min(90dvh,820px)] sm:p-7">
           <div className="flex items-start justify-between gap-4">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="inline-flex items-center rounded-full border border-white/12 bg-white/[0.06] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
                 Room Assignment
               </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Assign room to tenant</h2>
-              <p className="max-w-2xl text-sm leading-6 text-white/45">Finish this in two small steps: choose location, then confirm move-in and review.</p>
+              <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">Assign room to tenant</h2>
             </div>
             <Button variant="ghost" disabled={saving} className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             <StepPill label="1. Location" active={step === 1} done={step > 1} />
             <StepPill label="2. Review" active={step === 2} done={false} />
           </div>
 
-          <div className="mt-6 flex-1 overflow-y-auto overscroll-contain pr-1">
+          <div className="mt-4 flex-1 overflow-y-auto overscroll-contain pr-1">
             {loading ? (
               <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-5">
                 <ProcessingPill label="Loading room inventory" />
@@ -209,12 +210,12 @@ export function TenantRoomAssignmentModal({
             ) : (
               <div className="space-y-5">
                 {step === 1 ? (
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                    <div className="mb-4 flex items-center gap-2">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <div className="mb-3 flex items-center gap-2">
                       <Info className="h-4 w-4 text-sky-400" />
                       <p className="text-sm font-medium text-white/70">Choose where the tenant will stay</p>
                     </div>
-                    <div className="grid gap-4 lg:grid-cols-3">
+                    <div className="grid gap-3 lg:grid-cols-3">
                       <Field label="Hostel" icon={Building2} helper="Select the hostel property">
                         <CustomDropdown
                           open={hostelMenuOpen}
@@ -224,6 +225,7 @@ export function TenantRoomAssignmentModal({
                             setHostelMenuOpen((value) => !value);
                             setFloorMenuOpen(false);
                             setRoomMenuOpen(false);
+                            setBedMenuOpen(false);
                           }}
                           value={hostels.find((hostel) => hostel.hostelId === hostelId)?.hostelName ?? "Select hostel"}
                         >
@@ -259,6 +261,7 @@ export function TenantRoomAssignmentModal({
                             setFloorMenuOpen((value) => !value);
                             setHostelMenuOpen(false);
                             setRoomMenuOpen(false);
+                            setBedMenuOpen(false);
                           }}
                           value={floorNumber ? `Floor ${floorNumber}` : "Select floor"}
                         >
@@ -352,21 +355,32 @@ export function TenantRoomAssignmentModal({
                     {!isResidence && selectedRoom ? (
                       <div className="mt-4 max-w-sm">
                         <Field label="Bed" icon={Users2} helper="Choose an available bed inside this room">
-                          <select
-                            value={bedId}
-                            onChange={(event) => setBedId(event.target.value)}
+                          <CustomDropdown
+                            open={bedMenuOpen}
                             disabled={saving}
-                            className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none transition focus:border-[#38bdf8]/40 [color-scheme:dark]"
+                            onToggle={() => {
+                              if (saving) return;
+                              setBedMenuOpen((v) => !v);
+                              setHostelMenuOpen(false);
+                              setFloorMenuOpen(false);
+                              setRoomMenuOpen(false);
+                            }}
+                            value={(selectedRoom.beds ?? []).find((b) => b.id === bedId)?.label ?? "Select bed"}
                           >
-                            <option value="">Select bed</option>
                             {(selectedRoom.beds ?? [])
                               .filter((bed) => !bed.occupied)
                               .map((bed) => (
-                                <option key={bed.id} value={bed.id}>
-                                  {bed.label}
-                                </option>
+                                <DropdownOption
+                                  key={bed.id}
+                                  selected={bed.id === bedId}
+                                  primary={bed.label}
+                                  onClick={() => {
+                                    setBedId(bed.id);
+                                    setBedMenuOpen(false);
+                                  }}
+                                />
                               ))}
-                          </select>
+                          </CustomDropdown>
                         </Field>
                       </div>
                     ) : null}
@@ -575,8 +589,8 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-medium text-white/70">{label}</span>
-      {helper ? <span className="mb-3 block text-xs text-white/40">{helper}</span> : null}
+      <span className="mb-1 block text-sm font-medium text-white/70">{label}</span>
+      {helper ? <span className="mb-2 block text-xs text-white/35">{helper}</span> : null}
       <div className="relative">
         <Icon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
         <div className="[&_input]:pl-11 [&_select]:pl-11">{children}</div>

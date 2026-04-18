@@ -38,6 +38,7 @@ export async function assignTenantRoom(payload: {
   propertyType?: "PG" | "RESIDENCE";
   bedId?: string;
   bedLabel?: string;
+  tenantRecord?: TenantRecord;
 }) {
   const response = await fetch("/api/tenants/assign-room", {
     method: "POST",

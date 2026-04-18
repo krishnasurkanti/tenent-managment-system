@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     propertyType?: "PG" | "RESIDENCE";
     bedId?: string;
     bedLabel?: string;
+    tenantRecord?: Record<string, unknown>;
   };
 
   if (!body.tenantId || !body.hostelId || !body.floorNumber || !body.roomNumber || !body.sharingType || !body.moveInDate) {
@@ -68,16 +69,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ tenant: updatePayload.tenant });
     }
 
-    const tenant = assignTenantRoom(body.tenantId, {
-      hostelId: body.hostelId,
-      floorNumber: body.floorNumber,
-      roomNumber: body.roomNumber,
-      sharingType: body.sharingType,
-      moveInDate: body.moveInDate,
-      propertyType: body.propertyType,
-      bedId: body.bedId,
-      bedLabel: body.bedLabel,
-    });
+    let tenant: unknown;
+    try {
+      tenant = assignTenantRoom(body.tenantId, {
+        hostelId: body.hostelId,
+        floorNumber: body.floorNumber,
+        roomNumber: body.roomNumber,
+        sharingType: body.sharingType,
+        moveInDate: body.moveInDate,
+        propertyType: body.propertyType,
+        bedId: body.bedId,
+        bedLabel: body.bedLabel,
+      });
+    } catch {
+      // in-memory store empty (Vercel cold start) — apply assignment to client snapshot
+      if (!body.tenantRecord) {
+        return NextResponse.json({ message: "Tenant not found." }, { status: 404 });
+      }
+      tenant = {
+        ...body.tenantRecord,
+        assignment: {
+          hostelId: body.hostelId,
+          floorNumber: body.floorNumber,
+          roomNumber: body.roomNumber,
+          sharingType: body.sharingType ?? "",
+          moveInDate: body.moveInDate,
+          propertyType: body.propertyType,
+          bedId: body.bedId,
+          bedLabel: body.bedLabel,
+        },
+      };
+    }
 
     return NextResponse.json({ tenant });
   } catch (error) {

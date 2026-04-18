@@ -26,7 +26,7 @@ export async function backendFetch(
 export function setAuthCookies(response: Response, accessToken: string, refreshToken?: string) {
   const secure = process.env.NODE_ENV === "production";
   const cookieHeaders = [
-    `${ACCESS_TOKEN_COOKIE_NAME}=${encodeURIComponent(accessToken)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=900${secure ? "; Secure" : ""}`,
+    `${ACCESS_TOKEN_COOKIE_NAME}=${encodeURIComponent(accessToken)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}${secure ? "; Secure" : ""}`,
     refreshToken
       ? `${REFRESH_TOKEN_COOKIE_NAME}=${encodeURIComponent(refreshToken)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}${secure ? "; Secure" : ""}`
       : `${REFRESH_TOKEN_COOKIE_NAME}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${secure ? "; Secure" : ""}`,
