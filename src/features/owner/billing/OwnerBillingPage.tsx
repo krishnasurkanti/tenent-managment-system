@@ -234,7 +234,12 @@ export default function OwnerBillingPage() {
                 ))}
               </ul>
 
-              <div className="mt-auto pt-6">
+              <div className="mt-5 rounded-[8px] border border-[#4ade80]/20 bg-[#22c55e]/[0.07] px-3 py-2.5">
+                <p className="text-[11px] font-semibold text-[#4ade80]">Daily &amp; weekly always free</p>
+                <p className="mt-0.5 text-[10px] leading-4 text-[#4ade80]/60">Per-night and 7-day stays — fully managed, never counted.</p>
+              </div>
+
+              <div className="mt-auto pt-4">
                 {isTrial ? (
                   <button
                     type="button"
@@ -308,7 +313,12 @@ export default function OwnerBillingPage() {
             ))}
           </ul>
 
-          <div className="mt-auto pt-6">
+          <div className="mt-5 rounded-[8px] border border-[#4ade80]/20 bg-[#22c55e]/[0.07] px-3 py-2.5">
+            <p className="text-[11px] font-semibold text-[#4ade80]">Daily &amp; weekly always free</p>
+            <p className="mt-0.5 text-[10px] leading-4 text-[#4ade80]/60">Per-night and 7-day stays — fully managed, never counted.</p>
+          </div>
+
+          <div className="mt-auto pt-4">
             <button
               type="button"
               className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-[linear-gradient(90deg,#b45309_0%,#d97706_50%,#f59e0b_100%)] text-sm font-semibold text-white shadow-[0_14px_32px_rgba(245,158,11,0.3)] transition hover:brightness-110"
