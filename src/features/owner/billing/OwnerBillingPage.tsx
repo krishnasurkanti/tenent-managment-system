@@ -197,13 +197,20 @@ export default function OwnerBillingPage() {
                 </div>
               ) : null}
 
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-white/80">{plan.title}</p>
-                {isCurrentPlan && !isTrial ? (
-                  <span className="rounded-full border border-[#4ade80] bg-[#22c55e]/20 px-2.5 py-1 text-[10px] font-semibold uppercase text-[#4ade80]">
-                    Current
-                  </span>
-                ) : null}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-white/80">{plan.title}</p>
+                  {isCurrentPlan && !isTrial ? (
+                    <span className="mt-1.5 inline-block rounded-full border border-[#4ade80] bg-[#22c55e]/20 px-2.5 py-1 text-[10px] font-semibold uppercase text-[#4ade80]">
+                      Current
+                    </span>
+                  ) : null}
+                </div>
+                <TenantUsageBar
+                  used={data.monthlyTenantCount}
+                  limit={plan.tenantLimit}
+                  isCurrent={isCurrentPlan && !isTrial}
+                />
               </div>
 
               {/* Pricing */}
@@ -275,11 +282,18 @@ export default function OwnerBillingPage() {
             Founding
           </div>
 
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#fbbf24]">Founding</p>
-            <span className="rounded-full border border-[#f59e0b]/50 bg-[#f59e0b]/15 px-2.5 py-1 text-[10px] font-semibold uppercase text-[#fbbf24]">
-              {FOUNDING_SLOTS_REMAINING} left
-            </span>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#fbbf24]">Founding</p>
+              <span className="mt-1.5 inline-block rounded-full border border-[#f59e0b]/50 bg-[#f59e0b]/15 px-2.5 py-1 text-[10px] font-semibold uppercase text-[#fbbf24]">
+                {FOUNDING_SLOTS_REMAINING} slots left
+              </span>
+            </div>
+            <TenantUsageBar
+              used={data.monthlyTenantCount}
+              limit={200}
+              isCurrent={data.plan === "founding"}
+            />
           </div>
 
           <div className="mt-5">
@@ -359,6 +373,43 @@ export default function OwnerBillingPage() {
           </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+function TenantUsageBar({
+  used,
+  limit,
+  isCurrent,
+}: {
+  used: number;
+  limit: number;
+  isCurrent: boolean;
+}) {
+  const pct = Math.min(100, Math.round((used / limit) * 100));
+  const left = limit - used;
+  const isFull = used >= limit;
+  const isWarning = pct >= 80;
+
+  const barColor = isFull ? "bg-red-500" : isWarning ? "bg-amber-400" : "bg-[#4ade80]";
+
+  return (
+    <div className="w-[100px] flex-shrink-0">
+      <div className="mb-1 flex items-center justify-between gap-1">
+        <span className="text-[9px] font-medium text-white/45">{used}/{limit}</span>
+        {isFull ? (
+          <span className="text-[9px] font-bold text-red-400">Full</span>
+        ) : (
+          <span className="text-[9px] text-white/35">{left} left</span>
+        )}
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
+      </div>
+      <p className="mt-1 text-[8.5px] text-white/25">10+ day stays count</p>
+      {isFull && isCurrent ? (
+        <p className="mt-1 text-[9px] font-semibold text-amber-400">↑ Upgrade for more</p>
+      ) : null}
     </div>
   );
 }
