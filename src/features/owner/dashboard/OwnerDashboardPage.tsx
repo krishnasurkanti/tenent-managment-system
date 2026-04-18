@@ -349,32 +349,97 @@ function EmptyState({
 
 function LoadingState() {
   return (
-    <div className="grid gap-3">
-      <Card className="p-4">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-3 py-1.5 text-[11px] font-semibold text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]">
-          <span className="h-2 w-2 rounded-full bg-[var(--cta)] animate-[status-breathe_1s_ease-in-out_infinite]" />
-          Preparing dashboard
+    <div className="space-y-3">
+      {/* mobile skeleton — mirrors lg:hidden section */}
+      <section className="grid gap-3 lg:hidden">
+        <Card className="p-4">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-3 py-1.5 text-[11px] font-semibold text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]">
+            <span className="h-2 w-2 rounded-full bg-[var(--cta)] animate-[status-breathe_1s_ease-in-out_infinite]" />
+            Preparing dashboard
+          </div>
+          <SkeletonBlock className="mt-4 h-4 w-24" />
+          <SkeletonBlock className="mt-2 h-7 w-44" />
+          <div className="mt-4 grid grid-cols-[1.5fr_1fr] gap-2.5">
+            <SkeletonBlock className="h-24 rounded-[8px]" />
+            <div className="grid gap-2">
+              <SkeletonBlock className="h-11 rounded-[6px]" />
+              <SkeletonBlock className="h-11 rounded-[6px]" />
+            </div>
+          </div>
+          <div className="mt-2.5 grid grid-cols-3 gap-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SkeletonBlock key={i} className="h-12 rounded-[6px]" />
+            ))}
+          </div>
+        </Card>
+        <div className="grid grid-cols-2 gap-2.5">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonBlock key={i} className="h-20 rounded-[8px]" />
+          ))}
         </div>
-        <SkeletonBlock className="mt-4 h-4 w-24" />
-        <SkeletonBlock className="mt-2 h-7 w-44" />
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <SkeletonBlock className="h-24 rounded-[8px]" />
-          <div className="grid gap-2">
-            <SkeletonBlock className="h-11 rounded-[6px]" />
-            <SkeletonBlock className="h-11 rounded-[6px]" />
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonBlock key={i} className="h-16 rounded-[8px]" />
+          ))}
+        </div>
+      </section>
+
+      {/* desktop skeleton — mirrors hidden lg:grid section */}
+      <section className="hidden gap-3 lg:grid">
+        {/* hero banner */}
+        <div className="rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-5">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-3 py-1.5 text-[11px] font-semibold text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]">
+            <span className="h-2 w-2 rounded-full bg-[var(--cta)] animate-[status-breathe_1s_ease-in-out_infinite]" />
+            Preparing dashboard
+          </div>
+          <div className="mt-4 grid items-start gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+            <div>
+              <SkeletonBlock className="h-3 w-20" />
+              <SkeletonBlock className="mt-2 h-10 w-72" />
+              <SkeletonBlock className="mt-2 h-3.5 w-56" />
+              <SkeletonBlock className="mt-3 h-6 w-64 rounded-full" />
+              <div className="mt-4 grid grid-cols-4 gap-2.5">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <SkeletonBlock key={i} className="h-20 rounded-[8px]" />
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <SkeletonBlock key={i} className="h-20 rounded-[8px]" />
+              ))}
+            </div>
           </div>
         </div>
-      </Card>
-      <div className="grid grid-cols-2 gap-2.5">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <SkeletonBlock key={index} className="h-24 rounded-[8px]" />
-        ))}
-      </div>
-      <div className="space-y-2">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <SkeletonBlock key={index} className="h-16 rounded-[8px]" />
-        ))}
-      </div>
+
+        {/* table + snapshot row */}
+        <div className="grid gap-3 xl:grid-cols-[1.15fr_0.85fr]">
+          <Card className="overflow-hidden">
+            <div className="border-b border-[color:var(--border)] px-4 py-2.5">
+              <SkeletonBlock className="h-4 w-32" />
+            </div>
+            <div className="space-y-0">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex gap-4 border-t border-[color:var(--border)] px-4 py-3">
+                  <SkeletonBlock className="h-4 w-28" />
+                  <SkeletonBlock className="h-4 w-12" />
+                  <SkeletonBlock className="h-4 w-20" />
+                  <SkeletonBlock className="h-4 w-16" />
+                  <SkeletonBlock className="ml-auto h-4 w-16" />
+                </div>
+              ))}
+            </div>
+          </Card>
+          <Card className="p-3.5">
+            <SkeletonBlock className="h-3 w-28" />
+            <div className="mt-2.5 space-y-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SkeletonBlock key={i} className="h-10 rounded-[8px]" />
+              ))}
+            </div>
+          </Card>
+        </div>
+      </section>
     </div>
   );
 }
