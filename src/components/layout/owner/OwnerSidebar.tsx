@@ -12,7 +12,6 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
-  SquarePlus,
   Users,
 } from "lucide-react";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
@@ -30,7 +29,6 @@ const workspaceNavigation = [
 
 const hostelNavigation = [
   { name: "Edit Hostel", href: "/owner/create-hostel?mode=edit", icon: PencilLine },
-  { name: "Add Another Hostel", href: "/owner/create-hostel", icon: SquarePlus },
   { name: "Settings", href: "/owner/settings", icon: Settings },
 ];
 

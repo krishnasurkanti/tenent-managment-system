@@ -20,7 +20,7 @@ const initialState = {
   emergencyContact: "",
 };
 
-type TenantStep = 1 | 2 | 3 | 4;
+type TenantStep = 1 | 2 | 3;
 type TenantType = "new" | "old";
 type FamilyMemberForm = { id: string; name: string; relation: string; age: string };
 
@@ -81,40 +81,21 @@ export function TenantFormModal({
     onClose();
   };
 
-  const handleNextFromPersonal = () => {
+  const handleNextFromDetails = () => {
     const missingFields = getMissingFields([
       ["full name", Boolean(form.fullName.trim())],
       ["phone number", tenantType === "old" ? true : Boolean(form.phone.trim())],
+      ["ID proof image", tenantType === "old" ? true : Boolean(idImage)],
+      ["ID number", tenantType === "old" ? true : Boolean(form.idNumber.trim())],
     ]);
 
     if (missingFields.length > 0) {
-      setError(`Complete ${missingFields.join(" and ")} before going to ID proof.`);
+      setError(`Complete ${missingFields.join(", ")} before going to payment.`);
       return;
     }
 
     setError("");
     setStep(2);
-  };
-
-  const handleNextFromId = () => {
-    if (tenantType === "old") {
-      setError("");
-      setStep(3);
-      return;
-    }
-
-    const missingFields = getMissingFields([
-      ["ID proof image", Boolean(idImage)],
-      ["ID number", Boolean(form.idNumber.trim())],
-    ]);
-
-    if (missingFields.length > 0) {
-      setError(`Add ${missingFields.join(" and ")} before going to payment.`);
-      return;
-    }
-
-    setError("");
-    setStep(3);
   };
 
   const handleNextFromPayment = () => {
@@ -130,7 +111,7 @@ export function TenantFormModal({
     }
 
     setError("");
-    setStep(4);
+    setStep(3);
   };
 
   const updateFamilyMember = (id: string, key: keyof Omit<FamilyMemberForm, "id">, value: string) => {
@@ -237,7 +218,7 @@ export function TenantFormModal({
                   </span>
                   Add Tenant
                 </div>
-                <p className="mt-2 text-[11px] leading-5 text-slate-500">Go one section at a time: personal details, ID proof, then payment.</p>
+                <p className="mt-2 text-[11px] leading-5 text-slate-500">Fill details and ID proof, then payment.</p>
               </div>
               <Button variant="ghost" disabled={submitting} aria-label="Close" className="rounded-[var(--radius-pill)] px-3 text-slate-500 hover:bg-white/70" onClick={handleClose}>
                 <X className="h-4 w-4" />
@@ -247,16 +228,15 @@ export function TenantFormModal({
             <div className="relative min-h-0 flex-1 overflow-y-auto px-4 pt-0 pb-2 sm:px-5">
               <div className="space-y-4 rounded-[var(--radius-card)] border border-slate-100 bg-slate-50 p-3 shadow-sm sm:p-4">
                 <div className="flex flex-wrap gap-2">
-                  <StepPill label="1. Personal" active={step === 1} done={step > 1} />
-                  <StepPill label="2. ID Proof" active={step === 2} done={step > 2} />
-                  <StepPill label="3. Payment" active={step === 3} done={isResidence && step > 3} />
-                  {isResidence ? <StepPill label="4. Family" active={step === 4} done={false} /> : null}
+                  <StepPill label="1. Details" active={step === 1} done={step > 1} />
+                  <StepPill label="2. Payment" active={step === 2} done={isResidence && step > 2} />
+                  {isResidence ? <StepPill label="3. Family" active={step === 3} done={false} /> : null}
                 </div>
 
                 {step === 1 ? (
                   <>
                     <div>
-                      <h3 className="text-[15px] font-semibold text-slate-800">Personal Details</h3>
+                      <h3 className="text-[15px] font-semibold text-slate-800">Personal Details &amp; ID Proof</h3>
                       <p className="mt-1 text-[11px] text-slate-500">Choose tenant type first. Old tenants can be onboarded with missing details and updated later.</p>
                     </div>
 
@@ -337,54 +317,47 @@ export function TenantFormModal({
                         </InputShell>
                       </Field>
                     </div>
-                  </>
-                ) : null}
 
-                {step === 2 ? (
-                  <>
                     <div>
-                      <h3 className="text-[15px] font-semibold text-slate-800">ID Proof</h3>
-                      <p className="mt-1 text-[11px] text-slate-500">
-                        {tenantType === "old"
-                          ? "ID details are optional for old tenant onboarding. You can add later."
-                          : "Collect ID information and proof before final payment step."}
+                      <p className="mb-2 text-[12px] font-semibold text-slate-700">
+                        {tenantType === "old" ? "ID Proof (Optional)" : "ID Proof"}
                       </p>
-                    </div>
-
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <UploadCard icon={ImageIcon} title="Photo Optional" subtitle="You can add tenant photo later" tone="blue" disabled />
-                      <label className={`block ${submitting ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}>
-                        <span className="sr-only">Upload ID</span>
-                        <div className="rounded-[8px] border border-slate-200 bg-slate-50 p-3 shadow-sm transition hover:opacity-95">
-                          <div className="flex items-center gap-3">
-                            <div className="rounded-2xl bg-white p-2.5 text-[var(--accent)] shadow-sm">
-                              <FileBadge2 className="h-4 w-4" />
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <UploadCard icon={ImageIcon} title="Photo Optional" subtitle="You can add tenant photo later" tone="blue" disabled />
+                        <label className={`block ${submitting ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}>
+                          <span className="sr-only">Upload ID</span>
+                          <div className="rounded-[8px] border border-slate-200 bg-slate-50 p-3 shadow-sm transition hover:opacity-95">
+                            <div className="flex items-center gap-3">
+                              <div className="rounded-2xl bg-white p-2.5 text-[var(--accent)] shadow-sm">
+                                <FileBadge2 className="h-4 w-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[13px] font-semibold text-slate-800">{idImage ? "ID Selected" : "Upload ID"}</p>
+                                <p className="mt-1 text-[11px] text-slate-500">{idImage?.name ?? "Optional for old tenant onboarding"}</p>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-[13px] font-semibold text-slate-800">{idImage ? "ID Selected" : "Upload ID"}</p>
-                              <p className="mt-1 text-[11px] text-slate-500">{idImage?.name ?? "Optional for old tenant onboarding"}</p>
-                            </div>
+                            <input type="file" accept="image/*" disabled={submitting} onChange={(event) => setIdImage(event.target.files?.[0] ?? null)} className="hidden" />
                           </div>
-                          <input type="file" accept="image/*" disabled={submitting} onChange={(event) => setIdImage(event.target.files?.[0] ?? null)} className="hidden" />
-                        </div>
-                      </label>
+                        </label>
+                      </div>
+                      <div className="mt-2">
+                        <Field label={tenantType === "old" ? "ID Number (Optional)" : "ID Number"}>
+                          <InputShell icon={<FileBadge2 className="h-4 w-4 text-[var(--accent)]" />}>
+                            <input
+                              value={form.idNumber}
+                              onChange={(event) => setForm({ ...form, idNumber: event.target.value.toUpperCase() })}
+                              disabled={submitting}
+                              className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
+                              placeholder="Enter ID number"
+                            />
+                          </InputShell>
+                        </Field>
+                      </div>
                     </div>
-
-                    <Field label={tenantType === "old" ? "ID Number (Optional)" : "ID Number"}>
-                      <InputShell icon={<FileBadge2 className="h-4 w-4 text-[var(--accent)]" />}>
-                        <input
-                          value={form.idNumber}
-                          onChange={(event) => setForm({ ...form, idNumber: event.target.value.toUpperCase() })}
-                          disabled={submitting}
-                          className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
-                          placeholder="Enter ID number"
-                        />
-                      </InputShell>
-                    </Field>
                   </>
                 ) : null}
 
-                {step === 4 ? (
+                {step === 3 ? (
                   <>
                     <div>
                       <h3 className="text-[15px] font-semibold text-slate-800">Family Members</h3>
@@ -461,7 +434,7 @@ export function TenantFormModal({
                   </>
                 ) : null}
 
-                {step === 3 ? (
+                {step === 2 ? (
                   <>
                     <div>
                       <h3 className="text-[15px] font-semibold text-slate-800">Payment Details</h3>
@@ -574,18 +547,12 @@ export function TenantFormModal({
                   </Button>
 
                   {step === 1 ? (
-                    <Button disabled={submitting} onClick={handleNextFromPersonal} className="w-full rounded-2xl sm:flex-1">
-                      Next: ID Proof
+                    <Button disabled={submitting} onClick={handleNextFromDetails} className="w-full rounded-2xl sm:flex-1">
+                      {tenantType === "old" ? "Continue to Payment" : "Next: Payment"}
                     </Button>
                   ) : null}
 
                   {step === 2 ? (
-                    <Button disabled={submitting} onClick={handleNextFromId} className="w-full rounded-2xl sm:flex-1">
-                      {tenantType === "old" ? "Skip ID and Continue" : "Next: Payment"}
-                    </Button>
-                  ) : null}
-
-                  {step === 3 ? (
                     isResidence ? (
                       <Button onClick={handleNextFromPayment} disabled={submitting} className="w-full rounded-2xl sm:flex-1">
                         Next: Family
@@ -597,7 +564,7 @@ export function TenantFormModal({
                     )
                   ) : null}
 
-                  {step === 4 ? (
+                  {step === 3 ? (
                     <Button onClick={handleSubmit} disabled={submitting} loading={submitting} className="w-full rounded-2xl sm:flex-1">
                       {submitting ? "Creating..." : "Save Tenant"}
                     </Button>

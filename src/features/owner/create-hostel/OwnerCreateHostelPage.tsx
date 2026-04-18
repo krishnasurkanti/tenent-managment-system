@@ -72,7 +72,7 @@ function CreateHostelPageContent() {
   const [floors, setFloors] = useState<FloorForm[]>([createFloor(1)]);
   const [activeFloorId, setActiveFloorId] = useState<string | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [saving, setSaving] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(isEditMode);
   const [error, setError] = useState("");
@@ -389,26 +389,7 @@ function CreateHostelPageContent() {
   };
 
   const handleNextFromSetup = () => {
-    setError("");
-
-    const hasInvalidFloor = floors.some((floor) => !floor.floorLabel.trim());
-    if (hasInvalidFloor) {
-      setError("Finish naming each floor before review.");
-      return;
-    }
-
-    const hasInvalidRoom = floors.some(
-      (floor) =>
-        floor.rooms.length === 0 ||
-        floor.rooms.some((room) => !room.roomNumber.trim() || !room.bedCount || Number(room.bedCount) < 1),
-    );
-
-    if (hasInvalidRoom) {
-      setError("Finish every room first. Each room needs a room number and bed count before review.");
-      return;
-    }
-
-    setStep(3);
+    void handleSave();
   };
 
   if (loadingExisting) {
@@ -426,8 +407,7 @@ function CreateHostelPageContent() {
 
         <div className="flex flex-wrap gap-2">
           <WizardPill label="1. Basics" active={step === 1} done={step > 1} />
-          <WizardPill label="2. Setup" active={step === 2} done={step > 2} />
-          <WizardPill label="3. Review" active={step === 3} done={false} />
+          <WizardPill label="2. Setup" active={step === 2} done={false} />
         </div>
 
         {step === 1 ? (
@@ -782,7 +762,7 @@ function CreateHostelPageContent() {
                   disabled={saving}
                   onClick={handleNextFromSetup}
                 >
-                  Review Hostel
+                  {saving ? "Saving..." : isEditMode ? "Update Hostel" : "Save Hostel"}
                 </Button>
               )}
             </div>
@@ -790,68 +770,6 @@ function CreateHostelPageContent() {
         </Card>
         ) : null}
 
-        {step === 3 ? (
-          <Card className="overflow-hidden border-slate-100 bg-white shadow-[0_18px_42px_rgba(15,23,42,0.08)]">
-            <div className="border-b border-white/70 px-4 py-3 sm:px-5">
-              <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-blue-50 p-2.5 text-indigo-600">
-                  <CheckCircle2 className="h-4 w-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-800">Review Hostel</h2>
-                  <p className="text-[11px] text-slate-500">Check the summary once, then save the hostel.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4 px-4 py-4 sm:px-5">
-              <div className="grid gap-3 md:grid-cols-2">
-                <ReviewCard label="Hostel Name" value={hostelName} />
-                <ReviewCard label="Address" value={address} />
-              </div>
-
-              <div className="rounded-[10px] border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] p-4 shadow-sm">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Structure</p>
-                    <h3 className="mt-1 text-sm font-semibold text-slate-800">
-                      {floors.length} floor{floors.length > 1 ? "s" : ""} • {floors.reduce((sum, floor) => sum + floor.rooms.length, 0)} {roomLabel.toLowerCase()}{floors.reduce((sum, floor) => sum + floor.rooms.length, 0) > 1 ? "s" : ""}
-                    </h3>
-                  </div>
-                  <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-indigo-700">
-                    Ready to save
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  {floors.map((floor) => (
-                    <div key={floor.id} className="rounded-2xl border border-white/80 bg-white/90 px-3 py-3">
-                      <p className="text-[12px] font-semibold text-slate-800">{floor.floorLabel}</p>
-                      <div className="mt-2 space-y-1.5">
-                        {floor.rooms.map((room) => (
-                          <div key={room.id} className="flex items-center justify-between gap-3 text-[11px] text-slate-600">
-                            <span>{room.roomNumber}</span>
-                            <span>{hostelType === "RESIDENCE" ? "1 occupant" : `${room.bedCount} beds`}</span>
-                            <span className="font-medium text-indigo-700">{hostelType === "RESIDENCE" ? "Private unit" : getSharingLabel(room.bedCount)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2 border-t border-white/70 pt-4 sm:flex-row sm:justify-end">
-                <Button variant="secondary" className="w-full sm:w-auto" disabled={saving} onClick={() => setStep(2)}>
-                  Back to Setup
-                </Button>
-                <Button className="w-full sm:w-auto" disabled={saving} onClick={handleSave}>
-                  {saving ? "Saving..." : isEditMode ? "Update Hostel" : "Add Hostel"}
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ) : null}
       </div>
     </div>
   );
@@ -904,15 +822,6 @@ function WizardPill({
       }`}
     >
       {label}
-    </div>
-  );
-}
-
-function ReviewCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[8px] border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafe_100%)] px-4 py-3 shadow-sm">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</p>
-      <p className="mt-1 text-[13px] font-semibold text-slate-800">{value}</p>
     </div>
   );
 }
