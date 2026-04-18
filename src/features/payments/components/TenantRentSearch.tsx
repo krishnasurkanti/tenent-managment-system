@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { CalendarDays, ImageUp, Search, WalletCards, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ export function TenantRentSearch({ tenants, hideButton }: { tenants: TenantRecor
 
 function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecord[]; hideButton?: boolean }) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
@@ -69,6 +70,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
     const tenantId = searchParams.get("tenantId");
 
     if (action !== "pay-rent") {
+      setOpen(false);
       return;
     }
 
@@ -105,7 +107,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
     setMessage("");
     setSubmitting(false);
     if (searchParams.get("action") === "pay-rent") {
-      router.replace("/owner/payments");
+      router.replace(pathname);
     }
   };
 
@@ -183,10 +185,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
       {!hideButton && (
         <TenantRentSearchButton
           disabled={submitting}
-          onClick={() => {
-            resetState();
-            setOpen(true);
-          }}
+          onClick={() => router.replace("?action=pay-rent")}
         />
       )}
 
