@@ -110,7 +110,7 @@ export default function OwnerDashboardPage() {
                     <div className="mt-2.5 flex justify-end">
                       <Link
                         href={`/owner/payments?action=pay-rent&tenantId=${tenant.tenantId}`}
-                        className="inline-flex min-h-9 items-center justify-center rounded-xl border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-3 text-[11px] font-semibold text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]"
+                        className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-3 text-[11px] font-semibold text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]"
                       >
                         Pay now
                       </Link>

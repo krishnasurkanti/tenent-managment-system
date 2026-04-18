@@ -81,7 +81,7 @@ export default function OwnerNotificationsPage() {
                   <div className="mt-2 flex items-center justify-between gap-2">
                     <span className="text-[11px] text-[color:var(--fg-secondary)]">Due {formatPaymentDate(tenant.nextDueDate)}</span>
                     <Button
-                      className="h-8 px-3 text-[11px]"
+                      className="min-h-10 px-3 text-[11px]"
                       onClick={() => router.push(`/owner/payments?action=pay-rent&tenantId=${tenant.tenantId}`)}
                     >
                       Pay now

@@ -302,7 +302,7 @@ function OwnerRoomsPageContent() {
                             <div className="mt-3">
                               <Link
                                 href={`/owner/tenants?action=add-tenant&hostelId=${currentHostel.id}&floor=${floor.floorNumber}&room=${room.roomNumber}&sharingType=${encodeURIComponent(room.sharingType ?? "")}`}
-                                className="inline-flex min-h-9 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-3 text-[12px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.2)]"
+                                className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-3 text-[12px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.2)]"
                               >
                                 {isResidence ? "Assign tenant" : "Add tenant"}
                               </Link>
@@ -380,7 +380,7 @@ function FilterLink({
   return (
     <Link
       href={href}
-      className={`inline-flex min-h-9 items-center justify-center rounded-xl px-3 text-[12px] font-semibold transition ${ownerFilterLinkClass(active)}`}
+      className={`inline-flex min-h-10 items-center justify-center rounded-xl px-3 text-[12px] font-semibold transition ${ownerFilterLinkClass(active)}`}
     >
       {children}
     </Link>

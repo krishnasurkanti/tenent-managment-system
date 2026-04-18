@@ -398,7 +398,7 @@ function ActionButton({
 }) {
   if (isPaid) {
     return (
-      <span className="inline-flex h-8 items-center rounded-xl border border-[#4ade80]/40 bg-[#22c55e]/10 px-3 text-[11px] font-semibold text-[#4ade80]">
+      <span className="inline-flex min-h-10 items-center rounded-xl border border-[#4ade80]/40 bg-[#22c55e]/10 px-3 text-[11px] font-semibold text-[#4ade80]">
         Paid
       </span>
     );
@@ -410,7 +410,7 @@ function ActionButton({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-8 items-center rounded-xl px-3 text-[11px] font-semibold transition hover:brightness-110 active:scale-95 ${
+      className={`inline-flex min-h-10 items-center rounded-xl px-3 text-[11px] font-semibold transition hover:brightness-110 active:scale-95 ${
         isOverdue
           ? "border border-[#ef4444]/50 bg-[#dc2626]/15 text-[#ff7070] hover:bg-[#dc2626]/25"
           : "border border-[#facc15]/50 bg-[#facc15]/10 text-[#fde047] hover:bg-[#facc15]/20"
