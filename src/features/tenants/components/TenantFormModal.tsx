@@ -480,7 +480,7 @@ export function TenantFormModal({
                             value={form.paidOnDate}
                             onChange={(event) => setForm({ ...form, paidOnDate: event.target.value })}
                             disabled={submitting}
-                            className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
+                            className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark] [&::-webkit-datetime-edit]:text-white [&::-webkit-datetime-edit-fields-wrapper]:text-white"
                           />
                         </InputShell>
                       </Field>

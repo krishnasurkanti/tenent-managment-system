@@ -401,7 +401,7 @@ export function TenantRoomAssignmentModal({
                           value={moveInDate}
                           onChange={(event) => setMoveInDate(event.target.value)}
                           disabled={saving}
-                          className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none transition focus:border-[#38bdf8]/40 [color-scheme:dark]"
+                          className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none transition focus:border-[#38bdf8]/40 [color-scheme:dark] [&::-webkit-datetime-edit]:text-white [&::-webkit-datetime-edit-fields-wrapper]:text-white"
                         />
                       </Field>
                     </div>
