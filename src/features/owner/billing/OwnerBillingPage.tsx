@@ -8,9 +8,14 @@ import { SkeletonBlock } from "@/components/ui/skeleton";
 type LocalBillingData = {
   hostelName: string;
   plan: string;
+  planStatus: string;
   trialActive: boolean;
   trialEndsAt: string;
+  cycleStart: string;
+  nextBillingDate: string;
+  onboardingDate: string;
   monthlyTenantCount: number;
+  nextMonthCount: number;
   weeklyTenantCount: number;
   dailyTenantCount: number;
   totalTenants: number;
@@ -129,12 +134,26 @@ export default function OwnerBillingPage() {
           </div>
         </div>
 
+        {/* Billing cycle info */}
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-white/40">
+          <span>Cycle: <span className="text-white/60">{data.cycleStart}</span></span>
+          <span className="text-white/20">→</span>
+          <span>Next billing: <span className="font-semibold text-[#38bdf8]/80">{data.nextBillingDate}</span></span>
+          <span className="text-white/20">·</span>
+          <span>Onboarded: <span className="text-white/60">{data.onboardingDate}</span></span>
+        </div>
+
         {/* Tenant counts */}
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <div className="rounded-[8px] border border-[#38bdf8]/20 bg-[#38bdf8]/[0.06] px-3 py-2">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/40">Monthly</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/40">This cycle</p>
             <p className="mt-0.5 text-xl font-semibold text-[#38bdf8]">{data.monthlyTenantCount}</p>
             <p className="text-[9px] text-white/30">toward limit</p>
+          </div>
+          <div className="rounded-[8px] border border-[#a78bfa]/20 bg-[#a78bfa]/[0.06] px-3 py-2">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/40">Next cycle</p>
+            <p className="mt-0.5 text-xl font-semibold text-[#c4b5fd]">{data.nextMonthCount}</p>
+            <p className="text-[9px] text-white/30">joined ≤10d before billing</p>
           </div>
           <div className="rounded-[8px] border border-[#4ade80]/20 bg-[#22c55e]/[0.05] px-3 py-2">
             <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/40">Weekly</p>
