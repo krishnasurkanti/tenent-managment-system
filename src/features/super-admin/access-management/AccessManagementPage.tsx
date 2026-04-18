@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, Suspense, useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Eye, EyeOff, Mail, Plus, ServerCog, Trash2, User, Users, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type OwnerRow = {
   id: string;
@@ -22,11 +22,20 @@ type OwnerStats = {
 };
 
 export default function AccessManagementPage() {
+  return (
+    <Suspense>
+      <AccessManagementPageInner />
+    </Suspense>
+  );
+}
+
+function AccessManagementPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [owners, setOwners] = useState<OwnerRow[]>([]);
   const [stats, setStats] = useState<Record<string, OwnerStats>>({});
   const [loading, setLoading] = useState(true);
-  const [formOpen, setFormOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(searchParams.get("new") === "1");
   const [revealedPasswords, setRevealedPasswords] = useState<Set<string>>(new Set());
 
   const [name, setName] = useState("");
