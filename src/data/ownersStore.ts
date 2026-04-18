@@ -140,10 +140,10 @@ export function updateOwnerStatus(id: string, status: "active" | "inactive") {
   persist(state);
 }
 
-export function validateOwner(username: string, password: string) {
+export function validateOwner(identifier: string, password: string) {
   const state = loadState();
-  const normalized = username.trim().toLowerCase();
-  const owner = state.owners.find((o) => o.username === normalized);
+  const normalized = identifier.trim().toLowerCase();
+  const owner = state.owners.find((o) => o.username === normalized || o.email === normalized);
 
   if (!owner) return { ok: false as const, reason: "invalid" as const };
   if (owner.status === "inactive") return { ok: false as const, reason: "suspended" as const };
