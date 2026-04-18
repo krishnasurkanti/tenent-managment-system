@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2, CalendarDays, Check, ChevronDown, DoorClosed, Info, Layers3, Users2, X } from "lucide-react";
+import { CalendarDays, Users2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
@@ -42,9 +42,6 @@ export function TenantRoomAssignmentModal({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [hostelMenuOpen, setHostelMenuOpen] = useState(false);
-  const [floorMenuOpen, setFloorMenuOpen] = useState(false);
-  const [roomMenuOpen, setRoomMenuOpen] = useState(false);
 
   useLockBodyScroll(open);
 
@@ -70,9 +67,6 @@ export function TenantRoomAssignmentModal({
       setBedId("");
       setMoveInDate(new Date().toISOString().slice(0, 10));
       setStep(1);
-      setHostelMenuOpen(false);
-      setFloorMenuOpen(false);
-      setRoomMenuOpen(false);
       setLoading(false);
     };
 
@@ -205,173 +199,87 @@ export function TenantRoomAssignmentModal({
             ) : (
               <div className="space-y-5">
                 {step === 1 ? (
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <div className="mb-3 flex items-center gap-2">
-                      <Info className="h-4 w-4 text-sky-400" />
-                      <p className="text-sm font-medium text-white/70">Choose where the tenant will stay</p>
-                    </div>
-                    <div className="grid gap-3 lg:grid-cols-3">
-                      <Field label="Hostel" icon={Building2} helper="Select the hostel property">
-                        <CustomDropdown
-                          open={hostelMenuOpen}
+                  <div className="space-y-5">
+                    <PillGroup label="Hostel">
+                      {hostels.map((hostel) => (
+                        <PillButton
+                          key={hostel.hostelId}
+                          selected={hostel.hostelId === hostelId}
                           disabled={saving}
-                          onToggle={() => {
-                            if (saving) return;
-                            setHostelMenuOpen((value) => !value);
-                            setFloorMenuOpen(false);
-                            setRoomMenuOpen(false);
+                          onClick={() => {
+                            const nextFloor = hostel.floors[0];
+                            setHostelId(hostel.hostelId);
+                            setFloorNumber(nextFloor ? String(nextFloor.floorNumber) : "");
+                            setRoomNumber("");
+                            setSharingType("");
+                            setBedId("");
                           }}
-                          value={hostels.find((hostel) => hostel.hostelId === hostelId)?.hostelName ?? "Select hostel"}
                         >
-                          {hostels.map((hostel) => {
-                            const selected = hostel.hostelId === hostelId;
+                          {hostel.hostelName}
+                        </PillButton>
+                      ))}
+                    </PillGroup>
 
-                            return (
-                              <DropdownOption
-                                key={hostel.hostelId}
-                                selected={selected}
-                                primary={hostel.hostelName}
-                                secondary={`${hostel.floors.length} floors`}
-                                onClick={() => {
-                                  const nextFloor = hostel.floors[0];
-                                  setHostelId(hostel.hostelId);
-                                  setFloorNumber(nextFloor ? String(nextFloor.floorNumber) : "");
-                                  setRoomNumber("");
-                                  setSharingType("");
-                                  setHostelMenuOpen(false);
-                                }}
-                              />
-                            );
-                          })}
-                        </CustomDropdown>
-                      </Field>
+                    {selectedHostel ? (
+                      <PillGroup label="Floor">
+                        {selectedHostel.floors.map((floor) => (
+                          <PillButton
+                            key={floor.floorNumber}
+                            selected={String(floor.floorNumber) === floorNumber}
+                            disabled={saving}
+                            onClick={() => {
+                              setFloorNumber(String(floor.floorNumber));
+                              setRoomNumber("");
+                              setSharingType("");
+                              setBedId("");
+                            }}
+                          >
+                            Floor {floor.floorNumber}
+                          </PillButton>
+                        ))}
+                      </PillGroup>
+                    ) : null}
 
-                      <Field label="Floor" icon={Layers3} helper="Choose the floor inside the hostel">
-                        <CustomDropdown
-                          open={floorMenuOpen}
-                          disabled={saving}
-                          onToggle={() => {
-                            if (saving) return;
-                            setFloorMenuOpen((value) => !value);
-                            setHostelMenuOpen(false);
-                            setRoomMenuOpen(false);
-                          }}
-                          value={floorNumber ? `Floor ${floorNumber}` : "Select floor"}
-                        >
-                          {(selectedHostel?.floors ?? []).map((floor) => {
-                            const selected = String(floor.floorNumber) === floorNumber;
-
-                            return (
-                              <DropdownOption
-                                key={floor.floorNumber}
-                                selected={selected}
-                                primary={`Floor ${floor.floorNumber}`}
-                                secondary={`${floor.rooms.length} rooms`}
-                                onClick={() => {
-                                  setFloorNumber(String(floor.floorNumber));
-                                  setRoomNumber("");
-                                  setSharingType("");
-                                  setFloorMenuOpen(false);
-                                }}
-                              />
-                            );
-                          })}
-                        </CustomDropdown>
-                      </Field>
-
-                      <Field label={isResidence ? "Unit" : "Room"} icon={DoorClosed} helper={isResidence ? "Only vacant units are shown" : "Only rooms with available beds are shown"}>
-                        <div className="relative">
-                          <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 transition focus-within:border-[#38bdf8]/40">
-                            <input
-                              value={roomNumber}
-                              onChange={(event) => {
-                                if (saving) return;
-                                setRoomNumber(event.target.value);
-                                setRoomMenuOpen(true);
-                              }}
-                              onFocus={() => {
-                                if (!saving) {
-                                  setRoomMenuOpen(true);
-                                }
-                              }}
+                    {selectedFloor ? (
+                      <PillGroup label={isResidence ? "Unit" : "Room"}>
+                        {availableRooms.length === 0 ? (
+                          <span className="text-sm text-white/40">No available {isResidence ? "units" : "rooms"}</span>
+                        ) : (
+                          availableRooms.map((room) => (
+                            <PillButton
+                              key={room.roomNumber}
+                              selected={room.roomNumber === roomNumber}
                               disabled={saving}
-                              placeholder={isResidence ? "Enter unit number" : "Enter room number"}
-                              className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/25"
-                            />
-                            <button
-                              type="button"
-                              disabled={saving}
-                              onClick={() => setRoomMenuOpen((value) => !value)}
-                              className="shrink-0 text-white/40 transition hover:text-white/70"
-                              aria-label="Toggle room list"
+                              onClick={() => {
+                                setRoomNumber(room.roomNumber);
+                                setSharingType(room.sharingType ?? "");
+                                setBedId("");
+                              }}
                             >
-                              <ChevronDown className={`h-4 w-4 transition ${roomMenuOpen ? "rotate-180" : ""}`} />
-                            </button>
-                          </div>
+                              {room.roomNumber}
+                            </PillButton>
+                          ))
+                        )}
+                      </PillGroup>
+                    ) : null}
 
-                          {roomMenuOpen ? (
-                            <div
-                              className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 max-h-44 overflow-y-scroll rounded-2xl border border-white/12 bg-[#0d1525] shadow-[0_18px_40px_rgba(0,0,0,0.5)]"
-                              style={{ scrollbarGutter: "stable" }}
-                            >
-                              {filteredRooms.length > 0 ? (
-                                filteredRooms.map((room) => {
-                                  const selected = room.roomNumber === roomNumber;
-
-                                  return (
-                                    <button
-                                      key={room.roomNumber}
-                                      type="button"
-                                      onClick={() => {
-                                        setRoomNumber(room.roomNumber);
-                                        setSharingType(room.sharingType ?? "");
-                                        setRoomMenuOpen(false);
-                                      }}
-                                      className={cn(
-                                        "flex w-full items-center justify-between px-4 py-3 text-left text-sm transition",
-                                        selected ? "bg-blue-600 text-white" : "text-white/70 hover:bg-white/[0.08]",
-                                      )}
-                                    >
-                                      <span>{room.roomNumber} ({room.occupied}/{room.capacity})</span>
-                                      {selected ? <Check className="h-4 w-4 shrink-0" /> : null}
-                                    </button>
-                                  );
-                                })
-                              ) : (
-                                <div className="px-4 py-3 text-sm text-white/40">No matching available rooms</div>
-                              )}
-                            </div>
-                          ) : null}
-                        </div>
-                      </Field>
-                    </div>
                     {!isResidence && selectedRoom ? (
-                      <div className="mt-4">
-                        <p className="mb-1 text-sm font-medium text-white/70">Bed</p>
-                        <p className="mb-2 text-xs text-white/35">Choose an available bed inside this room</p>
-                        <div className="flex flex-wrap gap-2">
-                          {(selectedRoom.beds ?? []).filter((bed) => !bed.occupied).length === 0 ? (
-                            <span className="text-sm text-white/40">No available beds</span>
-                          ) : (
-                            (selectedRoom.beds ?? []).filter((bed) => !bed.occupied).map((bed) => (
-                              <button
-                                key={bed.id}
-                                type="button"
-                                disabled={saving}
-                                onClick={() => setBedId(bed.id)}
-                                className={cn(
-                                  "rounded-xl border px-4 py-2 text-sm font-medium transition",
-                                  bedId === bed.id
-                                    ? "border-blue-500/60 bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.3)]"
-                                    : "border-white/12 bg-white/[0.06] text-white/70 hover:border-white/25 hover:text-white",
-                                )}
-                              >
-                                {bed.label}
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      </div>
+                      <PillGroup label="Bed">
+                        {(selectedRoom.beds ?? []).filter((bed) => !bed.occupied).length === 0 ? (
+                          <span className="text-sm text-white/40">No available beds</span>
+                        ) : (
+                          (selectedRoom.beds ?? []).filter((bed) => !bed.occupied).map((bed) => (
+                            <PillButton
+                              key={bed.id}
+                              selected={bed.id === bedId}
+                              disabled={saving}
+                              onClick={() => setBedId(bed.id)}
+                            >
+                              {bed.label}
+                            </PillButton>
+                          ))
+                        )}
+                      </PillGroup>
                     ) : null}
                   </div>
                 ) : null}
@@ -475,71 +383,6 @@ function mapHostelInventory(hostel: OwnerHostel): HostelRoomInventory {
   };
 }
 
-function CustomDropdown({
-  open,
-  onToggle,
-  value,
-  children,
-  disabled = false,
-}: {
-  open: boolean;
-  onToggle: () => void;
-  value: string;
-  children: React.ReactNode;
-  disabled?: boolean;
-}) {
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={onToggle}
-        disabled={disabled}
-        className="flex w-full items-center justify-between rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 text-left text-sm text-white transition hover:border-white/20"
-      >
-        <span className="truncate">{value}</span>
-        <ChevronDown className={`h-4 w-4 shrink-0 transition ${open ? "rotate-180" : ""}`} />
-      </button>
-
-      {open ? (
-        <div
-          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 max-h-44 overflow-y-scroll rounded-2xl border border-white/12 bg-[#0d1525] shadow-[0_18px_40px_rgba(0,0,0,0.5)]"
-          style={{ scrollbarGutter: "stable" }}
-        >
-          {children}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function DropdownOption({
-  selected,
-  primary,
-  secondary,
-  onClick,
-}: {
-  selected: boolean;
-  primary: string;
-  secondary?: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition",
-        selected ? "bg-blue-600 text-white" : "text-white/70 hover:bg-white/[0.08]",
-      )}
-    >
-      <div className="min-w-0">
-        <p className="truncate font-medium">{primary}</p>
-        {secondary ? <p className={cn("truncate text-xs", selected ? "text-white/80" : "text-white/40")}>{secondary}</p> : null}
-      </div>
-      {selected ? <Check className="h-4 w-4 shrink-0" /> : null}
-    </button>
-  );
-}
 
 function StepPill({
   label,
@@ -585,5 +428,42 @@ function Field({
         <div className="[&_input]:pl-11 [&_select]:pl-11">{children}</div>
       </div>
     </label>
+  );
+}
+
+function PillGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-white/40">{label}</p>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
+
+function PillButton({
+  selected,
+  disabled,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  disabled: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "rounded-xl border px-4 py-2 text-sm font-medium transition",
+        selected
+          ? "border-blue-500/60 bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.3)]"
+          : "border-white/12 bg-white/[0.06] text-white/70 hover:border-white/25 hover:text-white",
+      )}
+    >
+      {children}
+    </button>
   );
 }
