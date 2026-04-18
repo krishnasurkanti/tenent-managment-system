@@ -35,7 +35,7 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  if (pathname.startsWith("/api/super-admin") && role !== "super_admin") {
+  if (pathname.startsWith("/api/super-admin") && pathname !== "/api/super-admin/login" && role !== "super_admin") {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
