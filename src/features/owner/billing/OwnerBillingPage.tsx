@@ -18,15 +18,18 @@ type LocalBillingData = {
 
 const PLANS = [
   {
-    key: "basic",
-    title: "Basic",
-    price: 999,
-    tenantLimit: 50,
-    tenantLimitLabel: "Up to 50 monthly tenants",
-    blurb: "For small PGs just getting started",
+    key: "starter",
+    title: "Starter",
+    price: 349,
+    annualPrice: 3490,
+    hostelLimit: 1,
+    tenantLimit: 60,
+    tenantLimitLabel: "Up to 60 monthly tenants",
+    blurb: "For small PGs growing steadily",
     accent: "border-white/10 bg-[linear-gradient(180deg,#111827_0%,#0c1018_100%)]",
     features: [
-      "Up to 50 monthly tenants",
+      "Up to 60 monthly tenants",
+      "1 hostel",
       "Unlimited daily & weekly (free)",
       "Rent tracking & reminders",
       "Room management",
@@ -34,43 +37,30 @@ const PLANS = [
     ],
   },
   {
-    key: "growth",
-    title: "Growth",
-    price: 1999,
+    key: "pro",
+    title: "Pro",
+    price: 749,
+    annualPrice: 7490,
+    hostelLimit: 2,
     tenantLimit: 150,
     tenantLimitLabel: "Up to 150 monthly tenants",
-    blurb: "The right plan for most active hostels",
+    blurb: "For growing operations across 2 hostels",
     popular: true,
     accent:
       "border-[color:color-mix(in_srgb,var(--success)_40%,var(--brand)_60%)] bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.12),transparent_50%),linear-gradient(180deg,#0e1a2e_0%,#0b101c_100%)] shadow-[0_0_0_1px_rgba(56,189,248,0.15),0_32px_80px_rgba(37,99,235,0.2)]",
     features: [
       "Up to 150 monthly tenants",
+      "2 hostels",
       "Unlimited daily & weekly (free)",
-      "All Basic features",
+      "All Starter features",
       "Advanced reports",
       "Priority support",
     ],
   },
-  {
-    key: "pro",
-    title: "Pro",
-    price: 2999,
-    tenantLimit: Infinity,
-    tenantLimitLabel: "Unlimited monthly tenants",
-    blurb: "For large operations — no limits",
-    accent: "border-[#f59e0b]/30 bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.1),transparent_50%),linear-gradient(180deg,#151208_0%,#0c1018_100%)]",
-    features: [
-      "Unlimited monthly tenants",
-      "Unlimited daily & weekly (free)",
-      "All Growth features",
-      "Multi-hostel support",
-      "Dedicated support",
-    ],
-  },
 ] as const;
 
-const FOUNDING_OFFER_SLOTS = 20;
-const FOUNDING_SLOTS_REMAINING = 7;
+const FOUNDING_OFFER_SLOTS = 15;
+const FOUNDING_SLOTS_REMAINING = 8;
 
 export default function OwnerBillingPage() {
   const { currentHostel, loading: hostelLoading } = useHostelContext();
@@ -138,7 +128,7 @@ export default function OwnerBillingPage() {
               <span className="text-[#38bdf8]">pricing.</span>
             </h1>
             <p className="mt-3 max-w-md text-sm leading-6 text-white/50">
-              Pay only for your monthly tenants. Daily and weekly guests are completely free — they're managed, reminded, and tracked at no extra cost.
+              Pay only for your monthly tenants. Daily and weekly guests are completely free — they&apos;re managed, reminded, and tracked at no extra cost.
             </p>
           </div>
 
@@ -153,15 +143,15 @@ export default function OwnerBillingPage() {
               <p className="mt-1 text-xs text-white/40">No payment required. Try everything free.</p>
             </div>
 
-            {/* Founding offer */}
+            {/* Founding offer badge */}
             <div className="rounded-[8px] border border-[#f59e0b]/40 bg-[#f59e0b]/8 p-4">
               <div className="flex items-center gap-2">
                 <Star className="h-4 w-4 text-[#fbbf24]" />
                 <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#fbbf24]">Founding Offer</span>
               </div>
-              <p className="mt-2 text-base font-semibold text-white">50% lifetime discount</p>
+              <p className="mt-2 text-base font-semibold text-white">₹499/mo — locked forever</p>
               <p className="mt-1 text-xs text-white/50">
-                Only {FOUNDING_SLOTS_REMAINING} of {FOUNDING_OFFER_SLOTS} slots remaining. Lock in forever.
+                Only {FOUNDING_SLOTS_REMAINING} of {FOUNDING_OFFER_SLOTS} slots remaining. First come, first served.
               </p>
             </div>
           </div>
@@ -195,7 +185,6 @@ export default function OwnerBillingPage() {
         {PLANS.map((plan) => {
           const isTrial = data.plan === "trial";
           const isCurrentPlan = data.plan === plan.key;
-          const foundingPrice = Math.round(plan.price * 0.5);
 
           return (
             <article
@@ -221,19 +210,17 @@ export default function OwnerBillingPage() {
               <div className="mt-5">
                 <div className="flex items-end gap-2">
                   <span className="text-[2.4rem] font-semibold leading-none tracking-[-0.04em] text-white">
-                    ₹{foundingPrice.toLocaleString("en-IN")}
+                    ₹{plan.price.toLocaleString("en-IN")}
                   </span>
                   <span className="mb-1 text-sm text-white/40">/ mo</span>
                 </div>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <span className="text-sm text-white/30 line-through">₹{plan.price.toLocaleString("en-IN")}</span>
-                  <span className="rounded-full border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-2 py-0.5 text-[10px] font-semibold text-[#fbbf24]">
-                    50% OFF — Founding
-                  </span>
-                </div>
+                <p className="mt-1.5 text-xs text-white/35">
+                  ₹{plan.annualPrice.toLocaleString("en-IN")}/yr · save 2 months
+                </p>
               </div>
 
               <p className="mt-3 text-sm text-white/50">{plan.tenantLimitLabel}</p>
+              <p className="mt-0.5 text-xs text-white/35">{plan.hostelLimit === 1 ? "1 hostel" : `${plan.hostelLimit} hostels`}</p>
               <p className="mt-2 text-sm font-medium text-white/80">{plan.blurb}</p>
 
               <ul className="mt-5 space-y-2.5">
@@ -276,6 +263,76 @@ export default function OwnerBillingPage() {
             </article>
           );
         })}
+
+        {/* Founding offer card */}
+        <article className="relative flex flex-col rounded-[12px] border border-[#f59e0b]/40 bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.12),transparent_50%),linear-gradient(180deg,#151208_0%,#0c1018_100%)] p-5 shadow-[0_0_0_1px_rgba(245,158,11,0.12),0_32px_80px_rgba(245,158,11,0.12)] ring-1 ring-[#f59e0b]/20">
+          <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#f59e0b]/50 bg-[linear-gradient(90deg,#b45309_0%,#d97706_100%)] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_10px_28px_rgba(245,158,11,0.3)]">
+            Founding
+          </div>
+
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#fbbf24]">Founding</p>
+            <span className="rounded-full border border-[#f59e0b]/50 bg-[#f59e0b]/15 px-2.5 py-1 text-[10px] font-semibold uppercase text-[#fbbf24]">
+              {FOUNDING_SLOTS_REMAINING} left
+            </span>
+          </div>
+
+          <div className="mt-5">
+            <div className="flex items-end gap-2">
+              <span className="text-[2.4rem] font-semibold leading-none tracking-[-0.04em] text-white">₹499</span>
+              <span className="mb-1 text-sm text-white/40">/ mo</span>
+            </div>
+            <p className="mt-1.5 text-xs text-[#fbbf24]/60">First month free · then ₹499/mo locked forever</p>
+          </div>
+
+          <p className="mt-3 text-sm text-white/50">Up to 200 monthly tenants</p>
+          <p className="mt-0.5 text-xs text-white/35">2 hostels</p>
+          <p className="mt-2 text-sm font-medium text-white/80">Best value — locked for life</p>
+
+          <ul className="mt-5 space-y-2.5">
+            {[
+              "Up to 200 monthly tenants",
+              "2 hostels",
+              "Unlimited daily & weekly (free)",
+              "All Pro features",
+              "First month free",
+              "₹5/tenant overage past 200",
+              "Founding badge & priority support",
+            ].map((feat) => (
+              <li key={feat} className="flex items-center gap-2.5 text-[13px] text-white/70">
+                <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-[#f59e0b]/50 bg-[#f59e0b]/15">
+                  <Check className="h-3 w-3 text-[#fbbf24]" />
+                </span>
+                {feat}
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-auto pt-6">
+            <button
+              type="button"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-[linear-gradient(90deg,#b45309_0%,#d97706_50%,#f59e0b_100%)] text-sm font-semibold text-white shadow-[0_14px_32px_rgba(245,158,11,0.3)] transition hover:brightness-110"
+            >
+              <Star className="mr-2 h-4 w-4" />
+              Claim Founding Offer
+            </button>
+          </div>
+        </article>
+      </section>
+
+      {/* Overage note */}
+      <section className="rounded-[10px] border border-[#f59e0b]/20 bg-[#f59e0b]/[0.04] px-5 py-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border border-[#f59e0b]/30 bg-[#f59e0b]/10">
+            <Zap className="h-4 w-4 text-[#fbbf24]" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">Overage pricing</p>
+            <p className="mt-0.5 text-sm text-white/50">
+              Exceed your plan&apos;s monthly tenant limit? We charge a flat <span className="text-white/70 font-medium">₹5 per extra tenant</span> — no plan upgrade forced, no service interruption.
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* Free daily/weekly callout */}
