@@ -79,10 +79,11 @@ export default function OwnerPaymentsPage() {
   return (
     <div className={`space-y-3 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
       <section className="space-y-3 lg:hidden">
-        <Card className={`${ownerHeroCardClass} rounded-[10px] p-4`}>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Payments</p>
-          <h1 className="mt-1 text-xl font-semibold text-white">{currentHostel.hostelName}</h1>
-          <div className="mt-3 grid grid-cols-[1.4fr_1fr] gap-2.5">
+        <Card className={`${ownerHeroCardClass} rounded-[10px] p-3`}>
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Payments · {currentHostel.hostelName}</p>
+          </div>
+          <div className="grid grid-cols-[1.4fr_1fr] gap-2">
             <div className="rounded-[8px] bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-3 py-3 text-white shadow-[0_18px_36px_rgba(37,99,235,0.22)]">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-100/80">Collected</p>
               <p className="mt-1 text-[1.5rem] font-semibold leading-none">Rs {collectedTotal.toLocaleString("en-IN")}</p>
@@ -141,9 +142,8 @@ export default function OwnerPaymentsPage() {
       <section className="hidden lg:block">
         <div className="grid gap-3 xl:grid-cols-[1.62fr_0.78fr]">
           <Card className={`overflow-hidden ${ownerPanelClass}`}>
-            <div className="border-b border-[color:var(--border)] px-3 py-3">
-              <h2 className="text-[14px] font-semibold text-white">Payment History</h2>
-              <p className="mt-0.5 text-[10px] text-[color:var(--fg-secondary)]">All payment details are scoped to the selected hostel workspace.</p>
+            <div className="border-b border-[color:var(--border)] px-3 py-2.5">
+              <h2 className="text-[13px] font-semibold text-white">Payment History</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-[12px]">
@@ -217,8 +217,7 @@ export default function OwnerPaymentsPage() {
 
             <Card className={`${ownerPanelClass} p-3`}>
               <div className="mb-2">
-                <h2 className="text-[14px] font-semibold text-white">Upcoming Dues</h2>
-                <p className="mt-0.5 text-[10px] text-[color:var(--fg-secondary)]">Only dues from the selected hostel are shown here.</p>
+                <h2 className="text-[13px] font-semibold text-white">Upcoming Dues</h2>
               </div>
               <div className="space-y-2">
                 {dueItems.length === 0 ? (

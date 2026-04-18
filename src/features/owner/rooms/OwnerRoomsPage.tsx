@@ -215,16 +215,11 @@ function OwnerRoomsPageContent() {
       <section className="hidden lg:block">
         <div className={`${ownerHeroCardClass} px-4 py-4 sm:px-5`}>
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[color:var(--fg-secondary)]">Rooms</p>
-          <div className="mt-1 flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="mt-1 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="text-[1.35rem] font-semibold tracking-tight text-white sm:text-[1.55rem]">
+              <h1 className="text-base font-semibold text-white">
                 {showAvailableOnly ? "Available Rooms" : "Room Occupancy"}
               </h1>
-              <p className="mt-1 text-[12px] text-[color:var(--fg-secondary)]">
-                {showAvailableOnly
-                  ? `See every room with open beds in ${currentHostel.hostelName}.`
-                  : `Track every floor, room, and bed for ${currentHostel.hostelName}.`}
-              </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
