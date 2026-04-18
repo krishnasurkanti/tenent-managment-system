@@ -28,8 +28,12 @@ function loadState(): OwnersState {
 }
 
 function persist(state: OwnersState) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(OWNERS_FILE, JSON.stringify(state, null, 2), "utf8");
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(OWNERS_FILE, JSON.stringify(state, null, 2), "utf8");
+  } catch {
+    // read-only filesystem (Vercel) — in-memory only
+  }
 }
 
 function hashPassword(password: string): string {

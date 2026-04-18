@@ -78,8 +78,12 @@ function loadPersistedHostels(): OwnerHostel[] {
 }
 
 function persistHostels(hostels: OwnerHostel[]) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(HOSTELS_FILE, JSON.stringify(hostels, null, 2), "utf8");
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(HOSTELS_FILE, JSON.stringify(hostels, null, 2), "utf8");
+  } catch {
+    // read-only filesystem (Vercel) — in-memory only
+  }
 }
 
 function cloneHostel(hostel: OwnerHostel): OwnerHostel {

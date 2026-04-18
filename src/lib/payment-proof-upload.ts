@@ -1,4 +1,3 @@
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 function sanitizeFileName(fileName: string) {
@@ -8,18 +7,30 @@ function sanitizeFileName(fileName: string) {
 }
 
 export async function savePaymentProofImage(file: File, tenantId: string) {
-  const uploadsDirectory = path.join(process.cwd(), "public", "uploads", "payment-proofs");
-  await mkdir(uploadsDirectory, { recursive: true });
-
-  const uniqueFileName = `${tenantId}-${Date.now()}-${sanitizeFileName(file.name)}`;
-  const absoluteFilePath = path.join(uploadsDirectory, uniqueFileName);
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  await writeFile(absoluteFilePath, buffer);
+  try {
+    const { mkdir, writeFile } = await import("node:fs/promises");
+    const uploadsDirectory = path.join(process.cwd(), "public", "uploads", "payment-proofs");
+    await mkdir(uploadsDirectory, { recursive: true });
 
-  return {
-    proofImageName: file.name,
-    proofImageUrl: `/uploads/payment-proofs/${uniqueFileName}`,
-    proofMimeType: file.type || "",
-  };
+    const uniqueFileName = `${tenantId}-${Date.now()}-${sanitizeFileName(file.name)}`;
+    const absoluteFilePath = path.join(uploadsDirectory, uniqueFileName);
+    await writeFile(absoluteFilePath, buffer);
+
+    return {
+      proofImageName: file.name,
+      proofImageUrl: `/uploads/payment-proofs/${uniqueFileName}`,
+      proofMimeType: file.type || "",
+    };
+  } catch {
+    // read-only filesystem (Vercel) — store as base64 data URL
+    const base64 = buffer.toString("base64");
+    const mimeType = file.type || "image/png";
+    return {
+      proofImageName: file.name,
+      proofImageUrl: `data:${mimeType};base64,${base64}`,
+      proofMimeType: mimeType,
+    };
+  }
 }

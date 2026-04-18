@@ -60,8 +60,12 @@ function loadState(): AdminState {
 }
 
 function persistState(state: AdminState) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(ADMIN_FILE, JSON.stringify(state, null, 2), "utf8");
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(ADMIN_FILE, JSON.stringify(state, null, 2), "utf8");
+  } catch {
+    // read-only filesystem (Vercel) — in-memory only
+  }
 }
 
 function syncHostelControls() {

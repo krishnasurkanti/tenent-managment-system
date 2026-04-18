@@ -293,8 +293,12 @@ function loadTenantRecords() {
 }
 
 function persistTenantRecords(records: TenantRecord[]) {
-  fs.mkdirSync(TENANTS_DATA_DIR, { recursive: true });
-  fs.writeFileSync(TENANTS_DATA_FILE, JSON.stringify(records, null, 2), "utf8");
+  try {
+    fs.mkdirSync(TENANTS_DATA_DIR, { recursive: true });
+    fs.writeFileSync(TENANTS_DATA_FILE, JSON.stringify(records, null, 2), "utf8");
+  } catch {
+    // read-only filesystem (Vercel) — in-memory only
+  }
 }
 
 function generateUniqueFiveDigitId() {
