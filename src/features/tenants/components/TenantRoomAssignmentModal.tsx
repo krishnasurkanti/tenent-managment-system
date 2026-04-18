@@ -45,7 +45,6 @@ export function TenantRoomAssignmentModal({
   const [hostelMenuOpen, setHostelMenuOpen] = useState(false);
   const [floorMenuOpen, setFloorMenuOpen] = useState(false);
   const [roomMenuOpen, setRoomMenuOpen] = useState(false);
-  const [bedMenuOpen, setBedMenuOpen] = useState(false);
 
   useLockBodyScroll(open);
 
@@ -225,7 +224,6 @@ export function TenantRoomAssignmentModal({
                             setHostelMenuOpen((value) => !value);
                             setFloorMenuOpen(false);
                             setRoomMenuOpen(false);
-                            setBedMenuOpen(false);
                           }}
                           value={hostels.find((hostel) => hostel.hostelId === hostelId)?.hostelName ?? "Select hostel"}
                         >
@@ -261,7 +259,6 @@ export function TenantRoomAssignmentModal({
                             setFloorMenuOpen((value) => !value);
                             setHostelMenuOpen(false);
                             setRoomMenuOpen(false);
-                            setBedMenuOpen(false);
                           }}
                           value={floorNumber ? `Floor ${floorNumber}` : "Select floor"}
                         >
@@ -353,35 +350,31 @@ export function TenantRoomAssignmentModal({
                       </Field>
                     </div>
                     {!isResidence && selectedRoom ? (
-                      <div className="mt-4 max-w-sm">
-                        <Field label="Bed" icon={Users2} helper="Choose an available bed inside this room">
-                          <CustomDropdown
-                            open={bedMenuOpen}
-                            disabled={saving}
-                            onToggle={() => {
-                              if (saving) return;
-                              setBedMenuOpen((v) => !v);
-                              setHostelMenuOpen(false);
-                              setFloorMenuOpen(false);
-                              setRoomMenuOpen(false);
-                            }}
-                            value={(selectedRoom.beds ?? []).find((b) => b.id === bedId)?.label ?? "Select bed"}
-                          >
-                            {(selectedRoom.beds ?? [])
-                              .filter((bed) => !bed.occupied)
-                              .map((bed) => (
-                                <DropdownOption
-                                  key={bed.id}
-                                  selected={bed.id === bedId}
-                                  primary={bed.label}
-                                  onClick={() => {
-                                    setBedId(bed.id);
-                                    setBedMenuOpen(false);
-                                  }}
-                                />
-                              ))}
-                          </CustomDropdown>
-                        </Field>
+                      <div className="mt-4">
+                        <p className="mb-1 text-sm font-medium text-white/70">Bed</p>
+                        <p className="mb-2 text-xs text-white/35">Choose an available bed inside this room</p>
+                        <div className="flex flex-wrap gap-2">
+                          {(selectedRoom.beds ?? []).filter((bed) => !bed.occupied).length === 0 ? (
+                            <span className="text-sm text-white/40">No available beds</span>
+                          ) : (
+                            (selectedRoom.beds ?? []).filter((bed) => !bed.occupied).map((bed) => (
+                              <button
+                                key={bed.id}
+                                type="button"
+                                disabled={saving}
+                                onClick={() => setBedId(bed.id)}
+                                className={cn(
+                                  "rounded-xl border px-4 py-2 text-sm font-medium transition",
+                                  bedId === bed.id
+                                    ? "border-blue-500/60 bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.3)]"
+                                    : "border-white/12 bg-white/[0.06] text-white/70 hover:border-white/25 hover:text-white",
+                                )}
+                              >
+                                {bed.label}
+                              </button>
+                            ))
+                          )}
+                        </div>
                       </div>
                     ) : null}
                   </div>
