@@ -48,7 +48,7 @@ export default function OwnerDashboardPage() {
     .sort((left, right) => left.status.priority - right.status.priority)
     .slice(0, 4);
   const capacityBase = isResidence ? totalRooms : totalBeds;
-  const occupancyPercent = capacityBase > 0 ? Math.round((occupiedBeds / capacityBase) * 100) : 0;
+  const occupancyPercent = capacityBase > 0 ? Math.round((tenants.length / capacityBase) * 100) : 0;
 
   return (
     <div className={`space-y-3 transition-opacity lg:space-y-3 ${isSwitching ? "opacity-70" : "opacity-100"}`}>

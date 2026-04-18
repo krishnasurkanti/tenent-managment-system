@@ -31,7 +31,7 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
               <OwnerTopbar onOpenSidebar={() => setSidebarOpen(true)} />
             </div>
           </Suspense>
-          <main className="smart-scroll-area smart-scroll-fade animate-[float-up_var(--motion-large)_var(--ease-enter)] px-2.5 py-2 sm:px-3 sm:py-2.5 md:px-4 md:py-3 xl:px-5 xl:py-4">
+          <main className="smart-scroll-area smart-scroll-fade animate-[float-up_var(--motion-large)_var(--ease-enter)] px-4 py-3 sm:px-4 sm:py-3 md:px-5 md:py-3.5 xl:px-6 xl:py-4">
             <div className="app-page-frame mx-auto flex w-full max-w-[1380px] flex-1 flex-col">
               <ErrorBoundary message="This page failed to load. Try refreshing.">
                 {children}
