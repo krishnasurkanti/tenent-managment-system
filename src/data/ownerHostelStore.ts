@@ -29,6 +29,7 @@ function createRooms(prefix: string, floorNumber: number) {
 const demoOwnerHostels: OwnerHostel[] = [
   {
     id: DEMO_OWNER_HOSTEL_ID,
+    ownerId: "owner-demo-001",
     hostelName: "Aurora Residency",
     address: "Madhapur Main Road, Hyderabad",
     type: "PG",
@@ -41,6 +42,7 @@ const demoOwnerHostels: OwnerHostel[] = [
   },
   {
     id: "owner-hostel-lotus",
+    ownerId: "owner-demo-002",
     hostelName: "Lotus Elite Stay",
     address: "Kukatpally Housing Board, Hyderabad",
     type: "PG",
@@ -53,6 +55,7 @@ const demoOwnerHostels: OwnerHostel[] = [
   },
   {
     id: "owner-hostel-skyline",
+    ownerId: "owner-demo-003",
     hostelName: "Skyline Comforts",
     address: "Gachibowli Financial District, Hyderabad",
     type: "PG",
@@ -121,7 +124,8 @@ export function getOwnerHostel(hostelId?: string) {
 
 export function getHostelsByOwnerId(ownerId: string): OwnerHostel[] {
   const persisted = loadPersistedHostels();
-  return persisted.filter((h) => h.ownerId === ownerId).map(cloneHostel);
+  const all = [...demoOwnerHostels, ...persisted];
+  return all.filter((h) => h.ownerId === ownerId).map(cloneHostel);
 }
 
 export function getAllPersistedHostels(): OwnerHostel[] {

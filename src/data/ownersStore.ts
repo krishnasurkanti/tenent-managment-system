@@ -18,12 +18,47 @@ export type Owner = {
 
 type OwnersState = { owners: Owner[] };
 
+const DEMO_OWNERS: Owner[] = [
+  {
+    id: "owner-demo-001",
+    name: "Ravi Kumar",
+    email: "ravi@pgmanager.in",
+    username: "ravi_pg",
+    plainPassword: "ravi@123",
+    passwordHash: "cca5c7eadec305cbad3346bfe52c7db7:af55da9919528bc49d8e30849c73227bad489917892cb7214493b42a21923c53889f02edd9756c8e692b3f6fac1bb7dd03cd3d89653eb034e7ff570ea9646d2b",
+    status: "active",
+    createdAt: "2026-01-10T09:00:00.000Z",
+  },
+  {
+    id: "owner-demo-002",
+    name: "Priya Nair",
+    email: "priya@pgmanager.in",
+    username: "priya_homes",
+    plainPassword: "priya@123",
+    passwordHash: "de4c8230db0c58e2206d6c263709459a:da8fb3745451ec991a4ea6518517fdfd4978eb172b3dc5164da3c99398f8899235334772db15f5b7850d5c695f012304e2667c8723f2ff4e913f517922cc4cdd",
+    status: "active",
+    createdAt: "2026-02-03T11:30:00.000Z",
+  },
+  {
+    id: "owner-demo-003",
+    name: "Suresh Reddy",
+    email: "suresh@pgmanager.in",
+    username: "suresh_stay",
+    plainPassword: "suresh@123",
+    passwordHash: "8a3b23aa46bf2f92ace74b227c7c9815:82d5152e19bbc6c62673401a37fb82b30308fb89c5956e79ebb0ab2ee759692bc9d44a263f186b3c4b902137ad7e466a47b9a2f2074072e9faff516f9cc15b2a",
+    status: "inactive",
+    createdAt: "2026-03-15T14:00:00.000Z",
+  },
+];
+
 function loadState(): OwnersState {
   try {
-    if (!fs.existsSync(OWNERS_FILE)) return { owners: [] };
-    return JSON.parse(fs.readFileSync(OWNERS_FILE, "utf8")) as OwnersState;
+    if (!fs.existsSync(OWNERS_FILE)) return { owners: DEMO_OWNERS };
+    const parsed = JSON.parse(fs.readFileSync(OWNERS_FILE, "utf8")) as OwnersState;
+    if (!Array.isArray(parsed.owners) || parsed.owners.length === 0) return { owners: DEMO_OWNERS };
+    return parsed;
   } catch {
-    return { owners: [] };
+    return { owners: DEMO_OWNERS };
   }
 }
 

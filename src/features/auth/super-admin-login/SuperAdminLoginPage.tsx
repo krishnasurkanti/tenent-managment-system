@@ -61,7 +61,7 @@ export default function SuperAdminLoginPage() {
           </a>
         </div>
 
-        <section className="smart-scroll-area smart-scroll-fade relative flex items-center justify-center px-3 py-8">
+        <section className="flex flex-1 items-center justify-center px-3 py-8">
           <div className="w-full max-w-md">
             <div className="rounded-[8px] border border-white/12 bg-[linear-gradient(180deg,rgba(18,22,38,0.92)_0%,rgba(15,17,31,0.96)_100%)] p-5 shadow-[0_30px_80px_rgba(0,0,0,0.4)] backdrop-blur-xl sm:rounded-[10px]">
               <div className="flex items-center gap-3">
