@@ -1,28 +1,31 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-session";
-import { createOwner, getOwners } from "@/data/ownersStore";
+import { getApiBaseUrl } from "@/lib/api-config";
 
 export const dynamic = "force-dynamic";
+
+function adminHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "x-admin-key": process.env.ADMIN_SECRET ?? "",
+  };
+}
 
 export async function GET(request: NextRequest) {
   if (!(await isAdminAuthenticated(request))) {
     return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
   }
 
-  const owners = getOwners().map((o) => ({
-    id: o.id,
-    name: o.name,
-    email: o.email,
-    username: o.username,
-    plainPassword: o.plainPassword,
-    status: o.status,
-    createdAt: o.createdAt,
-    plan: o.plan ?? "starter",
-    planStatus: o.planStatus ?? "trial",
-    trialStartDate: o.trialStartDate ?? o.createdAt,
-  }));
-
-  return NextResponse.json({ owners });
+  try {
+    const res = await fetch(`${getApiBaseUrl()}/api/admin/owners`, {
+      headers: adminHeaders(),
+      cache: "no-store",
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch {
+    return NextResponse.json({ message: "Owner service unavailable." }, { status: 503 });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -35,31 +38,20 @@ export async function POST(request: NextRequest) {
     email?: string;
     username?: string;
     password?: string;
+    plan?: string;
+    planStatus?: string;
   };
 
   try {
-    const owner = createOwner({
-      name: body.name ?? "",
-      email: body.email ?? "",
-      username: body.username ?? "",
-      password: body.password ?? "",
+    const res = await fetch(`${getApiBaseUrl()}/api/admin/owners`, {
+      method: "POST",
+      headers: adminHeaders(),
+      body: JSON.stringify(body),
+      cache: "no-store",
     });
-    return NextResponse.json({
-      ok: true,
-      owner: {
-        id: owner.id,
-        name: owner.name,
-        email: owner.email,
-        username: owner.username,
-        plainPassword: owner.plainPassword,
-        status: owner.status,
-        createdAt: owner.createdAt,
-      },
-    });
-  } catch (error) {
-    return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Failed to create owner." },
-      { status: 400 },
-    );
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch {
+    return NextResponse.json({ message: "Owner service unavailable." }, { status: 503 });
   }
 }

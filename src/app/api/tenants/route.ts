@@ -11,6 +11,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const hostelId = searchParams.get("hostelId");
   const tenantId = searchParams.get("tenantId");
+  const historyLimit = Math.min(Number(searchParams.get("historyLimit") ?? 24), 120);
   const session = await getOwnerSession();
 
   if (session.mode === "guest") {
@@ -57,11 +58,17 @@ export async function GET(request: Request) {
 
   const allTenants = getTenantRecords();
 
-  const tenants = tenantId
+  const matched = tenantId
     ? allTenants.filter((tenant) => tenant.tenantId === tenantId)
     : hostelId
       ? allTenants.filter((tenant) => tenant.assignment?.hostelId === hostelId)
       : allTenants;
+
+  // Trim payment history to avoid sending large blobs on list views
+  const tenants = matched.map((t) => ({
+    ...t,
+    paymentHistory: t.paymentHistory.slice(0, historyLimit),
+  }));
 
   return NextResponse.json({ tenants, hostels: getOwnerHostelInventory(allTenants) });
 }

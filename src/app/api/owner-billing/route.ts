@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { getOwnerSession } from "@/lib/session-mode";
 import { getTenantRecords } from "@/data/tenantStore";
 import { getOwnerHostels } from "@/data/ownerHostelStore";
-import { getOwnerById } from "@/data/ownersStore";
+import { backendFetch } from "@/services/core/backend-api";
 import { getDemoOwnerProfile } from "@/lib/demo-auth";
 
 export const dynamic = "force-dynamic";
@@ -64,13 +64,18 @@ export async function GET(request: NextRequest) {
 
   if (session.mode === "demo" && session.ownerId === "demo-owner") {
     onboardingDate = getDemoOwnerProfile().created_at;
-  } else if (session.ownerId) {
-    const owner = getOwnerById(session.ownerId);
-    if (owner) {
-      onboardingDate = owner.trialStartDate;
-      plan = owner.plan;
-      planStatus = owner.planStatus;
-    } else {
+  } else if (session.isLive && session.ownerId) {
+    try {
+      const res = await backendFetch("/api/auth/me");
+      if (res.ok) {
+        const data = (await res.json()) as { owner?: { trialStartDate?: string; plan?: string; planStatus?: string } };
+        onboardingDate = data.owner?.trialStartDate ?? new Date().toISOString();
+        plan = data.owner?.plan ?? "starter";
+        planStatus = data.owner?.planStatus ?? "trial";
+      } else {
+        onboardingDate = new Date().toISOString();
+      }
+    } catch {
       onboardingDate = new Date().toISOString();
     }
   } else {

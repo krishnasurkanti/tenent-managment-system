@@ -3,13 +3,13 @@
 import { FormEvent, Suspense, useCallback, useEffect, useState } from "react";
 import { Eye, EyeOff, LogOut, Mail, Plus, ServerCog, Trash2, User, Users, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { csrfFetch } from "@/lib/csrf-client";
 
 type OwnerRow = {
   id: string;
   name: string;
   email: string;
   username: string;
-  plainPassword: string;
   status: "active" | "inactive";
   createdAt: string;
   plan: "starter" | "pro" | "founding";
@@ -89,8 +89,6 @@ function AccessManagementPageInner() {
   const [stats, setStats] = useState<Record<string, OwnerStats>>({});
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(searchParams.get("new") === "1");
-  const [revealedPasswords, setRevealedPasswords] = useState<Set<string>>(new Set());
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -129,7 +127,7 @@ function AccessManagementPageInner() {
   }, [load]);
 
   const handleLogout = async () => {
-    await fetch("/api/auth/admin/logout", { method: "POST" });
+    await csrfFetch("/api/auth/admin/logout", { method: "POST" });
     router.replace("/super-admin/login");
     router.refresh();
   };
@@ -141,7 +139,7 @@ function AccessManagementPageInner() {
     setFormError("");
 
     try {
-      const res = await fetch("/api/super-admin/owners", {
+      const res = await csrfFetch("/api/super-admin/owners", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -173,7 +171,7 @@ function AccessManagementPageInner() {
     setTogglingId(owner.id);
     const nextStatus = owner.status === "active" ? "inactive" : "active";
     try {
-      await fetch(`/api/super-admin/owners/${owner.id}`, {
+      await csrfFetch(`/api/super-admin/owners/${owner.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: nextStatus }),
@@ -188,20 +186,11 @@ function AccessManagementPageInner() {
     if (deletingId) return;
     setDeletingId(id);
     try {
-      await fetch(`/api/super-admin/owners/${id}`, { method: "DELETE" });
+      await csrfFetch(`/api/super-admin/owners/${id}`, { method: "DELETE" });
       await load();
     } finally {
       setDeletingId(null);
     }
-  };
-
-  const toggleReveal = (id: string) => {
-    setRevealedPasswords((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
   };
 
   return (
@@ -389,7 +378,6 @@ function AccessManagementPageInner() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Name</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Email</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Username</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Password</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Plan</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Hostels</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Tenants</th>
@@ -400,27 +388,11 @@ function AccessManagementPageInner() {
               <tbody>
                 {owners.map((owner) => {
                   const ownerStats = stats[owner.id];
-                  const revealed = revealedPasswords.has(owner.id);
                   return (
                     <tr key={owner.id} className="border-t border-white/8 hover:bg-white/[0.02]">
                       <td className="px-4 py-3 font-medium text-white">{owner.name}</td>
                       <td className="px-4 py-3 text-white/60">{owner.email}</td>
                       <td className="px-4 py-3 font-mono text-xs text-white/80">{owner.username}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs text-white/70">
-                            {revealed ? owner.plainPassword : "••••••••"}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => toggleReveal(owner.id)}
-                            aria-label={revealed ? "Hide password" : "Show password"}
-                            className="text-white/30 hover:text-white/60"
-                          >
-                            {revealed ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                          </button>
-                        </div>
-                      </td>
                       <td className="px-4 py-3">
                         <PlanBadge owner={owner} />
                       </td>

@@ -6,7 +6,7 @@
       "ownerName": "Owner Aurora Residency",
       "ownerEmail": "auroraresidency@owner.example.com",
       "ownerUsername": "owner_owner-hostel-aurora",
-      "ownerPasswordHash": "f04770cc05ae2cde0ecaa280f88f585f:15fdc10d8e3a47f4d5bbe154d0fff9294b7e89a6b2c25328b13d0b5778d30a82c7d8822db672084d90f6cbc93543d16b675b29fe7c3b9c168a88b14d5c7c6ae8",
+      "ownerPasswordHash": "473c01fa626037f3ad00a07e5e22ac4d:d7ae1638d7ac9d66ebb87a69abb1cf6ee112d86157052ccd1c84eea8eca94fb8bef566330dd481e9c6312deffce74a9fd83a31350b571759a453c341b778dca7",
       "failedLoginAttempts": 0,
       "lockedUntil": null,
       "ownerSuspended": false,
@@ -23,7 +23,7 @@
       "ownerName": "Owner Lotus Elite Stay",
       "ownerEmail": "lotuselitestay@owner.example.com",
       "ownerUsername": "owner_owner-hostel-lotus",
-      "ownerPasswordHash": "3d6bb9d4dafbd19f7b968b4bfc26f0d8:73aad7fe3a8ecb6162b622b607630f900a36de6ce304be296b9fea7a69cb82a1bdfea26c71f8433c8cd8c1cf6bbf59a7c92a44d553cabeda206436bf118d4264",
+      "ownerPasswordHash": "29e4956bc955671bce27ada860bd3fd8:1eb15b1c77c155a33f690d9a9ce22012c6cd2cf6b14a6f2d1155bfc9dfbddc1d3d835a7a4798110f931972a3f3f1af3e9a283c809e5a0e691c3ed1dc09fa0c22",
       "failedLoginAttempts": 0,
       "lockedUntil": null,
       "ownerSuspended": false,
@@ -40,7 +40,7 @@
       "ownerName": "Owner Skyline Comforts",
       "ownerEmail": "skylinecomforts@owner.example.com",
       "ownerUsername": "owner_owner-hostel-skyline",
-      "ownerPasswordHash": "5e0810213cb771d3c57a86fa3e625fb3:ce5b26e6a207a5d9fdd0b777430f35dbe169bf29413632f3f9c952e0bec5657c42d0f923df804d3a7a8aa4c3eb4964a375cab8cf3125c945b6a4f1da8c686480",
+      "ownerPasswordHash": "01350a75d832f1a8256068ba81c55ba3:3885ca52032eb9a02e09fb8b5a276216638b7d27b11370d7254a27132f410728ab3e1eca31d01844eca151d637ede201125a337c005a976217f8cd033eefdf3d",
       "failedLoginAttempts": 0,
       "lockedUntil": null,
       "ownerSuspended": false,
@@ -52,20 +52,7 @@
       "autoPayEnabled": false
     }
   },
-  "invoices": [
-    {
-      "invoiceId": "inv-owner-hostel-aurora-2026-04",
-      "hostelId": "owner-hostel-aurora",
-      "monthKey": "2026-04",
-      "planId": "starter",
-      "tenantCount": 6,
-      "billableTenantCount": 6,
-      "extraCharges": 0,
-      "finalAmount": 999,
-      "paymentStatus": "pending",
-      "createdAt": "2026-04-14T09:12:02.379Z"
-    }
-  ],
+  "invoices": [],
   "upgradeRequests": [],
   "features": {
     "advanced_reports": true,
@@ -73,13 +60,5 @@
     "automated_reminders": true,
     "bulk_import": true
   },
-  "logs": [
-    {
-      "id": "log-1776157922379-3u37sj",
-      "createdAt": "2026-04-14T09:12:02.379Z",
-      "actor": "super_admin",
-      "event": "invoice_generated",
-      "detail": "Invoice inv-owner-hostel-aurora-2026-04 generated"
-    }
-  ]
+  "logs": []
 }

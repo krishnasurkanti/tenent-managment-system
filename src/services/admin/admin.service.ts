@@ -1,3 +1,4 @@
+import { csrfFetch } from "@/lib/csrf-client";
 import type {
   AdminAnalyticsData,
   AdminBillingRow,
@@ -32,7 +33,7 @@ export async function fetchAdminHostels() {
 }
 
 export async function runAdminHostelAction(hostelId: string, action: string) {
-  const response = await fetch(`/api/admin/hostels/${hostelId}`, {
+  const response = await csrfFetch(`/api/admin/hostels/${hostelId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action }),
@@ -42,7 +43,7 @@ export async function runAdminHostelAction(hostelId: string, action: string) {
 }
 
 export async function saveAdminOwnerCredentials(hostelId: string, username: string, password: string) {
-  const response = await fetch("/api/admin/owner-access", {
+  const response = await csrfFetch("/api/admin/owner-access", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ hostelId, username, password }),
@@ -52,7 +53,7 @@ export async function saveAdminOwnerCredentials(hostelId: string, username: stri
 }
 
 export async function resetAdminOwnerAccess(hostelId: string) {
-  const response = await fetch("/api/admin/owner-access", {
+  const response = await csrfFetch("/api/admin/owner-access", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ hostelId }),
@@ -77,7 +78,7 @@ export async function fetchAdminUpgradeRequests() {
 }
 
 export async function updateAdminBillingControl(hostelId: string, patch: Record<string, unknown>) {
-  const response = await fetch("/api/admin/billing/control", {
+  const response = await csrfFetch("/api/admin/billing/control", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ hostelId, ...patch }),
@@ -87,7 +88,7 @@ export async function updateAdminBillingControl(hostelId: string, patch: Record<
 }
 
 export async function generateAdminInvoice(hostelId: string) {
-  const response = await fetch("/api/admin/billing/invoice", {
+  const response = await csrfFetch("/api/admin/billing/invoice", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ hostelId }),
@@ -97,7 +98,7 @@ export async function generateAdminInvoice(hostelId: string) {
 }
 
 export async function updateAdminInvoiceStatus(invoiceId: string, status: PaymentStatus) {
-  const response = await fetch("/api/admin/billing/invoice-status", {
+  const response = await csrfFetch("/api/admin/billing/invoice-status", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ invoiceId, status }),
@@ -107,7 +108,7 @@ export async function updateAdminInvoiceStatus(invoiceId: string, status: Paymen
 }
 
 export async function decideAdminUpgradeRequest(requestId: string, action: "approve" | "reject") {
-  const response = await fetch("/api/admin/billing/upgrade-requests", {
+  const response = await csrfFetch("/api/admin/billing/upgrade-requests", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ requestId, action }),
@@ -123,18 +124,14 @@ export async function fetchAdminSettings() {
   ]);
   const featureData = await parseJson<{ features: AdminSettingsFeatures }>(featureRes);
   const logData = await parseJson<{ logs: AdminLog[] }>(logsRes);
-
   return {
     responses: [featureRes, logsRes] as const,
-    data: {
-      features: featureData.features ?? {},
-      logs: logData.logs ?? [],
-    },
+    data: { features: featureData.features ?? {}, logs: logData.logs ?? [] },
   };
 }
 
 export async function updateAdminFeatureFlag(name: string, enabled: boolean) {
-  const response = await fetch("/api/admin/settings/features", {
+  const response = await csrfFetch("/api/admin/settings/features", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, enabled }),

@@ -8,6 +8,7 @@ function signToken(owner) {
     {
       ownerId: owner.id,
       email: owner.email,
+      role: "owner",
     },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || "7d" },
@@ -15,22 +16,31 @@ function signToken(owner) {
 }
 
 async function register(req, res) {
-  const { email, password } = req.validatedBody;
+  const { email, password, name, username } = req.validatedBody;
   const normalizedEmail = email.toLowerCase();
+  const normalizedUsername = username?.trim().toLowerCase() || null;
 
   const existingOwner = await query("SELECT id FROM owners WHERE email = $1 LIMIT 1", [normalizedEmail]);
   if (existingOwner.rowCount > 0) {
     throw createHttpError(409, "An owner with this email already exists.");
   }
 
+  if (normalizedUsername) {
+    const existingUsername = await query("SELECT id FROM owners WHERE username = $1 LIMIT 1", [normalizedUsername]);
+    if (existingUsername.rowCount > 0) {
+      throw createHttpError(409, "Username already taken.");
+    }
+  }
+
   const hashedPassword = await bcrypt.hash(password, 12);
+  const now = new Date();
   const result = await query(
     `
-      INSERT INTO owners (email, password)
-      VALUES ($1, $2)
-      RETURNING id, email, created_at
+      INSERT INTO owners (email, password, name, username, status, plan, plan_status, trial_start_date)
+      VALUES ($1, $2, $3, $4, 'active', 'starter', 'trial', $5)
+      RETURNING id, email, name, username, status, plan, plan_status, trial_start_date, created_at
     `,
-    [normalizedEmail, hashedPassword],
+    [normalizedEmail, hashedPassword, name?.trim() || "", normalizedUsername, now],
   );
 
   const owner = result.rows[0];
@@ -38,35 +48,54 @@ async function register(req, res) {
   return res.status(201).json({
     message: "Owner registered successfully.",
     token: signToken(owner),
-    owner,
+    owner: {
+      id: owner.id,
+      email: owner.email,
+      name: owner.name,
+      username: owner.username,
+      status: owner.status,
+      plan: owner.plan,
+      planStatus: owner.plan_status,
+      trialStartDate: owner.trial_start_date,
+      created_at: owner.created_at,
+    },
   });
 }
 
 async function login(req, res) {
-  const { email, password } = req.validatedBody;
-  if (!email) {
+  const { email, username, password } = req.validatedBody;
+  if (!email && !username) {
     throw createHttpError(401, "Invalid email or password.");
   }
 
-  const normalizedEmail = email.toLowerCase();
-
-  const result = await query(
-    `
-      SELECT id, email, password, created_at
-      FROM owners
-      WHERE email = $1
-      LIMIT 1
-    `,
-    [normalizedEmail],
-  );
+  let result;
+  if (username) {
+    const normalized = username.trim().toLowerCase();
+    result = await query(
+      `SELECT id, email, name, username, password, status, plan, plan_status, trial_start_date, created_at
+       FROM owners WHERE username = $1 LIMIT 1`,
+      [normalized],
+    );
+  } else {
+    const normalizedEmail = email.toLowerCase();
+    result = await query(
+      `SELECT id, email, name, username, password, status, plan, plan_status, trial_start_date, created_at
+       FROM owners WHERE email = $1 LIMIT 1`,
+      [normalizedEmail],
+    );
+  }
 
   if (result.rowCount === 0) {
     throw createHttpError(401, "Invalid email or password.");
   }
 
   const owner = result.rows[0];
-  const passwordMatches = await bcrypt.compare(password, owner.password);
 
+  if (owner.status === "inactive") {
+    throw createHttpError(401, "Your account has been suspended. Contact your administrator.");
+  }
+
+  const passwordMatches = await bcrypt.compare(password, owner.password);
   if (!passwordMatches) {
     throw createHttpError(401, "Invalid email or password.");
   }
@@ -77,6 +106,12 @@ async function login(req, res) {
     owner: {
       id: owner.id,
       email: owner.email,
+      name: owner.name,
+      username: owner.username,
+      status: owner.status,
+      plan: owner.plan,
+      planStatus: owner.plan_status,
+      trialStartDate: owner.trial_start_date,
       created_at: owner.created_at,
     },
   });

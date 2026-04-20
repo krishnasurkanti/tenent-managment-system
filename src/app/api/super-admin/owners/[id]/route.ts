@@ -1,8 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-session";
-import { updateOwnerStatus, deleteOwner, getOwnerById } from "@/data/ownersStore";
+import { getApiBaseUrl } from "@/lib/api-config";
 
 export const dynamic = "force-dynamic";
+
+function adminHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "x-admin-key": process.env.ADMIN_SECRET ?? "",
+  };
+}
 
 export async function PATCH(
   request: NextRequest,
@@ -13,19 +20,23 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const body = (await request.json()) as { status?: "active" | "inactive" };
+  const body = (await request.json()) as { status?: string; plan?: string; planStatus?: string };
 
-  if (body.status !== "active" && body.status !== "inactive") {
-    return NextResponse.json({ message: "Invalid status." }, { status: 400 });
+  // Route to the correct backend endpoint depending on what's being updated
+  const endpoint = body.status !== undefined ? "status" : "plan";
+
+  try {
+    const res = await fetch(`${getApiBaseUrl()}/api/admin/owners/${id}/${endpoint}`, {
+      method: "PATCH",
+      headers: adminHeaders(),
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch {
+    return NextResponse.json({ message: "Owner service unavailable." }, { status: 503 });
   }
-
-  const owner = getOwnerById(id);
-  if (!owner) {
-    return NextResponse.json({ message: "Owner not found." }, { status: 404 });
-  }
-
-  updateOwnerStatus(id, body.status);
-  return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(
@@ -37,6 +48,16 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  deleteOwner(id);
-  return NextResponse.json({ ok: true });
+
+  try {
+    const res = await fetch(`${getApiBaseUrl()}/api/admin/owners/${id}`, {
+      method: "DELETE",
+      headers: adminHeaders(),
+      cache: "no-store",
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch {
+    return NextResponse.json({ message: "Owner service unavailable." }, { status: 503 });
+  }
 }

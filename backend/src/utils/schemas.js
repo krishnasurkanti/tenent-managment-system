@@ -3,6 +3,8 @@ const { z } = require("zod");
 const authRegisterSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(8).max(128),
+  name: z.string().trim().max(120).optional(),
+  username: z.string().trim().min(3).max(64).optional(),
 });
 
 const authLoginSchema = z.object({

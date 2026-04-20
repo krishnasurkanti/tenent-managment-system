@@ -509,6 +509,11 @@ export function recordTenantPayment(
     proofMimeType: proofMimeType?.trim() ?? "",
   });
 
+  // Cap history at 120 entries to prevent unbounded growth
+  if (tenant.paymentHistory.length > 120) {
+    tenant.paymentHistory = tenant.paymentHistory.slice(0, 120);
+  }
+
   persistTenantRecords(tenantRecords);
   return tenant;
 }

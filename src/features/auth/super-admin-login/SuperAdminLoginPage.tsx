@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, Lock, ServerCog, User } from "lucide-react";
+import { csrfFetch } from "@/lib/csrf-client";
 
 export default function SuperAdminLoginPage() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function SuperAdminLoginPage() {
     setError("");
 
     try {
-      const response = await fetch("/api/super-admin/login", {
+      const response = await csrfFetch("/api/super-admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: username.trim(), password: password.trim() }),

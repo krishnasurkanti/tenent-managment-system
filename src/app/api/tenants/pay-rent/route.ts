@@ -14,6 +14,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
   }
 
+  // In demo mode only the demo-owner may record payments (local owners must upgrade to live)
+  if (session.isDemo && session.ownerId !== "demo-owner") {
+    return NextResponse.json({ message: "Forbidden." }, { status: 403 });
+  }
+
   const formData = await request.formData();
 
   const tenantId = String(formData.get("tenantId") ?? "").trim();

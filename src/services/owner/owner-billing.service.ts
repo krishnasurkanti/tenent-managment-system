@@ -1,3 +1,5 @@
+import { csrfFetch } from "@/lib/csrf-client";
+
 export type OwnerBillingData = {
   hostelId: string;
   hostelName: string;
@@ -28,29 +30,27 @@ export async function fetchOwnerBilling(hostelId: string) {
 }
 
 export async function payOwnerBilling(hostelId: string) {
-  const response = await fetch("/api/owner-billing/pay", {
+  const response = await csrfFetch("/api/owner-billing/pay", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ hostelId, paymentMethod: "online" }),
   });
-
   const data = (await response.json()) as { message?: string };
   return { response, data };
 }
 
 export async function setOwnerAutoPay(hostelId: string, enabled: boolean) {
-  const response = await fetch("/api/owner-billing/autopay", {
+  const response = await csrfFetch("/api/owner-billing/autopay", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ hostelId, enabled }),
   });
-
   const data = (await response.json()) as { message?: string };
   return { response, data };
 }
 
 export async function requestOwnerPlanUpgrade(hostelId: string, currentPlanId: string, requestedPlanId: string) {
-  const response = await fetch("/api/owner-billing/request-upgrade", {
+  const response = await csrfFetch("/api/owner-billing/request-upgrade", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -59,7 +59,6 @@ export async function requestOwnerPlanUpgrade(hostelId: string, currentPlanId: s
       note: `Upgrade requested from ${currentPlanId} to ${requestedPlanId}`,
     }),
   });
-
   const data = (await response.json()) as { message?: string };
   return { response, data };
 }

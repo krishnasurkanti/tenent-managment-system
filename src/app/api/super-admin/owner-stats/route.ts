@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-session";
-import { getOwners } from "@/data/ownersStore";
+import { getApiBaseUrl } from "@/lib/api-config";
 import { getHostelsByOwnerId } from "@/data/ownerHostelStore";
 import { getTenantRecords } from "@/data/tenantStore";
 
@@ -11,7 +11,24 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
   }
 
-  const owners = getOwners();
+  let owners: Array<{ id: string }> = [];
+
+  try {
+    const res = await fetch(`${getApiBaseUrl()}/api/admin/owners`, {
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-key": process.env.ADMIN_SECRET ?? "",
+      },
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { owners?: Array<{ id: string }> };
+      owners = data.owners ?? [];
+    }
+  } catch {
+    // Backend unavailable — return empty stats
+  }
+
   const allTenants = getTenantRecords();
 
   const stats = owners.map((owner) => {

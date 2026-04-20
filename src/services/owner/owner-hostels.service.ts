@@ -1,12 +1,8 @@
+import { csrfFetch } from "@/lib/csrf-client";
 import type { OwnerFloor, OwnerHostel } from "@/types/owner-hostel";
 
-type OwnerHostelsResponse = {
-  hostels?: OwnerHostel[];
-};
-
-type OwnerHostelResponse = {
-  hostel?: OwnerHostel | null;
-};
+type OwnerHostelsResponse = { hostels?: OwnerHostel[] };
+type OwnerHostelResponse = { hostel?: OwnerHostel | null };
 
 export async function fetchOwnerHostels() {
   const response = await fetch("/api/owner-hostels", { cache: "no-store" });
@@ -15,9 +11,10 @@ export async function fetchOwnerHostels() {
 }
 
 export async function fetchOwnerHostel(hostelId?: string | null) {
-  const response = await fetch(hostelId ? `/api/owner-hostels/${hostelId}` : "/api/owner-hostel", {
-    cache: "no-store",
-  });
+  const response = await fetch(
+    hostelId ? `/api/owner-hostels/${hostelId}` : "/api/owner-hostel",
+    { cache: "no-store" },
+  );
   const data = (await response.json()) as OwnerHostelResponse;
   return { response, data };
 }
@@ -31,12 +28,14 @@ export async function saveOwnerHostel(params: {
   floors: OwnerFloor[];
 }) {
   const { hostelId, isEditMode, ...payload } = params;
-  const response = await fetch(isEditMode && hostelId ? `/api/owner-hostels/${hostelId}` : "/api/owner-hostels", {
-    method: isEditMode ? "PUT" : "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
+  const response = await csrfFetch(
+    isEditMode && hostelId ? `/api/owner-hostels/${hostelId}` : "/api/owner-hostels",
+    {
+      method: isEditMode ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
   const data = (await response.json()) as { hostel?: OwnerHostel; message?: string };
   return { response, data };
 }

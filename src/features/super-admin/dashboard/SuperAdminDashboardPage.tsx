@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ExternalLink, LogOut, Plus, ServerCog, ShieldCheck, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { csrfFetch } from "@/lib/csrf-client";
 
 type OwnerRow = {
   id: string;
@@ -52,7 +53,7 @@ export default function SuperAdminDashboardPage() {
   useEffect(() => { void loadData(); }, [loadData]);
 
   const handleLogout = async () => {
-    await fetch("/api/auth/admin/logout", { method: "POST" });
+    await csrfFetch("/api/auth/admin/logout", { method: "POST" });
     router.replace("/super-admin/login");
     router.refresh();
   };

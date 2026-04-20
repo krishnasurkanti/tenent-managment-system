@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { createDemoSessionToken, getDemoAdminProfile, matchesDemoCredentials } from "@/lib/demo-auth";
+import { getDemoAdminProfile, matchesDemoCredentials } from "@/lib/demo-auth";
 import { setAuthCookies } from "@/services/core/backend-api";
+import { signDemoToken } from "@/lib/sign-token";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +15,9 @@ export async function POST(request: Request) {
   }
 
   if (matchesDemoCredentials(identifier, password)) {
+    const token = await signDemoToken("super_admin");
     const response = NextResponse.json({ ok: true, admin: getDemoAdminProfile() });
-    setAuthCookies(response, createDemoSessionToken("super_admin"));
+    setAuthCookies(response, token);
     return response;
   }
 

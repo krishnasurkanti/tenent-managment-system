@@ -1,3 +1,4 @@
+import { csrfFetch } from "@/lib/csrf-client";
 import type { TenantFamilyMember, TenantRecord } from "@/types/tenant";
 
 export type TenantsResponse = {
@@ -12,18 +13,16 @@ export async function fetchOwnerTenants(hostelId?: string) {
 }
 
 export async function fetchTenantById(tenantId: string, baseUrl?: string) {
-  const target = baseUrl ? `${baseUrl}/api/tenants?tenantId=${encodeURIComponent(tenantId)}` : `/api/tenants?tenantId=${encodeURIComponent(tenantId)}`;
+  const target = baseUrl
+    ? `${baseUrl}/api/tenants?tenantId=${encodeURIComponent(tenantId)}`
+    : `/api/tenants?tenantId=${encodeURIComponent(tenantId)}`;
   const response = await fetch(target, { cache: "no-store" });
   const data = (await response.json()) as TenantsResponse;
   return { response, data };
 }
 
 export async function createTenant(formData: FormData) {
-  const response = await fetch("/api/tenants", {
-    method: "POST",
-    body: formData,
-  });
-
+  const response = await csrfFetch("/api/tenants", { method: "POST", body: formData });
   const data = (await response.json()) as { tenant?: TenantRecord; message?: string };
   return { response, data };
 }
@@ -40,43 +39,33 @@ export async function assignTenantRoom(payload: {
   bedLabel?: string;
   tenantRecord?: TenantRecord;
 }) {
-  const response = await fetch("/api/tenants/assign-room", {
+  const response = await csrfFetch("/api/tenants/assign-room", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-
   const data = (await response.json()) as { tenant?: TenantRecord; message?: string };
   return { response, data };
 }
 
 export async function recordTenantPayment(formData: FormData) {
-  const response = await fetch("/api/tenants/pay-rent", {
-    method: "POST",
-    body: formData,
-  });
-
+  const response = await csrfFetch("/api/tenants/pay-rent", { method: "POST", body: formData });
   const data = (await response.json()) as { tenant?: TenantRecord; message?: string };
   return { response, data };
 }
 
 export async function uploadTenantPaymentProof(formData: FormData) {
-  const response = await fetch("/api/tenants/payment-proof", {
-    method: "POST",
-    body: formData,
-  });
-
+  const response = await csrfFetch("/api/tenants/payment-proof", { method: "POST", body: formData });
   const data = (await response.json()) as { tenant?: TenantRecord; message?: string };
   return { response, data };
 }
 
 export async function removeTenant(tenantId: string) {
-  const response = await fetch("/api/tenants/remove", {
+  const response = await csrfFetch("/api/tenants/remove", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ tenantId }),
   });
-
   const data = (await response.json()) as { tenant?: TenantRecord; message?: string };
   return { response, data };
 }
@@ -85,12 +74,11 @@ export async function updateTenantFamilyMembers(payload: {
   tenantId: string;
   familyMembers: TenantFamilyMember[];
 }) {
-  const response = await fetch("/api/tenants/family-members", {
+  const response = await csrfFetch("/api/tenants/family-members", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-
   const data = (await response.json()) as { tenant?: TenantRecord; message?: string };
   return { response, data };
 }

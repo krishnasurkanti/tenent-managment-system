@@ -111,6 +111,8 @@
     overscroll-behavior-y: none;
     color-scheme: light;
     overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
   }
 
   html[data-theme="dark"] {
@@ -121,6 +123,14 @@
   body {
     height: 100%;
     overflow: hidden;
+    -webkit-overflow-scrolling: touch;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  input, textarea, [contenteditable] {
+    user-select: text;
+    -webkit-user-select: text;
   }
 
   body {

@@ -10,6 +10,19 @@ async function initializeDatabase() {
     )
   `);
 
+  // Idempotent column additions — safe to run on every boot
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT ''`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS username TEXT UNIQUE`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'starter'`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS plan_status TEXT NOT NULL DEFAULT 'trial'`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS trial_start_date TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_owners_username ON owners (username)
+    WHERE username IS NOT NULL
+  `);
+
   await query(`
     CREATE TABLE IF NOT EXISTS hostels (
       id BIGSERIAL PRIMARY KEY,

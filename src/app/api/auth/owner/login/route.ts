@@ -1,30 +1,16 @@
 import { NextResponse } from "next/server";
-import { validateOwner } from "@/data/ownersStore";
+import { getApiBaseUrl } from "@/lib/api-config";
 import { setAuthCookies } from "@/services/core/backend-api";
+import { authRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-function encodeBase64Url(value: string) {
-  return Buffer.from(value, "utf8").toString("base64url");
-}
-
-function createOwnerToken(ownerId: string, username: string) {
-  const payload = {
-    sub: ownerId,
-    role: "owner",
-    source: "local",
-    username,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
-  };
-  return [
-    encodeBase64Url(JSON.stringify({ alg: "none", typ: "JWT" })),
-    encodeBase64Url(JSON.stringify(payload)),
-    "owner-signature",
-  ].join(".");
-}
-
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  if (authRateLimit(ip)) {
+    return NextResponse.json({ message: "Too many login attempts. Try again later." }, { status: 429 });
+  }
+
   const body = (await request.json()) as { username?: string; password?: string };
   const username = body.username?.trim() ?? "";
   const password = body.password?.trim() ?? "";
@@ -33,18 +19,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Username and password are required." }, { status: 400 });
   }
 
-  const result = validateOwner(username, password);
+  try {
+    const backendResponse = await fetch(`${getApiBaseUrl()}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+      cache: "no-store",
+    });
 
-  if (!result.ok) {
-    const message =
-      result.reason === "suspended"
-        ? "Your account has been suspended. Contact your administrator."
-        : "Invalid username or password.";
-    return NextResponse.json({ message }, { status: 401 });
+    const payload = (await backendResponse.json()) as {
+      message?: string;
+      token?: string;
+      owner?: { id?: string | number; email?: string; username?: string };
+    };
+
+    if (!backendResponse.ok || !payload.token) {
+      return NextResponse.json(
+        { message: payload.message || "Invalid username or password." },
+        { status: backendResponse.status || 401 },
+      );
+    }
+
+    const response = NextResponse.json({ ok: true, owner: payload.owner });
+    setAuthCookies(response, payload.token);
+    return response;
+  } catch {
+    return NextResponse.json({ message: "Unable to sign in right now. Please try again." }, { status: 503 });
   }
-
-  const token = createOwnerToken(result.owner.id, result.owner.username);
-  const response = NextResponse.json({ ok: true, owner: { id: result.owner.id, username: result.owner.username } });
-  setAuthCookies(response, token);
-  return response;
 }
