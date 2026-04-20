@@ -1,21 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/query-provider";
 import { ToastProvider } from "@/components/ui/toast";
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
-  themeColor: "#0f172a",
+  themeColor: "#09090b",
 };
 
 export const metadata: Metadata = {
@@ -36,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${manrope.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         <ThemeProvider>
           <QueryProvider>
             <ToastProvider>{children}</ToastProvider>

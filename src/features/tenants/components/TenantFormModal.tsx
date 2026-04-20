@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { CalendarDays, CreditCard, FileBadge2, ImageIcon, IndianRupee, Mail, Phone, Plus, ShieldAlert, Trash2, User, Users, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, CalendarDays, CreditCard, FileBadge2, ImageIcon, IndianRupee, Mail, Phone, Plus, ShieldAlert, Trash2, User, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
@@ -20,6 +20,8 @@ const initialState = {
   emergencyContact: "",
 };
 
+const DRAFT_KEY = "tenant-form-draft-v2";
+
 type TenantStep = 1 | 2 | 3;
 type TenantType = "new" | "old";
 type FamilyMemberForm = { id: string; name: string; relation: string; age: string };
@@ -30,6 +32,65 @@ function createFamilyMember(): FamilyMemberForm {
 
 function getMissingFields(fields: Array<[label: string, valid: boolean]>) {
   return fields.filter(([, valid]) => !valid).map(([label]) => label);
+}
+
+function normalizePhoneInput(value: string) {
+  const digits = value.replace(/\D/g, "").replace(/^91/, "");
+  return digits.slice(0, 10);
+}
+
+function formatPhonePreview(value: string) {
+  const normalized = normalizePhoneInput(value);
+  if (normalized.length <= 5) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, 5)} ${normalized.slice(5)}`;
+}
+
+function getNextDuePreview(dateValue: string, billingCycle: BillingCycle) {
+  if (!dateValue) {
+    return "Pick joining date";
+  }
+
+  const base = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(base.getTime())) {
+    return "Pick joining date";
+  }
+
+  if (billingCycle === "monthly") {
+    base.setMonth(base.getMonth() + 1);
+  } else if (billingCycle === "weekly") {
+    base.setDate(base.getDate() + 7);
+  } else {
+    base.setDate(base.getDate() + 1);
+  }
+
+  return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(base);
+}
+
+function getSavedDraft() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const savedDraft = window.localStorage.getItem(DRAFT_KEY);
+  if (!savedDraft) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(savedDraft) as {
+      step?: TenantStep;
+      tenantType?: TenantType;
+      billingCycle?: BillingCycle;
+      form?: typeof initialState;
+      familyMembers?: FamilyMemberForm[];
+    };
+  } catch {
+    window.localStorage.removeItem(DRAFT_KEY);
+    return null;
+  }
 }
 
 export function TenantFormModal({
@@ -46,16 +107,37 @@ export function TenantFormModal({
   propertyType?: "PG" | "RESIDENCE";
 }) {
   const isResidence = propertyType === "RESIDENCE";
-  const [step, setStep] = useState<TenantStep>(1);
-  const [tenantType, setTenantType] = useState<TenantType>("new");
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
-  const [form, setForm] = useState(initialState);
+  const savedDraft = getSavedDraft();
+  const [step, setStep] = useState<TenantStep>(savedDraft?.step ?? 1);
+  const [tenantType, setTenantType] = useState<TenantType>(savedDraft?.tenantType ?? "new");
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>(savedDraft?.billingCycle ?? "monthly");
+  const [form, setForm] = useState(savedDraft?.form ? { ...initialState, ...savedDraft.form } : initialState);
   const [idImage, setIdImage] = useState<File | null>(null);
-  const [familyMembers, setFamilyMembers] = useState<FamilyMemberForm[]>([createFamilyMember()]);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMemberForm[]>(
+    savedDraft?.familyMembers?.length ? savedDraft.familyMembers : [createFamilyMember()],
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const duePreview = useMemo(() => getNextDuePreview(form.paidOnDate, billingCycle), [billingCycle, form.paidOnDate]);
+  const paymentCoverage = Number(form.monthlyRent) > 0 ? Math.min(100, Math.round((Number(form.rentPaid || 0) / Number(form.monthlyRent)) * 100)) : 0;
 
   useLockBodyScroll(open);
+
+  useEffect(() => {
+    if (!open || typeof window === "undefined") {
+      return;
+    }
+
+    const draft = JSON.stringify({
+      step,
+      tenantType,
+      billingCycle,
+      form,
+      familyMembers,
+    });
+
+    window.localStorage.setItem(DRAFT_KEY, draft);
+  }, [billingCycle, familyMembers, form, open, step, tenantType]);
 
   if (!open) {
     return null;
@@ -70,6 +152,9 @@ export function TenantFormModal({
     setFamilyMembers([createFamilyMember()]);
     setSubmitting(false);
     setError("");
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(DRAFT_KEY);
+    }
   };
 
   const handleClose = () => {
@@ -209,19 +294,19 @@ export function TenantFormModal({
       style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
     >
       <div className="flex min-h-full w-full max-w-2xl items-start justify-center sm:items-center">
-        <Card className="flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-0 shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:max-h-[min(92dvh,900px)]">
+        <Card className="flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:max-h-[min(92dvh,900px)]">
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(90deg,rgba(37,99,235,0.12)_0%,rgba(14,165,233,0.08)_100%)]" />
+            <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(90deg,rgba(99,102,241,0.14)_0%,rgba(245,158,11,0.06)_100%)]" />
 
             <div className="relative flex items-start justify-between gap-4 px-4 pb-2 pt-4 sm:px-5 sm:pt-5">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-[13px] font-semibold text-white/70">
-                  <span className="rounded-[8px] bg-blue-600 p-1 text-white">
+                  <span className="rounded-[8px] bg-[var(--accent-strong)] p-1 text-white">
                     <User className="h-3.5 w-3.5" />
                   </span>
                   Add Tenant
                 </div>
-                <p className="mt-2 text-[11px] leading-5 text-white/45">Fill details and ID proof, then payment.</p>
+                <p className="mt-2 text-[11px] leading-5 text-white/45">Move fast now, fill missing details later. Draft saves automatically.</p>
               </div>
               <Button variant="ghost" disabled={submitting} aria-label="Close" className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={handleClose}>
                 <X className="h-4 w-4" />
@@ -239,7 +324,7 @@ export function TenantFormModal({
                 {step === 1 ? (
                   <>
                     <div>
-                      <h3 className="text-[15px] font-semibold text-white">Personal Details &amp; ID Proof</h3>
+                      <h3 className="font-display text-[15px] font-semibold text-white">Personal Details &amp; ID Proof</h3>
                       <p className="mt-1 text-[11px] text-white/45">Choose tenant type first. Old tenants can be onboarded with missing details and updated later.</p>
                     </div>
 
@@ -283,12 +368,14 @@ export function TenantFormModal({
                         <InputShell icon={<Phone className="h-4 w-4 text-emerald-500" />}>
                           <span className="text-[13px] font-medium text-white/50">+91</span>
                           <input
-                            value={form.phone}
-                            onChange={(event) => setForm({ ...form, phone: event.target.value })}
+                            value={formatPhonePreview(form.phone)}
+                            onChange={(event) => setForm({ ...form, phone: normalizePhoneInput(event.target.value) })}
                             disabled={submitting}
                             className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
                             type="tel"
-                          placeholder="Enter phone number"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            placeholder="98765 43210"
                           />
                         </InputShell>
                       </Field>
@@ -310,12 +397,14 @@ export function TenantFormModal({
                         <InputShell icon={<ShieldAlert className="h-4 w-4 text-amber-500" />}>
                           <span className="text-[13px] font-medium text-white/50">+91</span>
                           <input
-                            value={form.emergencyContact}
-                            onChange={(event) => setForm({ ...form, emergencyContact: event.target.value })}
+                            value={formatPhonePreview(form.emergencyContact)}
+                            onChange={(event) => setForm({ ...form, emergencyContact: normalizePhoneInput(event.target.value) })}
                             disabled={submitting}
                             className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
                             type="tel"
-                          placeholder="Enter emergency contact number"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            placeholder="Emergency number"
                           />
                         </InputShell>
                       </Field>
@@ -326,7 +415,7 @@ export function TenantFormModal({
                         {tenantType === "old" ? "ID Proof (Optional)" : "ID Proof"}
                       </p>
                       <div className="grid gap-2 sm:grid-cols-2">
-                        <UploadCard icon={ImageIcon} title="Photo Optional" subtitle="You can add tenant photo later" tone="blue" disabled />
+                        <UploadCard icon={ImageIcon} title="Photo Optional" subtitle="You can add tenant photo later" disabled />
                         <label className={`block ${submitting ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}>
                           <span className="sr-only">Upload ID</span>
                           <div className="rounded-[8px] border border-white/12 bg-white/[0.06] p-3 transition hover:opacity-90">
@@ -363,7 +452,7 @@ export function TenantFormModal({
                 {step === 3 ? (
                   <>
                     <div>
-                      <h3 className="text-[15px] font-semibold text-white">Family Members</h3>
+                      <h3 className="font-display text-[15px] font-semibold text-white">Family Members</h3>
                       <p className="mt-1 text-[11px] text-white/45">Add the people living in this unit. You can skip this and add later.</p>
                     </div>
 
@@ -440,13 +529,34 @@ export function TenantFormModal({
                 {step === 2 ? (
                   <>
                     <div>
-                      <h3 className="text-[15px] font-semibold text-white">Payment Details</h3>
-                      <p className="mt-1 text-[11px] text-white/45">{isResidence ? "Next, add family members." : "Final step."} Joining date and billing date will be treated as the same date.</p>
+                      <h3 className="font-display text-[15px] font-semibold text-white">Payment Details</h3>
+                      <p className="mt-1 text-[11px] text-white/45">{isResidence ? "Next, add family members." : "Final step."} First due date is calculated automatically so the owner does not need to do date math.</p>
+                    </div>
+
+                    <div className="grid gap-2 md:grid-cols-[1.1fr_0.9fr]">
+                      <div className="rounded-2xl border border-[rgba(99,102,241,0.26)] bg-[rgba(99,102,241,0.09)] p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-200/70">First due preview</p>
+                        <p className="mt-1 text-sm font-semibold text-white">{duePreview}</p>
+                        <p className="mt-1 text-[11px] text-indigo-100/60">
+                          {billingCycle === "monthly" ? "Calculated one month from joining." : billingCycle === "weekly" ? "Calculated seven days from joining." : "Calculated next day from joining."}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55">Payment coverage</p>
+                        <p className="mt-1 text-sm font-semibold text-white">{paymentCoverage}% of first cycle</p>
+                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/8">
+                          <div
+                            className="h-full rounded-full bg-[linear-gradient(90deg,#22c55e_0%,#6366f1_100%)] transition-[width] duration-300"
+                            style={{ width: `${paymentCoverage}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     <div className="grid gap-3 md:grid-cols-2">
                       <Field label={billingCycle === "daily" ? "Daily Rate" : billingCycle === "weekly" ? "Weekly Rate" : "Monthly Rent"}>
                         <InputShell icon={<IndianRupee className="h-4 w-4 text-[var(--accent)]" />}>
+                          <span className="text-[13px] font-semibold text-white/55">Rs</span>
                           <input
                             type="number"
                             min="0"
@@ -518,7 +628,7 @@ export function TenantFormModal({
                         })}
                       </div>
                       {billingCycle !== "monthly" ? (
-                        <p className="mt-2 text-[11px] text-emerald-600 font-medium">
+                        <p className="mt-2 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-400">
                           {billingCycle === "daily"
                             ? "Daily tenants are managed free — no plan limit counted."
                             : "Weekly tenants are managed free — no plan limit counted."}
@@ -533,8 +643,9 @@ export function TenantFormModal({
 
             <div className="shrink-0 border-t border-white/10 bg-transparent px-4 py-3 sm:px-5">
                 {error ? (
-                  <div className="mb-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-400">
-                    {error}
+                  <div className="mb-3 flex items-start gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{error}</span>
                   </div>
                 ) : null}
                 {submitting ? <ProcessingPill label="Creating tenant and preparing assignment" className="mb-3" /> : null}
@@ -609,13 +720,11 @@ function UploadCard({
   icon: Icon,
   title,
   subtitle,
-  tone,
   disabled = false,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   subtitle: string;
-  tone: "blue" | "neutral";
   disabled?: boolean;
 }) {
   return (

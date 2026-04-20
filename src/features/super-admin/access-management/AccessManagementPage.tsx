@@ -194,16 +194,16 @@ function AccessManagementPageInner() {
   };
 
   return (
-    <div className="min-h-screen overflow-y-auto bg-[#0f172a] text-white">
-      <header className="border-b border-white/10 bg-[#0d1526] px-4 py-3 sm:px-6">
+    <div className="min-h-screen overflow-y-auto bg-[linear-gradient(180deg,#09090b_0%,#111114_100%)] text-white">
+      <header className="border-b border-white/10 bg-[rgba(9,9,11,0.88)] px-4 py-3 backdrop-blur-xl sm:px-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#ffcc4d_0%,#d9941c_100%)] text-[#18120a]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#fcd34d_0%,#f59e0b_100%)] text-[#18120a] shadow-[0_16px_34px_rgba(245,158,11,0.25)]">
               <ServerCog className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-white">Super Admin</p>
-              <p className="text-xs text-white/40">Control Panel</p>
+              <p className="font-display text-sm font-semibold text-white">Super Admin</p>
+              <p className="text-xs text-white/40">Access management</p>
             </div>
           </div>
 
@@ -211,7 +211,7 @@ function AccessManagementPageInner() {
             <button
               type="button"
               onClick={() => { setFormOpen(true); setFormError(""); }}
-              className="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] px-4 py-2.5 text-sm font-semibold text-[#1b1207] shadow-[0_14px_28px_rgba(240,175,47,0.24)]"
+              className="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(90deg,#f59e0b_0%,#fcd34d_100%)] px-4 py-2.5 text-sm font-semibold text-[#1b1207] shadow-[0_14px_28px_rgba(240,175,47,0.24)]"
             >
               <Plus className="h-4 w-4" />
               Add Owner
@@ -231,9 +231,12 @@ function AccessManagementPageInner() {
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         {/* Add Owner Form */}
         {formOpen ? (
-          <div className="mb-6 rounded-2xl border border-white/12 bg-white/[0.04] p-5">
+          <div className="mb-6 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-semibold text-white">New Owner Account</h2>
+              <div>
+                <h2 className="font-display text-base font-semibold text-white">New Owner Account</h2>
+                <p className="mt-1 text-xs text-white/45">Create access here, then share credentials manually with the owner.</p>
+              </div>
               <button
                 type="button"
                 onClick={() => setFormOpen(false)}
@@ -247,7 +250,7 @@ function AccessManagementPageInner() {
             <form onSubmit={handleCreate} className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-white/60">Full Name</span>
+                  <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Full Name</span>
                   <div className="relative">
                     <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                     <input
@@ -263,7 +266,7 @@ function AccessManagementPageInner() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-white/60">Email</span>
+                  <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Email</span>
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                     <input
@@ -279,7 +282,7 @@ function AccessManagementPageInner() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-white/60">Username</span>
+                  <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Username</span>
                   <div className="relative">
                     <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                     <input
@@ -295,7 +298,7 @@ function AccessManagementPageInner() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-white/60">Password</span>
+                  <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Password</span>
                   <div className="relative">
                     <input
                       type={showNewPassword ? "text" : "password"}

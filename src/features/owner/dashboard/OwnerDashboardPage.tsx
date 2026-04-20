@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, BedDouble, CreditCard, DoorOpen, ReceiptText, Users } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarClock, CreditCard, DoorOpen, ReceiptText, TrendingUp, Users } from "lucide-react";
 import { useHostelContext } from "@/store/hostel-context";
 import { Card } from "@/components/ui/card";
 import { SkeletonBlock } from "@/components/ui/skeleton";
@@ -43,24 +43,46 @@ export default function OwnerDashboardPage() {
     return tone === "orange" || tone === "yellow";
   });
   const overdue = tenants.filter((tenant) => getDueStatus(tenant.nextDueDate).tone === "red");
+  const paid = tenants.filter((tenant) => getDueStatus(tenant.nextDueDate).tone === "green");
   const recentDueItems = tenants
     .map((tenant) => ({ tenant, status: getDueStatus(tenant.nextDueDate) }))
     .sort((left, right) => left.status.priority - right.status.priority)
     .slice(0, 4);
   const capacityBase = isResidence ? totalRooms : totalBeds;
   const occupancyPercent = capacityBase > 0 ? Math.round((tenants.length / capacityBase) * 100) : 0;
+  const expectedRevenue = tenants.reduce((sum, tenant) => sum + tenant.monthlyRent, 0);
+  const collectionRate = expectedRevenue > 0 ? Math.round((totalCollected / expectedRevenue) * 100) : 0;
+  const paymentHealthScore = Math.max(0, Math.min(100, Math.round(occupancyPercent * 0.4 + collectionRate * 0.6 - overdue.length * 4)));
+  const attentionCount = dueSoon.length + overdue.length;
+  const urgentShare = tenants.length > 0 ? Math.round((attentionCount / tenants.length) * 100) : 0;
+  const snapshotRows = [
+    { label: "Collection rate", value: `${collectionRate}%` },
+    { label: "Payment health", value: `${paymentHealthScore}/100` },
+    { label: "Paid on track", value: String(paid.length) },
+    { label: "Needs attention", value: `${attentionCount} (${urgentShare}%)` },
+    { label: isResidence ? "Vacant units" : "Vacant beds", value: String(availableBeds) },
+    { label: "Monthly expected", value: `Rs ${expectedRevenue.toLocaleString("en-IN")}` },
+  ];
 
   return (
     <div className={`space-y-3 transition-opacity lg:space-y-3 ${isSwitching ? "opacity-70" : "opacity-100"}`}>
       <section className="grid gap-3 lg:hidden">
-        <Card className="overflow-hidden p-4 shadow-[0_12px_30px_rgba(15,23,42,0.12)]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">{currentHostel.hostelName}</p>
-          <p className="mt-1 truncate text-xs text-[color:var(--fg-secondary)]">{currentHostel.address}</p>
+        <Card className="nestiq-grid-bg overflow-hidden border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.22),transparent_34%),linear-gradient(160deg,#111114_0%,#09090b_62%,#131324_100%)] p-4 shadow-[0_18px_46px_rgba(0,0,0,0.34)]">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Live snapshot</p>
+              <h1 className="font-display mt-1 text-xl font-bold text-white">{currentHostel.hostelName}</h1>
+              <p className="mt-1 truncate text-xs text-[color:var(--fg-secondary)]">{currentHostel.address}</p>
+            </div>
+            <span className="rounded-full border border-[rgba(99,102,241,0.3)] bg-[rgba(99,102,241,0.14)] px-2.5 py-1 text-[10px] font-semibold text-[var(--accent)]">
+              {occupancyPercent}% full
+            </span>
+          </div>
           <div className="mt-3 grid grid-cols-[1.5fr_1fr] gap-2.5">
-            <div className="rounded-[8px] bg-[linear-gradient(180deg,var(--cta)_0%,var(--cta-strong)_100%)] px-3 py-3 text-[#1c1400] shadow-[0_16px_34px_rgba(249,193,42,0.18)]">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5a4200]">Collected</p>
+            <div className="rounded-[18px] bg-[linear-gradient(180deg,#6366f1_0%,#4f46e5_100%)] px-3 py-3 text-white shadow-[0_18px_40px_rgba(99,102,241,0.28)]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-100/80">Collected this cycle</p>
               <p className="mt-1 text-[1.65rem] font-semibold leading-none">Rs {totalCollected.toLocaleString("en-IN")}</p>
-              <p className="mt-2 text-[11px] text-[#6c5000]">{occupancyPercent}% occupied</p>
+              <p className="mt-2 text-[11px] text-indigo-100/70">{collectionRate}% of expected revenue logged</p>
             </div>
             <div className="grid gap-2">
               <MetricTile label="Due" value={String(dueSoon.length)} tone="warning" />
@@ -71,6 +93,10 @@ export default function OwnerDashboardPage() {
             <MiniMetric label={isResidence ? "Units" : "Beds"} value={String(isResidence ? totalRooms : totalBeds)} />
             <MiniMetric label="Free" value={String(availableBeds)} />
             <MiniMetric label={isResidence ? "Floors" : "Rooms"} value={String(isResidence ? currentHostel.floors.length : totalRooms)} />
+          </div>
+          <div className="mt-2.5 grid grid-cols-2 gap-2">
+            <InlineStat label="Payment health" value={`${paymentHealthScore}/100`} icon={TrendingUp} />
+            <InlineStat label="Attention load" value={`${attentionCount} tenants`} icon={CalendarClock} />
           </div>
         </Card>
 
@@ -85,7 +111,7 @@ export default function OwnerDashboardPage() {
           <div className="mb-2 flex items-center justify-between">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">Recent Activity</p>
-              <h2 className="text-sm font-semibold text-white">Next actions</h2>
+              <h2 className="font-display text-sm font-semibold text-white">Next actions</h2>
             </div>
             <Link href="/owner/payments?filter=due" className="text-[11px] font-semibold text-[var(--accent)]">
               View all
@@ -110,9 +136,10 @@ export default function OwnerDashboardPage() {
                     <div className="mt-2.5 flex justify-end">
                       <Link
                         href={`/owner/payments?action=pay-rent&tenantId=${tenant.tenantId}`}
-                        className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-3 text-[11px] font-semibold text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]"
+                        className="inline-flex min-h-10 items-center justify-center gap-1 rounded-xl border border-[rgba(99,102,241,0.4)] bg-[linear-gradient(180deg,#6366f1_0%,#4f46e5_100%)] px-3 text-[11px] font-semibold text-white shadow-[0_10px_22px_rgba(99,102,241,0.24)]"
                       >
-                        Pay now
+                        Collect
+                        <ArrowRight className="h-3.5 w-3.5" />
                       </Link>
                     </div>
                   ) : null}
@@ -124,23 +151,23 @@ export default function OwnerDashboardPage() {
       </section>
 
       <section className="hidden gap-3 lg:grid">
-        <div className="relative overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[radial-gradient(circle_at_top_right,rgba(249,193,42,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(56,189,248,0.14),transparent_28%),linear-gradient(180deg,#16284d_0%,#1b43b4_100%)] p-5 text-white shadow-[0_28px_70px_rgba(29,78,216,0.24)]">
-          <div className="pointer-events-none absolute -right-12 top-0 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(255,230,150,0.2)_0%,rgba(255,255,255,0)_70%)] blur-2xl animate-[dashboard-glow_8s_ease-in-out_infinite]" />
-          <div className="pointer-events-none absolute bottom-[-6rem] left-[-3rem] h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.24)_0%,rgba(56,189,248,0)_70%)] blur-3xl" />
+        <div className="nestiq-grid-bg relative overflow-hidden rounded-[22px] border border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.24),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(245,158,11,0.16),transparent_26%),linear-gradient(180deg,#111114_0%,#18181c_100%)] p-5 text-white shadow-[0_28px_70px_rgba(0,0,0,0.38)]">
+          <div className="pointer-events-none absolute -right-12 top-0 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(129,140,248,0.24)_0%,rgba(255,255,255,0)_70%)] blur-2xl animate-[dashboard-glow_8s_ease-in-out_infinite]" />
+          <div className="pointer-events-none absolute bottom-[-6rem] left-[-3rem] h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(245,158,11,0.18)_0%,rgba(245,158,11,0)_70%)] blur-3xl" />
           <div className="relative grid items-start gap-4 xl:grid-cols-[1.15fr_0.85fr]">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-100/80">Dashboard</p>
-              <h1 className="mt-1.5 max-w-2xl text-[2.35rem] font-semibold leading-[0.94] tracking-[-0.05em] text-white xl:text-[2.55rem]">{currentHostel.hostelName}</h1>
-              <p className="mt-2 max-w-xl text-[13px] leading-5 text-blue-50/90">{currentHostel.address}</p>
-              <div className="mt-4 inline-flex items-center rounded-full border border-white/14 bg-white/12 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur">
-                {occupancyPercent}% occupancy / {dueSoon.length + overdue.length} collections need attention
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-100/70">Owner dashboard</p>
+              <h1 className="font-display mt-1.5 max-w-2xl text-[2.35rem] font-bold leading-[0.94] tracking-[-0.05em] text-white xl:text-[2.55rem]">{currentHostel.hostelName}</h1>
+              <p className="mt-2 max-w-xl text-[13px] leading-5 text-zinc-300">{currentHostel.address}</p>
+              <div className="mt-4 inline-flex items-center rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur">
+                {paymentHealthScore}/100 health score • {attentionCount} collections need attention
               </div>
 
               <div className="mt-4 grid gap-2.5 sm:grid-cols-4">
                 <DesktopMetric icon={CreditCard} label="Collected" value={`Rs ${totalCollected.toLocaleString("en-IN")}`} />
+                <DesktopMetric icon={TrendingUp} label="Collection Rate" value={`${collectionRate}%`} />
                 <DesktopMetric icon={Users} label={isResidence ? "Occupied Units" : "Occupied"} value={String(occupiedBeds)} />
-                <DesktopMetric icon={BedDouble} label={isResidence ? "Units" : "Beds"} value={String(isResidence ? totalRooms : totalBeds)} />
-                <DesktopMetric icon={DoorOpen} label="Free" value={String(availableBeds)} />
+                <DesktopMetric icon={DoorOpen} label="At Risk" value={String(attentionCount)} />
               </div>
             </div>
 
@@ -156,7 +183,7 @@ export default function OwnerDashboardPage() {
         <div className="grid gap-3 xl:grid-cols-[1.15fr_0.85fr]">
           <Card className="overflow-hidden">
             <div className="border-b border-[color:var(--border)] px-4 py-2.5">
-              <h2 className="text-[15px] font-semibold text-white">Upcoming dues</h2>
+              <h2 className="font-display text-[15px] font-semibold text-white">Upcoming dues</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-[13px]">
@@ -189,9 +216,10 @@ export default function OwnerDashboardPage() {
                           {status.tone !== "green" ? (
                             <Link
                               href={`/owner/payments?action=pay-rent&tenantId=${tenant.tenantId}`}
-                              className="inline-flex min-h-8 items-center justify-center rounded-xl border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-3 text-[11px] font-semibold text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]"
+                              className="inline-flex min-h-8 items-center justify-center gap-1 rounded-xl border border-[rgba(99,102,241,0.4)] bg-[linear-gradient(180deg,#6366f1_0%,#4f46e5_100%)] px-3 text-[11px] font-semibold text-white shadow-[0_10px_22px_rgba(99,102,241,0.24)]"
                             >
-                              Pay now
+                              Collect
+                              <ArrowRight className="h-3.5 w-3.5" />
                             </Link>
                           ) : (
                             <span className="text-[11px] font-semibold text-[color:var(--fg-secondary)]">Paid</span>
@@ -206,14 +234,11 @@ export default function OwnerDashboardPage() {
           </Card>
 
           <Card className="p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Hostel snapshot</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Performance snapshot</p>
             <div className="mt-2.5 grid gap-2.5">
-              <SnapshotRow label="Floors" value={String(currentHostel.floors.length)} />
-              <SnapshotRow label={isResidence ? "Units" : "Rooms"} value={String(totalRooms)} />
-              <SnapshotRow label={isResidence ? "Capacity" : "Beds"} value={String(isResidence ? totalRooms : totalBeds)} />
-              <SnapshotRow label="Vacancy" value={isResidence ? `${availableBeds} units` : `${availableBeds} beds`} />
-              <SnapshotRow label="Due soon" value={String(dueSoon.length)} />
-              <SnapshotRow label="Overdue" value={String(overdue.length)} />
+              {snapshotRows.map((row) => (
+                <SnapshotRow key={row.label} label={row.label} value={row.value} />
+              ))}
             </div>
           </Card>
         </div>
@@ -272,11 +297,11 @@ function MetricTile({
     <div
       className={`rounded-[6px] px-3 py-2.5 ${
         tone === "warning"
-          ? "border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] text-[#422006] shadow-[0_18px_36px_rgba(250,204,21,0.24)]"
-          : "border border-[#ef4444] bg-[linear-gradient(180deg,rgba(220,38,38,0.32)_0%,rgba(127,29,29,0.42)_100%)] text-white shadow-[0_18px_36px_rgba(220,38,38,0.18)]"
+          ? "border border-[rgba(245,158,11,0.35)] bg-[linear-gradient(180deg,rgba(245,158,11,0.24)_0%,rgba(120,53,15,0.42)_100%)] text-amber-100 shadow-[0_18px_36px_rgba(245,158,11,0.14)]"
+          : "border border-[rgba(239,68,68,0.35)] bg-[linear-gradient(180deg,rgba(239,68,68,0.22)_0%,rgba(127,29,29,0.42)_100%)] text-white shadow-[0_18px_36px_rgba(220,38,38,0.18)]"
       }`}
     >
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-80">{label}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-75">{label}</p>
       <p className="mt-1 text-[1.3rem] font-semibold leading-none">{value}</p>
     </div>
   );
@@ -284,9 +309,31 @@ function MetricTile({
 
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[6px] border border-[color:rgba(255,255,255,0.16)] bg-white/12 px-2 py-2 shadow-sm backdrop-blur">
+    <div className="nestiq-stat rounded-[14px] px-2 py-2 shadow-sm">
       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">{label}</p>
       <p className="mt-1 text-sm font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
+function InlineStat({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  icon: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <div className="nestiq-stat flex items-center gap-2 rounded-[16px] px-3 py-2.5">
+      <div className="rounded-xl bg-white/8 p-2 text-[var(--accent)]">
+        <Icon className="h-3.5 w-3.5" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55">{label}</p>
+        <p className="truncate text-sm font-semibold text-white">{value}</p>
+      </div>
     </div>
   );
 }
@@ -301,12 +348,12 @@ function DesktopMetric({
   value: string;
 }) {
   return (
-    <div className="rounded-[8px] border border-white/12 bg-white/10 px-3.5 py-3 shadow-[0_16px_34px_rgba(8,18,37,0.12)] backdrop-blur">
+    <div className="nestiq-stat rounded-[18px] px-3.5 py-3 shadow-[0_16px_34px_rgba(8,18,37,0.12)]">
       <div className="flex items-center gap-2">
-        <div className="rounded-xl bg-white/12 p-1.5 text-sky-200 ring-1 ring-white/10">
+        <div className="rounded-xl bg-white/10 p-1.5 text-indigo-200 ring-1 ring-white/8">
           <Icon className="h-4 w-4" />
         </div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-100/70">{label}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/65">{label}</p>
       </div>
       <p className="mt-2 text-[1.85rem] font-semibold leading-none text-white">{value}</p>
     </div>
