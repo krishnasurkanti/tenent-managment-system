@@ -431,8 +431,7 @@ function CreateHostelPageContent() {
   }
 
   return (
-    <div className="rounded-[8px] bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.14),transparent_30%),linear-gradient(180deg,rgba(17,17,20,0.96)_0%,rgba(9,9,11,1)_100%)] px-3 py-3 sm:px-5 sm:py-4">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 sm:gap-4">
+    <div className="space-y-3">
         <OwnerPageHero
           eyebrow={isEditMode ? "Edit hostel" : "Create hostel"}
           title={isEditMode ? "Update your hostel setup" : "Set up your hostel"}
@@ -451,13 +450,23 @@ function CreateHostelPageContent() {
           </div>
         ) : null}
 
-        <div className="flex flex-wrap gap-2">
-          <WizardPill label="1. Basics" active={step === 1} done={step > 1} />
-          <WizardPill label="2. Setup" active={step === 2} done={false} />
-        </div>
+        <Card className={`rounded-[18px] p-3 ${ownerSubtlePanelClass}`}>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap gap-2">
+              <WizardPill label="1. Basics" active={step === 1} done={step > 1} />
+              <WizardPill label="2. Setup" active={step === 2} done={false} />
+            </div>
+            <p className="text-[11px] text-[color:var(--fg-secondary)]">
+              {step === 1
+                ? "Start with the name and address. This page should feel like the rest of your owner workspace."
+                : "Finish floors and rooms with the same dark panel styling used across the dashboard."}
+            </p>
+          </div>
+        </Card>
 
         {step === 1 ? (
-        <Card className={`overflow-hidden ${ownerPanelClass}`}>
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_340px]">
+        <Card className={`overflow-hidden rounded-[22px] ${ownerPanelClass}`}>
           <div className="border-b border-[color:var(--border)] px-4 py-3 sm:px-5">
             <div className="flex items-center gap-3">
               <div className="rounded-2xl bg-[color:var(--brand-soft)] p-2.5 text-[#9edcff]">
@@ -511,14 +520,14 @@ function CreateHostelPageContent() {
           <div className="flex flex-col gap-2 border-t border-[color:var(--border)] px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
             <Button
               variant="secondary"
-              className="w-full border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white shadow-sm hover:bg-[color:var(--surface-strong)] hover:text-white sm:w-auto"
+              className="w-full sm:w-auto"
               disabled={saving}
               onClick={() => router.push("/owner/dashboard")}
             >
               Cancel
             </Button>
             <Button
-              className="w-full bg-blue-600 text-white shadow-[var(--shadow-soft)] hover:text-white sm:w-auto"
+              className="w-full sm:w-auto"
               disabled={saving}
               onClick={handleNextFromBasics}
             >
@@ -526,10 +535,30 @@ function CreateHostelPageContent() {
             </Button>
           </div>
         </Card>
+
+        <Card className={`rounded-[22px] p-4 ${ownerPanelClass}`}>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Setup snapshot</p>
+          <div className="mt-3 space-y-2.5">
+            <div className={`rounded-[16px] px-3 py-3 ${ownerSubtlePanelClass}`}>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">Current hostel</p>
+              <p className="mt-1 text-sm font-semibold text-white">{hostelName.trim() || "Not named yet"}</p>
+            </div>
+            <div className={`rounded-[16px] px-3 py-3 ${ownerSubtlePanelClass}`}>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">Address</p>
+              <p className="mt-1 text-sm text-white">{address.trim() || "Add the hostel address to continue"}</p>
+            </div>
+            <div className={`rounded-[16px] px-3 py-3 ${ownerSubtlePanelClass}`}>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">Property type</p>
+              <p className="mt-1 text-sm font-semibold text-white">Hostel / PG</p>
+              <p className="mt-1 text-[11px] text-[color:var(--fg-secondary)]">Shared-room setup that matches your current management flow.</p>
+            </div>
+          </div>
+        </Card>
+        </div>
         ) : null}
 
         {step === 2 ? (
-        <Card className={`overflow-hidden ${ownerPanelClass}`}>
+        <Card className={`overflow-hidden rounded-[22px] ${ownerPanelClass}`}>
           <div className="border-b border-[color:var(--border)] px-4 py-3 sm:px-5">
             <div className="flex items-center gap-3">
               <div className="rounded-2xl bg-[color:var(--brand-soft)] p-2.5 text-[#9edcff]">
@@ -769,7 +798,7 @@ function CreateHostelPageContent() {
             <div className="flex flex-col gap-2 border-t border-[color:var(--border)] pt-4 sm:flex-row sm:justify-end">
               <Button
                 variant="secondary"
-                className="w-full rounded-2xl border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white shadow-sm hover:bg-[color:var(--surface-strong)] sm:w-auto"
+                className="w-full sm:w-auto"
                 disabled={saving}
                 onClick={() => setStep(1)}
               >
@@ -777,7 +806,7 @@ function CreateHostelPageContent() {
               </Button>
               <Button
                 variant="secondary"
-                className="w-full rounded-2xl border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white shadow-sm hover:bg-[color:var(--surface-strong)] sm:w-auto"
+                className="w-full sm:w-auto"
                 disabled={saving}
                 onClick={() => router.push("/owner/dashboard")}
               >
@@ -787,7 +816,7 @@ function CreateHostelPageContent() {
                 <>
                   <Button
                     variant="secondary"
-                    className="w-full rounded-2xl border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white shadow-sm hover:bg-[color:var(--surface-strong)] hover:text-white sm:w-auto"
+                    className="w-full sm:w-auto"
                     disabled={saving}
                     onClick={addAnotherFloor}
                   >
@@ -795,7 +824,7 @@ function CreateHostelPageContent() {
                     Create Another Floor
                   </Button>
                   <Button
-                    className="w-full rounded-2xl bg-blue-600 text-white shadow-[var(--shadow-soft)] hover:text-white sm:w-auto"
+                    className="w-full sm:w-auto"
                     disabled={saving}
                     onClick={handleSave}
                   >
@@ -804,7 +833,7 @@ function CreateHostelPageContent() {
                 </>
               ) : (
                 <Button
-                  className="w-full rounded-2xl bg-blue-600 text-white shadow-[var(--shadow-soft)] hover:text-white sm:w-auto"
+                  className="w-full sm:w-auto"
                   disabled={saving}
                   onClick={handleNextFromSetup}
                 >
@@ -815,20 +844,19 @@ function CreateHostelPageContent() {
           </div>
         </Card>
         ) : null}
-
-      </div>
     </div>
   );
 }
 
 function CreateHostelLoadingState() {
   return (
-    <div className="rounded-[8px] bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.14),transparent_30%),linear-gradient(180deg,rgba(17,17,20,0.96)_0%,rgba(9,9,11,1)_100%)] px-4 py-4 sm:px-6">
-      <div className="mx-auto w-full max-w-6xl">
-        <Card className={`p-4 text-center text-sm text-[color:var(--fg-secondary)] ${ownerPanelClass}`}>
-          Loading hostel details...
-        </Card>
-      </div>
+    <div className="space-y-3">
+      <Card className="nestiq-grid-bg overflow-hidden border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.22),transparent_30%),linear-gradient(180deg,#111114_0%,#09090b_100%)] p-5">
+        <div className="h-20 animate-pulse rounded-[18px] bg-white/6" />
+      </Card>
+      <Card className={`p-4 text-center text-sm text-[color:var(--fg-secondary)] ${ownerPanelClass}`}>
+        Loading hostel details...
+      </Card>
     </div>
   );
 }
@@ -861,10 +889,10 @@ function WizardPill({
     <div
       className={`inline-flex items-center rounded-full px-3 py-2 text-[11px] font-semibold shadow-sm ${
         active
-          ? "border border-blue-500 bg-blue-600 text-white shadow-[var(--shadow-soft)]"
+          ? "border border-[rgba(99,102,241,0.4)] bg-[linear-gradient(180deg,#6366f1_0%,#4f46e5_100%)] text-white shadow-[0_14px_32px_rgba(99,102,241,0.24)]"
           : done
             ? "border border-emerald-200 bg-[linear-gradient(180deg,#ecfdf5_0%,#d1fae5_100%)] text-emerald-700"
-            : "border border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white"
+            : "border border-[color:var(--border)] bg-[color:var(--surface-soft)] text-[color:var(--fg-secondary)]"
       }`}
     >
       {label}
