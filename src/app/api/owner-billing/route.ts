@@ -1,47 +1,33 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getOwnerSession } from "@/lib/session-mode";
-import { getTenantRecords } from "@/data/tenantStore";
 import { getOwnerHostels } from "@/data/ownerHostelStore";
-import { backendFetch } from "@/services/core/backend-api";
-import { getDemoOwnerProfile } from "@/lib/demo-auth";
+import { getOwnerBilling } from "@/data/adminStore";
+import { getTenantRecords } from "@/data/tenantStore";
+import { getOwnerSession } from "@/lib/session-mode";
 
 export const dynamic = "force-dynamic";
 
 const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-function getBillingCycle(onboardingDateIso: string): {
-  cycleStart: Date;
-  nextBillingDate: Date;
-  trialEndsAt: Date;
-} {
-  const onboarding = new Date(onboardingDateIso);
+function getCycleWindow(anchorDateIso: string) {
+  const anchor = new Date(anchorDateIso);
   const now = new Date();
+  const anchorDay = anchor.getDate();
 
-  const trialEndsAt = new Date(onboarding.getTime() + THIRTY_DAYS_MS);
-
-  // Billing repeats on the same day-of-month as onboarding
-  const billingDay = onboarding.getDate();
-
-  // Find the most recent billing date on or before today
-  let cycleStart = new Date(now.getFullYear(), now.getMonth(), billingDay);
+  let cycleStart = new Date(now.getFullYear(), now.getMonth(), anchorDay);
   if (cycleStart > now) {
-    cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, billingDay);
+    cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, anchorDay);
   }
-  // Don't go before the onboarding date
-  if (cycleStart < onboarding) {
-    cycleStart = new Date(onboarding);
+  if (cycleStart < anchor) {
+    cycleStart = new Date(anchor);
   }
 
-  const nextBillingDate = new Date(cycleStart.getFullYear(), cycleStart.getMonth() + 1, billingDay);
-
-  return { cycleStart, nextBillingDate, trialEndsAt };
+  const nextBillingDate = new Date(cycleStart.getFullYear(), cycleStart.getMonth() + 1, anchorDay);
+  return { cycleStart, nextBillingDate };
 }
 
 export async function GET(request: NextRequest) {
   const session = await getOwnerSession();
-
   if (session.mode === "guest") {
     return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
   }
@@ -51,68 +37,35 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: "hostelId is required." }, { status: 400 });
   }
 
-  const hostels = getOwnerHostels();
-  const hostel = hostels.find((h) => h.id === hostelId);
+  const hostel = getOwnerHostels().find((item) => item.id === hostelId);
   if (!hostel) {
     return NextResponse.json({ message: "Hostel not found." }, { status: 404 });
   }
 
-  // Resolve onboarding date and plan info from owner record
-  let onboardingDate: string;
-  let plan = "trial";
-  let planStatus = "trial";
+  try {
+    const billing = getOwnerBilling(hostelId);
+    const hostelTenants = getTenantRecords().filter((tenant) => tenant.assignment?.hostelId === hostelId);
+    const monthlyTenants = hostelTenants.filter((tenant) => !tenant.billingCycle || tenant.billingCycle === "monthly");
+    const weeklyTenantCount = hostelTenants.filter((tenant) => tenant.billingCycle === "weekly").length;
+    const dailyTenantCount = hostelTenants.filter((tenant) => tenant.billingCycle === "daily").length;
 
-  if (session.mode === "demo" && session.ownerId === "demo-owner") {
-    onboardingDate = getDemoOwnerProfile().created_at;
-  } else if (session.isLive && session.ownerId) {
-    try {
-      const res = await backendFetch("/api/auth/me");
-      if (res.ok) {
-        const data = (await res.json()) as { owner?: { trialStartDate?: string; plan?: string; planStatus?: string } };
-        onboardingDate = data.owner?.trialStartDate ?? new Date().toISOString();
-        plan = data.owner?.plan ?? "starter";
-        planStatus = data.owner?.planStatus ?? "trial";
-      } else {
-        onboardingDate = new Date().toISOString();
-      }
-    } catch {
-      onboardingDate = new Date().toISOString();
-    }
-  } else {
-    onboardingDate = new Date().toISOString();
+    const { cycleStart, nextBillingDate } = getCycleWindow(hostel.createdAt);
+    const cutoff = new Date(nextBillingDate.getTime() - TEN_DAYS_MS);
+    const monthlyTenantCount = monthlyTenants.filter((tenant) => new Date(tenant.paidOnDate) < cutoff).length;
+    const nextMonthCount = monthlyTenants.filter((tenant) => new Date(tenant.paidOnDate) >= cutoff).length;
+
+    return NextResponse.json({
+      ...billing,
+      weeklyTenantCount,
+      dailyTenantCount,
+      monthlyTenantCount,
+      nextMonthCount,
+      cycleStart: cycleStart.toISOString().slice(0, 10),
+      nextBillingDate: nextBillingDate.toISOString().slice(0, 10),
+      onboardingDate: hostel.createdAt.slice(0, 10),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to load billing.";
+    return NextResponse.json({ message }, { status: 400 });
   }
-
-  const { cycleStart, nextBillingDate, trialEndsAt } = getBillingCycle(onboardingDate);
-
-  const allTenants = getTenantRecords();
-  const hostelTenants = allTenants.filter((t) => t.assignment?.hostelId === hostelId);
-
-  const monthlyTenants = hostelTenants.filter((t) => !t.billingCycle || t.billingCycle === "monthly");
-  const weeklyCount = hostelTenants.filter((t) => t.billingCycle === "weekly").length;
-  const dailyCount = hostelTenants.filter((t) => t.billingCycle === "daily").length;
-
-  // Cutoff: 10 days before next billing date
-  const cutoff = new Date(nextBillingDate.getTime() - TEN_DAYS_MS);
-
-  // Tenants who joined before the cutoff count in the current cycle
-  const currentMonthCount = monthlyTenants.filter((t) => new Date(t.paidOnDate) < cutoff).length;
-  // Tenants who joined within 10 days of next billing date count next cycle
-  const nextMonthCount = monthlyTenants.filter((t) => new Date(t.paidOnDate) >= cutoff).length;
-
-  return NextResponse.json({
-    hostelId,
-    hostelName: hostel.hostelName,
-    plan,
-    planStatus,
-    trialActive: planStatus === "trial",
-    trialEndsAt: trialEndsAt.toISOString().slice(0, 10),
-    cycleStart: cycleStart.toISOString().slice(0, 10),
-    nextBillingDate: nextBillingDate.toISOString().slice(0, 10),
-    onboardingDate: new Date(onboardingDate).toISOString().slice(0, 10),
-    monthlyTenantCount: currentMonthCount,
-    nextMonthCount,
-    weeklyTenantCount: weeklyCount,
-    dailyTenantCount: dailyCount,
-    totalTenants: hostelTenants.length,
-  });
 }

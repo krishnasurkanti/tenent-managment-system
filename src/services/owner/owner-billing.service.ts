@@ -10,6 +10,10 @@ export type OwnerBillingData = {
   paymentStatus: "paid" | "pending" | "failed";
   accessActive: boolean;
   payableAmount: number;
+  weeklyTenantCount: number;
+  dailyTenantCount: number;
+  monthlyTenantCount: number;
+  nextMonthCount: number;
   billing: {
     tenantCount: number;
     billableTenantCount: number;
@@ -21,6 +25,12 @@ export type OwnerBillingData = {
     nextPlanName: string | null;
   };
   upgradePending: boolean;
+  upgradeRequest?: {
+    requestId: string;
+    requestedPlanId: string;
+    status: string;
+    requestedAt: string;
+  } | null;
 };
 
 export async function fetchOwnerBilling(hostelId: string) {
@@ -50,13 +60,20 @@ export async function setOwnerAutoPay(hostelId: string, enabled: boolean) {
 }
 
 export async function requestOwnerPlanUpgrade(hostelId: string, currentPlanId: string, requestedPlanId: string) {
+  const planOrder = ["starter", "growth", "pro", "scale"];
+  const direction =
+    currentPlanId === requestedPlanId
+      ? "same_plan"
+      : planOrder.indexOf(requestedPlanId) > planOrder.indexOf(currentPlanId)
+        ? "upgrade"
+        : "downgrade";
   const response = await csrfFetch("/api/owner-billing/request-upgrade", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       hostelId,
       requestedPlanId,
-      note: `Upgrade requested from ${currentPlanId} to ${requestedPlanId}`,
+      note: `Plan ${direction} requested from ${currentPlanId} to ${requestedPlanId}`,
     }),
   });
   const data = (await response.json()) as { message?: string };

@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, Suspense, useCallback, useEffect, useState } from "react";
-import { Eye, EyeOff, LogOut, Mail, Plus, ServerCog, Trash2, User, Users, X } from "lucide-react";
+import { ArrowRightLeft, Eye, EyeOff, LogOut, Mail, Plus, ServerCog, Trash2, User, Users, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { csrfFetch } from "@/lib/csrf-client";
 
@@ -22,6 +22,17 @@ type OwnerStats = {
   hostelCount: number;
   hostelNames: string[];
   tenantCount: number;
+};
+
+type UpgradeRequest = {
+  requestId: string;
+  hostelId: string;
+  hostelName: string;
+  currentPlanId: string;
+  requestedPlanId: string;
+  note: string;
+  status: "pending" | "approved" | "rejected";
+  requestedAt: string;
 };
 
 function trialDaysLeft(trialStartDate: string) {
@@ -96,6 +107,8 @@ function AccessManagementPageInner() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [upgradeRequests, setUpgradeRequests] = useState<UpgradeRequest[]>([]);
+  const [requestActionId, setRequestActionId] = useState<string | null>(null);
 
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -103,14 +116,17 @@ function AccessManagementPageInner() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [ownersRes, statsRes] = await Promise.all([
+      const [ownersRes, statsRes, requestsRes] = await Promise.all([
         fetch("/api/super-admin/owners"),
         fetch("/api/super-admin/owner-stats"),
+        fetch("/api/super-admin/upgrade-requests"),
       ]);
       const ownersData = (await ownersRes.json()) as { owners?: OwnerRow[] };
       const statsData = (await statsRes.json()) as { stats?: OwnerStats[] };
+      const requestData = (await requestsRes.json()) as { requests?: UpgradeRequest[] };
 
       setOwners(ownersData.owners ?? []);
+      setUpgradeRequests(requestData.requests ?? []);
 
       const statsMap: Record<string, OwnerStats> = {};
       for (const s of statsData.stats ?? []) {
@@ -125,6 +141,21 @@ function AccessManagementPageInner() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const handleRequestAction = async (requestId: string, action: "approve" | "reject") => {
+    if (requestActionId) return;
+    setRequestActionId(requestId);
+    try {
+      await csrfFetch("/api/super-admin/upgrade-requests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId, action }),
+      });
+      await load();
+    } finally {
+      setRequestActionId(null);
+    }
+  };
 
   const handleLogout = async () => {
     await csrfFetch("/api/auth/admin/logout", { method: "POST" });
@@ -357,6 +388,59 @@ function AccessManagementPageInner() {
             <Users className="h-4 w-4 text-[#f7bf53]" />
             <span className="text-sm font-semibold text-white">{owners.length}</span>
             <span className="text-xs text-white/40">owners</span>
+          </div>
+        </div>
+
+        <div className="mb-6 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
+          <div className="flex items-center gap-2">
+            <ArrowRightLeft className="h-4 w-4 text-[#f7bf53]" />
+            <h2 className="font-display text-base font-semibold text-white">Plan change requests</h2>
+          </div>
+          <p className="mt-1 text-xs text-white/45">Owners wait here for super-admin approval before upgrades or downgrades take effect.</p>
+
+          <div className="mt-4 space-y-2">
+            {upgradeRequests.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm text-white/45">
+                No plan requests right now.
+              </div>
+            ) : (
+              upgradeRequests.map((request) => (
+                <div key={request.requestId} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      {request.hostelName}: {request.currentPlanId.toUpperCase()} {"->"} {request.requestedPlanId.toUpperCase()}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-white/45">
+                      {request.note || "Owner requested a plan change."} • {request.status} • {new Date(request.requestedAt).toLocaleString()}
+                    </p>
+                  </div>
+                  {request.status === "pending" ? (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={requestActionId === request.requestId}
+                        onClick={() => void handleRequestAction(request.requestId, "approve")}
+                        className="rounded-xl bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        disabled={requestActionId === request.requestId}
+                        onClick={() => void handleRequestAction(request.requestId, "reject")}
+                        className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300 disabled:opacity-60"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="rounded-full bg-white/8 px-3 py-1 text-xs font-semibold text-white/60">
+                      {request.status}
+                    </span>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
 
