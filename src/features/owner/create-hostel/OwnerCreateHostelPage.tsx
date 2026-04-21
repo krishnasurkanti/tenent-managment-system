@@ -5,7 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, CheckCircle2, ChevronRight, Home, MapPin, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
+import { ownerInputClass, ownerPanelClass, ownerSubtlePanelClass } from "@/components/ui/owner-theme";
 import { fetchOwnerHostel, saveOwnerHostel } from "@/services/owner/owner-hostels.service";
+
+const HOSTEL_DRAFT_KEY = "owner-create-hostel-draft-v1";
 
 type RoomForm = {
   id: string;
@@ -76,6 +80,35 @@ function CreateHostelPageContent() {
   const [saving, setSaving] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(isEditMode);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isEditMode || typeof window === "undefined") {
+      return;
+    }
+
+    const saved = window.localStorage.getItem(HOSTEL_DRAFT_KEY);
+    if (!saved) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(saved) as { hostelName?: string; address?: string; floors?: FloorForm[]; step?: 1 | 2 };
+      if (parsed.hostelName) setHostelName(parsed.hostelName);
+      if (parsed.address) setAddress(parsed.address);
+      if (parsed.floors?.length) setFloors(parsed.floors);
+      if (parsed.step) setStep(parsed.step);
+    } catch {
+      window.localStorage.removeItem(HOSTEL_DRAFT_KEY);
+    }
+  }, [isEditMode]);
+
+  useEffect(() => {
+    if (isEditMode || typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(HOSTEL_DRAFT_KEY, JSON.stringify({ hostelName, address, floors, step }));
+  }, [address, floors, hostelName, isEditMode, step]);
 
   useEffect(() => {
     if (!isEditMode) {
@@ -367,6 +400,7 @@ function CreateHostelPageContent() {
 
     if (typeof window !== "undefined" && data.hostel?.id) {
       window.localStorage.setItem("currentHostelId", data.hostel.id);
+      window.localStorage.removeItem(HOSTEL_DRAFT_KEY);
     }
 
     router.push("/owner/dashboard");
@@ -397,8 +431,20 @@ function CreateHostelPageContent() {
   }
 
   return (
-    <div className="bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_45%,#ffffff_100%)] rounded-[8px] px-3 py-3 sm:px-5 sm:py-4">
+    <div className="rounded-[8px] bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.14),transparent_30%),linear-gradient(180deg,rgba(17,17,20,0.96)_0%,rgba(9,9,11,1)_100%)] px-3 py-3 sm:px-5 sm:py-4">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 sm:gap-4">
+        <OwnerPageHero
+          eyebrow={isEditMode ? "Edit hostel" : "Create hostel"}
+          title={isEditMode ? "Update your hostel setup" : "Set up your hostel"}
+          description="Add the basics first, then complete floors and rooms. Draft progress saves automatically while you work."
+          badge={<span className="inline-flex rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[11px] font-semibold text-white/70">Step {step} of 2</span>}
+        />
+
+        <div className="grid gap-2.5 sm:grid-cols-3">
+          <OwnerQuickStat label="Floors" value={String(floors.length)} helper="Current setup draft" />
+          <OwnerQuickStat label="Completed floors" value={String(completedFloors.length)} helper="Ready to save" />
+          <OwnerQuickStat label="Mode" value={isEditMode ? "Editing" : "New hostel"} helper="Draft autosave enabled" />
+        </div>
         {error ? (
           <div className="rounded-xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-3 py-2.5 text-sm font-medium text-[color:var(--error)]">
             {error}
@@ -411,43 +457,43 @@ function CreateHostelPageContent() {
         </div>
 
         {step === 1 ? (
-        <Card className="overflow-hidden border-slate-100 bg-white shadow-[0_18px_42px_rgba(15,23,42,0.08)]">
-          <div className="border-b border-white/70 px-4 py-3 sm:px-5">
+        <Card className={`overflow-hidden ${ownerPanelClass}`}>
+          <div className="border-b border-[color:var(--border)] px-4 py-3 sm:px-5">
             <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-blue-50 p-2.5 text-[var(--accent)]">
+              <div className="rounded-2xl bg-[color:var(--brand-soft)] p-2.5 text-[#9edcff]">
                 <Building2 className="h-4 w-4" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-slate-800">Hostel Basics</h2>
-                <p className="text-[11px] text-slate-500">Only the fields you actually need: hostel name and address.</p>
+                <h2 className="text-sm font-semibold text-white">Hostel Basics</h2>
+                <p className="text-[11px] text-[color:var(--fg-secondary)]">Only the fields you actually need: hostel name and address.</p>
               </div>
             </div>
           </div>
 
           <div className="grid gap-3 px-4 py-4 sm:px-5 md:grid-cols-2">
             <Field label="Hostel Name">
-              <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
-                <Building2 className="h-4 w-4 shrink-0 text-[var(--accent)]" />
+              <div className={`flex items-center gap-3 rounded-2xl px-3 py-3 shadow-sm ${ownerInputClass}`}>
+                <Building2 className="h-4 w-4 shrink-0 text-[#9edcff]" />
                 <input
                   value={hostelName}
                   onChange={(event) => setHostelName(event.target.value)}
                   disabled={saving}
                   placeholder="Enter hostel name"
-                  className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
+                  className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-[color:var(--fg-secondary)]"
                 />
               </div>
             </Field>
             <Field label="Address">
-              <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
-                <MapPin className="h-4 w-4 shrink-0 text-[var(--accent)]" />
+              <div className={`flex items-center gap-3 rounded-2xl px-3 py-3 shadow-sm ${ownerInputClass}`}>
+                <MapPin className="h-4 w-4 shrink-0 text-[#9edcff]" />
                 <input
                   value={address}
                   onChange={(event) => setAddress(event.target.value)}
                   disabled={saving}
                   placeholder="Enter hostel address"
-                  className="w-full bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
+                  className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-[color:var(--fg-secondary)]"
                 />
-                <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                <ChevronRight className="h-4 w-4 shrink-0 text-[color:var(--fg-secondary)]" />
               </div>
             </Field>
           </div>
@@ -455,17 +501,17 @@ function CreateHostelPageContent() {
           <div className="px-4 pb-4 sm:px-5">
             <Field label="Property Type">
               <div className="flex gap-2 pt-0.5">
-                <div className="flex-1 rounded-2xl border border-blue-400 bg-blue-50 px-4 py-3 text-[13px] font-semibold text-[var(--accent)] shadow-sm">
+                <div className="flex-1 rounded-2xl border border-[color:color-mix(in_srgb,var(--brand)_42%,transparent)] bg-[color:var(--brand-soft)] px-4 py-3 text-[13px] font-semibold text-[#9edcff] shadow-sm">
                   <p>Hostel / PG</p>
-                  <p className="mt-0.5 text-[11px] font-normal text-slate-500">Bed-based sharing rooms</p>
+                  <p className="mt-0.5 text-[11px] font-normal text-[color:var(--fg-secondary)]">Bed-based sharing rooms</p>
                 </div>
               </div>
             </Field>
           </div>
-          <div className="flex flex-col gap-2 border-t border-white/70 px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
+          <div className="flex flex-col gap-2 border-t border-[color:var(--border)] px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
             <Button
               variant="secondary"
-              className="w-full border-slate-200 bg-white text-slate-800 shadow-sm hover:text-slate-900 sm:w-auto"
+              className="w-full border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white shadow-sm hover:bg-[color:var(--surface-strong)] hover:text-white sm:w-auto"
               disabled={saving}
               onClick={() => router.push("/owner/dashboard")}
             >
@@ -483,15 +529,15 @@ function CreateHostelPageContent() {
         ) : null}
 
         {step === 2 ? (
-        <Card className="overflow-hidden border-slate-100 bg-white shadow-[0_18px_42px_rgba(15,23,42,0.08)]">
-          <div className="border-b border-white/70 px-4 py-3 sm:px-5">
+        <Card className={`overflow-hidden ${ownerPanelClass}`}>
+          <div className="border-b border-[color:var(--border)] px-4 py-3 sm:px-5">
             <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-blue-50 p-2.5 text-[var(--accent)]">
+              <div className="rounded-2xl bg-[color:var(--brand-soft)] p-2.5 text-[#9edcff]">
                 <Home className="h-4 w-4" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-slate-800">Floor and Room Setup</h2>
-                <p className="text-[11px] text-slate-500">
+                <h2 className="text-sm font-semibold text-white">Floor and Room Setup</h2>
+                <p className="text-[11px] text-[color:var(--fg-secondary)]">
                   {hostelType === "RESIDENCE"
                     ? "Add floors and units. Residence units are treated as single-allocation spaces."
                     : "Add floor, room number, and bed count. Sharing is automatic from beds."}
@@ -518,10 +564,10 @@ function CreateHostelPageContent() {
                     }}
                     className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-semibold shadow-sm transition ${
                       isActive
-                        ? "border-blue-200 bg-blue-50 text-[var(--accent)]"
+                        ? "border-[color:color-mix(in_srgb,var(--brand)_42%,transparent)] bg-[color:var(--brand-soft)] text-[#9edcff]"
                         : isComplete
                           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                          : "border-white/80 bg-white/80 text-slate-600"
+                          : "border-[color:var(--border)] bg-[color:var(--surface-soft)] text-[color:var(--fg-secondary)]"
                     }`}
                   >
                     <span>{floor.floorLabel || `Floor ${index + 1}`}</span>
@@ -533,12 +579,12 @@ function CreateHostelPageContent() {
 
             {activeFloor && activeRoom ? (
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.9fr)]">
-                <div className="rounded-[10px] border border-slate-100 bg-slate-50 p-3 shadow-sm sm:p-4">
+                <div className={`rounded-[10px] p-3 shadow-sm sm:p-4 ${ownerSubtlePanelClass}`}>
                   <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Current Floor</p>
-                      <h3 className="mt-1 text-base font-semibold text-slate-800">{activeFloor.floorLabel || "Select Floor"}</h3>
-                      <p className="mt-1 text-[11px] text-slate-500">Choose the floor first, then complete the room details below.</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Current Floor</p>
+                      <h3 className="mt-1 text-base font-semibold text-white">{activeFloor.floorLabel || "Select Floor"}</h3>
+                      <p className="mt-1 text-[11px] text-[color:var(--fg-secondary)]">Choose the floor first, then complete the room details below.</p>
                     </div>
                     {floors.length > 1 ? (
                       <Button
@@ -564,18 +610,18 @@ function CreateHostelPageContent() {
                       }
                       disabled={saving}
                       placeholder="Ex: Ground Floor or Floor 1"
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-[13px] text-slate-700 outline-none shadow-sm transition focus:border-blue-300"
+                      className={`w-full rounded-2xl px-3 py-3 text-[13px] outline-none shadow-sm transition focus:border-blue-300 ${ownerInputClass}`}
                     />
                   </Field>
 
-                  <div className="mt-4 rounded-[10px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+                  <div className={`mt-4 rounded-[10px] p-3 shadow-sm sm:p-4 ${ownerSubtlePanelClass}`}>
                     <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Active Room</p>
-                        <h4 className="mt-1 text-sm font-semibold text-slate-800">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Active Room</p>
+                        <h4 className="mt-1 text-sm font-semibold text-white">
                           {roomLabel} {activeFloor.rooms.findIndex((room) => room.id === activeRoom.id) + 1}
                         </h4>
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-[11px] text-[color:var(--fg-secondary)]">
                           {hostelType === "RESIDENCE" ? "Enter the unit number for this residence." : "Enter room number and how many beds this room has."}
                         </p>
                       </div>
@@ -599,7 +645,7 @@ function CreateHostelPageContent() {
                           onChange={(event) => updateRoom(activeFloor.id, activeRoom.id, "roomNumber", event.target.value)}
                           disabled={saving}
                           placeholder={hostelType === "RESIDENCE" ? "Ex: A-101" : "Ex: 101"}
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-[13px] text-slate-700 outline-none shadow-sm transition focus:border-blue-300"
+                          className={`w-full rounded-2xl px-3 py-3 text-[13px] outline-none shadow-sm transition focus:border-blue-300 ${ownerInputClass}`}
                         />
                       </Field>
                       <Field label={hostelType === "RESIDENCE" ? "Occupancy" : "Number of Beds"}>
@@ -611,7 +657,7 @@ function CreateHostelPageContent() {
                           disabled={saving}
                           placeholder={hostelType === "RESIDENCE" ? "1" : "Ex: 3"}
                           readOnly={hostelType === "RESIDENCE"}
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-[13px] text-slate-700 outline-none shadow-sm transition focus:border-blue-300"
+                          className={`w-full rounded-2xl px-3 py-3 text-[13px] outline-none shadow-sm transition focus:border-blue-300 ${ownerInputClass}`}
                         />
                       </Field>
                     </div>
@@ -628,7 +674,7 @@ function CreateHostelPageContent() {
                         </Button>
                         <Button
                           variant="secondary"
-                          className="w-full rounded-2xl border-slate-200 bg-white text-[var(--accent)] shadow-sm sm:flex-1"
+                          className="w-full rounded-2xl border-[color:var(--border)] bg-[color:var(--surface-soft)] text-[#9edcff] shadow-sm hover:bg-[color:var(--surface-strong)] sm:flex-1"
                           disabled={saving}
                           onClick={handleFinishFloor}
                         >
@@ -640,11 +686,11 @@ function CreateHostelPageContent() {
                   </div>
                 </div>
 
-                <div className="rounded-[10px] border border-slate-100 bg-white p-3 shadow-sm sm:p-4">
+                <div className={`rounded-[10px] p-3 shadow-sm sm:p-4 ${ownerSubtlePanelClass}`}>
                   <div className="mb-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Room Progress</p>
-                    <h3 className="mt-1 text-sm font-semibold text-slate-800">{activeFloor.floorLabel}</h3>
-                    <p className="mt-1 text-[11px] text-slate-500">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Room Progress</p>
+                    <h3 className="mt-1 text-sm font-semibold text-white">{activeFloor.floorLabel}</h3>
+                    <p className="mt-1 text-[11px] text-[color:var(--fg-secondary)]">
                       Use Save and Add New Room to save the current room and open the next one. When all rooms on this floor are complete, press Finish Floor.
                     </p>
                   </div>
@@ -662,15 +708,15 @@ function CreateHostelPageContent() {
                           onClick={() => setActiveRoomId(room.id)}
                           className={`flex w-full items-center justify-between rounded-[8px] border px-3 py-3 text-left shadow-sm transition ${
                             isActive
-                              ? "border-blue-200 bg-blue-50"
+                              ? "border-[color:color-mix(in_srgb,var(--brand)_42%,transparent)] bg-[color:var(--brand-soft)]"
                               : isComplete
                                 ? "border-emerald-200 bg-emerald-50/70"
-                                : "border-white/80 bg-white/85"
+                                : "border-[color:var(--border)] bg-[color:var(--surface-soft)]"
                           }`}
                         >
                           <div>
-                              <p className="text-[12px] font-semibold text-slate-800">{roomLabel} {index + 1}</p>
-                              <p className="text-[11px] text-slate-500">
+                              <p className="text-[12px] font-semibold text-white">{roomLabel} {index + 1}</p>
+                              <p className="text-[11px] text-[color:var(--fg-secondary)]">
                                 {room.roomNumber.trim()
                                 ? hostelType === "RESIDENCE"
                                   ? [room.roomNumber, "Private unit"].join(" - ")
@@ -678,15 +724,15 @@ function CreateHostelPageContent() {
                                 : `${roomLabel} details pending`}
                               </p>
                             </div>
-                          {isComplete ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <ChevronRight className="h-4 w-4 text-slate-400" />}
+                          {isComplete ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <ChevronRight className="h-4 w-4 text-[color:var(--fg-secondary)]" />}
                         </button>
                       );
                     })}
                   </div>
 
-                  <div className="mt-4 rounded-[8px] border border-dashed border-blue-100 bg-blue-50 px-3 py-3">
-                    <p className="text-[11px] font-semibold text-slate-700">Completed floors</p>
-                    <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                  <div className="mt-4 rounded-[8px] border border-dashed border-[color:color-mix(in_srgb,var(--brand)_42%,transparent)] bg-[color:var(--brand-soft)] px-3 py-3">
+                    <p className="text-[11px] font-semibold text-white">Completed floors</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[color:var(--fg-secondary)]">
                       {completedFloors.length > 0
                         ? `${completedFloors.length} floor${completedFloors.length > 1 ? "s are" : " is"} ready. You can still tap any floor chip above to review it.`
                         : "No floor is fully completed yet."}
@@ -698,11 +744,11 @@ function CreateHostelPageContent() {
 
             <div className="space-y-2">
               {floors.map((floor) => (
-                <div key={floor.id} className="rounded-[8px] border border-slate-100 bg-white px-3 py-3 shadow-sm">
+                <div key={floor.id} className={`rounded-[8px] px-3 py-3 shadow-sm ${ownerSubtlePanelClass}`}>
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[12px] font-semibold text-slate-800">{floor.floorLabel}</p>
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-[12px] font-semibold text-white">{floor.floorLabel}</p>
+                      <p className="text-[11px] text-[color:var(--fg-secondary)]">
                         {floor.rooms.length} {roomLabel.toLowerCase()}{floor.rooms.length > 1 ? "s" : ""} added
                       </p>
                     </div>
@@ -720,10 +766,10 @@ function CreateHostelPageContent() {
               ))}
             </div>
 
-            <div className="flex flex-col gap-2 border-t border-white/70 pt-4 sm:flex-row sm:justify-end">
+            <div className="flex flex-col gap-2 border-t border-[color:var(--border)] pt-4 sm:flex-row sm:justify-end">
               <Button
                 variant="secondary"
-                className="w-full rounded-2xl border-slate-200 bg-white text-slate-700 shadow-sm sm:w-auto"
+                className="w-full rounded-2xl border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white shadow-sm hover:bg-[color:var(--surface-strong)] sm:w-auto"
                 disabled={saving}
                 onClick={() => setStep(1)}
               >
@@ -731,7 +777,7 @@ function CreateHostelPageContent() {
               </Button>
               <Button
                 variant="secondary"
-                className="w-full rounded-2xl border-slate-200 bg-white text-slate-700 shadow-sm sm:w-auto"
+                className="w-full rounded-2xl border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white shadow-sm hover:bg-[color:var(--surface-strong)] sm:w-auto"
                 disabled={saving}
                 onClick={() => router.push("/owner/dashboard")}
               >
@@ -741,7 +787,7 @@ function CreateHostelPageContent() {
                 <>
                   <Button
                     variant="secondary"
-                    className="w-full rounded-2xl border-slate-200 bg-white text-slate-800 shadow-sm hover:text-slate-900 sm:w-auto"
+                    className="w-full rounded-2xl border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white shadow-sm hover:bg-[color:var(--surface-strong)] hover:text-white sm:w-auto"
                     disabled={saving}
                     onClick={addAnotherFloor}
                   >
@@ -777,9 +823,9 @@ function CreateHostelPageContent() {
 
 function CreateHostelLoadingState() {
   return (
-    <div className="bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_45%,#ffffff_100%)] rounded-[8px] px-4 py-4 sm:px-6">
+    <div className="rounded-[8px] bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.14),transparent_30%),linear-gradient(180deg,rgba(17,17,20,0.96)_0%,rgba(9,9,11,1)_100%)] px-4 py-4 sm:px-6">
       <div className="mx-auto w-full max-w-6xl">
-        <Card className="border-slate-200 bg-white p-4 text-center text-sm text-slate-600">
+        <Card className={`p-4 text-center text-sm text-[color:var(--fg-secondary)] ${ownerPanelClass}`}>
           Loading hostel details...
         </Card>
       </div>
@@ -796,7 +842,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[11px] font-medium text-slate-700">{label}</span>
+      <span className="mb-1.5 block text-[11px] font-medium text-[color:var(--fg-secondary)]">{label}</span>
       {children}
     </label>
   );
@@ -818,7 +864,7 @@ function WizardPill({
           ? "border border-blue-500 bg-blue-600 text-white shadow-[var(--shadow-soft)]"
           : done
             ? "border border-emerald-200 bg-[linear-gradient(180deg,#ecfdf5_0%,#d1fae5_100%)] text-emerald-700"
-            : "border border-slate-200 bg-white text-slate-700"
+            : "border border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white"
       }`}
     >
       {label}
