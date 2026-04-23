@@ -34,7 +34,6 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
   const [txnId, setTxnId] = useState("");
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
 
@@ -43,7 +42,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
   useLockBodyScroll(open);
 
   useEffect(() => {
-    setMounted(true);
+    queueMicrotask(() => setMounted(true));
   }, []);
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -70,27 +69,28 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
     const tenantId = searchParams.get("tenantId");
 
     if (action !== "pay-rent") {
-      setOpen(false);
+      queueMicrotask(() => setOpen(false));
       return;
     }
 
     const targetTenant = tenantId ? tenants.find((tenant) => tenant.tenantId === tenantId) : null;
 
-    setOpen(true);
-    setMessage("");
-    setError("");
+    queueMicrotask(() => {
+      setOpen(true);
+      setError("");
 
-    if (targetTenant) {
-      setQuery(targetTenant.tenantId);
-      setSelectedTenantId(targetTenant.tenantId);
-      setAmount(String(targetTenant.monthlyRent));
-      setPaidOnDate(new Date().toISOString().slice(0, 10));
-      setStep(2);
-    } else {
-      setQuery("");
-      setSelectedTenantId("");
-      setStep(1);
-    }
+      if (targetTenant) {
+        setQuery(targetTenant.tenantId);
+        setSelectedTenantId(targetTenant.tenantId);
+        setAmount(String(targetTenant.monthlyRent));
+        setPaidOnDate(new Date().toISOString().slice(0, 10));
+        setStep(2);
+      } else {
+        setQuery("");
+        setSelectedTenantId("");
+        setStep(1);
+      }
+    });
   }, [searchParams, tenants]);
 
   const resetState = () => {
@@ -104,7 +104,6 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
     setTxnId("");
     setProofFile(null);
     setError("");
-    setMessage("");
     setSubmitting(false);
     if (searchParams.get("action") === "pay-rent") {
       router.replace(pathname);
@@ -140,7 +139,6 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
 
     setSubmitting(true);
     setError("");
-    setMessage("");
 
     const payload = new FormData();
     payload.append("tenantId", selectedTenant.tenantId);
@@ -185,7 +183,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
       {!hideButton && (
         <TenantRentSearchButton
           disabled={submitting}
-          onClick={() => router.replace("?action=pay-rent")}
+          onClick={() => router.replace(`${pathname}?action=pay-rent`)}
         />
       )}
 
@@ -232,7 +230,6 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
                             setQuery(next);
                             // Clear selection when the user edits the search box on step 1
                             if (step === 1) setSelectedTenantId("");
-                            setMessage("");
                             setError("");
                           }}
                           disabled={submitting}
@@ -263,7 +260,6 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
                               onClick={() => {
                                 setSelectedTenantId(tenant.tenantId);
                                 setAmount(String(tenant.monthlyRent));
-                                setMessage("");
                                 setError("");
                               }}
                               className={`w-full rounded-2xl border px-4 py-4 text-left transition ${

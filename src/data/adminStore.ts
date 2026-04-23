@@ -9,10 +9,10 @@ const DATA_DIR = path.join(process.cwd(), ".data");
 const ADMIN_FILE = path.join(DATA_DIR, "admin-control.json");
 
 const PLANS: AdminPlan[] = [
-  { id: "starter", name: "Starter", basePrice: 999, limit: 50 },
-  { id: "growth", name: "Growth", basePrice: 1500, limit: 100 },
-  { id: "pro", name: "Pro", basePrice: 2000, limit: 150 },
-  { id: "scale", name: "Scale", basePrice: 3999, limit: 500 },
+  { id: "starter", name: "Silver", basePrice: 299, limit: 50 },
+  { id: "growth", name: "Gold", basePrice: 799, limit: 150 },
+  { id: "pro", name: "Gold", basePrice: 799, limit: 150 },
+  { id: "scale", name: "Founding Member", basePrice: 499, limit: 200 },
 ];
 
 type AdminState = {
@@ -100,8 +100,47 @@ function getPlan(planId: AdminPlanId) {
 }
 
 function getNextPlan(planId: AdminPlanId) {
-  const index = PLANS.findIndex((plan) => plan.id === planId);
-  return index >= 0 ? PLANS[index + 1] ?? null : null;
+  if (planId === "starter") return getPlan("pro");
+  if (planId === "growth") return getPlan("scale");
+  if (planId === "pro") return getPlan("scale");
+  return null;
+}
+
+function getPlanSettings(planId: AdminPlanId) {
+  if (planId === "starter") {
+    return {
+      extraTenantRate: 0,
+      includedHostels: 1,
+      extraHostelPrice: 250,
+    };
+  }
+
+  if (planId === "scale") {
+    return {
+      extraTenantRate: 5,
+      includedHostels: 5,
+      extraHostelPrice: 250,
+    };
+  }
+
+  return {
+    extraTenantRate: 5,
+    includedHostels: 3,
+    extraHostelPrice: 250,
+  };
+}
+
+function getPerHostelSurcharge(hostelId: string, ownerId: string, includedHostels: number, extraHostelPrice: number) {
+  const ownerHostels = getOwnerHostels()
+    .filter((hostel) => hostel.ownerId === ownerId)
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const hostelIndex = ownerHostels.findIndex((hostel) => hostel.id === hostelId);
+
+  if (hostelIndex === -1 || hostelIndex < includedHostels) {
+    return 0;
+  }
+
+  return extraHostelPrice;
 }
 
 function isBillableInMonth(joinDate: string, monthKey: string) {
@@ -126,20 +165,16 @@ function calculateBilling(hostelId: string, monthKey: string): BillingBreakdown 
   const control = adminState.controls[hostelId];
   const plan = getPlan(control.planId);
   const nextPlan = getNextPlan(plan.id);
+  const planSettings = getPlanSettings(plan.id);
   const tenants = getTenantRecords().filter((tenant) => tenant.assignment?.hostelId === hostelId);
   const billableTenantCount = tenants.filter((tenant) => isBillableInMonth(tenant.assignment?.moveInDate ?? tenant.createdAt, monthKey)).length;
   const tenantCount = tenants.length;
 
   const baseAmount = control.pricingOverride ?? plan.basePrice;
-  let extraTenants = Math.max(0, billableTenantCount - plan.limit);
-  let blockedAtNextPlan = false;
-
-  if (nextPlan && billableTenantCount >= nextPlan.limit) {
-    blockedAtNextPlan = true;
-    extraTenants = 0;
-  }
-
-  const extraCharges = extraTenants * 10;
+  const extraTenants = Math.max(0, billableTenantCount - plan.limit);
+  const extraTenantCharges = extraTenants * planSettings.extraTenantRate;
+  const extraHostelCharges = getPerHostelSurcharge(hostelId, control.ownerId, planSettings.includedHostels, planSettings.extraHostelPrice);
+  const extraCharges = extraTenantCharges + extraHostelCharges;
   const discountAmount = Math.round((baseAmount + extraCharges) * (control.discountPercent / 100));
   const rawFinal = baseAmount + extraCharges - discountAmount;
   const finalAmount = control.freeMonthsRemaining > 0 ? 0 : Math.max(rawFinal, 0);
@@ -152,8 +187,8 @@ function calculateBilling(hostelId: string, monthKey: string): BillingBreakdown 
     baseAmount,
     discountAmount,
     finalAmount,
-    upgradeSuggested: blockedAtNextPlan || (nextPlan ? baseAmount + extraCharges > nextPlan.basePrice : false),
-    blockedAtNextPlan,
+    upgradeSuggested: nextPlan ? billableTenantCount > plan.limit && plan.id !== "scale" : false,
+    blockedAtNextPlan: false,
     nextPlanName: nextPlan?.name ?? null,
   };
 }

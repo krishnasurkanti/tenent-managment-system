@@ -1,7 +1,8 @@
 import { Building2, Layers3, MapPin } from "lucide-react";
 import { getOwnerHostel } from "@/data/ownerHostelStore";
 import { Card } from "@/components/ui/card";
-import { ownerMetricToneClass, ownerPanelClass, ownerSubtlePanelClass } from "@/components/ui/owner-theme";
+import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
+import { ownerPanelClass, ownerSubtlePanelClass } from "@/components/ui/owner-theme";
 import { getOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
 
@@ -34,14 +35,17 @@ export default async function OwnerSettingsPage() {
 
   return (
     <div className="space-y-3">
-      {/* Compact hero */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-white/10 bg-[linear-gradient(180deg,#0f172a_0%,#0b101c_100%)] px-4 py-3">
-        <p className="text-sm font-semibold text-white">Settings</p>
-        <div className="flex gap-2">
-          <MetricTile label="Floors" value={String(hostel?.floors.length ?? 0)} />
-          <MetricTile label="Rooms" value={String(totalRooms)} />
-          <MetricTile label="Profile" value={hostel ? "Ready" : "Empty"} />
-        </div>
+      <OwnerPageHero
+        eyebrow="Settings"
+        title="Hostel settings"
+        description="Review your active hostel profile, operational defaults, and the owner setup used across the app."
+        badge={<span className="inline-flex rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[11px] font-semibold text-white/70">{hostel ? "Profile ready" : "No hostel yet"}</span>}
+      />
+
+      <div className="grid gap-2.5 sm:grid-cols-3">
+        <OwnerQuickStat label="Floors" value={String(hostel?.floors.length ?? 0)} helper="Configured in hostel setup" />
+        <OwnerQuickStat label="Rooms" value={String(totalRooms)} helper="Current total inventory" />
+        <OwnerQuickStat label="Profile" value={hostel ? "Ready" : "Empty"} helper="Owner-facing setup state" />
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -87,14 +91,5 @@ function InfoTile({
         </div>
       </div>
     </Card>
-  );
-}
-
-function MetricTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className={`rounded-[6px] border px-3 py-1.5 ${ownerMetricToneClass("default")}`}>
-      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] opacity-60">{label}</p>
-      <p className="text-[13px] font-semibold">{value}</p>
-    </div>
   );
 }

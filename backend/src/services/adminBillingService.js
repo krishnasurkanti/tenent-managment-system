@@ -7,7 +7,7 @@ const PLAN_SLABS = [
   { id: "starter", price: 999, limit: 50 },
   { id: "growth", price: 1500, limit: 100 },
   { id: "pro", price: 2000, limit: 150 },
-  { id: "scale", price: 3999, limit: 500 },
+  { id: "scale", price: 499, limit: Number.MAX_SAFE_INTEGER },
 ];
 
 function startOfDayUTC(date) {

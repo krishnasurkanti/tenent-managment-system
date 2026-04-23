@@ -101,7 +101,7 @@ export default function OwnerDashboardPage() {
         </Card>
 
         <div className="grid grid-cols-2 gap-2.5">
-          <ActionTile href="/owner/payments?action=pay-rent" icon={CreditCard} label="Pay Rent" note="Record collection" variant="mobile" />
+          <ActionTile href="/owner/payments" icon={CreditCard} label="Pay Rent" note="Record collection" variant="mobile" />
           <ActionTile href="/owner/payments" icon={ReceiptText} label="Due List" note={`${dueSoon.length} due soon`} variant="mobile" />
           <ActionTile href="/owner/notifications" icon={AlertTriangle} label="Overdue" note={`${overdue.length} need action`} variant="mobile" />
           <ActionTile href="/owner/payments" icon={Users} label="History" note="Latest payments" variant="mobile" />
@@ -173,7 +173,7 @@ export default function OwnerDashboardPage() {
 
             <div className="grid grid-cols-2 gap-2.5">
               <ActionTile href="/owner/tenants?action=add-tenant" icon={Users} label="Add Tenant" note="New check-in" variant="desktop" />
-              <ActionTile href="?action=pay-rent" icon={CreditCard} label="Pay Rent" note="Collect rent" variant="desktop" />
+              <ActionTile href="/owner/payments" icon={CreditCard} label="Pay Rent" note="Collect rent" variant="desktop" />
               <ActionTile href="/owner/rooms?view=available" icon={DoorOpen} label="Available" note={isResidence ? "Vacant units" : "Open beds"} variant="desktop" />
               <ActionTile href="/owner/notifications" icon={AlertTriangle} label="Alerts" note={`${overdue.length} overdue`} variant="desktop" />
             </div>

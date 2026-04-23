@@ -3,11 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { useEffect, useMemo, useState } from "react";
-import { Download, ImageUp, IndianRupee, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Download, ImageUp, X } from "lucide-react";
 import { useHostelContext } from "@/store/hostel-context";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
 import { ProcessingPill } from "@/components/ui/processing-pill";
 import { SkeletonBlock } from "@/components/ui/skeleton";
 import {
@@ -41,7 +42,6 @@ export default function OwnerPaymentsPage() {
   const [proofImage, setProofImage] = useState<File | null>(null);
   const [savingProof, setSavingProof] = useState(false);
   const [proofError, setProofError] = useState("");
-  const [mounted, setMounted] = useState(false);
   const { toast } = useToast();
 
   const tenants = useMemo(() => {
@@ -53,10 +53,6 @@ export default function OwnerPaymentsPage() {
       .filter((tenant) => tenant.assignment?.hostelId === currentHostel.id)
       .map((tenant) => tenantOverrides[tenant.tenantId] ?? tenant);
   }, [allTenants, currentHostel, tenantOverrides]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (hostelLoading || tenantLoading) {
     return <LoadingState />;
@@ -75,9 +71,37 @@ export default function OwnerPaymentsPage() {
   const overdueCount = dueItems.filter(({ status }) => status.tone === "red").length;
   const dueSoonCount = dueItems.filter(({ status }) => status.tone === "orange" || status.tone === "yellow").length;
   const collectedTotal = tenants.reduce((sum, tenant) => sum + tenant.rentPaid, 0);
+  const expectedTotal = tenants.reduce((sum, tenant) => sum + tenant.monthlyRent, 0);
+  const collectionRate = expectedTotal > 0 ? Math.round((collectedTotal / expectedTotal) * 100) : 0;
+  const proofCoverage = tenants.filter((tenant) => {
+    const payment = tenant.paymentHistory[0];
+    return Boolean(payment?.proofImageUrl || payment?.txnId);
+  }).length;
 
   return (
     <div className={`space-y-3 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
+      <OwnerPageHero
+        eyebrow="Payments"
+        title="Payment workspace"
+        description={`Track collections, verify proof, and catch upcoming dues for ${currentHostel.hostelName}.`}
+        badge={<span className="inline-flex rounded-full border border-[rgba(99,102,241,0.3)] bg-[rgba(99,102,241,0.14)] px-3 py-1 text-[11px] font-semibold text-[var(--accent)]">{collectionRate}% collected</span>}
+        actions={
+          <Link
+            href="/owner/payments?action=pay-rent"
+            className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#6366f1_0%,#4f46e5_100%)] px-4 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(99,102,241,0.26)]"
+          >
+            Pay Rent
+          </Link>
+        }
+      />
+
+      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+        <OwnerQuickStat label="Collected" value={`Rs ${collectedTotal.toLocaleString("en-IN")}`} helper="Recorded this cycle" />
+        <OwnerQuickStat label="Expected" value={`Rs ${expectedTotal.toLocaleString("en-IN")}`} helper="Current tenant rent total" />
+        <OwnerQuickStat label="Needs attention" value={String(overdueCount + dueSoonCount)} helper="Due soon and overdue" />
+        <OwnerQuickStat label="Proof coverage" value={`${proofCoverage}/${tenants.length}`} helper="Txn ID or file attached" />
+      </div>
+
       <section className="space-y-3 lg:hidden">
         <Card className={`${ownerHeroCardClass} rounded-[10px] p-3`}>
           <div className="mb-2 flex items-center justify-between">
@@ -244,7 +268,7 @@ export default function OwnerPaymentsPage() {
         </div>
       </section>
 
-      {proofModal && mounted ? (
+      {proofModal && typeof window !== "undefined" ? (
         <AddProofModal
           tenantName={proofModal.tenantName}
           txnId={txnIdInput}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarDays, IdCard, Mail, Phone, User2, Users2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
 import { getOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
 import { getTenantRecords } from "@/data/tenantStore";
@@ -48,24 +49,18 @@ export default async function OwnerTenantDetailsPage({
           Back to tenants
         </Link>
 
-        <Card className="overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(249,193,42,0.14),transparent_28%),linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-5 text-white">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Tenant profile</p>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h1 className="text-[1.9rem] font-semibold tracking-tight text-white">{tenant.fullName}</h1>
-              <p className="mt-1 text-sm text-[color:var(--fg-secondary)]">Tenant ID {tenant.tenantId}</p>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-[color:var(--fg-secondary)]">
-                Identity details, room assignment, and full payment history.
-              </p>
-            </div>
-            <span className={getStatusClassName(currentStatus.tone)}>{currentStatus.label}</span>
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <TopMetric label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} />
-            <TopMetric label="Paid" value={formatPaymentDate(tenant.paidOnDate)} />
-            <TopMetric label="Due" value={formatPaymentDate(tenant.nextDueDate)} />
-          </div>
-        </Card>
+        <OwnerPageHero
+          eyebrow="Tenant profile"
+          title={tenant.fullName}
+          description="Identity details, room assignment, family information, and complete payment history for this tenant."
+          badge={<span className={getStatusClassName(currentStatus.tone)}>{currentStatus.label}</span>}
+        />
+
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <OwnerQuickStat label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} helper="Current monthly amount" />
+          <OwnerQuickStat label="Last paid" value={formatPaymentDate(tenant.paidOnDate)} helper="Most recent payment date" />
+          <OwnerQuickStat label="Next due" value={formatPaymentDate(tenant.nextDueDate)} helper={`Tenant ID ${tenant.tenantId}`} />
+        </div>
 
         <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
           <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-5 text-white">
@@ -164,15 +159,6 @@ export default async function OwnerTenantDetailsPage({
           </div>
         </Card>
       </div>
-    </div>
-  );
-}
-
-function TopMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--fg-secondary)]">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-white">{value}</p>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CreditCard, Ellipsis, Home, Hotel, Users } from "lucide-react";
+import { BrainCircuit, CreditCard, Home, Hotel, Users } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 const items = [
@@ -10,7 +10,7 @@ const items = [
   { href: "/owner/payments", label: "Payments", icon: CreditCard },
   { href: "/owner/rooms", label: "Rooms", icon: Hotel },
   { href: "/owner/tenants", label: "Tenants", icon: Users },
-  { href: "/owner/settings", label: "More", icon: Ellipsis },
+  { href: "/owner/council", label: "Council", icon: BrainCircuit },
 ];
 
 export function OwnerMobileNav() {

@@ -17,7 +17,7 @@ type PlanCard = {
   title: string;
   monthlyPrice: number;
   yearlyPrice: number;
-  tenantLimit: number;
+  tenantLimit: number | null;
   badge?: string;
   tone: string;
   valueLine: string;
@@ -31,54 +31,56 @@ const FOUNDING_SLOTS_REMAINING = 8;
 const PLANS: PlanCard[] = [
   {
     id: "starter",
-    title: "Starter",
-    monthlyPrice: 999,
-    yearlyPrice: 9990,
+    title: "Silver",
+    monthlyPrice: 299,
+    yearlyPrice: 2990,
     tenantLimit: 50,
     tone: "border-white/10 bg-[linear-gradient(180deg,#111827_0%,#0c1018_100%)]",
-    valueLine: "Good for a single property with stable monthly occupancy.",
+    valueLine: "Built for a single hostel with a simple flat cap for monthly tenants.",
     features: [
       "50 monthly tenants included",
       "1 hostel",
+      "No per-tenant overage on this plan",
+      "Upgrade when you outgrow the 50-tenant cap",
       "Rent tracking and reminders",
-      "Room management",
       "Payment history",
     ],
   },
   {
     id: "pro",
-    title: "Pro",
-    monthlyPrice: 2000,
-    yearlyPrice: 20000,
+    title: "Gold",
+    monthlyPrice: 799,
+    yearlyPrice: 7990,
     tenantLimit: 150,
     badge: "Most Popular",
     tone:
       "border-[color:color-mix(in_srgb,var(--success)_40%,var(--brand)_60%)] bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.12),transparent_50%),linear-gradient(180deg,#0e1a2e_0%,#0b101c_100%)] shadow-[0_0_0_1px_rgba(56,189,248,0.15),0_32px_80px_rgba(37,99,235,0.2)]",
-    valueLine: "Better headroom for busy hostels that want smoother scaling.",
+    valueLine: "Best fit for growing owners who need more tenant headroom and multiple hostels.",
     features: [
       "150 monthly tenants included",
-      "Priority support",
-      "Everything in Starter",
+      "3 hostels included",
+      "Rs 5 per tenant after 150",
+      "Rs 250 per hostel after the included 3",
+      "Everything in Silver",
       "Advanced reports",
-      "Higher occupancy headroom",
     ],
   },
   {
     id: "founding",
-    title: "Founding",
+    title: "Founding Member",
     monthlyPrice: 499,
     yearlyPrice: 4990,
     tenantLimit: 200,
-    badge: "Founding",
+    badge: "First 15 Owners",
     tone:
       "border-[#f59e0b]/40 bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.12),transparent_50%),linear-gradient(180deg,#151208_0%,#0c1018_100%)] ring-1 ring-[#f59e0b]/20",
-    valueLine: "Founder pricing with more room before you ever need a bigger plan.",
+    valueLine: "Special pricing for the first 15 owners with more tenant and hostel capacity before overage starts.",
     features: [
+      "Only for the first 15 owners",
       "200 monthly tenants included",
-      "2 hostels",
-      "All Pro features",
-      "First month free",
-      "Founder priority support",
+      "5 hostels included",
+      "Rs 5 per tenant after 200",
+      "Rs 250 per hostel after the included 5",
     ],
   },
 ];
@@ -96,7 +98,13 @@ function getDirection(currentPlanId: PlanId, nextPlanId: PlanId) {
 
 function getCurrentPlanLabel(planId: PlanId) {
   if (planId === "scale") {
-    return "Founding / Scale";
+    return "Founding Member";
+  }
+  if (planId === "pro" || planId === "growth") {
+    return "Gold";
+  }
+  if (planId === "starter") {
+    return "Silver";
   }
   const plan = PLANS.find((item) => item.id === planId);
   return plan?.title ?? planId;
@@ -185,7 +193,7 @@ export default function OwnerBillingPage() {
       <OwnerPageHero
         eyebrow="Billing"
         title="Plans and pricing"
-        description="Choose the right monthly package for your hostel. Weekly and daily stays are always free and included as extra value inside every plan."
+        description="Choose the right package for your hostel. Weekly and daily stays are always free, and extra hostels are billed separately after each plan's included count."
         badge={
           <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(99,102,241,0.3)] bg-[rgba(99,102,241,0.14)] px-3 py-1 text-[11px] font-semibold text-[var(--accent-electric)]">
             <Wallet className="h-3.5 w-3.5" />
@@ -312,14 +320,20 @@ export default function OwnerBillingPage() {
 
               <p className={cn("mt-0.5 text-[10px]", plan.id === "founding" ? "text-[#fbbf24]/55" : "text-white/30")}>
                 {plan.id === "founding"
-                  ? `First month free • ${FOUNDING_SLOTS_REMAINING}/${FOUNDING_OFFER_SLOTS} slots left`
-                  : `Rs ${plan.yearlyPrice.toLocaleString("en-IN")}/yr • save 2 months`}
+                  ? `${FOUNDING_SLOTS_REMAINING}/${FOUNDING_OFFER_SLOTS} founder slots left • Rs 5 per tenant after 200`
+                  : plan.id === "pro"
+                    ? `Rs 5 per tenant after 150 • Rs 250 per extra hostel`
+                    : `Flat cap at 50 tenants • Rs 250 per extra hostel`}
               </p>
 
               <div className="mt-4 rounded-[14px] border border-white/10 bg-white/[0.03] px-3 py-3">
                 <p className="text-[11px] font-semibold text-white">{plan.valueLine}</p>
                 <p className="mt-1 text-[11px] text-[color:var(--fg-secondary)]">
-                  {plan.tenantLimit} monthly tenants are included before any extra monthly billing applies.
+                  {plan.id === "starter"
+                    ? "50 monthly tenants are included. Move to Gold when you need more headroom."
+                    : plan.id === "pro"
+                      ? "150 monthly tenants are included, then Rs 5 is billed for each additional monthly tenant."
+                      : "200 monthly tenants are included, then Rs 5 is billed for each additional monthly tenant."}
                 </p>
               </div>
 
@@ -465,9 +479,24 @@ function TenantUsageBar({
   isCurrent,
 }: {
   used: number;
-  limit: number;
+  limit: number | null;
   isCurrent: boolean;
 }) {
+  if (limit === null) {
+    return (
+      <div className="w-[96px] flex-shrink-0">
+        <div className="mb-1 flex items-center justify-between gap-1">
+          <span className="text-[9px] font-medium text-white/45">{used} active</span>
+          <span className="text-[9px] font-bold text-[#fbbf24]">Unlimited</span>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+          <div className="h-full w-full rounded-full bg-[#f59e0b]" />
+        </div>
+        <p className="mt-0.5 text-[8px] text-white/20">No tenant cap on this offer</p>
+      </div>
+    );
+  }
+
   const pct = Math.min(100, Math.round((used / limit) * 100));
   const left = limit - used;
   const isFull = used >= limit;

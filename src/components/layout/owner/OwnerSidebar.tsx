@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import {
   BedDouble,
   Bell,
+  BrainCircuit,
   Building2,
   CreditCard,
   CircleDollarSign,
@@ -25,6 +26,7 @@ const workspaceNavigation = [
   { name: "Rooms", href: "/owner/rooms", icon: BedDouble },
   { name: "Tenants", href: "/owner/tenants", icon: Users },
   { name: "Payments", href: "/owner/payments", icon: CreditCard },
+  { name: "Council", href: "/owner/council", icon: BrainCircuit },
 ];
 
 const hostelNavigation = [

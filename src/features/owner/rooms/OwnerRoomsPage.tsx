@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { BedDouble, Building2, ChevronDown, DoorOpen, Layers3, Users } from "lucide-react";
 import { useHostelContext } from "@/store/hostel-context";
 import { Card } from "@/components/ui/card";
+import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
 import {
   ownerFilterLinkClass,
@@ -213,36 +214,27 @@ function OwnerRoomsPageContent() {
       </section>
 
       <section className="hidden lg:block">
-        <div className={`${ownerHeroCardClass} px-4 py-4 sm:px-5`}>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[color:var(--fg-secondary)]">Rooms</p>
-          <div className="mt-1 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h1 className="text-base font-semibold text-white">
-                {showAvailableOnly ? "Available Rooms" : "Room Occupancy"}
-              </h1>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
+        <OwnerPageHero
+          eyebrow="Rooms"
+          title={showAvailableOnly ? "Available rooms" : "Room occupancy"}
+          description={`Live inventory view for ${currentHostel.hostelName}. Use this to place new tenants into the fastest available space.`}
+          actions={
+            <>
               <FilterLink href="/owner/rooms" active={!showAvailableOnly}>
                 All Rooms
               </FilterLink>
               <FilterLink href="/owner/rooms?view=available" active={showAvailableOnly}>
                 Available
               </FilterLink>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricTile icon={Building2} label="Hostel" value={currentHostel.hostelName} />
-          <MetricTile icon={DoorOpen} label={isResidence ? "Total Units" : "Total Rooms"} value={String(totalRooms)} />
-          <MetricTile icon={Users} label={isResidence ? "Occupied Units" : "Occupied Beds"} value={String(occupiedBeds)} tone="success" />
-          <MetricTile
-            icon={BedDouble}
-            label={showAvailableOnly ? (isResidence ? "Vacant Units" : "Available Rooms") : (isResidence ? "Vacant Units" : "Available Beds")}
-            value={showAvailableOnly ? String(availableRoomsCount) : isResidence ? String(availableRoomsCount) : String(availableBeds)}
-            tone="warning"
-          />
+          <OwnerQuickStat label="Hostel" value={currentHostel.hostelName} helper="Current inventory scope" />
+          <OwnerQuickStat label={isResidence ? "Total Units" : "Total Rooms"} value={String(totalRooms)} helper="Built from hostel setup" />
+          <OwnerQuickStat label={isResidence ? "Occupied Units" : "Occupied Beds"} value={String(occupiedBeds)} helper="Live allocation count" />
+          <OwnerQuickStat label={showAvailableOnly ? (isResidence ? "Vacant Units" : "Available Rooms") : (isResidence ? "Vacant Units" : "Available Beds")} value={showAvailableOnly ? String(availableRoomsCount) : isResidence ? String(availableRoomsCount) : String(availableBeds)} helper="Ready for new assignment" />
         </div>
 
         <div className="space-y-2.5">
