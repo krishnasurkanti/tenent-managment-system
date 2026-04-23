@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDemoAdminProfile, matchesDemoCredentials } from "@/lib/demo-auth";
+import { getDemoAdminProfile, matchesSuperAdminCredentials } from "@/lib/demo-auth";
 import { setAuthCookies } from "@/services/core/backend-api";
 import { signDemoToken } from "@/lib/sign-token";
 
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Username and password are required." }, { status: 400 });
   }
 
-  if (matchesDemoCredentials(identifier, password)) {
+  if (matchesSuperAdminCredentials(identifier, password)) {
     const token = await signDemoToken("super_admin");
     const response = NextResponse.json({ ok: true, admin: getDemoAdminProfile() });
     setAuthCookies(response, token);
