@@ -1,1 +1,5 @@
-export { default } from "@/features/owner/council/OwnerCouncilPage";
+import { redirect } from "next/navigation";
+
+export default function OwnerCouncilPage() {
+  redirect("/owner/dashboard");
+}
