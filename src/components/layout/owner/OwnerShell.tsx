@@ -12,7 +12,8 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  if (pathname === "/owner/login") {
+  const PUBLIC_PATHS = ["/owner/login", "/owner/accept-invite", "/owner/signup"];
+  if (PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "?"))) {
     return <>{children}</>;
   }
 
