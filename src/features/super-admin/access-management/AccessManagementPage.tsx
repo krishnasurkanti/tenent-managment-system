@@ -108,6 +108,9 @@ function AccessManagementPageInner() {
   const [copied, setCopied] = useState(false);
   const [upgradeRequests, setUpgradeRequests] = useState<UpgradeRequest[]>([]);
   const [requestActionId, setRequestActionId] = useState<string | null>(null);
+  const [signupKey, setSignupKey] = useState<string | null>(null);
+  const [signupKeyCopied, setSignupKeyCopied] = useState(false);
+  const [generatingKey, setGeneratingKey] = useState(false);
 
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -115,17 +118,20 @@ function AccessManagementPageInner() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [ownersRes, statsRes, requestsRes] = await Promise.all([
+      const [ownersRes, statsRes, requestsRes, keyRes] = await Promise.all([
         fetch("/api/super-admin/owners"),
         fetch("/api/super-admin/owner-stats"),
         fetch("/api/super-admin/upgrade-requests"),
+        fetch("/api/super-admin/signup-key"),
       ]);
       const ownersData = (await ownersRes.json()) as { owners?: OwnerRow[] };
       const statsData = (await statsRes.json()) as { stats?: OwnerStats[] };
       const requestData = (await requestsRes.json()) as { requests?: UpgradeRequest[] };
+      const keyData = (await keyRes.json()) as { key?: string | null };
 
       setOwners(ownersData.owners ?? []);
       setUpgradeRequests(requestData.requests ?? []);
+      setSignupKey(keyData.key ?? null);
 
       const statsMap: Record<string, OwnerStats> = {};
       for (const s of statsData.stats ?? []) {
@@ -196,6 +202,25 @@ function AccessManagementPageInner() {
     await navigator.clipboard.writeText(inviteLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleGenerateKey = async () => {
+    if (generatingKey) return;
+    setGeneratingKey(true);
+    try {
+      const res = await csrfFetch("/api/super-admin/signup-key", { method: "POST" });
+      const data = (await res.json()) as { key?: string };
+      if (res.ok && data.key) setSignupKey(data.key);
+    } finally {
+      setGeneratingKey(false);
+    }
+  };
+
+  const handleCopySignupLink = async () => {
+    if (!signupKey) return;
+    await navigator.clipboard.writeText(`${window.location.origin}/owner/signup?key=${signupKey}`);
+    setSignupKeyCopied(true);
+    setTimeout(() => setSignupKeyCopied(false), 2000);
   };
 
   const handleCloseForm = () => {
@@ -391,6 +416,43 @@ function AccessManagementPageInner() {
             <span className="text-sm font-semibold text-white">{owners.length}</span>
             <span className="text-xs text-white/40">owners</span>
           </div>
+        </div>
+
+        {/* Signup Link */}
+        <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Plus className="h-4 w-4 text-[#f7bf53]" />
+              <h2 className="font-display text-base font-semibold text-white">Owner signup link</h2>
+            </div>
+            <button
+              type="button"
+              onClick={handleGenerateKey}
+              disabled={generatingKey}
+              className="rounded-xl border border-white/12 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white disabled:opacity-50"
+            >
+              {generatingKey ? "Generating…" : signupKey ? "New Link" : "Generate Link"}
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-white/45">One-time link. Expires after one successful registration. Generate a new one each time.</p>
+
+          {signupKey ? (
+            <div className="mt-3 flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5">
+              <p className="flex-1 truncate font-mono text-xs text-white/70">{`${typeof window !== "undefined" ? window.location.origin : ""}/owner/signup?key=${signupKey}`}</p>
+              <button
+                type="button"
+                onClick={handleCopySignupLink}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${signupKeyCopied ? "bg-[#22c55e]/20 text-[#4ade80]" : "bg-white/10 text-white/70 hover:bg-white/15 hover:text-white"}`}
+              >
+                {signupKeyCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {signupKeyCopied ? "Copied" : "Copy"}
+              </button>
+            </div>
+          ) : (
+            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/40">
+              No active link. Click &quot;Generate Link&quot; to create one.
+            </div>
+          )}
         </div>
 
         <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">

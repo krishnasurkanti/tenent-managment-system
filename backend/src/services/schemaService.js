@@ -50,6 +50,21 @@ async function initializeDatabase() {
   `);
 
   await query(`
+    CREATE TABLE IF NOT EXISTS signup_keys (
+      id BIGSERIAL PRIMARY KEY,
+      key TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      used_at TIMESTAMPTZ,
+      used_by_owner_id BIGINT REFERENCES owners(id) ON DELETE SET NULL
+    )
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_signup_keys_key ON signup_keys (key)
+  `);
+
+  await query(`
     CREATE TABLE IF NOT EXISTS hostels (
       id BIGSERIAL PRIMARY KEY,
       owner_id BIGINT NOT NULL REFERENCES owners(id) ON DELETE CASCADE,
