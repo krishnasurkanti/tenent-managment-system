@@ -23,12 +23,13 @@ function sharingLabel(bedCount: string) {
 
 // ─── Page steps ─────────────────────────────────────────────────────────────
 
-type Step = "loading" | "invalid" | "account" | "hostel" | "floors" | "submitting" | "done";
+type Step = "loading" | "invalid" | "account" | "hostel" | "floors" | "tenants" | "submitting" | "done";
 
 const STEPS: { key: Step; label: string }[] = [
-  { key: "account", label: "Your Account" },
-  { key: "hostel",  label: "Hostel Info" },
-  { key: "floors",  label: "Floors & Rooms" },
+  { key: "account", label: "Account" },
+  { key: "hostel",  label: "Hostel" },
+  { key: "floors",  label: "Floors" },
+  { key: "tenants", label: "Tenants" },
 ];
 
 export default function OwnerSignupPage() {
@@ -57,6 +58,20 @@ export default function OwnerSignupPage() {
   const [floors, setFloors] = useState<FloorForm[]>(() => [createFloor(1)]);
   const [activeFloorId, setActiveFloorId] = useState<string>(() => "");
   const [activeRoomId, setActiveRoomId] = useState<string>(() => "");
+
+  // Tenants step
+  const [createdHostelId, setCreatedHostelId] = useState("");
+  const [addedTenants, setAddedTenants] = useState<{ name: string; room: string }[]>([]);
+  const [tName, setTName] = useState("");
+  const [tPhone, setTPhone] = useState("");
+  const [tEmail, setTEmail] = useState("");
+  const [tRent, setTRent] = useState("");
+  const [tMoveIn, setTMoveIn] = useState("");
+  const [tFloorIdx, setTFloorIdx] = useState(0);
+  const [tRoomIdx, setTRoomIdx] = useState(0);
+  const [tBedIdx, setTBedIdx] = useState(0);
+  const [tError, setTError] = useState("");
+  const [tSaving, setTSaving] = useState(false);
 
   const [error, setError] = useState("");
 
@@ -184,18 +199,67 @@ export default function OwnerSignupPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = (await res.json()) as { ok?: boolean; message?: string };
+      const data = (await res.json()) as { ok?: boolean; message?: string; hostel?: { id?: string } };
       if (!res.ok) { setError(data.message ?? "Registration failed."); setStep("floors"); return; }
-      setStep("done");
-      router.replace("/owner/dashboard");
-      router.refresh();
+      setCreatedHostelId(data.hostel?.id ?? "");
+      setStep("tenants");
     } catch { setError("Unable to register. Try again."); setStep("floors"); }
+  };
+
+  // ── Tenant helpers ────────────────────────────────────────────────────────
+
+  const goToDashboard = () => { setStep("done"); router.replace("/owner/dashboard"); router.refresh(); };
+
+  const handleAddTenant = async () => {
+    setTError("");
+    if (!tName.trim()) { setTError("Name required."); return; }
+    if (!tPhone.trim()) { setTError("Phone required."); return; }
+    if (!tRent || Number(tRent) <= 0) { setTError("Enter monthly rent."); return; }
+    if (!tMoveIn) { setTError("Move-in date required."); return; }
+
+    const selectedFloor = floors[tFloorIdx];
+    const selectedRoom = selectedFloor?.rooms[tRoomIdx];
+    if (!selectedFloor || !selectedRoom) { setTError("Select a valid floor and room."); return; }
+
+    const fd = new FormData();
+    fd.append("tenantType", "old");
+    fd.append("fullName", tName.trim());
+    fd.append("phone", tPhone.trim());
+    fd.append("email", tEmail.trim());
+    fd.append("monthlyRent", tRent);
+    fd.append("rentPaid", "0");
+    fd.append("paidOnDate", tMoveIn);
+    fd.append("hostelId", createdHostelId);
+    fd.append("floorNumber", String(tFloorIdx + 1));
+    fd.append("roomNumber", selectedRoom.roomNumber);
+    fd.append("moveInDate", tMoveIn);
+    fd.append("sharingType", sharingLabel(selectedRoom.bedCount) || "1 sharing");
+    fd.append("propertyType", hostelType);
+    if (hostelType === "PG" && Number(selectedRoom.bedCount) > 0) {
+      fd.append("bedId", `${selectedRoom.id}-bed-${tBedIdx + 1}`);
+      fd.append("bedLabel", `Bed ${tBedIdx + 1}`);
+    }
+
+    setTSaving(true);
+    try {
+      const res = await fetch("/api/tenants", { method: "POST", body: fd });
+      const data = (await res.json()) as { message?: string };
+      if (!res.ok) { setTError(data.message ?? "Failed to add tenant."); setTSaving(false); return; }
+      setAddedTenants(prev => [...prev, {
+        name: tName.trim(),
+        room: `${selectedFloor.floorLabel} · ${selectedRoom.roomNumber}`,
+      }]);
+      setTName(""); setTPhone(""); setTEmail(""); setTRent(""); setTMoveIn("");
+      setTFloorIdx(0); setTRoomIdx(0); setTBedIdx(0); setTError("");
+    } catch { setTError("Network error. Try again."); }
+    setTSaving(false);
   };
 
   // ── Fullscreen states ─────────────────────────────────────────────────────
 
   if (step === "loading") return <Spinner label="Verifying link…" color="yellow" />;
-  if (step === "done" || step === "submitting") return <Spinner label={step === "submitting" ? "Creating your account…" : "Going to dashboard…"} color="green" />;
+  if (step === "submitting") return <Spinner label="Creating your account…" color="yellow" />;
+  if (step === "done") return <Spinner label="Going to dashboard…" color="green" />;
 
   if (step === "invalid") {
     return (
@@ -434,7 +498,104 @@ export default function OwnerSignupPage() {
                   className="rounded-xl border border-white/12 px-4 py-2.5 text-sm font-medium text-white/60 hover:text-white">Back</button>
                 <button type="button" onClick={handleSubmit}
                   className="inline-flex flex-1 min-h-11 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] px-5 text-base font-semibold text-[#1b1207] shadow-[0_20px_40px_rgba(240,175,47,0.26)] transition hover:brightness-105">
-                  Create Account &amp; Hostel <ArrowRight className="h-4 w-4" />
+                  Next: Add Tenants <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ── STEP 4: TENANTS ──────────────────────────────────────────── */}
+          {step === "tenants" && (
+            <>
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <h1 className="text-xl font-semibold tracking-[-0.03em] text-[#f7f0e8]">Add Tenants</h1>
+                  <p className="mt-0.5 text-sm text-white/45">Optionally onboard existing tenants now.</p>
+                </div>
+                <button type="button" onClick={goToDashboard}
+                  className="shrink-0 rounded-xl border border-white/12 px-3 py-1.5 text-xs font-semibold text-white/50 hover:text-white transition">
+                  Skip
+                </button>
+              </div>
+
+              {/* Added tenants list */}
+              {addedTenants.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {addedTenants.map((t, i) => (
+                    <div key={i} className="inline-flex items-center gap-1.5 rounded-full border border-[#4ade80]/30 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold text-[#4ade80]">
+                      <CheckCircle2 className="h-3 w-3" /> {t.name} · {t.room}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Tenant form */}
+              <div className="mt-4 space-y-3">
+                <InputField label="Full Name" icon={<User className="h-4 w-4 text-white/30" />}>
+                  <input type="text" value={tName} onChange={e => setTName(e.target.value)} placeholder="Tenant name"
+                    className={inputCls} />
+                </InputField>
+                <InputField label="Phone" icon={<Phone className="h-4 w-4 text-white/30" />}>
+                  <input type="tel" inputMode="numeric" value={tPhone} onChange={e => setTPhone(e.target.value.replace(/\D/g, ""))}
+                    placeholder="10-digit number" className={inputCls} />
+                </InputField>
+                <InputField label={<>Email <span className="normal-case font-normal text-white/30">(optional)</span></>} icon={<Mail className="h-4 w-4 text-white/30" />}>
+                  <input type="email" value={tEmail} onChange={e => setTEmail(e.target.value)} placeholder="tenant@example.com"
+                    className={inputCls} />
+                </InputField>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Monthly Rent (₹)</span>
+                    <input type="number" min="0" value={tRent} onChange={e => setTRent(e.target.value)} placeholder="e.g. 8000"
+                      className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50" />
+                  </div>
+                  <div>
+                    <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Move-in Date</span>
+                    <input type="date" value={tMoveIn} onChange={e => setTMoveIn(e.target.value)}
+                      className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 text-sm text-white outline-none focus:border-[#f2bb4d]/50 [color-scheme:dark]" />
+                  </div>
+                </div>
+
+                {/* Room assignment */}
+                <div>
+                  <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Room Assignment</span>
+                  <div className={`grid gap-2 ${hostelType === "PG" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+                    <select value={tFloorIdx} onChange={e => { setTFloorIdx(Number(e.target.value)); setTRoomIdx(0); setTBedIdx(0); }}
+                      className="w-full rounded-xl border border-white/12 bg-[#0f1220] px-3 py-2.5 text-sm text-white outline-none focus:border-[#f2bb4d]/50">
+                      {floors.map((f, i) => <option key={f.id} value={i}>{f.floorLabel || `Floor ${i + 1}`}</option>)}
+                    </select>
+                    <select value={tRoomIdx} onChange={e => { setTRoomIdx(Number(e.target.value)); setTBedIdx(0); }}
+                      className="w-full rounded-xl border border-white/12 bg-[#0f1220] px-3 py-2.5 text-sm text-white outline-none focus:border-[#f2bb4d]/50">
+                      {(floors[tFloorIdx]?.rooms ?? []).map((r, i) => (
+                        <option key={r.id} value={i}>Room {r.roomNumber || i + 1}</option>
+                      ))}
+                    </select>
+                    {hostelType === "PG" && (() => {
+                      const bedCount = Number(floors[tFloorIdx]?.rooms[tRoomIdx]?.bedCount ?? 1);
+                      return (
+                        <select value={tBedIdx} onChange={e => setTBedIdx(Number(e.target.value))}
+                          className="w-full rounded-xl border border-white/12 bg-[#0f1220] px-3 py-2.5 text-sm text-white outline-none focus:border-[#f2bb4d]/50">
+                          {Array.from({ length: Math.max(bedCount, 1) }, (_, i) => (
+                            <option key={i} value={i}>Bed {i + 1}</option>
+                          ))}
+                        </select>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {tError && <ErrorBox>{tError}</ErrorBox>}
+
+                <button type="button" onClick={handleAddTenant} disabled={tSaving}
+                  className="inline-flex w-full min-h-11 items-center justify-center gap-2 rounded-xl border border-[#f2bb4d]/30 bg-[#f7bf53]/10 px-5 text-sm font-semibold text-[#fcd34d] transition hover:bg-[#f7bf53]/18 disabled:opacity-50">
+                  {tSaving ? "Adding…" : <><Plus className="h-4 w-4" /> Add Tenant</>}
+                </button>
+              </div>
+
+              <div className="mt-4 border-t border-white/8 pt-4">
+                <button type="button" onClick={goToDashboard}
+                  className="inline-flex w-full min-h-11 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] px-5 text-base font-semibold text-[#1b1207] shadow-[0_20px_40px_rgba(240,175,47,0.26)] transition hover:brightness-105">
+                  {addedTenants.length > 0 ? "Done — Go to Dashboard" : "Skip — Go to Dashboard"} <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
             </>
