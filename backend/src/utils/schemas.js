@@ -4,15 +4,16 @@ const authRegisterSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(8).max(128),
   name: z.string().trim().max(120).optional(),
-  username: z.string().trim().min(3).max(64).optional(),
+  phoneNumber: z.string().trim().regex(/^\d{10,15}$/).optional(),
 });
 
 const authLoginSchema = z.object({
-  email: z.string().trim().email().optional(),
-  username: z.string().trim().min(3).max(64).optional(),
+  // Accept any non-empty string — backend queries both email and phone_number columns
+  email: z.string().trim().min(1).optional(),
+  phoneNumber: z.string().trim().min(1).optional(),
   password: z.string().min(8).max(128),
-}).refine((value) => Boolean(value.email || value.username), {
-  message: "Either email or username is required.",
+}).refine((value) => Boolean(value.email || value.phoneNumber), {
+  message: "Either email or phone number is required.",
   path: ["email"],
 });
 

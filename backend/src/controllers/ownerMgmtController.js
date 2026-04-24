@@ -3,7 +3,7 @@ const { query } = require("../config/db");
 const { createHttpError } = require("../utils/httpErrors");
 
 const OWNER_SELECT = `
-  id, email, name, username, status, plan, plan_status, trial_start_date, created_at
+  id, email, name, phone_number, status, plan, plan_status, trial_start_date, created_at
 `;
 
 function mapOwner(row) {
@@ -11,7 +11,7 @@ function mapOwner(row) {
     id: row.id,
     email: row.email,
     name: row.name,
-    username: row.username,
+    phoneNumber: row.phone_number,
     status: row.status,
     plan: row.plan,
     planStatus: row.plan_status,
@@ -28,7 +28,7 @@ async function listOwners(req, res) {
 }
 
 async function createOwner(req, res) {
-  const { name, email, username, password, plan, planStatus } = req.body;
+  const { name, email, phoneNumber, password, plan, planStatus } = req.body;
 
   if (!email || !password) {
     throw createHttpError(400, "Email and password are required.");
@@ -38,28 +38,28 @@ async function createOwner(req, res) {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  const normalizedUsername = username?.trim().toLowerCase() || null;
+  const normalizedPhone = phoneNumber?.trim() || null;
 
   const existing = await query("SELECT id FROM owners WHERE email = $1 LIMIT 1", [normalizedEmail]);
   if (existing.rowCount > 0) throw createHttpError(409, "Email already registered.");
 
-  if (normalizedUsername) {
-    const existingUser = await query("SELECT id FROM owners WHERE username = $1 LIMIT 1", [normalizedUsername]);
-    if (existingUser.rowCount > 0) throw createHttpError(409, "Username already taken.");
+  if (normalizedPhone) {
+    const existingPhone = await query("SELECT id FROM owners WHERE phone_number = $1 LIMIT 1", [normalizedPhone]);
+    if (existingPhone.rowCount > 0) throw createHttpError(409, "Phone number already registered.");
   }
 
   const hashedPassword = await bcrypt.hash(password, 12);
   const now = new Date();
 
   const result = await query(
-    `INSERT INTO owners (email, password, name, username, status, plan, plan_status, trial_start_date)
+    `INSERT INTO owners (email, password, name, phone_number, status, plan, plan_status, trial_start_date)
      VALUES ($1, $2, $3, $4, 'active', $5, $6, $7)
      RETURNING ${OWNER_SELECT}`,
     [
       normalizedEmail,
       hashedPassword,
       name?.trim() || "",
-      normalizedUsername,
+      normalizedPhone,
       plan || "starter",
       planStatus || "trial",
       now,

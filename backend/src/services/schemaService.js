@@ -13,6 +13,7 @@ async function initializeDatabase() {
   // Idempotent column additions — safe to run on every boot
   await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT ''`);
   await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS username TEXT UNIQUE`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS phone_number TEXT`);
   await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'`);
   await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'starter'`);
   await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS plan_status TEXT NOT NULL DEFAULT 'trial'`);
@@ -21,6 +22,31 @@ async function initializeDatabase() {
   await query(`
     CREATE INDEX IF NOT EXISTS idx_owners_username ON owners (username)
     WHERE username IS NOT NULL
+  `);
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_owners_phone_number ON owners (phone_number)
+    WHERE phone_number IS NOT NULL
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS owner_invitations (
+      id BIGSERIAL PRIMARY KEY,
+      token TEXT NOT NULL UNIQUE,
+      email TEXT NOT NULL,
+      pg_name TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expires_at TIMESTAMPTZ NOT NULL,
+      accepted_at TIMESTAMPTZ
+    )
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_owner_invitations_token ON owner_invitations (token)
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_owner_invitations_email ON owner_invitations (email)
   `);
 
   await query(`

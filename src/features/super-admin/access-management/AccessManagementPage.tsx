@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, Suspense, useCallback, useEffect, useState } from "react";
-import { ArrowRightLeft, Eye, EyeOff, LogOut, Mail, Plus, ServerCog, Trash2, User, Users, X } from "lucide-react";
+import { ArrowRightLeft, Check, Copy, LogOut, Mail, Phone, Plus, ServerCog, Trash2, Users, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { csrfFetch } from "@/lib/csrf-client";
 
@@ -9,7 +9,7 @@ type OwnerRow = {
   id: string;
   name: string;
   email: string;
-  username: string;
+  phoneNumber: string;
   status: "active" | "inactive";
   createdAt: string;
   plan: "starter" | "pro" | "founding";
@@ -100,13 +100,12 @@ function AccessManagementPageInner() {
   const [stats, setStats] = useState<Record<string, OwnerStats>>({});
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(searchParams.get("new") === "1");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [invitePgName, setInvitePgName] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+  const [inviteLink, setInviteLink] = useState("");
+  const [copied, setCopied] = useState(false);
   const [upgradeRequests, setUpgradeRequests] = useState<UpgradeRequest[]>([]);
   const [requestActionId, setRequestActionId] = useState<string | null>(null);
 
@@ -163,38 +162,49 @@ function AccessManagementPageInner() {
     router.refresh();
   };
 
-  const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
+  const handleInvite = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (saving) return;
-    setSaving(true);
-    setFormError("");
+    if (inviting) return;
+    setInviting(true);
+    setInviteError("");
+    setInviteLink("");
 
     try {
-      const res = await csrfFetch("/api/super-admin/owners", {
+      const res = await csrfFetch("/api/super-admin/invitations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          username: username.trim(),
-          password: password.trim(),
-        }),
+        body: JSON.stringify({ email: inviteEmail.trim(), pgName: invitePgName.trim() }),
       });
-      const data = (await res.json()) as { message?: string };
+      const data = (await res.json()) as { message?: string; token?: string };
 
       if (!res.ok) {
-        setFormError(data.message ?? "Failed to create owner.");
+        setInviteError(data.message ?? "Failed to create invitation.");
         return;
       }
 
-      setName(""); setEmail(""); setUsername(""); setPassword("");
-      setFormOpen(false);
-      await load();
+      const link = `${window.location.origin}/owner/accept-invite?token=${data.token ?? ""}`;
+      setInviteLink(link);
     } catch {
-      setFormError("Network error. Try again.");
+      setInviteError("Network error. Try again.");
     } finally {
-      setSaving(false);
+      setInviting(false);
     }
+  };
+
+  const handleCopyLink = async () => {
+    if (!inviteLink) return;
+    await navigator.clipboard.writeText(inviteLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCloseForm = () => {
+    setFormOpen(false);
+    setInviteEmail("");
+    setInvitePgName("");
+    setInviteError("");
+    setInviteLink("");
+    setCopied(false);
   };
 
   const handleToggleStatus = async (owner: OwnerRow) => {
@@ -226,7 +236,7 @@ function AccessManagementPageInner() {
 
   return (
     <div className="min-h-screen overflow-y-auto bg-[linear-gradient(180deg,#09090b_0%,#111114_100%)] text-white">
-      <header className="border-b border-white/10 bg-[rgba(9,9,11,0.88)] px-4 py-3 backdrop-blur-xl sm:px-6">
+      <header className="border-b border-white/10 bg-[rgba(9,9,11,0.88)] px-4 py-2 backdrop-blur-xl sm:px-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#fcd34d_0%,#f59e0b_100%)] text-[#18120a] shadow-[0_16px_34px_rgba(245,158,11,0.25)]">
@@ -241,12 +251,12 @@ function AccessManagementPageInner() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => { setFormOpen(true); setFormError(""); }}
+              onClick={() => { setFormOpen(true); setInviteError(""); setInviteLink(""); }}
               className="inline-flex items-center gap-1.5 rounded-xl bg-[linear-gradient(90deg,#f59e0b_0%,#fcd34d_100%)] px-3 py-2 text-sm font-semibold text-[#1b1207] shadow-[0_14px_28px_rgba(240,175,47,0.24)] sm:px-4 sm:py-2.5"
             >
               <Plus className="h-4 w-4" />
-              <span className="hidden xs:inline sm:inline">Add Owner</span>
-              <span className="xs:hidden sm:hidden">Add</span>
+              <span className="hidden xs:inline sm:inline">Invite Owner</span>
+              <span className="xs:hidden sm:hidden">Invite</span>
             </button>
             <button
               type="button"
@@ -260,18 +270,18 @@ function AccessManagementPageInner() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+      <main className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
         {/* Add Owner Form */}
         {formOpen ? (
-          <div className="mb-6 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
-            <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
+            <div className="mb-3 flex items-center justify-between">
               <div>
-                <h2 className="font-display text-base font-semibold text-white">New Owner Account</h2>
-                <p className="mt-1 text-xs text-white/45">Create access here, then share credentials manually with the owner.</p>
+                <h2 className="font-display text-base font-semibold text-white">Invite Owner</h2>
+                <p className="mt-1 text-xs text-white/45">Enter their email. They click the link and set their own password — no credential sharing needed.</p>
               </div>
               <button
                 type="button"
-                onClick={() => setFormOpen(false)}
+                onClick={handleCloseForm}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white"
                 aria-label="Close form"
               >
@@ -279,106 +289,97 @@ function AccessManagementPageInner() {
               </button>
             </div>
 
-            <form onSubmit={handleCreate} className="space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block">
-                  <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Full Name</span>
-                  <div className="relative">
-                    <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      disabled={saving}
-                      placeholder="e.g. Raghuveer Reddy"
-                      autoComplete="off"
-                      className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 pl-9 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
-                    />
-                  </div>
-                </label>
-
-                <label className="block">
-                  <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Email</span>
-                  <div className="relative">
-                    <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={saving}
-                      placeholder="owner@example.com"
-                      autoComplete="off"
-                      className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 pl-9 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
-                    />
-                  </div>
-                </label>
-
-                <label className="block">
-                  <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Username</span>
-                  <div className="relative">
-                    <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      disabled={saving}
-                      placeholder="e.g. raghu_pg"
-                      autoComplete="off"
-                      className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 pl-9 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
-                    />
-                  </div>
-                </label>
-
-                <label className="block">
-                  <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Password</span>
-                  <div className="relative">
-                    <input
-                      type={showNewPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      disabled={saving}
-                      placeholder="Min 6 characters"
-                      autoComplete="new-password"
-                      className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 pr-10 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword((s) => !s)}
-                      aria-label={showNewPassword ? "Hide" : "Show"}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
-                    >
-                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </label>
-              </div>
-
-              {formError ? (
-                <p role="alert" className="text-sm text-red-400">{formError}</p>
-              ) : null}
-
-              <div className="flex gap-2 pt-1">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="rounded-xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_100%)] px-5 py-2 text-sm font-semibold text-[#1b1207] disabled:opacity-60"
-                >
-                  {saving ? "Creating..." : "Create Owner"}
-                </button>
+            {inviteLink ? (
+              <div className="space-y-3">
+                <div className="rounded-xl border border-[#4ade80]/20 bg-[#22c55e]/[0.07] px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#4ade80]">Invitation created</p>
+                  <p className="mt-1 text-xs text-white/60">Copy this link and send it to the owner via WhatsApp or any other channel. It expires in 48 hours.</p>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5">
+                  <p className="flex-1 truncate font-mono text-xs text-white/70">{inviteLink}</p>
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${copied ? "bg-[#22c55e]/20 text-[#4ade80]" : "bg-white/10 text-white/70 hover:bg-white/15 hover:text-white"}`}
+                  >
+                    {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copied ? "Copied" : "Copy"}
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setFormOpen(false)}
-                  className="rounded-xl border border-white/12 px-4 py-2 text-sm font-medium text-white/60 hover:text-white"
+                  onClick={handleCloseForm}
+                  className="w-full rounded-xl border border-white/12 py-2 text-sm font-medium text-white/60 hover:text-white"
                 >
-                  Cancel
+                  Done
                 </button>
               </div>
-            </form>
+            ) : (
+              <form onSubmit={handleInvite} className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Owner Email</span>
+                    <div className="relative">
+                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+                      <input
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        disabled={inviting}
+                        placeholder="owner@example.com"
+                        autoComplete="off"
+                        required
+                        className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 pl-9 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
+                      />
+                    </div>
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">
+                      PG / Hostel Name <span className="normal-case font-normal text-white/30">(optional)</span>
+                    </span>
+                    <div className="relative">
+                      <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+                      <input
+                        type="text"
+                        value={invitePgName}
+                        onChange={(e) => setInvitePgName(e.target.value)}
+                        disabled={inviting}
+                        placeholder="e.g. Sai Krishna PG"
+                        autoComplete="off"
+                        className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 pl-9 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
+                      />
+                    </div>
+                  </label>
+                </div>
+
+                {inviteError ? (
+                  <p role="alert" className="text-sm text-red-400">{inviteError}</p>
+                ) : null}
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="submit"
+                    disabled={inviting}
+                    className="rounded-xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_100%)] px-5 py-2 text-sm font-semibold text-[#1b1207] disabled:opacity-60"
+                  >
+                    {inviting ? "Generating…" : "Generate Invite Link"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCloseForm}
+                    className="rounded-xl border border-white/12 px-4 py-2 text-sm font-medium text-white/60 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         ) : null}
 
         {/* Summary */}
-        <div className="mb-5 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-white">Owner Accounts</h1>
             <p className="mt-0.5 text-sm text-white/40">
@@ -392,7 +393,7 @@ function AccessManagementPageInner() {
           </div>
         </div>
 
-        <div className="mb-6 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
+        <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
           <div className="flex items-center gap-2">
             <ArrowRightLeft className="h-4 w-4 text-[#f7bf53]" />
             <h2 className="font-display text-base font-semibold text-white">Plan change requests</h2>
@@ -470,7 +471,7 @@ function AccessManagementPageInner() {
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-white">{owner.name || "—"}</p>
                         <p className="truncate text-xs text-white/50">{owner.email}</p>
-                        <p className="font-mono text-[11px] text-white/40">@{owner.username}</p>
+                        <p className="font-mono text-[11px] text-white/40">{owner.phoneNumber || "—"}</p>
                       </div>
                       <div className="flex shrink-0 items-center gap-1.5">
                         <button
@@ -513,7 +514,7 @@ function AccessManagementPageInner() {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Name</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Email</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Username</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Phone</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Plan</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Hostels</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Tenants</th>
@@ -528,7 +529,7 @@ function AccessManagementPageInner() {
                       <tr key={owner.id} className="border-t border-white/8 hover:bg-white/[0.02]">
                         <td className="px-4 py-3 font-medium text-white">{owner.name}</td>
                         <td className="px-4 py-3 text-white/60">{owner.email}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-white/80">{owner.username}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-white/80">{owner.phoneNumber || "—"}</td>
                         <td className="px-4 py-3"><PlanBadge owner={owner} /></td>
                         <td className="px-4 py-3">
                           {ownerStats && ownerStats.hostelCount > 0 ? (

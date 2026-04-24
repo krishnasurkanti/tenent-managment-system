@@ -5,6 +5,7 @@ const authRoutes = require("./routes/authRoutes");
 const hostelRoutes = require("./routes/hostelRoutes");
 const tenantRoutes = require("./routes/tenantRoutes");
 const ownerMgmtRoutes = require("./routes/ownerMgmtRoutes");
+const invitationRoutes = require("./routes/invitationRoutes");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 const app = express();
@@ -42,6 +43,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/hostels", hostelRoutes);
 app.use("/api/tenants", tenantRoutes);
 app.use("/api/admin/owners", ownerMgmtRoutes);
+app.use("/api/admin/invitations", invitationRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

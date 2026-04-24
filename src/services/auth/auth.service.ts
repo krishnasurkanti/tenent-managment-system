@@ -1,7 +1,7 @@
 import { csrfFetch } from "@/lib/csrf-client";
 
 type AuthPayload = {
-  username: string;
+  phoneNumber: string;
   email: string;
   password: string;
 };

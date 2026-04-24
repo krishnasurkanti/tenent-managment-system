@@ -15,16 +15,15 @@ export async function GET(request: NextRequest) {
   if (!(await isAdminAuthenticated(request))) {
     return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
   }
-
   try {
-    const res = await fetch(`${getApiBaseUrl()}/api/admin/owners`, {
+    const res = await fetch(`${getApiBaseUrl()}/api/admin/invitations`, {
       headers: adminHeaders(),
       cache: "no-store",
     });
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch {
-    return NextResponse.json({ message: "Owner service unavailable." }, { status: 503 });
+    return NextResponse.json({ message: "Service unavailable." }, { status: 503 });
   }
 }
 
@@ -32,18 +31,9 @@ export async function POST(request: NextRequest) {
   if (!(await isAdminAuthenticated(request))) {
     return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
   }
-
-  const body = (await request.json()) as {
-    name?: string;
-    email?: string;
-    phoneNumber?: string;
-    password?: string;
-    plan?: string;
-    planStatus?: string;
-  };
-
+  const body = (await request.json()) as { email?: string; pgName?: string };
   try {
-    const res = await fetch(`${getApiBaseUrl()}/api/admin/owners`, {
+    const res = await fetch(`${getApiBaseUrl()}/api/admin/invitations`, {
       method: "POST",
       headers: adminHeaders(),
       body: JSON.stringify(body),
@@ -52,6 +42,6 @@ export async function POST(request: NextRequest) {
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch {
-    return NextResponse.json({ message: "Owner service unavailable." }, { status: 503 });
+    return NextResponse.json({ message: "Service unavailable." }, { status: 503 });
   }
 }

@@ -49,7 +49,7 @@ export default function LoginPage() {
 
     try {
       const { response, data } = await loginOwner({
-        username: identifier,
+        phoneNumber: identifier,
         email: identifier,
         password,
       });

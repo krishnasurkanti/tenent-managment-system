@@ -14,12 +14,12 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as {
-    username?: string;
+    phoneNumber?: string;
     email?: string;
     password?: string;
   };
 
-  const identifier = body.username?.trim() || body.email?.trim() || "";
+  const identifier = body.phoneNumber?.trim() || body.email?.trim() || "";
   const password = body.password?.trim() ?? "";
 
   if (!identifier || !password) {
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const backendResponse = await fetch(`${getApiBaseUrl()}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: identifier, username: identifier, password }),
+      body: JSON.stringify({ email: identifier, phoneNumber: identifier, password }),
       cache: "no-store",
     });
 

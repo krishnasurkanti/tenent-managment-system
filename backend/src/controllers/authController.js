@@ -16,19 +16,19 @@ function signToken(owner) {
 }
 
 async function register(req, res) {
-  const { email, password, name, username } = req.validatedBody;
+  const { email, password, name, phoneNumber } = req.validatedBody;
   const normalizedEmail = email.toLowerCase();
-  const normalizedUsername = username?.trim().toLowerCase() || null;
+  const normalizedPhone = phoneNumber?.trim() || null;
 
   const existingOwner = await query("SELECT id FROM owners WHERE email = $1 LIMIT 1", [normalizedEmail]);
   if (existingOwner.rowCount > 0) {
     throw createHttpError(409, "An owner with this email already exists.");
   }
 
-  if (normalizedUsername) {
-    const existingUsername = await query("SELECT id FROM owners WHERE username = $1 LIMIT 1", [normalizedUsername]);
-    if (existingUsername.rowCount > 0) {
-      throw createHttpError(409, "Username already taken.");
+  if (normalizedPhone) {
+    const existingPhone = await query("SELECT id FROM owners WHERE phone_number = $1 LIMIT 1", [normalizedPhone]);
+    if (existingPhone.rowCount > 0) {
+      throw createHttpError(409, "Phone number already registered.");
     }
   }
 
@@ -36,11 +36,11 @@ async function register(req, res) {
   const now = new Date();
   const result = await query(
     `
-      INSERT INTO owners (email, password, name, username, status, plan, plan_status, trial_start_date)
+      INSERT INTO owners (email, password, name, phone_number, status, plan, plan_status, trial_start_date)
       VALUES ($1, $2, $3, $4, 'active', 'starter', 'trial', $5)
-      RETURNING id, email, name, username, status, plan, plan_status, trial_start_date, created_at
+      RETURNING id, email, name, phone_number, status, plan, plan_status, trial_start_date, created_at
     `,
-    [normalizedEmail, hashedPassword, name?.trim() || "", normalizedUsername, now],
+    [normalizedEmail, hashedPassword, name?.trim() || "", normalizedPhone, now],
   );
 
   const owner = result.rows[0];
@@ -52,7 +52,7 @@ async function register(req, res) {
       id: owner.id,
       email: owner.email,
       name: owner.name,
-      username: owner.username,
+      phoneNumber: owner.phone_number,
       status: owner.status,
       plan: owner.plan,
       planStatus: owner.plan_status,
@@ -63,16 +63,15 @@ async function register(req, res) {
 }
 
 async function login(req, res) {
-  const { email, username, password } = req.validatedBody;
-  if (!email && !username) {
+  const { email, phoneNumber, password } = req.validatedBody;
+  if (!email && !phoneNumber) {
     throw createHttpError(401, "Invalid email or password.");
   }
 
-  const identifier = (username || email || "").trim().toLowerCase();
-  // Single query: match on either email or username column
+  const identifier = (phoneNumber || email || "").trim().toLowerCase();
   const result = await query(
-    `SELECT id, email, name, username, password, status, plan, plan_status, trial_start_date, created_at
-     FROM owners WHERE email = $1 OR username = $1 LIMIT 1`,
+    `SELECT id, email, name, phone_number, password, status, plan, plan_status, trial_start_date, created_at
+     FROM owners WHERE email = $1 OR phone_number = $1 LIMIT 1`,
     [identifier],
   );
 
@@ -98,7 +97,7 @@ async function login(req, res) {
       id: owner.id,
       email: owner.email,
       name: owner.name,
-      username: owner.username,
+      phoneNumber: owner.phone_number,
       status: owner.status,
       plan: owner.plan,
       planStatus: owner.plan_status,

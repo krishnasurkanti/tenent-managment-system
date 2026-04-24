@@ -13,7 +13,7 @@ router.post("/login", validateBody(authLoginSchema), asyncHandler(login));
 
 router.get("/me", protect, asyncHandler(async (req, res) => {
   const result = await query(
-    `SELECT id, email, name, username, status, plan, plan_status, trial_start_date, created_at
+    `SELECT id, email, name, phone_number, status, plan, plan_status, trial_start_date, created_at
      FROM owners WHERE id = $1 LIMIT 1`,
     [req.user.ownerId],
   );
@@ -21,7 +21,7 @@ router.get("/me", protect, asyncHandler(async (req, res) => {
   const o = result.rows[0];
   return res.json({
     owner: {
-      id: o.id, email: o.email, name: o.name, username: o.username,
+      id: o.id, email: o.email, name: o.name, phoneNumber: o.phone_number,
       status: o.status, plan: o.plan, planStatus: o.plan_status,
       trialStartDate: o.trial_start_date, createdAt: o.created_at,
     },
