@@ -238,22 +238,23 @@ function AccessManagementPageInner() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => { setFormOpen(true); setFormError(""); }}
-              className="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(90deg,#f59e0b_0%,#fcd34d_100%)] px-4 py-2.5 text-sm font-semibold text-[#1b1207] shadow-[0_14px_28px_rgba(240,175,47,0.24)]"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[linear-gradient(90deg,#f59e0b_0%,#fcd34d_100%)] px-3 py-2 text-sm font-semibold text-[#1b1207] shadow-[0_14px_28px_rgba(240,175,47,0.24)] sm:px-4 sm:py-2.5"
             >
               <Plus className="h-4 w-4" />
-              Add Owner
+              <span className="hidden xs:inline sm:inline">Add Owner</span>
+              <span className="xs:hidden sm:hidden">Add</span>
             </button>
             <button
               type="button"
               onClick={handleLogout}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/70 hover:text-white"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/70 hover:text-white"
             >
               <LogOut className="h-4 w-4" />
-              Logout
+              <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
         </div>
@@ -444,93 +445,132 @@ function AccessManagementPageInner() {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Owner list */}
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-16 animate-pulse rounded-2xl bg-white/[0.04]" />
+              <div key={i} className="h-20 animate-pulse rounded-2xl bg-white/[0.04]" />
             ))}
           </div>
         ) : owners.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-12 text-center">
             <Users className="mx-auto h-9 w-9 text-white/20" />
             <p className="mt-3 text-sm font-medium text-white/40">No owner accounts yet.</p>
-            <p className="mt-1 text-xs text-white/25">Click Add Owner to create an account and share credentials offline.</p>
+            <p className="mt-1 text-xs text-white/25">Click Add Owner to create one.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-white/10">
-            <table className="min-w-full text-sm">
-              <thead className="border-b border-white/10 bg-white/[0.03]">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Email</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Username</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Plan</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Hostels</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Tenants</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Status</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/40">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {owners.map((owner) => {
-                  const ownerStats = stats[owner.id];
-                  return (
-                    <tr key={owner.id} className="border-t border-white/8 hover:bg-white/[0.02]">
-                      <td className="px-4 py-3 font-medium text-white">{owner.name}</td>
-                      <td className="px-4 py-3 text-white/60">{owner.email}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-white/80">{owner.username}</td>
-                      <td className="px-4 py-3">
-                        <PlanBadge owner={owner} />
-                      </td>
-                      <td className="px-4 py-3">
-                        {ownerStats && ownerStats.hostelCount > 0 ? (
-                          <div>
-                            <span className="text-white">{ownerStats.hostelCount}</span>
-                            {ownerStats.hostelNames.length > 0 ? (
-                              <p className="mt-0.5 text-[11px] leading-tight text-white/35">
-                                {ownerStats.hostelNames.join(", ")}
-                              </p>
-                            ) : null}
-                          </div>
-                        ) : (
-                          <span className="text-white/30">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-white">
-                        {ownerStats ? ownerStats.tenantCount : <span className="text-white/30">—</span>}
-                      </td>
-                      <td className="px-4 py-3">
+          <>
+            {/* Mobile: card list */}
+            <div className="space-y-2 sm:hidden">
+              {owners.map((owner) => {
+                const ownerStats = stats[owner.id];
+                return (
+                  <div key={owner.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-white">{owner.name || "—"}</p>
+                        <p className="truncate text-xs text-white/50">{owner.email}</p>
+                        <p className="font-mono text-[11px] text-white/40">@{owner.username}</p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => void handleToggleStatus(owner)}
                           disabled={togglingId === owner.id}
-                          className={`inline-flex cursor-pointer rounded-full px-2.5 py-1 text-xs font-semibold transition hover:opacity-80 disabled:opacity-50 ${
-                            owner.status === "active"
-                              ? "bg-green-500/15 text-green-400"
-                              : "bg-red-500/15 text-red-400"
-                          }`}
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold disabled:opacity-50 ${owner.status === "active" ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`}
                         >
                           {togglingId === owner.id ? "..." : owner.status === "active" ? "Active" : "Inactive"}
                         </button>
-                      </td>
-                      <td className="px-4 py-3 text-right">
                         <button
                           type="button"
                           onClick={() => void handleDelete(owner.id)}
                           disabled={deletingId === owner.id}
                           aria-label={`Delete ${owner.name}`}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/30 transition hover:bg-red-500/15 hover:text-red-400 disabled:opacity-50"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-white/30 hover:bg-red-500/15 hover:text-red-400 disabled:opacity-50"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <PlanBadge owner={owner} />
+                      {ownerStats ? (
+                        <>
+                          <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/50">{ownerStats.hostelCount} hostel{ownerStats.hostelCount !== 1 ? "s" : ""}</span>
+                          <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/50">{ownerStats.tenantCount} tenants</span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden overflow-x-auto rounded-2xl border border-white/10 sm:block">
+              <table className="min-w-full text-sm">
+                <thead className="border-b border-white/10 bg-white/[0.03]">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Username</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Plan</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Hostels</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Tenants</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Status</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/40">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {owners.map((owner) => {
+                    const ownerStats = stats[owner.id];
+                    return (
+                      <tr key={owner.id} className="border-t border-white/8 hover:bg-white/[0.02]">
+                        <td className="px-4 py-3 font-medium text-white">{owner.name}</td>
+                        <td className="px-4 py-3 text-white/60">{owner.email}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-white/80">{owner.username}</td>
+                        <td className="px-4 py-3"><PlanBadge owner={owner} /></td>
+                        <td className="px-4 py-3">
+                          {ownerStats && ownerStats.hostelCount > 0 ? (
+                            <div>
+                              <span className="text-white">{ownerStats.hostelCount}</span>
+                              {ownerStats.hostelNames.length > 0 ? (
+                                <p className="mt-0.5 text-[11px] leading-tight text-white/35">{ownerStats.hostelNames.join(", ")}</p>
+                              ) : null}
+                            </div>
+                          ) : <span className="text-white/30">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-white">
+                          {ownerStats ? ownerStats.tenantCount : <span className="text-white/30">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            type="button"
+                            onClick={() => void handleToggleStatus(owner)}
+                            disabled={togglingId === owner.id}
+                            className={`inline-flex cursor-pointer rounded-full px-2.5 py-1 text-xs font-semibold transition hover:opacity-80 disabled:opacity-50 ${owner.status === "active" ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`}
+                          >
+                            {togglingId === owner.id ? "..." : owner.status === "active" ? "Active" : "Inactive"}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(owner.id)}
+                            disabled={deletingId === owner.id}
+                            aria-label={`Delete ${owner.name}`}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/30 transition hover:bg-red-500/15 hover:text-red-400 disabled:opacity-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </main>
     </div>

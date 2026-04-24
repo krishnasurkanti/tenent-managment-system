@@ -55,28 +55,43 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 isolate flex items-center justify-between border-b border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.84)_100%)] px-3 py-2 text-white backdrop-blur-2xl md:px-4 xl:px-5">
-      <div className="flex min-w-0 items-center gap-2">
+    <header className="sticky top-0 z-50 isolate flex items-center justify-between gap-2 border-b border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.84)_100%)] px-3 py-1.5 text-white backdrop-blur-2xl md:px-4 xl:px-5">
+      <div className="flex min-w-0 items-center gap-1.5">
+        {/* Mobile: menu button */}
         <button
           type="button"
           onClick={onOpenSidebar}
           aria-label="Open navigation menu"
-          className="rounded-[var(--radius-pill)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-2 text-[color:var(--fg-primary)] shadow-[0_10px_24px_rgba(2,6,23,0.18)] lg:hidden"
+          className="shrink-0 rounded-[var(--radius-pill)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-2 text-[color:var(--fg-primary)] lg:hidden"
         >
           <Menu className="h-4 w-4" />
         </button>
+
+        {/* Mobile: back button — hidden on dashboard */}
+        {!isDashboard ? (
+          <button
+            type="button"
+            onClick={handleBack}
+            aria-label="Go back"
+            className="shrink-0 rounded-[var(--radius-pill)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-2 text-[color:var(--fg-primary)] lg:hidden"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+        ) : null}
+
+        {/* Desktop: back + home buttons */}
         <button
           type="button"
           onClick={handleBack}
           aria-label="Go back"
-          className="rounded-[var(--radius-pill)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-2 text-[color:var(--fg-primary)] shadow-[0_10px_24px_rgba(2,6,23,0.18)]"
+          className="hidden shrink-0 rounded-[var(--radius-pill)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-2 text-[color:var(--fg-primary)] lg:inline-flex"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
         <Link
           href="/owner/dashboard"
           aria-label="Go to dashboard"
-          className={`rounded-[var(--radius-pill)] border bg-[color:var(--surface-soft)] p-2 shadow-[0_10px_24px_rgba(2,6,23,0.18)] transition-[transform,background-color,border-color,color,box-shadow] duration-[var(--motion-small)] ease-[var(--ease-standard)] ${
+          className={`hidden shrink-0 rounded-[var(--radius-pill)] border bg-[color:var(--surface-soft)] p-2 transition-[transform,background-color,border-color,color,box-shadow] duration-[var(--motion-small)] ease-[var(--ease-standard)] lg:inline-flex ${
             isDashboard
               ? "border-[color:color-mix(in_srgb,var(--warning)_50%,transparent)] text-[color:var(--accent)] shadow-[0_0_0_1px_rgba(249,193,42,0.18),0_12px_28px_rgba(249,193,42,0.12)]"
               : "border-[color:var(--border)] text-[color:var(--fg-secondary)] hover:border-[color:color-mix(in_srgb,var(--warning)_40%,transparent)] hover:text-[color:var(--accent)]"
@@ -84,18 +99,22 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         >
           <House className="h-4 w-4" />
         </Link>
+
+        {/* Desktop: full hostel switcher */}
         <div className="hidden xl:block">
           <HostelSwitcher />
         </div>
+
+        {/* Mobile + tablet: compact hostel name pill */}
         <button
           type="button"
           onClick={() => router.push("/owner/settings")}
-          className="min-w-0 rounded-[var(--radius-pill)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-1.5 text-left shadow-[0_10px_24px_rgba(2,6,23,0.18)] xl:hidden"
+          className="min-w-0 rounded-[var(--radius-pill)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2.5 py-1 text-left xl:hidden"
         >
-          <p className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">Hostel</p>
-          <div className="flex items-center gap-1.5">
-            <p className="truncate text-[13px] font-semibold text-white">{currentHostel?.hostelName ?? "Select"}</p>
-            {hostels.length > 1 ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[color:var(--fg-secondary)]" /> : null}
+          <p className="truncate text-[9px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">Hostel</p>
+          <div className="flex items-center gap-1">
+            <p className="truncate text-[12px] font-semibold leading-tight text-white">{currentHostel?.hostelName ?? "Select"}</p>
+            {hostels.length > 1 ? <ChevronDown className="h-3 w-3 shrink-0 text-[color:var(--fg-secondary)]" /> : null}
           </div>
         </button>
       </div>
