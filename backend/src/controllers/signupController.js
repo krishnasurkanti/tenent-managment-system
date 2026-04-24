@@ -32,7 +32,7 @@ async function validateSignupKey(req, res) {
 
 async function registerWithKey(req, res) {
   const { key } = req.params;
-  const { name, email, phoneNumber, password, hostelName, hostelAddress, hostelType } = req.body;
+  const { name, email, phoneNumber, password, hostelName, hostelAddress, hostelType, floors } = req.body;
 
   if (!name?.trim()) throw createHttpError(400, "Name is required.");
   if (!email?.includes("@")) throw createHttpError(400, "Valid email is required.");
@@ -68,11 +68,13 @@ async function registerWithKey(req, res) {
 
   const validHostelType = ["PG", "RESIDENCE"].includes(hostelType) ? hostelType : "PG";
 
+  const floorsData = Array.isArray(floors) && floors.length > 0 ? floors : [];
+
   const hostelResult = await query(
     `INSERT INTO hostels (owner_id, name, address, type, data)
-     VALUES ($1, $2, $3, $4, '{"floors":[]}'::jsonb)
+     VALUES ($1, $2, $3, $4, $5::jsonb)
      RETURNING id, name`,
-    [owner.id, hostelName.trim(), hostelAddress.trim(), validHostelType],
+    [owner.id, hostelName.trim(), hostelAddress.trim(), validHostelType, JSON.stringify({ floors: floorsData })],
   );
   const hostel = hostelResult.rows[0];
 
