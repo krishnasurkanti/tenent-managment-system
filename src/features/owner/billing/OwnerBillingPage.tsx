@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRightLeft, Check, Clock3, Crown, Info, Sparkles, Wallet, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -117,29 +117,42 @@ export default function OwnerBillingPage() {
   const [error, setError] = useState("");
   const [requestingPlanId, setRequestingPlanId] = useState<PlanCard["id"] | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<PlanCard["id"] | null>(null);
-
-  const load = useCallback(async () => {
-    if (!currentHostel?.id) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    const { response, data } = await fetchOwnerBilling(currentHostel.id);
-    if (!response.ok) {
-      setError(data.message ?? "Unable to load billing.");
-      setLoading(false);
-      return;
-    }
-
-    setData(data);
-    setLoading(false);
-  }, [currentHostel?.id]);
+  const [billingClock] = useState(() => Date.now());
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+
+    queueMicrotask(async () => {
+      if (!currentHostel?.id) {
+        if (!active) return;
+        setData(null);
+        setError("");
+        setLoading(false);
+        return;
+      }
+
+      if (active) {
+        setLoading(true);
+        setError("");
+      }
+
+      const billingResponse = await fetchOwnerBilling(currentHostel.id);
+      if (!active) return;
+
+      if (!billingResponse.response.ok) {
+        setError(billingResponse.data.message ?? "Unable to load billing.");
+        setLoading(false);
+        return;
+      }
+
+      setData(billingResponse.data);
+      setLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [currentHostel]);
 
   const selectedPlan = useMemo(
     () => PLANS.find((plan) => plan.id === selectedPlanId) ?? null,
@@ -161,7 +174,7 @@ export default function OwnerBillingPage() {
   const currentPlanLabel = getCurrentPlanLabel(data.planId);
   const trialDaysLeft = Math.max(
     0,
-    Math.ceil((new Date(data.dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+    Math.ceil((new Date(data.dueDate).getTime() - billingClock) / (1000 * 60 * 60 * 24)),
   );
   const selectedRequestedPlanId = selectedPlan ? mapRequestedPlanId(selectedPlan.id) : null;
   const selectedDirection =
@@ -185,15 +198,25 @@ export default function OwnerBillingPage() {
 
     setSelectedPlanId(null);
     setRequestingPlanId(null);
-    await load();
+    setLoading(true);
+    setError("");
+    const billingResponse = await fetchOwnerBilling(currentHostel.id);
+    if (!billingResponse.response.ok) {
+      setError(billingResponse.data.message ?? "Unable to load billing.");
+      setLoading(false);
+      return;
+    }
+    setData(billingResponse.data);
+    setLoading(false);
   };
 
   return (
-    <div className="space-y-4 text-white">
+    <div className="space-y-3 text-white">
       <OwnerPageHero
         eyebrow="Billing"
         title="Plans and pricing"
         description="Choose the right package for your hostel. Weekly and daily stays are always free, and extra hostels are billed separately after each plan's included count."
+        className="p-4"
         badge={
           <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(99,102,241,0.3)] bg-[rgba(99,102,241,0.14)] px-3 py-1 text-[11px] font-semibold text-[var(--accent-electric)]">
             <Wallet className="h-3.5 w-3.5" />
@@ -214,40 +237,40 @@ export default function OwnerBillingPage() {
         }
       />
 
-      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-        <OwnerQuickStat label="Billed per month" value={`Rs ${data.payableAmount.toLocaleString("en-IN")}`} helper="Current recurring billing amount" />
-        <OwnerQuickStat label="Monthly tenants" value={String(data.monthlyTenantCount)} helper="These count toward your plan limit" />
-        <OwnerQuickStat label="Weekly free" value={String(data.weeklyTenantCount)} helper="Tracked, but never billed" />
-        <OwnerQuickStat label="Daily free" value={String(data.dailyTenantCount)} helper="Tracked, but never billed" />
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <OwnerQuickStat label="Billed per month" value={`Rs ${data.payableAmount.toLocaleString("en-IN")}`} helper="Current recurring billing amount" className="px-3 py-2.5" />
+        <OwnerQuickStat label="Monthly tenants" value={String(data.monthlyTenantCount)} helper="These count toward your plan limit" className="px-3 py-2.5" />
+        <OwnerQuickStat label="Weekly free" value={String(data.weeklyTenantCount)} helper="Tracked, never billed" className="px-3 py-2.5" />
+        <OwnerQuickStat label="Daily free" value={String(data.dailyTenantCount)} helper="Tracked, never billed" className="px-3 py-2.5" />
       </div>
 
-      <Card className="rounded-[18px] p-4">
-        <div className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[16px] border border-white/10 bg-white/[0.03] px-4 py-4">
+      <Card className="rounded-[18px] p-3">
+        <div className="grid gap-2.5 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-[16px] border border-white/10 bg-white/[0.03] px-3 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Current billing summary</p>
-            <div className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-2">
+            <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-2">
               <div>
-                <p className="text-3xl font-semibold tracking-[-0.04em] text-white">Rs {data.payableAmount.toLocaleString("en-IN")}</p>
+                <p className="text-2xl font-semibold tracking-[-0.04em] text-white">Rs {data.payableAmount.toLocaleString("en-IN")}</p>
                 <p className="text-[11px] text-[color:var(--fg-secondary)]">This is billed per month for {data.hostelName}.</p>
               </div>
               <span className="rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[11px] font-semibold text-white/70">
                 Due by {data.dueDate}
               </span>
             </div>
-            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
               <UsageMetric label="Monthly counted" value={String(data.billing.billableTenantCount)} />
               <UsageMetric label="Extra tenants" value={String(data.billing.extraTenants)} />
               <UsageMetric label="Extra charges" value={`Rs ${data.billing.extraCharges.toLocaleString("en-IN")}`} />
             </div>
           </div>
 
-          <div className="rounded-[16px] border border-white/10 bg-white/[0.03] px-4 py-4">
+          <div className="rounded-[16px] border border-white/10 bg-white/[0.03] px-3 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">How plan changes work</p>
-            <ul className="mt-3 space-y-2 text-sm text-[color:var(--fg-secondary)]">
-              <li>Upgrades and downgrades both go to super admin for approval.</li>
-              <li>Your current plan stays active until they approve the request.</li>
-              <li>Weekly and daily tenants always remain free in every plan.</li>
-            </ul>
+            <div className="mt-2 grid gap-2 text-[11px] text-[color:var(--fg-secondary)]">
+              <CompactInfoPill text="Super admin approves upgrades and downgrades." />
+              <CompactInfoPill text="Your current plan stays active until approval." />
+              <CompactInfoPill text="Weekly and daily tenants always stay free." />
+            </div>
           </div>
         </div>
       </Card>
@@ -267,7 +290,7 @@ export default function OwnerBillingPage() {
         </Card>
       ) : null}
 
-      <section className="grid gap-3 sm:grid-cols-3">
+      <section className="grid gap-2.5 sm:grid-cols-3">
         {PLANS.map((plan) => {
           const requestedPlanId = mapRequestedPlanId(plan.id);
           const isCurrentPlan = requestedPlanId === data.planId;
@@ -279,7 +302,7 @@ export default function OwnerBillingPage() {
             <article
               key={plan.id}
               className={cn(
-                "relative flex flex-col rounded-[20px] border p-4 transition",
+                "relative flex flex-col rounded-[20px] border p-3 transition",
                 plan.tone,
                 isSelected ? "ring-2 ring-[rgba(99,102,241,0.34)]" : "",
               )}
@@ -311,8 +334,8 @@ export default function OwnerBillingPage() {
                 <TenantUsageBar used={data.monthlyTenantCount} limit={plan.tenantLimit} isCurrent={isCurrentPlan} />
               </div>
 
-              <div className="mt-3 flex items-end gap-1.5">
-                <span className="text-3xl font-semibold leading-none tracking-[-0.04em] text-white">
+              <div className="mt-2.5 flex items-end gap-1.5">
+                <span className="text-2xl font-semibold leading-none tracking-[-0.04em] text-white">
                   Rs {plan.monthlyPrice.toLocaleString("en-IN")}
                 </span>
                 <span className="mb-0.5 text-xs text-white/40">/mo</span>
@@ -326,7 +349,7 @@ export default function OwnerBillingPage() {
                     : `Flat cap at 50 tenants • Rs 250 per extra hostel`}
               </p>
 
-              <div className="mt-4 rounded-[14px] border border-white/10 bg-white/[0.03] px-3 py-3">
+              <div className="mt-3 rounded-[14px] border border-white/10 bg-white/[0.03] px-3 py-2.5">
                 <p className="text-[11px] font-semibold text-white">{plan.valueLine}</p>
                 <p className="mt-1 text-[11px] text-[color:var(--fg-secondary)]">
                   {plan.id === "starter"
@@ -337,7 +360,7 @@ export default function OwnerBillingPage() {
                 </p>
               </div>
 
-              <ul className="mt-4 space-y-2">
+              <ul className="mt-3 grid gap-x-3 gap-y-1.5 md:grid-cols-1 xl:grid-cols-1">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2 text-[12px] text-white/70">
                     <span
@@ -353,15 +376,15 @@ export default function OwnerBillingPage() {
                 ))}
               </ul>
 
-              <div className="mt-4 rounded-[14px] border border-[#22c55e]/20 bg-[#22c55e]/[0.05] px-3 py-3">
-                <p className="text-[11px] font-semibold text-[#86efac]">Free value included in this package</p>
-                <div className="mt-2 space-y-2">
-                  <FreeValueRow label="Weekly free" detail={`Weekly stays stay free in this plan. Current weekly tenants: ${data.weeklyTenantCount}.`} />
-                  <FreeValueRow label="Daily free" detail={`Daily stays stay free in this plan. Current daily tenants: ${data.dailyTenantCount}.`} />
+              <div className="mt-3 rounded-[14px] border border-[#22c55e]/20 bg-[#22c55e]/[0.05] px-3 py-2.5">
+                <p className="text-[11px] font-semibold text-[#86efac]">Free value included</p>
+                <div className="mt-2 grid gap-1.5">
+                  <FreeValueRow label="Weekly free" detail={`Current: ${data.weeklyTenantCount}`} />
+                  <FreeValueRow label="Daily free" detail={`Current: ${data.dailyTenantCount}`} />
                 </div>
               </div>
 
-              <div className="mt-auto pt-4">
+              <div className="mt-auto pt-3">
                 {isCurrentPlan ? (
                   <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-center text-sm font-semibold text-white/70">
                     Current plan
@@ -384,13 +407,13 @@ export default function OwnerBillingPage() {
       </section>
 
       {selectedPlan && selectedDirection ? (
-        <Card className="rounded-[20px] border border-[rgba(99,102,241,0.24)] bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.12),transparent_40%),linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <Card className="rounded-[20px] border border-[rgba(99,102,241,0.24)] bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.12),transparent_40%),linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">
                 {selectedDirection === "upgrade" ? "Upgrade request" : "Downgrade request"}
               </p>
-              <h3 className="mt-1 text-xl font-semibold text-white">
+              <h3 className="mt-1 text-lg font-semibold text-white">
                 {selectedDirection === "upgrade"
                   ? `Move from ${currentPlanLabel} to ${selectedPlan.title}`
                   : `Request downgrade from ${currentPlanLabel} to ${selectedPlan.title}`}
@@ -412,13 +435,13 @@ export default function OwnerBillingPage() {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            <div className="rounded-[16px] border border-white/10 bg-white/[0.03] px-4 py-4">
+          <div className="mt-3 grid gap-2.5 lg:grid-cols-2">
+            <div className="rounded-[16px] border border-white/10 bg-white/[0.03] px-3 py-3">
               <div className="flex items-center gap-2 text-white">
                 <Sparkles className="h-4 w-4 text-[#38bdf8]" />
                 <p className="text-sm font-semibold">Benefits you get</p>
               </div>
-              <ul className="mt-3 space-y-2">
+              <ul className="mt-2 space-y-1.5">
                 {selectedPlan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2 text-[12px] text-[color:var(--fg-secondary)]">
                     <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#4ade80]" />
@@ -428,12 +451,12 @@ export default function OwnerBillingPage() {
               </ul>
             </div>
 
-            <div className="rounded-[16px] border border-white/10 bg-white/[0.03] px-4 py-4">
+            <div className="rounded-[16px] border border-white/10 bg-white/[0.03] px-3 py-3">
               <div className="flex items-center gap-2 text-white">
                 <ArrowRightLeft className="h-4 w-4 text-[#fbbf24]" />
                 <p className="text-sm font-semibold">What happens next</p>
               </div>
-              <ul className="mt-3 space-y-2 text-[12px] text-[color:var(--fg-secondary)]">
+              <ul className="mt-2 space-y-1.5 text-[12px] text-[color:var(--fg-secondary)]">
                 <li className="flex items-start gap-2">
                   <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#38bdf8]" />
                   Super admin receives your request in the approval queue.
@@ -457,18 +480,24 @@ export default function OwnerBillingPage() {
 
 function UsageMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[14px] border border-white/10 bg-white/[0.03] px-3 py-3">
+    <div className="rounded-[14px] border border-white/10 bg-white/[0.03] px-3 py-2.5">
       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">{label}</p>
       <p className="mt-1 text-sm font-semibold text-white">{value}</p>
     </div>
   );
 }
 
+function CompactInfoPill({ text }: { text: string }) {
+  return <div className="rounded-[12px] border border-white/10 bg-white/[0.03] px-3 py-2">{text}</div>;
+}
+
 function FreeValueRow({ label, detail }: { label: string; detail: string }) {
   return (
-    <div className="rounded-[12px] border border-white/10 bg-white/[0.03] px-3 py-2.5">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#86efac]">{label}</p>
-      <p className="mt-1 text-[11px] text-white/65">{detail}</p>
+    <div className="rounded-[12px] border border-white/10 bg-white/[0.03] px-3 py-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#86efac]">{label}</p>
+        <p className="text-[11px] text-white/65">{detail}</p>
+      </div>
     </div>
   );
 }
