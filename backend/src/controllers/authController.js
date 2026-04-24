@@ -68,22 +68,13 @@ async function login(req, res) {
     throw createHttpError(401, "Invalid email or password.");
   }
 
-  let result;
-  if (username) {
-    const normalized = username.trim().toLowerCase();
-    result = await query(
-      `SELECT id, email, name, username, password, status, plan, plan_status, trial_start_date, created_at
-       FROM owners WHERE username = $1 LIMIT 1`,
-      [normalized],
-    );
-  } else {
-    const normalizedEmail = email.toLowerCase();
-    result = await query(
-      `SELECT id, email, name, username, password, status, plan, plan_status, trial_start_date, created_at
-       FROM owners WHERE email = $1 LIMIT 1`,
-      [normalizedEmail],
-    );
-  }
+  const identifier = (username || email || "").trim().toLowerCase();
+  // Single query: match on either email or username column
+  const result = await query(
+    `SELECT id, email, name, username, password, status, plan, plan_status, trial_start_date, created_at
+     FROM owners WHERE email = $1 OR username = $1 LIMIT 1`,
+    [identifier],
+  );
 
   if (result.rowCount === 0) {
     throw createHttpError(401, "Invalid email or password.");
