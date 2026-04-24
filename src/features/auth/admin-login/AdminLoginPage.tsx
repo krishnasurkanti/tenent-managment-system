@@ -43,7 +43,7 @@ export default function AdminLoginPage() {
 
     try {
       const { response, data } = await loginAdmin({
-        username: identifier,
+        phoneNumber: identifier,
         email: identifier,
         password,
       });
