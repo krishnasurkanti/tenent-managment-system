@@ -432,8 +432,7 @@ function CreateHostelPageContent() {
     }
 
     if (isEditMode) {
-      router.push("/owner/dashboard");
-      router.refresh();
+      window.location.href = "/owner/dashboard";
       return;
     }
 
@@ -512,8 +511,7 @@ function CreateHostelPageContent() {
     if (currentRoomIdx < roomEntries.length - 1) {
       setCurrentRoomIdx(c => c + 1);
     } else {
-      router.push("/owner/dashboard");
-      router.refresh();
+      window.location.href = "/owner/dashboard";
     }
   };
 
@@ -959,7 +957,7 @@ function CreateHostelPageContent() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => { router.push("/owner/dashboard"); router.refresh(); }}
+                    onClick={() => { window.location.href = "/owner/dashboard"; }}
                     className="text-[11px] font-medium text-white/40 hover:text-white/70 transition"
                   >
                     Skip all → Dashboard
@@ -982,7 +980,7 @@ function CreateHostelPageContent() {
                     type="button"
                     onClick={() => {
                       setRoomEntries(prev => prev.map((r, i) => i === currentRoomIdx ? { ...r, skipped: true } : r));
-                      if (isLast) { router.push("/owner/dashboard"); router.refresh(); }
+                      if (isLast) { window.location.href = "/owner/dashboard"; }
                       else setCurrentRoomIdx(c => c + 1);
                     }}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-white/50 hover:text-white/80 transition"
