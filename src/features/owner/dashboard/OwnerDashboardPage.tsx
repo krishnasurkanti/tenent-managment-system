@@ -19,16 +19,20 @@ export default function OwnerDashboardPage() {
   const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants(currentHostelId);
 
   useEffect(() => {
-    if (!hostelLoading && !tenantLoading && !currentHostel) {
+    if (!hostelLoading && !currentHostel) {
       router.replace("/owner/create-hostel");
     }
-  }, [hostelLoading, tenantLoading, currentHostel, router]);
+  }, [hostelLoading, currentHostel, router]);
 
-  if (hostelLoading || tenantLoading) {
+  if (hostelLoading) {
     return <LoadingState />;
   }
 
   if (!currentHostel) {
+    return <LoadingState />;
+  }
+
+  if (tenantLoading) {
     return <LoadingState />;
   }
 
