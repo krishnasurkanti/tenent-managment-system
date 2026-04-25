@@ -74,6 +74,9 @@ function CreateHostelPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isEditMode = searchParams.get("mode") === "edit";
+  const autoSetup = searchParams.get("autoSetup") === "1";
+  const invitePgName = searchParams.get("pgName") ?? "";
+  const inviteAddress = searchParams.get("address") ?? "";
   const [editingHostelId, setEditingHostelId] = useState<string | null>(null);
   const [hostelName, setHostelName] = useState("");
   const [address, setAddress] = useState("");
@@ -97,6 +100,15 @@ function CreateHostelPageContent() {
       return;
     }
 
+    // From invite flow: pre-fill and jump straight to rooms step
+    if (autoSetup && invitePgName) {
+      window.localStorage.removeItem(HOSTEL_DRAFT_KEY);
+      setHostelName(invitePgName);
+      if (inviteAddress) setAddress(inviteAddress);
+      setStep(2);
+      return;
+    }
+
     const saved = window.localStorage.getItem(HOSTEL_DRAFT_KEY);
     if (!saved) {
       return;
@@ -111,7 +123,7 @@ function CreateHostelPageContent() {
     } catch {
       window.localStorage.removeItem(HOSTEL_DRAFT_KEY);
     }
-  }, [isEditMode]);
+  }, [isEditMode, autoSetup, invitePgName, inviteAddress]);
 
   useEffect(() => {
     if (isEditMode || typeof window === "undefined") {

@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Building2, Eye, EyeOff, Lock, Phone, ShieldCheck, User } from "lucide-react";
+import { ArrowRight, Building2, Eye, EyeOff, Lock, MapPin, Phone, ShieldCheck, User } from "lucide-react";
 import { csrfFetch } from "@/lib/csrf-client";
 
 type InviteDetails = {
@@ -24,6 +24,7 @@ export default function AcceptInvitePage() {
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -61,6 +62,7 @@ export default function AcceptInvitePage() {
     if (submitting) return;
 
     if (!name.trim()) { setFormError("Enter your full name."); return; }
+    if (!address.trim()) { setFormError("Enter your property address."); return; }
     if (password.length < 6) { setFormError("Password must be at least 6 characters."); return; }
     if (password !== confirmPassword) { setFormError("Passwords do not match."); return; }
 
@@ -79,7 +81,11 @@ export default function AcceptInvitePage() {
         return;
       }
       setPageState("done");
-      router.replace("/owner/dashboard");
+      const params = new URLSearchParams();
+      if (invite?.pgName) params.set("pgName", invite.pgName);
+      if (address.trim()) params.set("address", address.trim());
+      params.set("autoSetup", "1");
+      router.replace(`/owner/create-hostel?${params.toString()}`);
       router.refresh();
     } catch {
       setFormError("Unable to create account. Try again.");
@@ -124,7 +130,7 @@ export default function AcceptInvitePage() {
       <main className="flex h-dvh items-center justify-center bg-[#090912] text-white">
         <div className="text-center">
           <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-[#4ade80]" />
-          <p className="mt-3 text-sm text-white/50">Setting up your dashboard…</p>
+          <p className="mt-3 text-sm text-white/50">Setting up your property…</p>
         </div>
       </main>
     );
@@ -233,6 +239,23 @@ export default function AcceptInvitePage() {
                       disabled={submitting}
                       placeholder="10-digit mobile number"
                       autoComplete="tel"
+                      className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 pl-9 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50 focus:bg-white/[0.05]"
+                    />
+                  </div>
+                </label>
+
+                {/* Address */}
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Property Address</span>
+                  <div className="relative">
+                    <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+                    <input
+                      type="text"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      disabled={submitting}
+                      placeholder="Full address of your PG / hostel"
+                      autoComplete="street-address"
                       className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 pl-9 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50 focus:bg-white/[0.05]"
                     />
                   </div>
