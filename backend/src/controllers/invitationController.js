@@ -34,14 +34,16 @@ async function createInvitation(req, res) {
   );
 
   const token = crypto.randomBytes(32).toString("hex");
+  // Far-future date = effectively never expires (only invalidated when used/superseded)
+  const expiresAt = new Date("2099-12-31T23:59:59Z");
 
   await query(
     `INSERT INTO owner_invitations (token, email, pg_name, status, expires_at)
-     VALUES ($1, $2, $3, 'pending', NULL)`,
-    [token, normalizedEmail, (pgName || "").trim()],
+     VALUES ($1, $2, $3, 'pending', $4)`,
+    [token, normalizedEmail, (pgName || "").trim(), expiresAt],
   );
 
-  return res.status(201).json({ ok: true, token, expiresAt: null });
+  return res.status(201).json({ ok: true, token, expiresAt });
 }
 
 async function getInvitation(req, res) {
