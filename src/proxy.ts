@@ -60,7 +60,8 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  if ((pathname.startsWith("/owner") && pathname !== "/owner/login") || pathname.startsWith("/api/owner-hostel") || pathname.startsWith("/api/owner-hostels") || pathname.startsWith("/api/tenants") || pathname.startsWith("/api/owner-billing")) {
+  const OWNER_PUBLIC_PATHS = ["/owner/login", "/owner/signup", "/owner/accept-invite"];
+  if ((pathname.startsWith("/owner") && !OWNER_PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/"))) || pathname.startsWith("/api/owner-hostel") || pathname.startsWith("/api/owner-hostels") || pathname.startsWith("/api/tenants") || pathname.startsWith("/api/owner-billing")) {
     if (!ownerAuthenticated) {
       if (pathname.startsWith("/api/")) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });

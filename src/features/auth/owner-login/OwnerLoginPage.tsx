@@ -264,7 +264,7 @@ export default function LoginPage() {
 
                 <div className="mt-4 text-center">
                   <p className="text-sm text-white/40 sm:text-base">Don&apos;t have an account?</p>
-                  <Link href="/register" className="mt-1.5 inline-flex items-center justify-center gap-2 text-lg font-semibold text-[#f5be4e] transition hover:text-[#ffd983] sm:text-xl">
+                  <Link href="/owner/signup" className="mt-1.5 inline-flex items-center justify-center gap-2 text-lg font-semibold text-[#f5be4e] transition hover:text-[#ffd983] sm:text-xl">
                     Create Account
                   </Link>
                 </div>
