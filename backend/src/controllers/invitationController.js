@@ -4,8 +4,6 @@ const jwt = require("jsonwebtoken");
 const { query } = require("../config/db");
 const { createHttpError } = require("../utils/httpErrors");
 
-const INVITE_TTL_HOURS = 48;
-
 function signToken(owner) {
   return jwt.sign(
     { ownerId: owner.id, email: owner.email, role: "owner" },
@@ -36,15 +34,14 @@ async function createInvitation(req, res) {
   );
 
   const token = crypto.randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + INVITE_TTL_HOURS * 60 * 60 * 1000);
 
   await query(
     `INSERT INTO owner_invitations (token, email, pg_name, status, expires_at)
-     VALUES ($1, $2, $3, 'pending', $4)`,
-    [token, normalizedEmail, (pgName || "").trim(), expiresAt],
+     VALUES ($1, $2, $3, 'pending', NULL)`,
+    [token, normalizedEmail, (pgName || "").trim()],
   );
 
-  return res.status(201).json({ ok: true, token, expiresAt });
+  return res.status(201).json({ ok: true, token, expiresAt: null });
 }
 
 async function getInvitation(req, res) {
@@ -63,11 +60,6 @@ async function getInvitation(req, res) {
 
   if (inv.status !== "pending") {
     throw createHttpError(410, inv.status === "accepted" ? "Invitation already used." : "Invitation is no longer valid.");
-  }
-
-  if (new Date(inv.expires_at) < new Date()) {
-    await query("UPDATE owner_invitations SET status = 'expired' WHERE id = $1", [inv.id]);
-    throw createHttpError(410, "Invitation has expired. Ask admin to send a new one.");
   }
 
   return res.json({
@@ -98,11 +90,6 @@ async function acceptInvitation(req, res) {
 
   if (inv.status !== "pending") {
     throw createHttpError(410, inv.status === "accepted" ? "Invitation already used." : "Invitation is no longer valid.");
-  }
-
-  if (new Date(inv.expires_at) < new Date()) {
-    await query("UPDATE owner_invitations SET status = 'expired' WHERE id = $1", [inv.id]);
-    throw createHttpError(410, "Invitation has expired. Ask admin to send a new one.");
   }
 
   const existingOwner = await query("SELECT id FROM owners WHERE email = $1 LIMIT 1", [inv.email]);
