@@ -527,7 +527,7 @@ function CreateHostelPageContent() {
               Cancel
             </Button>
             <Button
-              className="w-full sm:w-auto"
+              className="w-full bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] text-[#1b1207] shadow-[0_18px_38px_rgba(240,175,47,0.22)] hover:brightness-105 sm:w-auto"
               disabled={saving}
               onClick={handleNextFromBasics}
             >
@@ -593,9 +593,9 @@ function CreateHostelPageContent() {
                     }}
                     className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-semibold shadow-sm transition ${
                       isActive
-                        ? "border-[color:color-mix(in_srgb,var(--brand)_42%,transparent)] bg-[color:var(--brand-soft)] text-[#9edcff]"
+                        ? "border-[#f2bb4d]/40 bg-[#f59e0b]/10 text-[#fcd34d]"
                         : isComplete
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          ? "border-[#4ade80]/30 bg-[#22c55e]/10 text-[#4ade80]"
                           : "border-[color:var(--border)] bg-[color:var(--surface-soft)] text-[color:var(--fg-secondary)]"
                     }`}
                   >
@@ -694,7 +694,7 @@ function CreateHostelPageContent() {
                     <div className="mt-4 grid gap-2">
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <Button
-                          className="w-full bg-blue-600 text-white shadow-[var(--shadow-soft)] hover:text-white sm:flex-1"
+                          className="w-full bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] text-[#1b1207] shadow-[0_18px_38px_rgba(240,175,47,0.22)] hover:brightness-105 sm:flex-1"
                           disabled={saving}
                           onClick={handleAddRoom}
                         >
@@ -737,9 +737,9 @@ function CreateHostelPageContent() {
                           onClick={() => setActiveRoomId(room.id)}
                           className={`flex w-full items-center justify-between rounded-[8px] border px-3 py-3 text-left shadow-sm transition ${
                             isActive
-                              ? "border-[color:color-mix(in_srgb,var(--brand)_42%,transparent)] bg-[color:var(--brand-soft)]"
+                              ? "border-[#f2bb4d]/40 bg-[#f59e0b]/10"
                               : isComplete
-                                ? "border-emerald-200 bg-emerald-50/70"
+                                ? "border-[#4ade80]/30 bg-[#22c55e]/10"
                                 : "border-[color:var(--border)] bg-[color:var(--surface-soft)]"
                           }`}
                         >
@@ -753,7 +753,7 @@ function CreateHostelPageContent() {
                                 : `${roomLabel} details pending`}
                               </p>
                             </div>
-                          {isComplete ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <ChevronRight className="h-4 w-4 text-[color:var(--fg-secondary)]" />}
+                          {isComplete ? <CheckCircle2 className="h-4 w-4 text-[#4ade80]" /> : <ChevronRight className="h-4 w-4 text-[color:var(--fg-secondary)]" />}
                         </button>
                       );
                     })}
@@ -782,7 +782,7 @@ function CreateHostelPageContent() {
                       </p>
                     </div>
                     {floor.rooms.every(isRoomComplete) ? (
-                      <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                      <span className="rounded-full border border-[#4ade80]/30 bg-[#22c55e]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#4ade80]">
                         Complete
                       </span>
                     ) : (
@@ -824,7 +824,7 @@ function CreateHostelPageContent() {
                     Create Another Floor
                   </Button>
                   <Button
-                    className="w-full sm:w-auto"
+                    className="w-full bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] text-[#1b1207] shadow-[0_18px_38px_rgba(240,175,47,0.22)] hover:brightness-105 sm:w-auto"
                     disabled={saving}
                     onClick={handleSave}
                   >
@@ -833,7 +833,7 @@ function CreateHostelPageContent() {
                 </>
               ) : (
                 <Button
-                  className="w-full sm:w-auto"
+                  className="w-full bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] text-[#1b1207] shadow-[0_18px_38px_rgba(240,175,47,0.22)] hover:brightness-105 sm:w-auto"
                   disabled={saving}
                   onClick={handleNextFromSetup}
                 >
@@ -889,9 +889,9 @@ function WizardPill({
     <div
       className={`inline-flex items-center rounded-full px-3 py-2 text-[11px] font-semibold shadow-sm ${
         active
-          ? "border border-[rgba(99,102,241,0.4)] bg-[linear-gradient(180deg,#6366f1_0%,#4f46e5_100%)] text-white shadow-[0_14px_32px_rgba(99,102,241,0.24)]"
+          ? "border border-[#f2bb4d]/50 bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] text-[#1b1207] shadow-[0_14px_32px_rgba(240,175,47,0.26)]"
           : done
-            ? "border border-emerald-200 bg-[linear-gradient(180deg,#ecfdf5_0%,#d1fae5_100%)] text-emerald-700"
+            ? "border border-[#4ade80]/30 bg-[#22c55e]/10 text-[#4ade80]"
             : "border border-[color:var(--border)] bg-[color:var(--surface-soft)] text-[color:var(--fg-secondary)]"
       }`}
     >
