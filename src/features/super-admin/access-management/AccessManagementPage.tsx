@@ -250,6 +250,11 @@ function AccessManagementPageInner() {
 
   const handleDelete = async (id: string) => {
     if (deletingId) return;
+    const owner = owners.find((o) => o.id === id);
+    const confirmed = window.confirm(
+      `Delete owner "${owner?.name ?? owner?.email ?? id}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
     setDeletingId(id);
     try {
       await csrfFetch(`/api/super-admin/owners/${id}`, { method: "DELETE" });
