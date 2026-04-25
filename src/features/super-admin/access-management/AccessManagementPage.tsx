@@ -408,7 +408,7 @@ function AccessManagementPageInner() {
           <div>
             <h1 className="text-xl font-semibold text-white">Owner Accounts</h1>
             <p className="mt-0.5 text-sm text-white/40">
-              {owners.length} owner{owners.length !== 1 ? "s" : ""} registered. Share credentials offline.
+              {owners.length} owner{owners.length !== 1 ? "s" : ""} registered.
             </p>
           </div>
           <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5">
@@ -418,108 +418,19 @@ function AccessManagementPageInner() {
           </div>
         </div>
 
-        {/* Signup Link */}
-        <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Plus className="h-4 w-4 text-[#f7bf53]" />
-              <h2 className="font-display text-base font-semibold text-white">Owner signup link</h2>
-            </div>
-            <button
-              type="button"
-              onClick={handleGenerateKey}
-              disabled={generatingKey}
-              className="rounded-xl border border-white/12 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white disabled:opacity-50"
-            >
-              {generatingKey ? "Generating…" : signupKey ? "New Link" : "Generate Link"}
-            </button>
-          </div>
-          <p className="mt-1 text-xs text-white/45">One-time link. Expires after one successful registration. Generate a new one each time.</p>
-
-          {signupKey ? (
-            <div className="mt-3 flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5">
-              <p className="flex-1 truncate font-mono text-xs text-white/70">{`${typeof window !== "undefined" ? window.location.origin : ""}/owner/signup?key=${signupKey}`}</p>
-              <button
-                type="button"
-                onClick={handleCopySignupLink}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${signupKeyCopied ? "bg-[#22c55e]/20 text-[#4ade80]" : "bg-white/10 text-white/70 hover:bg-white/15 hover:text-white"}`}
-              >
-                {signupKeyCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                {signupKeyCopied ? "Copied" : "Copy"}
-              </button>
-            </div>
-          ) : (
-            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/40">
-              No active link. Click &quot;Generate Link&quot; to create one.
-            </div>
-          )}
-        </div>
-
-        <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
-          <div className="flex items-center gap-2">
-            <ArrowRightLeft className="h-4 w-4 text-[#f7bf53]" />
-            <h2 className="font-display text-base font-semibold text-white">Plan change requests</h2>
-          </div>
-          <p className="mt-1 text-xs text-white/45">Owners wait here for super-admin approval before upgrades or downgrades take effect.</p>
-
-          <div className="mt-4 space-y-2">
-            {upgradeRequests.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm text-white/45">
-                No plan requests right now.
-              </div>
-            ) : (
-              upgradeRequests.map((request) => (
-                <div key={request.requestId} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                  <div>
-                    <p className="text-sm font-semibold text-white">
-                      {request.hostelName}: {request.currentPlanId.toUpperCase()} {"->"} {request.requestedPlanId.toUpperCase()}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-white/45">
-                      {request.note || "Owner requested a plan change."} • {request.status} • {new Date(request.requestedAt).toLocaleString()}
-                    </p>
-                  </div>
-                  {request.status === "pending" ? (
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        disabled={requestActionId === request.requestId}
-                        onClick={() => void handleRequestAction(request.requestId, "approve")}
-                        className="rounded-xl bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        type="button"
-                        disabled={requestActionId === request.requestId}
-                        onClick={() => void handleRequestAction(request.requestId, "reject")}
-                        className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300 disabled:opacity-60"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="rounded-full bg-white/8 px-3 py-1 text-xs font-semibold text-white/60">
-                      {request.status}
-                    </span>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Owner list */}
+        {/* Owner list — shown first so it's immediately visible */}
+        <div className="mb-4">
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-20 animate-pulse rounded-2xl bg-white/[0.04]" />
+              <div key={i} className="h-16 animate-pulse rounded-2xl bg-white/[0.04]" />
             ))}
           </div>
         ) : owners.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-12 text-center">
             <Users className="mx-auto h-9 w-9 text-white/20" />
             <p className="mt-3 text-sm font-medium text-white/40">No owner accounts yet.</p>
-            <p className="mt-1 text-xs text-white/25">Click Add Owner to create one.</p>
+            <p className="mt-1 text-xs text-white/25">Click Invite Owner to add one.</p>
           </div>
         ) : (
           <>
@@ -635,6 +546,98 @@ function AccessManagementPageInner() {
             </div>
           </>
         )}
+        </div>
+
+        {/* Signup Link */}
+        <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Plus className="h-4 w-4 text-[#f7bf53]" />
+              <h2 className="font-display text-base font-semibold text-white">Owner signup link</h2>
+            </div>
+            <button
+              type="button"
+              onClick={handleGenerateKey}
+              disabled={generatingKey}
+              className="rounded-xl border border-white/12 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white disabled:opacity-50"
+            >
+              {generatingKey ? "Generating…" : signupKey ? "New Link" : "Generate Link"}
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-white/45">One-time link. Expires after one successful registration. Generate a new one each time.</p>
+
+          {signupKey ? (
+            <div className="mt-3 flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5">
+              <p className="flex-1 truncate font-mono text-xs text-white/70">{`${typeof window !== "undefined" ? window.location.origin : ""}/owner/signup?key=${signupKey}`}</p>
+              <button
+                type="button"
+                onClick={handleCopySignupLink}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${signupKeyCopied ? "bg-[#22c55e]/20 text-[#4ade80]" : "bg-white/10 text-white/70 hover:bg-white/15 hover:text-white"}`}
+              >
+                {signupKeyCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {signupKeyCopied ? "Copied" : "Copy"}
+              </button>
+            </div>
+          ) : (
+            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/40">
+              No active link. Click &quot;Generate Link&quot; to create one.
+            </div>
+          )}
+        </div>
+
+        <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
+          <div className="flex items-center gap-2">
+            <ArrowRightLeft className="h-4 w-4 text-[#f7bf53]" />
+            <h2 className="font-display text-base font-semibold text-white">Plan change requests</h2>
+          </div>
+          <p className="mt-1 text-xs text-white/45">Owners wait here for super-admin approval before upgrades or downgrades take effect.</p>
+
+          <div className="mt-4 space-y-2">
+            {upgradeRequests.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm text-white/45">
+                No plan requests right now.
+              </div>
+            ) : (
+              upgradeRequests.map((request) => (
+                <div key={request.requestId} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      {request.hostelName}: {request.currentPlanId.toUpperCase()} {"->"} {request.requestedPlanId.toUpperCase()}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-white/45">
+                      {request.note || "Owner requested a plan change."} • {request.status} • {new Date(request.requestedAt).toLocaleString()}
+                    </p>
+                  </div>
+                  {request.status === "pending" ? (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={requestActionId === request.requestId}
+                        onClick={() => void handleRequestAction(request.requestId, "approve")}
+                        className="rounded-xl bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        disabled={requestActionId === request.requestId}
+                        onClick={() => void handleRequestAction(request.requestId, "reject")}
+                        className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300 disabled:opacity-60"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="rounded-full bg-white/8 px-3 py-1 text-xs font-semibold text-white/60">
+                      {request.status}
+                    </span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
       </main>
     </div>
   );
