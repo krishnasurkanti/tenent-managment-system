@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   if (!(await isAdminAuthenticated(request))) {
-    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+    return NextResponse.json({ message: "Session expired. Please log out and log back in." }, { status: 401 });
   }
   const body = (await request.json()) as { email?: string; pgName?: string };
   try {
@@ -42,6 +42,6 @@ export async function POST(request: NextRequest) {
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch {
-    return NextResponse.json({ message: "Service unavailable." }, { status: 503 });
+    return NextResponse.json({ message: "Backend unavailable." }, { status: 503 });
   }
 }
