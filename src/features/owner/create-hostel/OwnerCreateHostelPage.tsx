@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Building2, CheckCircle2, ChevronRight, Home, MapPin, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, ChevronRight, Home, MapPin, Phone, Plus, SkipForward, Trash2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
@@ -21,6 +21,12 @@ type FloorForm = {
   id: string;
   floorLabel: string;
   rooms: RoomForm[];
+};
+
+type BedEntry = { name: string; phone: string; date: string; skipped: boolean };
+type RoomEntry = {
+  roomId: string; roomNumber: string; bedCount: number; beds: BedEntry[];
+  floorLabel: string; floorIndex: number; skipped: boolean;
 };
 
 function createRoom(index: number): RoomForm {
@@ -76,10 +82,15 @@ function CreateHostelPageContent() {
   const [floors, setFloors] = useState<FloorForm[]>([createFloor(1)]);
   const [activeFloorId, setActiveFloorId] = useState<string | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [saving, setSaving] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(isEditMode);
   const [error, setError] = useState("");
+  const [createdHostelId, setCreatedHostelId] = useState("");
+  const [roomEntries, setRoomEntries] = useState<RoomEntry[]>([]);
+  const [currentRoomIdx, setCurrentRoomIdx] = useState(0);
+  const [savingTenants, setSavingTenants] = useState(false);
+  const [tenantError, setTenantError] = useState("");
 
   useEffect(() => {
     if (isEditMode || typeof window === "undefined") {
@@ -403,8 +414,29 @@ function CreateHostelPageContent() {
       window.localStorage.removeItem(HOSTEL_DRAFT_KEY);
     }
 
-    router.push("/owner/dashboard");
-    router.refresh();
+    if (isEditMode) {
+      router.push("/owner/dashboard");
+      router.refresh();
+      return;
+    }
+
+    // First-time creation: go to tenant onboarding step
+    const entries: RoomEntry[] = [];
+    floors.forEach((floor, fi) => {
+      floor.rooms.forEach((room) => {
+        const count = Math.max(1, Number(room.bedCount) || 1);
+        entries.push({
+          roomId: room.id, roomNumber: room.roomNumber, bedCount: count,
+          beds: Array.from({ length: count }, () => ({ name: "", phone: "", date: "", skipped: false })),
+          floorLabel: floor.floorLabel, floorIndex: fi, skipped: false,
+        });
+      });
+    });
+    setCreatedHostelId(data.hostel?.id ?? "");
+    setRoomEntries(entries);
+    setCurrentRoomIdx(0);
+    setSaving(false);
+    setStep(3);
   };
 
   const handleNextFromBasics = () => {
@@ -426,6 +458,48 @@ function CreateHostelPageContent() {
     void handleSave();
   };
 
+  const updateBed = (roomIdx: number, bedIdx: number, field: keyof BedEntry, value: string | boolean) => {
+    setRoomEntries(prev => prev.map((r, ri) =>
+      ri !== roomIdx ? r : { ...r, beds: r.beds.map((b, bi) => bi !== bedIdx ? b : { ...b, [field]: value }) }
+    ));
+  };
+
+  const handleRoomNext = async () => {
+    setTenantError("");
+    const room = roomEntries[currentRoomIdx];
+    if (!room.skipped) {
+      setSavingTenants(true);
+      const today = new Date().toISOString().split("T")[0];
+      for (let i = 0; i < room.beds.length; i++) {
+        const bed = room.beds[i];
+        if (bed.skipped || !bed.name.trim() || !bed.phone.trim()) continue;
+        const fd = new FormData();
+        fd.append("tenantType", "old");
+        fd.append("fullName", bed.name.trim());
+        fd.append("phone", bed.phone.trim());
+        fd.append("hostelId", createdHostelId);
+        fd.append("floorNumber", String(room.floorIndex + 1));
+        fd.append("roomNumber", room.roomNumber);
+        fd.append("moveInDate", bed.date || today);
+        fd.append("monthlyRent", "0");
+        fd.append("rentPaid", "0");
+        fd.append("paidOnDate", bed.date || today);
+        fd.append("sharingType", room.bedCount === 1 ? "Single sharing" : `${room.bedCount} sharing`);
+        fd.append("propertyType", "PG");
+        fd.append("bedId", `${room.roomId}-bed-${i + 1}`);
+        fd.append("bedLabel", `Bed ${i + 1}`);
+        try { await fetch("/api/tenants", { method: "POST", body: fd }); } catch { /* skip failed */ }
+      }
+      setSavingTenants(false);
+    }
+    if (currentRoomIdx < roomEntries.length - 1) {
+      setCurrentRoomIdx(c => c + 1);
+    } else {
+      router.push("/owner/dashboard");
+      router.refresh();
+    }
+  };
+
   if (loadingExisting) {
     return <CreateHostelLoadingState />;
   }
@@ -433,36 +507,37 @@ function CreateHostelPageContent() {
   return (
     <div className="space-y-3">
         <OwnerPageHero
-          eyebrow={isEditMode ? "Edit hostel" : "Create hostel"}
-          title={isEditMode ? "Update your hostel setup" : "Set up your hostel"}
-          description="Add the basics first, then complete floors and rooms. Draft progress saves automatically while you work."
-          badge={<span className="inline-flex rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[11px] font-semibold text-white/70">Step {step} of 2</span>}
+          eyebrow={step === 3 ? "Add tenants" : isEditMode ? "Edit hostel" : "Create hostel"}
+          title={step === 3 ? "Who's already living here?" : isEditMode ? "Update your hostel setup" : "Set up your hostel"}
+          description={step === 3 ? "Add existing tenants room by room. Skip any bed or room that's empty." : "Add the basics first, then complete floors and rooms. Draft progress saves automatically while you work."}
+          badge={<span className="inline-flex rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[11px] font-semibold text-white/70">Step {step} of 3</span>}
         />
 
+        {step !== 3 && (
         <div className="grid gap-2.5 sm:grid-cols-3">
           <OwnerQuickStat label="Floors" value={String(floors.length)} helper="Current setup draft" />
           <OwnerQuickStat label="Completed floors" value={String(completedFloors.length)} helper="Ready to save" />
           <OwnerQuickStat label="Mode" value={isEditMode ? "Editing" : "New hostel"} helper="Draft autosave enabled" />
         </div>
+        )}
         {error ? (
           <div className="rounded-xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-3 py-2.5 text-sm font-medium text-[color:var(--error)]">
             {error}
           </div>
         ) : null}
 
-        <Card className={`rounded-[18px] p-3 ${ownerSubtlePanelClass}`}>
+        {step !== 3 && <Card className={`rounded-[18px] p-3 ${ownerSubtlePanelClass}`}>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-2">
               <WizardPill label="1. Basics" active={step === 1} done={step > 1} />
-              <WizardPill label="2. Setup" active={step === 2} done={false} />
+              <WizardPill label="2. Setup" active={step === 2} done={step > 2} />
+              <WizardPill label="3. Tenants" active={step === 3} done={false} />
             </div>
             <p className="text-[11px] text-[color:var(--fg-secondary)]">
-              {step === 1
-                ? "Start with the name and address. This page should feel like the rest of your owner workspace."
-                : "Finish floors and rooms with the same dark panel styling used across the dashboard."}
+              {step === 1 ? "Start with the name and address." : "Finish floors and rooms."}
             </p>
           </div>
-        </Card>
+        </Card>}
 
         {step === 1 ? (
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_340px]">
@@ -844,6 +919,149 @@ function CreateHostelPageContent() {
           </div>
         </Card>
         ) : null}
+
+        {step === 3 ? (() => {
+          const room = roomEntries[currentRoomIdx];
+          if (!room) return null;
+          const isLast = currentRoomIdx === roomEntries.length - 1;
+          return (
+            <Card className={`overflow-hidden rounded-[22px] ${ownerPanelClass}`}>
+              {/* Header */}
+              <div className="border-b border-[color:var(--border)] px-4 py-3 sm:px-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-2xl bg-[#f59e0b]/12 p-2.5 text-[#fcd34d]">
+                      <User className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-semibold text-white">Add Existing Tenants</h2>
+                      <p className="text-[11px] text-[color:var(--fg-secondary)]">
+                        Room {currentRoomIdx + 1} of {roomEntries.length} — fill in or skip each bed
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { router.push("/owner/dashboard"); router.refresh(); }}
+                    className="text-[11px] font-medium text-white/40 hover:text-white/70 transition"
+                  >
+                    Skip all → Dashboard
+                  </button>
+                </div>
+              </div>
+
+              <div className="px-4 py-4 sm:px-5">
+                {/* Room info */}
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">
+                      {room.floorLabel}
+                    </p>
+                    <h3 className="mt-0.5 text-base font-semibold text-white">
+                      Room {room.roomNumber} · {room.bedCount} {room.bedCount === 1 ? "bed" : "beds"}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRoomEntries(prev => prev.map((r, i) => i === currentRoomIdx ? { ...r, skipped: true } : r));
+                      if (isLast) { router.push("/owner/dashboard"); router.refresh(); }
+                      else setCurrentRoomIdx(c => c + 1);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-white/50 hover:text-white/80 transition"
+                  >
+                    <SkipForward className="h-3.5 w-3.5" />
+                    Skip room
+                  </button>
+                </div>
+
+                {/* Bed rows */}
+                <div className="space-y-2.5">
+                  {room.beds.map((bed, bi) => (
+                    <div
+                      key={bi}
+                      className={`rounded-[12px] border p-3 transition ${bed.skipped ? "border-white/6 bg-white/[0.02] opacity-50" : "border-[color:var(--border)] bg-[color:var(--surface-soft)]"}`}
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">
+                          Bed {bi + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateBed(currentRoomIdx, bi, "skipped", !bed.skipped)}
+                          className={`text-[11px] font-medium transition ${bed.skipped ? "text-[#fcd34d] hover:text-[#ffd983]" : "text-white/35 hover:text-white/60"}`}
+                        >
+                          {bed.skipped ? "Undo skip" : "Skip bed"}
+                        </button>
+                      </div>
+                      {!bed.skipped && (
+                        <div className="grid gap-2 sm:grid-cols-3">
+                          <div className="relative">
+                            <User className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
+                            <input
+                              type="text"
+                              value={bed.name}
+                              onChange={e => updateBed(currentRoomIdx, bi, "name", e.target.value)}
+                              placeholder="Tenant name"
+                              disabled={savingTenants}
+                              className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 pl-8 text-[13px] text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
+                            />
+                          </div>
+                          <div className="relative">
+                            <Phone className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
+                            <input
+                              type="tel"
+                              inputMode="numeric"
+                              value={bed.phone}
+                              onChange={e => updateBed(currentRoomIdx, bi, "phone", e.target.value.replace(/\D/g, ""))}
+                              placeholder="Phone number"
+                              disabled={savingTenants}
+                              className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 pl-8 text-[13px] text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
+                            />
+                          </div>
+                          <input
+                            type="date"
+                            value={bed.date}
+                            onChange={e => updateBed(currentRoomIdx, bi, "date", e.target.value)}
+                            disabled={savingTenants}
+                            className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 text-[13px] text-white outline-none focus:border-[#f2bb4d]/50 [color-scheme:dark]"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {tenantError ? (
+                  <div className="mt-3 rounded-xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-3 py-2 text-sm text-[color:var(--error)]">
+                    {tenantError}
+                  </div>
+                ) : null}
+
+                {/* Footer */}
+                <div className="mt-4 flex items-center justify-between border-t border-[color:var(--border)] pt-4">
+                  <button
+                    type="button"
+                    disabled={currentRoomIdx === 0 || savingTenants}
+                    onClick={() => setCurrentRoomIdx(c => c - 1)}
+                    className="text-[13px] font-medium text-white/40 hover:text-white/70 transition disabled:opacity-30"
+                  >
+                    ← Previous room
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingTenants}
+                    onClick={() => void handleRoomNext()}
+                    className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] px-5 text-[13px] font-semibold text-[#1b1207] shadow-[0_14px_30px_rgba(240,175,47,0.22)] transition hover:brightness-105 disabled:opacity-60"
+                  >
+                    {savingTenants ? "Saving…" : isLast ? "Finish & Go to Dashboard" : `Next Room →`}
+                    {!savingTenants && <ArrowRight className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              </div>
+            </Card>
+          );
+        })() : null}
     </div>
   );
 }
