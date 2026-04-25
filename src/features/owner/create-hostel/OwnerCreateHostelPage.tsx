@@ -361,28 +361,42 @@ function CreateHostelPageContent() {
 
     const hasInvalidFloor = floors.some((floor) => !floor.floorLabel.trim());
     if (hasInvalidFloor) {
-      setError("Cannot save hostel yet. Each floor needs a floor name.");
+      setError("Each floor needs a name.");
       return;
     }
 
-    const hasInvalidRoom = floors.some(
-      (floor) =>
-        floor.rooms.length === 0 ||
-        floor.rooms.some((room) => !room.roomNumber.trim() || !room.bedCount || Number(room.bedCount) < 1),
-    );
+    // Strip rooms that were added but left completely empty
+    const cleanedFloors = floors
+      .map((floor) => ({
+        ...floor,
+        rooms: floor.rooms.filter(
+          (room) => room.roomNumber.trim() || (room.bedCount && Number(room.bedCount) > 0),
+        ),
+      }))
+      .filter((floor) => floor.rooms.length > 0);
 
-    if (hasInvalidRoom) {
-      setError("Cannot save hostel yet. Each room needs both a room number and a bed count greater than 0.");
+    if (cleanedFloors.length === 0) {
+      setError("Add at least one room before saving.");
+      return;
+    }
+
+    const hasPartialRoom = cleanedFloors.some((floor) =>
+      floor.rooms.some((room) => !room.roomNumber.trim() || !room.bedCount || Number(room.bedCount) < 1),
+    );
+    if (hasPartialRoom) {
+      setError("Some rooms are missing a room number or bed count. Fill them in or remove them.");
       return;
     }
 
     setSaving(true);
 
-    const payload = {
+    const { response, data } = await saveOwnerHostel({
       hostelId: editingHostelId,
+      isEditMode,
       hostelName,
       address,
-      floors: floors.map((floor) => ({
+      type: hostelType,
+      floors: cleanedFloors.map((floor) => ({
         id: floor.id,
         floorLabel: floor.floorLabel,
         rooms: floor.rooms.map((room) => ({
@@ -392,15 +406,6 @@ function CreateHostelPageContent() {
           sharingType: hostelType === "RESIDENCE" ? "Private unit" : getSharingLabel(room.bedCount),
         })),
       })),
-    };
-
-    const { response, data } = await saveOwnerHostel({
-      hostelId: editingHostelId,
-      isEditMode,
-      hostelName: payload.hostelName,
-      address: payload.address,
-      type: hostelType,
-      floors: payload.floors,
     });
 
     if (!response.ok) {
@@ -422,7 +427,7 @@ function CreateHostelPageContent() {
 
     // First-time creation: go to tenant onboarding step
     const entries: RoomEntry[] = [];
-    floors.forEach((floor, fi) => {
+    cleanedFloors.forEach((floor, fi) => {
       floor.rooms.forEach((room) => {
         const count = Math.max(1, Number(room.bedCount) || 1);
         entries.push({

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowRight, CalendarClock, CreditCard, DoorOpen, ReceiptText, TrendingUp, Users } from "lucide-react";
 import { useHostelContext } from "@/store/hostel-context";
 import { Card } from "@/components/ui/card";
@@ -12,22 +14,22 @@ import { getHostelOccupancySummary } from "@/utils/hostel-occupancy";
 import { TenantRentSearch } from "@/features/payments/components/TenantRentSearch";
 
 export default function OwnerDashboardPage() {
+  const router = useRouter();
   const { currentHostel, currentHostelId, loading: hostelLoading, isSwitching } = useHostelContext();
   const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants(currentHostelId);
+
+  useEffect(() => {
+    if (!hostelLoading && !tenantLoading && !currentHostel) {
+      router.replace("/owner/create-hostel");
+    }
+  }, [hostelLoading, tenantLoading, currentHostel, router]);
 
   if (hostelLoading || tenantLoading) {
     return <LoadingState />;
   }
 
   if (!currentHostel) {
-    return (
-      <EmptyState
-        title="No hostel found"
-        description="Create your first hostel to start tracking tenants, dues, and rooms."
-        ctaHref="/owner/create-hostel"
-        ctaLabel="Create Hostel"
-      />
-    );
+    return <LoadingState />;
   }
 
   const tenants = allTenants.filter((tenant) => tenant.assignment?.hostelId === currentHostel.id);

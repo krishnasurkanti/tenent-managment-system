@@ -103,8 +103,8 @@
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus {
-    -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.06) inset;
-    -webkit-text-fill-color: white;
+    -webkit-box-shadow: 0 0 0 1000px #0d0f1a inset;
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.9);
     caret-color: white;
   }
 
