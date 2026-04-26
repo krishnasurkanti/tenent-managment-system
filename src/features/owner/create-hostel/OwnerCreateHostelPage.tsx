@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Building2, ChevronRight, CreditCard, Home, MapPin, Phone, Plus, Trash2, User } from "lucide-react";
+import { Building2, ChevronRight, CreditCard, Home, ImageIcon, MapPin, Phone, Plus, Trash2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
@@ -77,6 +77,7 @@ function CreateHostelPageContent() {
   const [address, setAddress] = useState("");
   const [hostelType] = useState<"PG" | "RESIDENCE">("PG");
   const [rooms, setRooms] = useState<RoomForm[]>([createRoom()]);
+  const [bedPhotos, setBedPhotos] = useState<Record<string, File>>({});
   const [step, setStep] = useState<1 | 2>(1);
   const [saving, setSaving] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(isEditMode);
@@ -265,10 +266,13 @@ function CreateHostelPageContent() {
           fd.append("bedId", `${room.id}-bed-${bedIdx + 1}`);
           fd.append("bedLabel", `Bed ${bedIdx + 1}`);
           if (bed.idNumber.trim()) fd.append("idNumber", bed.idNumber.trim());
+          const photoKey = `${room.id}-${bedIdx}`;
+          const photo = bedPhotos[photoKey];
+          if (photo) fd.append("idImage", photo);
           tenantRequests.push(
             fetch("/api/tenants", { method: "POST", body: fd }).then(() => {}).catch(() => {})
           );
-          void roomIdx; // suppress unused var
+          void roomIdx;
         });
       });
 
@@ -519,7 +523,7 @@ function CreateHostelPageContent() {
                               </button>
                             </div>
                             {!bed.skipped && (
-                              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                                 <div className="relative">
                                   <User className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
                                   <input
@@ -543,17 +547,6 @@ function CreateHostelPageContent() {
                                     className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 pl-8 text-[13px] text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
                                   />
                                 </div>
-                                <div className="relative">
-                                  <CreditCard className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
-                                  <input
-                                    type="text"
-                                    value={bed.idNumber}
-                                    onChange={(e) => updateBed(room.id, bedIdx, "idNumber", e.target.value.toUpperCase())}
-                                    placeholder="ID number"
-                                    disabled={saving}
-                                    className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 pl-8 text-[13px] text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
-                                  />
-                                </div>
                                 <input
                                   type="date"
                                   value={bed.date}
@@ -561,6 +554,35 @@ function CreateHostelPageContent() {
                                   disabled={saving}
                                   className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 text-[13px] text-white outline-none focus:border-[#f2bb4d]/50 [color-scheme:dark]"
                                 />
+                                <div className="relative">
+                                  <CreditCard className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
+                                  <input
+                                    type="text"
+                                    value={bed.idNumber}
+                                    onChange={(e) => updateBed(room.id, bedIdx, "idNumber", e.target.value.toUpperCase())}
+                                    placeholder="ID number (optional)"
+                                    disabled={saving}
+                                    className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 pl-8 text-[13px] text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
+                                  />
+                                </div>
+                                <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 transition hover:border-white/20 hover:bg-white/[0.05] sm:col-span-2">
+                                  <ImageIcon className="h-3.5 w-3.5 shrink-0 text-white/30" />
+                                  <span className="truncate text-[13px] text-white/40">
+                                    {bedPhotos[`${room.id}-${bedIdx}`]?.name ?? "ID photo (optional)"}
+                                  </span>
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                                    className="hidden"
+                                    disabled={saving}
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      const key = `${room.id}-${bedIdx}`;
+                                      setBedPhotos((prev) => ({ ...prev, [key]: file }));
+                                    }}
+                                  />
+                                </label>
                               </div>
                             )}
                           </div>

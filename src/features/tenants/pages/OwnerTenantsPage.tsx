@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Search, UserCheck, UserRound, Wallet } from "lucide-react";
+import { AlertTriangle, CreditCard, ImageIcon, Plus, Search, UserCheck, UserRound, Wallet, X } from "lucide-react";
 import { TenantFormModal } from "@/features/tenants/components/TenantFormModal";
 import { TenantRoomAssignmentModal } from "@/features/tenants/components/TenantRoomAssignmentModal";
 import { PaymentCollectionModal } from "@/components/ui/payment-collection-modal";
@@ -43,6 +43,7 @@ function OwnerTenantsPageContent() {
   const [assignmentOpen, setAssignmentOpen] = useState(false);
   const [pendingTenant, setPendingTenant] = useState<TenantRecord | null>(null);
   const [paymentTenant, setPaymentTenant] = useState<TenantRecord | null>(null);
+  const [completingTenant, setCompletingTenant] = useState<TenantRecord | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const preferredAssignment = useMemo(
@@ -202,6 +203,16 @@ function OwnerTenantsPageContent() {
                       <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--fg-secondary)]">
                         #{tenant.tenantId}
                       </span>
+                      {hasMissingInfo(tenant) && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); setCompletingTenant(tenant); }}
+                          className="inline-flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400 hover:bg-orange-500/20 transition"
+                        >
+                          <AlertTriangle className="h-2.5 w-2.5" />
+                          Missing info
+                        </button>
+                      )}
                     </div>
                     <p className="mt-1 truncate text-[11px] text-[color:var(--fg-secondary)]">
                       {tenant.assignment ? `F${tenant.assignment.floorNumber} / R${tenant.assignment.roomNumber}` : "Pending assignment"} / {tenant.phone}
@@ -293,9 +304,21 @@ function OwnerTenantsPageContent() {
                       <tr key={tenant.tenantId} className="border-t border-[color:var(--border)] transition hover:bg-white/[0.02]">
                         <td className="px-3 py-3 font-semibold text-[color:var(--fg-secondary)]">{tenant.tenantId}</td>
                         <td className="px-3 py-3">
-                          <Link href={`/owner/tenants/${tenant.tenantId}`} className="font-medium text-white transition hover:text-[var(--accent-electric)]">
-                            {tenant.fullName}
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            <Link href={`/owner/tenants/${tenant.tenantId}`} className="font-medium text-white transition hover:text-[var(--accent-electric)]">
+                              {tenant.fullName}
+                            </Link>
+                            {hasMissingInfo(tenant) && (
+                              <button
+                                type="button"
+                                onClick={() => setCompletingTenant(tenant)}
+                                className="inline-flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400 hover:bg-orange-500/20 transition"
+                              >
+                                <AlertTriangle className="h-2.5 w-2.5" />
+                                Missing info
+                              </button>
+                            )}
+                          </div>
                         </td>
                         <td className="px-3 py-3">
                           <p className="text-[color:var(--fg-primary)]">{tenant.phone}</p>
@@ -381,6 +404,17 @@ function OwnerTenantsPageContent() {
         onClose={() => setPaymentTenant(null)}
         onSuccess={handlePaymentSuccess}
       />
+
+      {completingTenant && (
+        <CompleteProfileModal
+          tenant={completingTenant}
+          onClose={() => setCompletingTenant(null)}
+          onSaved={(updated) => {
+            setTenantOverrides((prev) => ({ ...prev, [updated.tenantId]: updated }));
+            setCompletingTenant(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -418,6 +452,135 @@ function ActionButton({
     >
       {isOverdue ? "Pay Now" : "Collect Rent"}
     </button>
+  );
+}
+
+// ── Missing info helpers ───────────────────────────────────────────────────
+
+function hasMissingInfo(tenant: TenantRecord) {
+  return tenant.idNumber === "PENDING-ID" || tenant.idImageName === "pending-id-upload";
+}
+
+function CompleteProfileModal({
+  tenant,
+  onClose,
+  onSaved,
+}: {
+  tenant: TenantRecord;
+  onClose: () => void;
+  onSaved: (updated: TenantRecord) => void;
+}) {
+  const [idNumber, setIdNumber] = useState(tenant.idNumber === "PENDING-ID" ? "" : tenant.idNumber);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const missingId = tenant.idNumber === "PENDING-ID";
+  const missingPhoto = tenant.idImageName === "pending-id-upload";
+
+  const handleSubmit = async () => {
+    setError("");
+    if (!idNumber.trim()) { setError("Enter the ID number."); return; }
+    setSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.append("idNumber", idNumber.trim().toUpperCase());
+      if (photo) fd.append("idImage", photo);
+
+      const res = await fetch(`/api/tenants/${encodeURIComponent(tenant.tenantId)}`, {
+        method: "PATCH",
+        body: fd,
+      });
+      const data = (await res.json()) as { ok?: boolean; tenant?: TenantRecord; message?: string };
+      if (!res.ok) { setError(data.message ?? "Update failed."); return; }
+
+      onSaved(data.tenant ?? { ...tenant, idNumber: idNumber.trim().toUpperCase(), idImageName: photo?.name ?? tenant.idImageName });
+    } catch {
+      setError("Network error. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-[20px] border border-white/10 bg-[#0d1117] p-5 shadow-2xl">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Complete Profile</h2>
+            <p className="mt-0.5 text-[11px] text-[color:var(--fg-secondary)]">{tenant.fullName}</p>
+          </div>
+          <button type="button" onClick={onClose} disabled={submitting} className="rounded-xl p-1.5 text-white/40 hover:bg-white/8 hover:text-white/80 transition">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {missingId && (
+            <label className="block">
+              <span className="mb-1.5 block text-[11px] font-medium text-[color:var(--fg-secondary)]">ID Number <span className="text-orange-400">*</span></span>
+              <div className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.04] px-3 py-2.5">
+                <CreditCard className="h-4 w-4 shrink-0 text-white/30" />
+                <input
+                  type="text"
+                  value={idNumber}
+                  onChange={(e) => setIdNumber(e.target.value.toUpperCase())}
+                  placeholder="Aadhar, PAN, Passport…"
+                  disabled={submitting}
+                  className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
+                />
+              </div>
+            </label>
+          )}
+
+          {missingPhoto && (
+            <label className="block">
+              <span className="mb-1.5 block text-[11px] font-medium text-[color:var(--fg-secondary)]">ID Photo <span className="text-white/30">(optional)</span></span>
+              <div
+                className={`flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-3 py-3 transition hover:border-white/25 hover:bg-white/[0.05]`}
+                onClick={() => document.getElementById("id-photo-input")?.click()}
+              >
+                <ImageIcon className="h-4 w-4 shrink-0 text-white/30" />
+                <span className="text-[13px] text-white/40">{photo ? photo.name : "Tap to upload photo or PDF"}</span>
+                <input
+                  id="id-photo-input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  className="hidden"
+                  disabled={submitting}
+                  onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+                />
+              </div>
+            </label>
+          )}
+
+          {error && (
+            <p className="rounded-xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-3 py-2 text-[12px] text-[color:var(--error)]">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className="flex-1 rounded-2xl border border-white/12 bg-white/[0.04] py-2.5 text-[13px] font-medium text-white/60 hover:bg-white/[0.07] transition disabled:opacity-40"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleSubmit()}
+            disabled={submitting}
+            className="flex-1 rounded-2xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] py-2.5 text-[13px] font-semibold text-[#1b1207] shadow-[0_10px_22px_rgba(240,175,47,0.2)] hover:brightness-105 transition disabled:opacity-60"
+          >
+            {submitting ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
