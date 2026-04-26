@@ -546,7 +546,7 @@ function CreateHostelPageContent() {
             <div className="flex flex-wrap gap-2">
               <WizardPill label="1. Basics" active={step === 1} done={step > 1} />
               <WizardPill label="2. Setup" active={step === 2} done={step > 2} />
-              <WizardPill label="3. Tenants" active={step === 3} done={false} />
+              <WizardPill label="3. Tenants" active={false} done={false} />
             </div>
             <p className="text-[11px] text-[color:var(--fg-secondary)]">
               {step === 1 ? "Start with the name and address." : "Finish floors and rooms."}
