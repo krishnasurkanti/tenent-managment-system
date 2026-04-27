@@ -7,6 +7,7 @@ import { ArrowLeft, Bell, ChevronDown, House, Menu, Search } from "lucide-react"
 import { HostelSwitcher } from "@/components/layout/owner/HostelSwitcher";
 import { useHostelContext } from "@/store/hostel-context";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
+import { useOwnerProfile } from "@/hooks/use-owner-profile";
 import { getDueStatus } from "@/utils/payment";
 
 export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
@@ -15,6 +16,8 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const searchParams = useSearchParams();
   const { currentHostel, currentHostelId, hostels } = useHostelContext();
   const { tenants } = useOwnerTenants(currentHostelId);
+  const profile = useOwnerProfile();
+  const avatarInitial = (profile.name || profile.email || "O").charAt(0).toUpperCase();
   const isDashboard = pathname === "/owner/dashboard";
   const isNotifications = pathname === "/owner/notifications";
   const currentSearchQuery = pathname === "/owner/tenants" ? (searchParams.get("q") ?? "") : "";
@@ -151,7 +154,7 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
 
         <Link href="/owner/settings" className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-1 shadow-[0_10px_24px_rgba(2,6,23,0.18)]">
           <div className="flex h-7.5 w-7.5 items-center justify-center rounded-full bg-[linear-gradient(180deg,var(--cta)_0%,var(--cta-strong)_100%)] text-[11px] font-semibold text-[#1c1400] shadow-[0_12px_22px_rgba(249,193,42,0.25)]">
-            S
+            {avatarInitial}
           </div>
         </Link>
       </div>

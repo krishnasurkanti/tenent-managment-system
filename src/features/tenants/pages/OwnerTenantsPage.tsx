@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, CreditCard, ImageIcon, Plus, Search, UserCheck, UserRound, Wallet, X } from "lucide-react";
 import { TenantFormModal } from "@/features/tenants/components/TenantFormModal";
@@ -34,6 +35,7 @@ export default function OwnerTenantsPage() {
 
 function OwnerTenantsPageContent() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const { currentHostel, currentHostelId, loading: hostelLoading, isSwitching } = useHostelContext();
   const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants(currentHostelId);
@@ -354,6 +356,7 @@ function OwnerTenantsPageContent() {
         hostelId={currentHostel.id}
         propertyType={currentHostel.type}
         onCreated={async (tenant) => {
+          void queryClient.invalidateQueries({ queryKey: ["owner-tenants", currentHostelId ?? null] });
           if (shouldAutoAssign) {
             const { hostelId, floorNumber, roomNumber, sharingType } = preferredAssignment as {
               hostelId: string; floorNumber: number; roomNumber: string; sharingType: string;

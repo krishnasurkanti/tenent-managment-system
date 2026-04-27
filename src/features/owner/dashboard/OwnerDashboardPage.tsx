@@ -375,31 +375,6 @@ function SnapshotRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function EmptyState({
-  title,
-  description,
-  ctaHref,
-  ctaLabel,
-}: {
-  title: string;
-  description: string;
-  ctaHref: string;
-  ctaLabel: string;
-}) {
-  return (
-    <Card className="p-5 text-center">
-      <p className="text-base font-semibold text-white">{title}</p>
-      <p className="mt-1 text-sm text-[color:var(--fg-secondary)]">{description}</p>
-      <Link
-        href={ctaHref}
-        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl bg-[linear-gradient(90deg,var(--cta)_0%,var(--cta-strong)_100%)] px-4 text-sm font-semibold text-[#1c1400]"
-      >
-        {ctaLabel}
-      </Link>
-    </Card>
-  );
-}
-
 function LoadingState() {
   return (
     <div className="space-y-3">

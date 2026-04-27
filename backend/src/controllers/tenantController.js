@@ -49,6 +49,10 @@ function normalizeHostelFloors(hostelRow) {
 function mapTenantRow(row) {
   const data = row.data || {};
 
+  const billingCycleRaw = data.billingCycle;
+  const billingCycle =
+    billingCycleRaw === "daily" || billingCycleRaw === "weekly" ? billingCycleRaw : "monthly";
+
   return {
     tenantId: String(row.id),
     fullName: data.fullName || "",
@@ -59,6 +63,7 @@ function mapTenantRow(row) {
     paidOnDate: data.paidOnDate || "",
     billingAnchorDate: data.billingAnchorDate || "",
     nextDueDate: data.nextDueDate || "",
+    billingCycle,
     idNumber: data.idNumber || "",
     idImageName: data.idImageName || "",
     emergencyContact: data.emergencyContact || "",
@@ -425,23 +430,45 @@ async function updateTenant(req, res) {
 }
 
 async function deleteTenant(req, res) {
-  const result = await query(
-    `
-      DELETE FROM tenants
-      WHERE id = $1 AND owner_id = $2
-      RETURNING id, owner_id, hostel_id, data, created_at
-    `,
-    [req.params.id, req.user.ownerId],
-  );
+  const client = await getClient();
 
-  if (result.rowCount === 0) {
-    throw createHttpError(404, "Tenant not found.");
+  try {
+    await client.query("BEGIN");
+
+    await client.query(
+      `
+        UPDATE allocations
+        SET status = 'ENDED', end_date = CURRENT_DATE
+        WHERE owner_id = $1 AND tenant_id = $2 AND status = 'ACTIVE'
+      `,
+      [req.user.ownerId, req.params.id],
+    );
+
+    const result = await client.query(
+      `
+        DELETE FROM tenants
+        WHERE id = $1 AND owner_id = $2
+        RETURNING id, owner_id, hostel_id, data, created_at
+      `,
+      [req.params.id, req.user.ownerId],
+    );
+
+    if (result.rowCount === 0) {
+      throw createHttpError(404, "Tenant not found.");
+    }
+
+    await client.query("COMMIT");
+
+    return res.json({
+      message: "Tenant removed successfully.",
+      tenant: mapTenantRow(result.rows[0]),
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
   }
-
-  return res.json({
-    message: "Tenant removed successfully.",
-    tenant: mapTenantRow(result.rows[0]),
-  });
 }
 
 module.exports = {

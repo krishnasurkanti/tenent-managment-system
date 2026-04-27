@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
+import { useOwnerProfile } from "@/hooks/use-owner-profile";
 import { logoutOwner } from "@/services/auth/auth.service";
 import { cn } from "@/utils/cn";
 
@@ -35,6 +36,9 @@ const hostelNavigation = [
 export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const profile = useOwnerProfile();
+  const displayName = profile.name || profile.email || "Owner";
+  const initial = displayName.charAt(0).toUpperCase();
   useLockBodyScroll(open);
 
   const handleLogout = async () => {
@@ -125,7 +129,8 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
           <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[color:var(--fg-secondary)]">Hostel</p>
           <nav className="space-y-1.5">
         {hostelNavigation.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const hrefPath = item.href.split("?")[0];
+          const active = pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
 
           return (
             <button
@@ -153,10 +158,10 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
       <div className="border-t border-[color:var(--border)] px-4 py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--surface-strong)] text-sm font-semibold text-[color:var(--fg-primary)] ring-1 ring-[color:var(--border)]">
-            S
+            {initial}
           </div>
-          <div>
-            <p className="text-sm font-medium text-[color:var(--fg-primary)]">Surya Krishna</p>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-[color:var(--fg-primary)]">{displayName}</p>
             <p className="text-xs text-[color:var(--fg-secondary)]">Hostel Owner</p>
           </div>
         </div>

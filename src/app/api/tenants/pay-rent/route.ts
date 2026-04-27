@@ -63,7 +63,10 @@ export async function POST(request: Request) {
 
       const tenant = existingPayload.tenant;
       const billingAnchorDate = typeof tenant.billingAnchorDate === "string" ? tenant.billingAnchorDate : paidOnDate;
-      const nextDueDate = calculateNextDueDate(paidOnDate, billingAnchorDate);
+      const rawCycle = tenant.billingCycle;
+      const billingCycleForCalc: "daily" | "weekly" | "monthly" =
+        rawCycle === "daily" || rawCycle === "weekly" ? rawCycle : "monthly";
+      const nextDueDate = calculateNextDueDate(paidOnDate, billingAnchorDate, billingCycleForCalc);
       const paymentHistory = Array.isArray(tenant.paymentHistory) ? tenant.paymentHistory : [];
       const tone = getDueStatus(nextDueDate).tone;
 

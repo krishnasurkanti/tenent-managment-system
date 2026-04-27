@@ -231,12 +231,6 @@ export default function LoginPage() {
                     </div>
                   </label>
 
-                  <div className="flex items-center justify-end">
-                    <button type="button" className="text-xs font-medium text-[#f7bf53] transition hover:text-[#ffd983] sm:text-sm">
-                      Forgot Password?
-                    </button>
-                  </div>
-
                   <button
                     type="submit"
                     disabled={loading || demoLoading}

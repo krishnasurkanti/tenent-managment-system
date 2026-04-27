@@ -30,11 +30,14 @@ export function calculateNextDueDate(
 }
 
 export function formatPaymentDate(value: string) {
+  if (!value) return "—";
+  const d = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return "—";
   return new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
-  }).format(new Date(`${value}T00:00:00`));
+  }).format(d);
 }
 
 export function getDaysUntilDue(nextDueDate: string) {
