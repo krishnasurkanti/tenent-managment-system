@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getOwnerHostelInventory } from "@/data/ownerHostelStore";
 import { createTenantRecord, getTenantRecords } from "@/data/tenantStore";
 import { calculateNextDueDate } from "@/utils/payment";
-import { getOwnerSession } from "@/lib/session-mode";
+import { requireOwnerSession } from "@/lib/session-mode";
+import { PENDING_ID_IMAGE, PENDING_ID_NUMBER } from "@/types/tenant";
 import { backendFetch } from "@/services/core/backend-api";
 
 export const dynamic = "force-dynamic";
@@ -12,11 +13,8 @@ export async function GET(request: Request) {
   const hostelId = searchParams.get("hostelId");
   const tenantId = searchParams.get("tenantId");
   const historyLimit = Math.min(Number(searchParams.get("historyLimit") ?? 24), 120);
-  const session = await getOwnerSession();
-
-  if (session.mode === "guest") {
-    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
-  }
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
   if (session.isLive) {
     if (hostelId) {
@@ -74,11 +72,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const session = await getOwnerSession();
-
-  if (session.mode === "guest") {
-    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
-  }
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
   const formData = await request.formData();
 
@@ -154,9 +149,9 @@ export async function POST(request: Request) {
         paidOnDate,
         billingAnchorDate: hasAssignment ? moveInDate : paidOnDate,
         nextDueDate: calculateNextDueDate(paidOnDate, hasAssignment ? moveInDate : paidOnDate),
-        idNumber: idNumber || "PENDING-ID",
+        idNumber: idNumber || PENDING_ID_NUMBER,
         emergencyContact: emergencyContact || "To be added later",
-        idImageName: hasValidIdImage ? idImage.name : "pending-id-upload",
+        idImageName: hasValidIdImage ? idImage.name : PENDING_ID_IMAGE,
         assignment: hasAssignment
           ? {
               hostelId,
@@ -191,9 +186,9 @@ export async function POST(request: Request) {
     billingAnchorDate: paidOnDate,
     nextDueDate: calculateNextDueDate(paidOnDate, paidOnDate, billingCycle),
     billingCycle,
-    idNumber: idNumber || "PENDING-ID",
+    idNumber: idNumber || PENDING_ID_NUMBER,
     emergencyContact: emergencyContact || "To be added later",
-    idImageName: hasValidIdImage ? idImage.name : "pending-id-upload",
+    idImageName: hasValidIdImage ? idImage.name : PENDING_ID_IMAGE,
   });
 
   return NextResponse.json({ tenant }, { status: 201 });

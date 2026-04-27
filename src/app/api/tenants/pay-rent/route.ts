@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
 import { recordTenantPayment } from "@/data/tenantStore";
 import { savePaymentProofImage } from "@/lib/payment-proof-upload";
-import { getOwnerSession } from "@/lib/session-mode";
+import { requireOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
 import { calculateNextDueDate, getDueStatus } from "@/utils/payment";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const session = await getOwnerSession();
-
-  if (session.mode === "guest") {
-    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
-  }
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
   // In demo mode only the demo-owner may record payments (local owners must upgrade to live)
   if (session.isDemo && session.ownerId !== "demo-owner") {

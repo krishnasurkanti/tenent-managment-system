@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOwnerHostel, updateOwnerHostel } from "@/data/ownerHostelStore";
 import type { OwnerFloor } from "@/types/owner-hostel";
-import { getOwnerSession } from "@/lib/session-mode";
+import { requireOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
 import { normalizeFloors } from "@/utils/hostel-occupancy";
 
@@ -15,11 +15,8 @@ type RouteContext = {
 
 export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const session = await getOwnerSession();
-
-  if (session.mode === "guest") {
-    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
-  }
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
   if (session.isLive) {
     const backendResponse = await backendFetch(`/api/hostels/${id}`);
@@ -43,11 +40,8 @@ export async function GET(_request: Request, context: RouteContext) {
 
 export async function PUT(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const session = await getOwnerSession();
-
-  if (session.mode === "guest") {
-    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
-  }
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
   if (session.isLive) {
     const body = (await request.json()) as {

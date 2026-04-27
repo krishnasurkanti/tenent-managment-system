@@ -1,6 +1,7 @@
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { getOwnerSession } from "@/lib/session-mode";
+import { requireOwnerSession } from "@/lib/session-mode";
+import { PENDING_ID_IMAGE } from "@/types/tenant";
 import { backendFetch } from "@/services/core/backend-api";
 
 export const dynamic = "force-dynamic";
@@ -26,11 +27,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session = await getOwnerSession();
-
-  if (session.mode === "guest") {
-    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
-  }
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
   const formData = await request.formData();
   const idNumber = String(formData.get("idNumber") ?? "").trim().toUpperCase();
@@ -48,7 +46,7 @@ export async function PATCH(
     if (!ALLOWED.includes(idImage.type)) return NextResponse.json({ message: "Invalid file type." }, { status: 400 });
   }
 
-  let idImageName = "pending-id-upload";
+  let idImageName = PENDING_ID_IMAGE;
   if (hasImage && idImage instanceof File) {
     idImageName = await saveIdImage(idImage, id);
   }

@@ -13,6 +13,12 @@ function buildBedId(unitId: string, index: number) {
   return `${unitId}-bed-${index + 1}`;
 }
 
+export function getSharingLabel(bedCount: string | number): string {
+  const n = Number(bedCount);
+  if (!Number.isFinite(n) || n < 1) return "";
+  return n === 1 ? "Single sharing" : `${n} sharing`;
+}
+
 export function getRoomCapacity(type: OwnerHostel["type"], room: Pick<OwnerRoom, "bedCount">) {
   return type === "RESIDENCE" ? 1 : Math.max(room.bedCount, 1);
 }

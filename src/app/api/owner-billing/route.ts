@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { getOwnerHostels } from "@/data/ownerHostelStore";
 import { getOwnerBilling } from "@/data/adminStore";
 import { getTenantRecords } from "@/data/tenantStore";
-import { getOwnerSession } from "@/lib/session-mode";
+import { requireOwnerSession } from "@/lib/session-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -27,10 +27,8 @@ function getCycleWindow(anchorDateIso: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getOwnerSession();
-  if (session.mode === "guest") {
-    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
-  }
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
   const hostelId = request.nextUrl.searchParams.get("hostelId");
   if (!hostelId) {

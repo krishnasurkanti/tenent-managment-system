@@ -9,6 +9,7 @@ import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
 import { ownerInputClass, ownerPanelClass, ownerSubtlePanelClass } from "@/components/ui/owner-theme";
 import { fetchOwnerHostel, saveOwnerHostel } from "@/services/owner/owner-hostels.service";
 import { csrfFetch } from "@/lib/csrf-client";
+import { getSharingLabel } from "@/utils/hostel-occupancy";
 
 const HOSTEL_DRAFT_KEY = "owner-create-hostel-draft-v1";
 
@@ -43,13 +44,6 @@ function createRoom(): RoomForm {
 
 function isRoomComplete(room: RoomForm) {
   return room.roomNumber.trim() && room.bedCount && Number(room.bedCount) > 0;
-}
-
-function getSharingLabel(bedCount: string) {
-  const beds = Number(bedCount);
-  if (!Number.isFinite(beds) || beds < 1) return "";
-  if (beds === 1) return "Single sharing";
-  return `${beds} sharing`;
 }
 
 function syncBeds(current: BedForm[], count: number): BedForm[] {

@@ -22,7 +22,7 @@ import {
   ownerTableHeadClass,
 } from "@/components/ui/owner-theme";
 import { formatPaymentDate, getDueStatus } from "@/utils/payment";
-import type { TenantRecord } from "@/types/tenant";
+import { PENDING_ID_IMAGE, PENDING_ID_NUMBER, type TenantRecord } from "@/types/tenant";
 
 export default function OwnerTenantsPage() {
   return (
@@ -459,7 +459,7 @@ function ActionButton({
 // ── Missing info helpers ───────────────────────────────────────────────────
 
 function hasMissingInfo(tenant: TenantRecord) {
-  return tenant.idNumber === "PENDING-ID" || tenant.idImageName === "pending-id-upload";
+  return tenant.idNumber === PENDING_ID_NUMBER || tenant.idImageName === PENDING_ID_IMAGE;
 }
 
 function CompleteProfileModal({
@@ -471,13 +471,13 @@ function CompleteProfileModal({
   onClose: () => void;
   onSaved: (updated: TenantRecord) => void;
 }) {
-  const [idNumber, setIdNumber] = useState(tenant.idNumber === "PENDING-ID" ? "" : tenant.idNumber);
+  const [idNumber, setIdNumber] = useState(tenant.idNumber === PENDING_ID_NUMBER ? "" : tenant.idNumber);
   const [photo, setPhoto] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const missingId = tenant.idNumber === "PENDING-ID";
-  const missingPhoto = tenant.idImageName === "pending-id-upload";
+  const missingId = tenant.idNumber === PENDING_ID_NUMBER;
+  const missingPhoto = tenant.idImageName === PENDING_ID_IMAGE;
 
   const handleSubmit = async () => {
     setError("");

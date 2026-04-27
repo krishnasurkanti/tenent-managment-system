@@ -33,3 +33,8 @@ export async function getOwnerSession() {
     isLive: mode === "live",
   };
 }
+
+export async function requireOwnerSession() {
+  const session = await getOwnerSession();
+  return session.mode === "guest" ? null : session;
+}

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, Lock, Mail, MapPin, Phone, Plus, ShieldCheck, Trash2, User } from "lucide-react";
 import { csrfFetch } from "@/lib/csrf-client";
+import { getSharingLabel } from "@/utils/hostel-occupancy";
 
 // ─── Floor / Room types (mirrors OwnerCreateHostelPage) ─────────────────────
 
@@ -16,12 +17,6 @@ function createFloor(index: number): FloorForm {
   return { id: `floor-${uid()}`, floorLabel: `Floor ${index}`, rooms: [createRoom()] };
 }
 function isRoomComplete(r: RoomForm) { return r.roomNumber.trim() && Number(r.bedCount) > 0; }
-function sharingLabel(bedCount: string) {
-  const n = Number(bedCount);
-  if (!n || n < 1) return "";
-  return n === 1 ? "Single sharing" : `${n} sharing`;
-}
-
 // ─── Page steps ─────────────────────────────────────────────────────────────
 
 type Step = "loading" | "invalid" | "account" | "hostel" | "floors" | "tenants" | "submitting" | "done";
@@ -189,7 +184,7 @@ export default function OwnerSignupPage() {
           id: r.id,
           roomNumber: r.roomNumber,
           bedCount: Number(r.bedCount),
-          sharingType: sharingLabel(r.bedCount),
+          sharingType: getSharingLabel(r.bedCount),
         })),
       })),
     };
@@ -234,7 +229,7 @@ export default function OwnerSignupPage() {
     fd.append("floorNumber", String(tFloorIdx + 1));
     fd.append("roomNumber", selectedRoom.roomNumber);
     fd.append("moveInDate", tMoveIn);
-    fd.append("sharingType", sharingLabel(selectedRoom.bedCount) || "1 sharing");
+    fd.append("sharingType", getSharingLabel(selectedRoom.bedCount) || "1 sharing");
     fd.append("propertyType", hostelType);
     if (hostelType === "PG" && Number(selectedRoom.bedCount) > 0) {
       fd.append("bedId", `${selectedRoom.id}-bed-${tBedIdx + 1}`);
@@ -475,7 +470,7 @@ export default function OwnerSignupPage() {
                                   placeholder="e.g. 3"
                                   className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#f2bb4d]/50" />
                                 {room.bedCount && Number(room.bedCount) > 0 &&
-                                  <p className="mt-1 text-[10px] text-white/35">{sharingLabel(room.bedCount)}</p>}
+                                  <p className="mt-1 text-[10px] text-white/35">{getSharingLabel(room.bedCount)}</p>}
                               </div>
                             </div>
                           )}

@@ -2,18 +2,15 @@ import { NextResponse } from "next/server";
 import { getOwnerHostels, saveOwnerHostel } from "@/data/ownerHostelStore";
 import { seedDemoTenantsForHostel } from "@/data/tenantStore";
 import type { OwnerFloor } from "@/types/owner-hostel";
-import { getOwnerSession } from "@/lib/session-mode";
+import { requireOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
 import { normalizeFloors } from "@/utils/hostel-occupancy";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await getOwnerSession();
-
-  if (session.mode === "guest") {
-    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
-  }
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
   if (session.isLive) {
     const backendResponse = await backendFetch("/api/hostels");
@@ -30,11 +27,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await getOwnerSession();
-
-  if (session.mode === "guest") {
-    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
-  }
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
   const body = (await request.json()) as {
     hostelName?: string;

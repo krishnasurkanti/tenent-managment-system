@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
 import { addPaymentProof } from "@/data/tenantStore";
 import { savePaymentProofImage } from "@/lib/payment-proof-upload";
-import { getOwnerSession } from "@/lib/session-mode";
+import { requireOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const session = await getOwnerSession();
-
-  if (session.mode === "guest") {
-    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
-  }
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
   const formData = await request.formData();
 

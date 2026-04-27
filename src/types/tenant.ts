@@ -1,3 +1,6 @@
+export const PENDING_ID_NUMBER = "PENDING-ID";
+export const PENDING_ID_IMAGE = "pending-id-upload";
+
 export type BillingCycle = "daily" | "weekly" | "monthly";
 
 export type TenantRecord = {

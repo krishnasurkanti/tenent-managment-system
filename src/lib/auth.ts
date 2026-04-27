@@ -45,12 +45,3 @@ export async function verifyJwtRole(token: string): Promise<SessionRole | null> 
   }
   return null;
 }
-
-export function getRoleFromAccessToken(token: string): SessionRole | null {
-  const payload = decodeJwtPayload(token);
-  const role = payload?.role;
-  if (role === "owner" || role === "staff" || role === "super_admin" || role === "tenant") {
-    return role;
-  }
-  return null;
-}
