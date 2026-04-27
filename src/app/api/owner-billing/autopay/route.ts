@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { setOwnerAutoPay } from "@/data/adminStore";
+import { requireOwnerSession } from "@/lib/session-mode";
 
 export const dynamic = "force-dynamic";
 
 export async function PATCH(request: Request) {
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+
   const body = (await request.json()) as { hostelId?: string; enabled?: boolean };
 
   if (!body.hostelId) {

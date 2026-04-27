@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { getOwnerHostel, saveOwnerHostel, updateOwnerHostel } from "@/data/ownerHostelStore";
 import type { OwnerFloor } from "@/types/owner-hostel";
-import { getOwnerSession } from "@/lib/session-mode";
+import { requireOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
 import { normalizeFloors } from "@/utils/hostel-occupancy";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await getOwnerSession();
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
   if (session.isLive) {
     const backendResponse = await backendFetch("/api/hostels");
@@ -34,7 +35,9 @@ export async function PUT(request: Request) {
 }
 
 async function saveOrUpdateHostel(request: Request, mode: "create" | "update") {
-  const session = await getOwnerSession();
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+
   const body = (await request.json()) as {
     hostelId?: string;
     hostelName?: string;

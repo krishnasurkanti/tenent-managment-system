@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { ownerPayBilling } from "@/data/adminStore";
+import { requireOwnerSession } from "@/lib/session-mode";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+
   const body = (await request.json()) as {
     hostelId?: string;
     paymentMethod?: "online" | "manual";
