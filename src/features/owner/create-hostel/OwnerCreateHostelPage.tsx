@@ -27,7 +27,7 @@ type RoomForm = {
 };
 
 function createBed(): BedForm {
-  return { name: "", phone: "", date: "", idNumber: "", skipped: false };
+  return { name: "", phone: "", date: new Date().toISOString().split("T")[0], idNumber: "", skipped: false };
 }
 
 function createRoom(): RoomForm {
