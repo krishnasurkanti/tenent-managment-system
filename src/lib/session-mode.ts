@@ -1,12 +1,11 @@
 import { cookies } from "next/headers";
-import { ACCESS_TOKEN_COOKIE_NAME, decodeJwtPayload, getRoleFromAccessToken } from "@/lib/auth";
+import { ACCESS_TOKEN_COOKIE_NAME, verifyJwtPayload, verifyJwtRole } from "@/lib/auth";
 
 export type OwnerSessionMode = "demo" | "live" | "guest";
 
 export async function getOwnerSession() {
   const token = (await cookies()).get(ACCESS_TOKEN_COOKIE_NAME)?.value ?? "";
-  const payload = decodeJwtPayload(token);
-  const role = getRoleFromAccessToken(token);
+  const [payload, role] = await Promise.all([verifyJwtPayload(token), verifyJwtRole(token)]);
 
   const ownerId =
     typeof payload?.ownerId === "number" || typeof payload?.ownerId === "string"

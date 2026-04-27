@@ -25,8 +25,6 @@ type PlanCard = {
 };
 
 const PLAN_ORDER: PlanId[] = ["starter", "growth", "pro", "scale"];
-const FOUNDING_OFFER_SLOTS = 15;
-const FOUNDING_SLOTS_REMAINING = 8;
 
 const PLANS: PlanCard[] = [
   {
@@ -343,7 +341,7 @@ export default function OwnerBillingPage() {
 
               <p className={cn("mt-0.5 text-[10px]", plan.id === "founding" ? "text-[#fbbf24]/55" : "text-white/30")}>
                 {plan.id === "founding"
-                  ? `${FOUNDING_SLOTS_REMAINING}/${FOUNDING_OFFER_SLOTS} founder slots left • Rs 5 per tenant after 200`
+                  ? "Founding member plan • Rs 5 per tenant after 200"
                   : plan.id === "pro"
                     ? `Rs 5 per tenant after 150 • Rs 250 per extra hostel`
                     : `Flat cap at 50 tenants • Rs 250 per extra hostel`}

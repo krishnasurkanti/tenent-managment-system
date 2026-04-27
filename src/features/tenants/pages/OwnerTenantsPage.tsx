@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
 import { SkeletonBlock, SkeletonStatCard, SkeletonTableRow } from "@/components/ui/skeleton";
 import { assignTenantRoom } from "@/services/tenants/tenants.service";
+import { csrfFetch } from "@/lib/csrf-client";
 import { useHostelContext } from "@/store/hostel-context";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
 import {
@@ -487,7 +488,7 @@ function CompleteProfileModal({
       fd.append("idNumber", idNumber.trim().toUpperCase());
       if (photo) fd.append("idImage", photo);
 
-      const res = await fetch(`/api/tenants/${encodeURIComponent(tenant.tenantId)}`, {
+      const res = await csrfFetch(`/api/tenants/${encodeURIComponent(tenant.tenantId)}`, {
         method: "PATCH",
         body: fd,
       });

@@ -1,3 +1,5 @@
+import { jwtVerify } from "jose";
+
 export const ACCESS_TOKEN_COOKIE_NAME = "access_token";
 export const REFRESH_TOKEN_COOKIE_NAME = "refresh_token";
 
@@ -12,6 +14,36 @@ export function decodeJwtPayload(token: string): Record<string, unknown> | null 
   } catch {
     return null;
   }
+}
+
+function getJwtSecret(): Uint8Array | null {
+  const raw = (process.env.JWT_SECRET ?? "").trim();
+  if (!raw) return null;
+  return new TextEncoder().encode(raw);
+}
+
+export async function verifyJwtPayload(token: string): Promise<Record<string, unknown> | null> {
+  if (!token) return null;
+  const secret = getJwtSecret();
+  if (!secret) {
+    // No secret configured — fall back to decode-only (dev / misconfigured env)
+    return decodeJwtPayload(token);
+  }
+  try {
+    const { payload } = await jwtVerify(token, secret);
+    return payload as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+export async function verifyJwtRole(token: string): Promise<SessionRole | null> {
+  const payload = await verifyJwtPayload(token);
+  const role = payload?.role;
+  if (role === "owner" || role === "staff" || role === "super_admin" || role === "tenant") {
+    return role as SessionRole;
+  }
+  return null;
 }
 
 export function getRoleFromAccessToken(token: string): SessionRole | null {

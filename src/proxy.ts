@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
   ACCESS_TOKEN_COOKIE_NAME,
-  getRoleFromAccessToken,
+  verifyJwtRole,
 } from "@/lib/auth";
 
 const CSRF_COOKIE = "csrf_token";
@@ -18,14 +18,10 @@ const CSRF_EXEMPT = new Set([
 ]);
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-function getRole(request: NextRequest) {
-  const token = request.cookies.get(ACCESS_TOKEN_COOKIE_NAME)?.value ?? "";
-  return getRoleFromAccessToken(token);
-}
-
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const role = getRole(request);
+  const token = request.cookies.get(ACCESS_TOKEN_COOKIE_NAME)?.value ?? "";
+  const role = await verifyJwtRole(token);
   const ownerAuthenticated = role === "owner" || role === "staff";
   const adminAuthenticated = role === "super_admin";
   const isSecure = process.env.NODE_ENV === "production";

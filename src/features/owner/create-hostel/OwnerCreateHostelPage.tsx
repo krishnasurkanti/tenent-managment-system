@@ -2,18 +2,20 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Building2, ChevronRight, CreditCard, Home, ImageIcon, MapPin, Phone, Plus, Trash2, User } from "lucide-react";
+import { Banknote, Building2, ChevronRight, CreditCard, Home, ImageIcon, MapPin, Phone, Plus, Trash2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
 import { ownerInputClass, ownerPanelClass, ownerSubtlePanelClass } from "@/components/ui/owner-theme";
 import { fetchOwnerHostel, saveOwnerHostel } from "@/services/owner/owner-hostels.service";
+import { csrfFetch } from "@/lib/csrf-client";
 
 const HOSTEL_DRAFT_KEY = "owner-create-hostel-draft-v1";
 
 type BedForm = {
   name: string;
   phone: string;
+  rent: string;
   date: string;
   idNumber: string;
   skipped: boolean;
@@ -27,7 +29,7 @@ type RoomForm = {
 };
 
 function createBed(): BedForm {
-  return { name: "", phone: "", date: new Date().toISOString().split("T")[0], idNumber: "", skipped: false };
+  return { name: "", phone: "", rent: "", date: new Date().toISOString().split("T")[0], idNumber: "", skipped: false };
 }
 
 function createRoom(): RoomForm {
@@ -258,7 +260,7 @@ function CreateHostelPageContent() {
           fd.append("floorNumber", "1");
           fd.append("roomNumber", room.roomNumber);
           fd.append("moveInDate", bed.date || today);
-          fd.append("monthlyRent", "0");
+          fd.append("monthlyRent", bed.rent.trim() || "0");
           fd.append("rentPaid", "0");
           fd.append("paidOnDate", bed.date || today);
           fd.append("sharingType", Number(room.bedCount) === 1 ? "Single sharing" : `${room.bedCount} sharing`);
@@ -270,7 +272,7 @@ function CreateHostelPageContent() {
           if (photo) fd.append("idImage", photo);
           const label = `${bed.name.trim()} (Room ${room.roomNumber}, Bed ${bedIdx + 1})`;
           tenantRequests.push(
-            fetch("/api/tenants", { method: "POST", body: fd })
+            csrfFetch("/api/tenants", { method: "POST", body: fd })
               .then(async (res) => ({ ok: res.ok, label }))
               .catch(() => ({ ok: false, label }))
           );
@@ -289,7 +291,8 @@ function CreateHostelPageContent() {
       }
     }
 
-    window.location.href = "/owner/dashboard";
+    router.replace("/owner/dashboard");
+    router.refresh();
   };
 
   const handleNextFromBasics = () => {
@@ -553,6 +556,19 @@ function CreateHostelPageContent() {
                                     value={bed.phone}
                                     onChange={(e) => updateBed(room.id, bedIdx, "phone", e.target.value.replace(/\D/g, ""))}
                                     placeholder="Phone number"
+                                    disabled={saving}
+                                    className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 pl-8 text-[13px] text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
+                                  />
+                                </div>
+                                <div className="relative">
+                                  <Banknote className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
+                                  <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    min="0"
+                                    value={bed.rent}
+                                    onChange={(e) => updateBed(room.id, bedIdx, "rent", e.target.value)}
+                                    placeholder="Monthly rent (Rs)"
                                     disabled={saving}
                                     className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 pl-8 text-[13px] text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
                                   />

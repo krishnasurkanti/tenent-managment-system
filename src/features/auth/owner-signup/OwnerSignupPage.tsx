@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, Lock, Mail, MapPin, Phone, Plus, ShieldCheck, Trash2, User } from "lucide-react";
+import { csrfFetch } from "@/lib/csrf-client";
 
 // ─── Floor / Room types (mirrors OwnerCreateHostelPage) ─────────────────────
 
@@ -194,7 +195,7 @@ export default function OwnerSignupPage() {
     };
 
     try {
-      const res = await fetch("/api/owner/signup", {
+      const res = await csrfFetch("/api/owner/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -242,7 +243,7 @@ export default function OwnerSignupPage() {
 
     setTSaving(true);
     try {
-      const res = await fetch("/api/tenants", { method: "POST", body: fd });
+      const res = await csrfFetch("/api/tenants", { method: "POST", body: fd });
       const data = (await res.json()) as { message?: string };
       if (!res.ok) { setTError(data.message ?? "Failed to add tenant."); setTSaving(false); return; }
       setAddedTenants(prev => [...prev, {
