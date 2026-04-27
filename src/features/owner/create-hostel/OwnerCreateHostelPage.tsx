@@ -242,18 +242,18 @@ function CreateHostelPageContent() {
       window.localStorage.removeItem(HOSTEL_DRAFT_KEY);
     }
 
-    // Submit tenants for all filled beds (fire-and-forget per bed)
+    // Submit tenants for all filled beds
     if (!isEditMode) {
       const today = new Date().toISOString().split("T")[0];
-      const tenantRequests: Promise<void>[] = [];
+      const tenantRequests: Promise<{ ok: boolean; label: string }>[] = [];
 
-      cleanedRooms.forEach((room, roomIdx) => {
+      cleanedRooms.forEach((room) => {
         room.beds.forEach((bed, bedIdx) => {
-          if (bed.skipped || !bed.name.trim() || !bed.phone.trim()) return;
+          if (bed.skipped || !bed.name.trim()) return;
           const fd = new FormData();
           fd.append("tenantType", "old");
           fd.append("fullName", bed.name.trim());
-          fd.append("phone", bed.phone.trim());
+          if (bed.phone.trim()) fd.append("phone", bed.phone.trim());
           fd.append("hostelId", hostelId);
           fd.append("floorNumber", "1");
           fd.append("roomNumber", room.roomNumber);
@@ -266,17 +266,27 @@ function CreateHostelPageContent() {
           fd.append("bedId", `${room.id}-bed-${bedIdx + 1}`);
           fd.append("bedLabel", `Bed ${bedIdx + 1}`);
           if (bed.idNumber.trim()) fd.append("idNumber", bed.idNumber.trim());
-          const photoKey = `${room.id}-${bedIdx}`;
-          const photo = bedPhotos[photoKey];
+          const photo = bedPhotos[`${room.id}-${bedIdx}`];
           if (photo) fd.append("idImage", photo);
+          const label = `${bed.name.trim()} (Room ${room.roomNumber}, Bed ${bedIdx + 1})`;
           tenantRequests.push(
-            fetch("/api/tenants", { method: "POST", body: fd }).then(() => {}).catch(() => {})
+            fetch("/api/tenants", { method: "POST", body: fd })
+              .then(async (res) => ({ ok: res.ok, label }))
+              .catch(() => ({ ok: false, label }))
           );
-          void roomIdx;
         });
       });
 
-      await Promise.allSettled(tenantRequests);
+      const results = await Promise.allSettled(tenantRequests);
+      const failed = results
+        .filter((r): r is PromiseFulfilledResult<{ ok: boolean; label: string }> => r.status === "fulfilled" && !r.value.ok)
+        .map((r) => r.value.label);
+
+      if (failed.length > 0) {
+        setSaving(false);
+        setError(`Hostel saved. Failed to add ${failed.length} tenant(s): ${failed.join(", ")}. You can add them manually from the Tenants page.`);
+        return;
+      }
     }
 
     window.location.href = "/owner/dashboard";
