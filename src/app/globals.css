@@ -377,6 +377,7 @@
   .smart-scroll-area {
     min-height: 0;
     flex: 1 1 auto;
+    overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: contain;
     scrollbar-gutter: stable;
@@ -384,16 +385,23 @@
   }
 
   .smart-scroll-area::after {
-    content: "";
-    display: block;
+    content: "· · ·";
+    display: flex;
+    align-items: center;
+    justify-content: center;
     height: calc(72px + env(safe-area-inset-bottom, 0px));
     width: 100%;
     flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.1);
+    font-size: 14px;
+    letter-spacing: 6px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   @media (min-width: 1280px) {
     .smart-scroll-area::after {
       height: clamp(40px, 5vh, 64px);
+      padding-bottom: 0;
     }
   }
 

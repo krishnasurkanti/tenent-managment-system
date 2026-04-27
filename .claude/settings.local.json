@@ -5,7 +5,8 @@
       "Bash(npm install *)",
       "Bash(npx tsc *)",
       "Bash(npm test *)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(gh pr *)"
     ]
   }
 }

@@ -62,7 +62,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="h-dvh overflow-y-auto overscroll-contain bg-[#090912] px-2 py-2 text-white sm:px-4 sm:py-4 lg:px-6 lg:py-6">
+    <main className="h-dvh overflow-x-hidden overflow-y-auto overscroll-contain bg-[#090912] px-2 py-2 text-white sm:px-4 sm:py-4 lg:px-6 lg:py-6">
       <div className="relative mx-auto flex min-h-[calc(100vh-1rem)] min-h-[calc(100dvh-1rem)] w-full max-w-7xl flex-1 flex-col overflow-hidden rounded-[8px] border border-white/10 bg-[radial-gradient(circle_at_18%_36%,rgba(57,77,160,0.22),transparent_24%),radial-gradient(circle_at_60%_75%,rgba(236,172,66,0.18),transparent_18%),linear-gradient(180deg,#0d0f1a_0%,#090b14_100%)] shadow-[0_36px_100px_rgba(0,0,0,0.42)] sm:min-h-[calc(100vh-2rem)] sm:min-h-[calc(100dvh-2rem)] lg:rounded-[10px]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[length:14px_14px] opacity-20" />
 

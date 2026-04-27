@@ -279,7 +279,7 @@ export default function OwnerSignupPage() {
   const currentStepIndex = STEPS.findIndex(s => s.key === step);
 
   return (
-    <main className="min-h-dvh overflow-y-auto bg-[#090912] px-4 py-6 text-white sm:px-6">
+    <main className="min-h-dvh overflow-x-hidden overflow-y-auto bg-[#090912] px-4 py-6 text-white sm:px-6">
       <div className="mx-auto w-full max-w-lg">
 
         {/* Logo */}

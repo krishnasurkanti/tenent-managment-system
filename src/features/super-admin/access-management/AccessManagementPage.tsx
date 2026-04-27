@@ -265,7 +265,7 @@ function AccessManagementPageInner() {
   };
 
   return (
-    <div className="h-dvh overflow-y-auto bg-[linear-gradient(180deg,#09090b_0%,#111114_100%)] text-white">
+    <div className="h-dvh overflow-x-hidden overflow-y-auto bg-[linear-gradient(180deg,#09090b_0%,#111114_100%)] text-white">
       <header className="border-b border-white/10 bg-[rgba(9,9,11,0.88)] px-4 py-2 backdrop-blur-xl sm:px-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-3">

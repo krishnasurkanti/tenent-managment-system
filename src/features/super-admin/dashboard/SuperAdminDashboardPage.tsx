@@ -59,7 +59,7 @@ export default function SuperAdminDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen overflow-y-auto bg-[#0f172a] text-white">
+    <div className="h-dvh overflow-x-hidden overflow-y-auto bg-[#0f172a] text-white">
       <header className="border-b border-white/10 bg-[#0d1526] px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <div className="flex items-center gap-3">
