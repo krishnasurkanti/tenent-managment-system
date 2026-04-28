@@ -137,9 +137,7 @@ export default function AcceptInvitePage() {
   }
 
   return (
-    <main className="relative min-h-dvh bg-[#090912] text-white">
-      {/* Dot grid */}
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.045)_1px,transparent_1px)] bg-[length:18px_18px] opacity-80" />
+    <main className="min-h-dvh bg-[#090912] text-white [background-image:radial-gradient(circle_at_center,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:18px_18px] [overflow-x:clip] [touch-action:pan-y]">
 
       {/* Sticky top bar */}
       <header className="sticky top-0 z-50 flex min-h-[52px] items-center justify-between gap-3 border-b border-white/8 bg-[rgba(9,9,11,0.88)] px-4 py-2.5 backdrop-blur-xl sm:px-6">
@@ -156,7 +154,7 @@ export default function AcceptInvitePage() {
       </header>
 
       {/* Content */}
-      <div className="relative z-10 mx-auto w-full max-w-[1100px] px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6 lg:grid lg:grid-cols-[1fr_1fr] lg:items-center lg:gap-10 lg:py-10">
+      <div className="mx-auto w-full max-w-[1100px] px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6 lg:grid lg:grid-cols-[1fr_1fr] lg:items-center lg:gap-10 lg:py-10">
 
         {/* Left — invite context (desktop only) */}
         <div className="hidden lg:flex lg:flex-col lg:justify-center">
@@ -179,7 +177,7 @@ export default function AcceptInvitePage() {
         </div>
 
         {/* Right — form */}
-        <div className="mx-auto w-full max-w-[min(100%,440px)] lg:mx-0 lg:max-w-none">
+        <div className="w-[min(calc(100vw-2rem),440px)] mx-auto lg:w-full lg:max-w-none lg:mx-0">
           {/* Mobile invite banner */}
           <div className="mb-5 rounded-2xl border border-[#f59e0b]/20 bg-[#f59e0b]/[0.06] px-4 py-3 lg:hidden">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#f7bf53]">You&apos;re invited</p>

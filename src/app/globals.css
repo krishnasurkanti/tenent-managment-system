@@ -115,6 +115,7 @@
     overscroll-behavior: none;
     color-scheme: light;
     overflow-x: clip;
+    touch-action: pan-y;
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
   }
@@ -130,6 +131,7 @@
     overflow-x: hidden;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     user-select: none;
     -webkit-user-select: none;
   }
@@ -402,8 +404,9 @@
     touch-action: pan-y;
   }
 
-  /* Restore horizontal scroll for explicit overflow containers inside smart-scroll-area */
-  .smart-scroll-area .overflow-x-auto {
+  /* Restore horizontal scroll for explicit overflow containers */
+  .smart-scroll-area .overflow-x-auto,
+  .overflow-x-auto {
     touch-action: pan-x pan-y pinch-zoom;
   }
 

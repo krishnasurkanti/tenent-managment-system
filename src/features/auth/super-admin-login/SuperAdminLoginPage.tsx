@@ -48,10 +48,7 @@ export default function SuperAdminLoginPage() {
   };
 
   return (
-    <main className="relative min-h-dvh bg-[#090912] text-white">
-      {/* Dot grid */}
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.045)_1px,transparent_1px)] bg-[length:18px_18px] opacity-80" />
-
+    <main className="min-h-dvh bg-[#090912] text-white [background-image:radial-gradient(circle_at_center,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:18px_18px] [overflow-x:clip] [touch-action:pan-y]">
       {/* Sticky top bar */}
       <header className="sticky top-0 z-50 flex min-h-[52px] items-center justify-end gap-3 border-b border-white/8 bg-[rgba(9,9,11,0.88)] px-4 py-2.5 backdrop-blur-xl sm:px-6">
         <a
@@ -64,8 +61,8 @@ export default function SuperAdminLoginPage() {
       </header>
 
       {/* Centered card */}
-      <div className="relative z-10 flex min-h-[calc(100dvh-52px)] items-center justify-center px-4 py-8 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
-        <div className="w-full max-w-[min(100%,420px)]">
+      <div className="flex min-h-[calc(100dvh-52px)] items-center justify-center py-8 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+        <div className="w-[min(calc(100vw-2rem),420px)]">
           <div className="rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-7">
 
             <div className="flex items-center gap-3">
