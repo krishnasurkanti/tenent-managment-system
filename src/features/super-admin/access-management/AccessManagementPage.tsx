@@ -306,7 +306,7 @@ function AccessManagementPageInner() {
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
       <main className="mx-auto w-full max-w-6xl px-4 py-4 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
         {/* Add Owner Form */}
         {formOpen ? (

@@ -82,7 +82,7 @@ export default function SuperAdminDashboardPage() {
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
       <main className="mx-auto max-w-5xl px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
         <div className="mb-6 grid gap-3 sm:grid-cols-2">
           <button
