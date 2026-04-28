@@ -97,6 +97,7 @@
   }
 
   * {
+    box-sizing: border-box;
     border-color: var(--border);
     min-width: 0;
   }

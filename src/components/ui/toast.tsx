@@ -42,14 +42,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div
         aria-live="polite"
         aria-atomic="false"
-        className="pointer-events-none fixed bottom-5 right-4 z-[9999] flex flex-col gap-2"
+        className="pointer-events-none fixed bottom-5 right-4 z-[9999] flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-2"
       >
         {toasts.map((t) => (
           <div
             key={t.id}
             role="status"
             className={cn(
-              "pointer-events-auto min-w-[220px] max-w-xs rounded-xl border px-4 py-2.5 text-sm font-medium shadow-lg animate-[float-up_var(--motion-medium)_var(--ease-enter)_both]",
+              "pointer-events-auto w-full rounded-xl border px-4 py-2.5 text-sm font-medium shadow-lg animate-[float-up_var(--motion-medium)_var(--ease-enter)_both]",
               variantClass[t.variant],
             )}
           >
