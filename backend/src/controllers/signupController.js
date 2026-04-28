@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { query } = require("../config/db");
+const { getClient, query } = require("../config/db");
 const { createHttpError } = require("../utils/httpErrors");
 
 function signToken(owner) {
@@ -40,69 +40,76 @@ async function registerWithKey(req, res) {
   if (!hostelName?.trim()) throw createHttpError(400, "Hostel name is required.");
   if (!hostelAddress?.trim()) throw createHttpError(400, "Hostel address is required.");
 
-  // Re-validate key (atomic check)
-  const keyResult = await query(
-    "SELECT id FROM signup_keys WHERE key = $1 AND status = 'active' LIMIT 1",
-    [key],
-  );
-  if (keyResult.rowCount === 0) {
-    throw createHttpError(410, "Signup link is invalid or already used.");
-  }
-  const keyId = keyResult.rows[0].id;
-
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedPhone = phoneNumber?.trim() || null;
-
-  const existing = await query("SELECT id FROM owners WHERE email = $1 LIMIT 1", [normalizedEmail]);
-  if (existing.rowCount > 0) throw createHttpError(409, "An account with this email already exists.");
-
   const hashedPassword = await bcrypt.hash(password, 12);
-
-  const ownerResult = await query(
-    `INSERT INTO owners (email, password, name, phone_number, status, plan, plan_status, trial_start_date)
-     VALUES ($1, $2, $3, $4, 'active', 'starter', 'trial', NOW())
-     RETURNING id, email, name, phone_number, status, plan, plan_status, trial_start_date`,
-    [normalizedEmail, hashedPassword, name.trim(), normalizedPhone],
-  );
-  const owner = ownerResult.rows[0];
-
   const validHostelType = ["PG", "RESIDENCE"].includes(hostelType) ? hostelType : "PG";
-
   const floorsData = Array.isArray(floors) && floors.length > 0 ? floors : [];
+  const client = await getClient();
 
-  const hostelResult = await query(
-    `INSERT INTO hostels (owner_id, name, address, type, data)
-     VALUES ($1, $2, $3, $4, $5::jsonb)
-     RETURNING id, name`,
-    [owner.id, hostelName.trim(), hostelAddress.trim(), validHostelType, JSON.stringify({ floors: floorsData })],
-  );
-  const hostel = hostelResult.rows[0];
+  try {
+    await client.query("BEGIN");
 
-  // Burn the key — single use
-  await query(
-    "UPDATE signup_keys SET status = 'used', used_at = NOW(), used_by_owner_id = $1 WHERE id = $2",
-    [owner.id, keyId],
-  );
+    const keyResult = await client.query(
+      "SELECT id FROM signup_keys WHERE key = $1 AND status = 'active' LIMIT 1 FOR UPDATE",
+      [key],
+    );
+    if (keyResult.rowCount === 0) {
+      throw createHttpError(410, "Signup link is invalid or already used.");
+    }
+    const keyId = keyResult.rows[0].id;
 
-  return res.status(201).json({
-    ok: true,
-    message: "Account and hostel created successfully.",
-    token: signToken(owner),
-    owner: {
-      id: owner.id,
-      email: owner.email,
-      name: owner.name,
-      phoneNumber: owner.phone_number,
-      status: owner.status,
-      plan: owner.plan,
-      planStatus: owner.plan_status,
-      trialStartDate: owner.trial_start_date,
-    },
-    hostel: {
-      id: String(hostel.id),
-      hostelName: hostel.name,
-    },
-  });
+    const existing = await client.query("SELECT id FROM owners WHERE email = $1 LIMIT 1", [normalizedEmail]);
+    if (existing.rowCount > 0) throw createHttpError(409, "An account with this email already exists.");
+
+    const ownerResult = await client.query(
+      `INSERT INTO owners (email, password, name, phone_number, status, plan, plan_status, trial_start_date)
+       VALUES ($1, $2, $3, $4, 'active', 'starter', 'trial', NOW())
+       RETURNING id, email, name, phone_number, status, plan, plan_status, trial_start_date`,
+      [normalizedEmail, hashedPassword, name.trim(), normalizedPhone],
+    );
+    const owner = ownerResult.rows[0];
+
+    const hostelResult = await client.query(
+      `INSERT INTO hostels (owner_id, name, address, type, data)
+       VALUES ($1, $2, $3, $4, $5::jsonb)
+       RETURNING id, name`,
+      [owner.id, hostelName.trim(), hostelAddress.trim(), validHostelType, JSON.stringify({ floors: floorsData })],
+    );
+    const hostel = hostelResult.rows[0];
+
+    await client.query(
+      "UPDATE signup_keys SET status = 'used', used_at = NOW(), used_by_owner_id = $1 WHERE id = $2",
+      [owner.id, keyId],
+    );
+
+    await client.query("COMMIT");
+
+    return res.status(201).json({
+      ok: true,
+      message: "Account and hostel created successfully.",
+      token: signToken(owner),
+      owner: {
+        id: owner.id,
+        email: owner.email,
+        name: owner.name,
+        phoneNumber: owner.phone_number,
+        status: owner.status,
+        plan: owner.plan,
+        planStatus: owner.plan_status,
+        trialStartDate: owner.trial_start_date,
+      },
+      hostel: {
+        id: String(hostel.id),
+        hostelName: hostel.name,
+      },
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function getCurrentKey(req, res) {

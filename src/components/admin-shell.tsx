@@ -68,6 +68,24 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               Logout
             </button>
           </header>
+          <nav className="mb-2.5 grid grid-cols-5 gap-1 rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-1 lg:hidden">
+            {nav.map((item) => {
+              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    "flex min-h-12 min-w-0 flex-col items-center justify-center rounded-[8px] px-1 text-[9px] font-semibold",
+                    active ? "bg-[color:var(--surface-strong)] text-[color:var(--accent)]" : "text-[color:var(--fg-secondary)]",
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span className="mt-0.5 max-w-full truncate">{item.name}</span>
+                </Link>
+              );
+            })}
+          </nav>
           <main className="smart-scroll-area smart-scroll-fade pr-1">
             <div className="app-page-frame flex min-h-full flex-col">
               <ErrorBoundary message="This page failed to load. Try refreshing.">

@@ -265,9 +265,9 @@ function AccessManagementPageInner() {
   };
 
   return (
-    <div className="h-dvh overflow-x-hidden overflow-y-auto bg-[linear-gradient(180deg,#09090b_0%,#111114_100%)] text-white">
+    <div className="h-dvh w-full max-w-full overflow-x-hidden overflow-y-auto bg-[linear-gradient(180deg,#09090b_0%,#111114_100%)] text-white">
       <header className="border-b border-white/10 bg-[rgba(9,9,11,0.88)] px-4 py-2 backdrop-blur-xl sm:px-6">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
+        <div className="mx-auto flex w-full max-w-6xl min-w-0 items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#fcd34d_0%,#f59e0b_100%)] text-[#18120a] shadow-[0_16px_34px_rgba(245,158,11,0.25)]">
               <ServerCog className="h-5 w-5" />
@@ -278,7 +278,14 @@ function AccessManagementPageInner() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => router.push("/super-admin/dashboard")}
+              className="inline-flex items-center rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/70 hover:text-white"
+            >
+              Dashboard
+            </button>
             <button
               type="button"
               onClick={() => { setFormOpen(true); setInviteError(""); setInviteLink(""); }}
@@ -300,7 +307,7 @@ function AccessManagementPageInner() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
+      <main className="mx-auto w-full max-w-6xl min-w-0 px-4 py-4 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
         {/* Add Owner Form */}
         {formOpen ? (
           <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
@@ -387,7 +394,7 @@ function AccessManagementPageInner() {
                   <p role="alert" className="text-sm text-red-400">{inviteError}</p>
                 ) : null}
 
-                <div className="flex gap-2 pt-1">
+                <div className="flex flex-col gap-2 pt-1 sm:flex-row">
                   <button
                     type="submit"
                     disabled={inviting}
@@ -409,14 +416,14 @@ function AccessManagementPageInner() {
         ) : null}
 
         {/* Summary */}
-        <div className="mb-3 flex items-center justify-between">
-          <div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
             <h1 className="text-xl font-semibold text-white">Owner Accounts</h1>
             <p className="mt-0.5 text-sm text-white/40">
               {owners.length} owner{owners.length !== 1 ? "s" : ""} registered.
             </p>
           </div>
-          <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5">
+          <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 sm:px-4 sm:py-2.5">
             <Users className="h-4 w-4 text-[#f7bf53]" />
             <span className="text-sm font-semibold text-white">{owners.length}</span>
             <span className="text-xs text-white/40">owners</span>
@@ -555,8 +562,8 @@ function AccessManagementPageInner() {
 
         {/* Signup Link */}
         <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <Plus className="h-4 w-4 text-[#f7bf53]" />
               <h2 className="font-display text-base font-semibold text-white">Owner signup link</h2>
             </div>
@@ -572,7 +579,7 @@ function AccessManagementPageInner() {
           <p className="mt-1 text-xs text-white/45">One-time link. Expires after one successful registration. Generate a new one each time.</p>
 
           {signupKey ? (
-            <div className="mt-3 flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5">
+            <div className="mt-3 flex min-w-0 items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5">
               <p className="flex-1 truncate font-mono text-xs text-white/70">{`${typeof window !== "undefined" ? window.location.origin : ""}/owner/signup?key=${signupKey}`}</p>
               <button
                 type="button"

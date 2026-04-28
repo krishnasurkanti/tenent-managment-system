@@ -17,6 +17,9 @@ function createFloor(index: number): FloorForm {
   return { id: `floor-${uid()}`, floorLabel: `Floor ${index}`, rooms: [createRoom()] };
 }
 function isRoomComplete(r: RoomForm) { return r.roomNumber.trim() && Number(r.bedCount) > 0; }
+function getSignupBedId(room: RoomForm, bedIndex: number) {
+  return `${room.id}-bed-${bedIndex + 1}`;
+}
 // ─── Page steps ─────────────────────────────────────────────────────────────
 
 type Step = "loading" | "invalid" | "account" | "hostel" | "floors" | "tenants" | "submitting" | "done";
@@ -232,7 +235,7 @@ export default function OwnerSignupPage() {
     fd.append("sharingType", getSharingLabel(selectedRoom.bedCount) || "1 sharing");
     fd.append("propertyType", hostelType);
     if (hostelType === "PG" && Number(selectedRoom.bedCount) > 0) {
-      fd.append("bedId", `${selectedRoom.id}-bed-${tBedIdx + 1}`);
+      fd.append("bedId", getSignupBedId(selectedRoom, tBedIdx));
       fd.append("bedLabel", `Bed ${tBedIdx + 1}`);
     }
 
@@ -275,8 +278,8 @@ export default function OwnerSignupPage() {
   const currentStepIndex = STEPS.findIndex(s => s.key === step);
 
   return (
-    <main className="min-h-dvh overflow-x-hidden overflow-y-auto bg-[#090912] px-4 py-6 text-white sm:px-6">
-      <div className="mx-auto w-full max-w-lg">
+    <main className="min-h-dvh w-full max-w-full overflow-x-hidden overflow-y-auto bg-[#090912] px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] text-white sm:px-6">
+      <div className="mx-auto w-full max-w-lg min-w-0">
 
         {/* Logo */}
         <div className="mb-5 flex items-center gap-3">
@@ -290,23 +293,23 @@ export default function OwnerSignupPage() {
         </div>
 
         {/* Step bar */}
-        <div className="mb-5 flex items-center gap-1">
+        <div className="mb-5 grid grid-cols-4 gap-1 sm:flex sm:items-center">
           {STEPS.map((s, i) => {
             const done = i < currentStepIndex;
             const active = i === currentStepIndex;
             return (
-              <div key={s.key} className="flex items-center gap-1">
+              <div key={s.key} className="flex min-w-0 flex-col items-center gap-1 sm:flex-row">
                 <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition ${active ? "bg-[#f7bf53] text-[#1b1207]" : done ? "bg-[#22c55e] text-white" : "bg-white/10 text-white/35"}`}>
                   {done ? "✓" : i + 1}
                 </div>
-                <span className={`text-xs font-medium ${active ? "text-white" : "text-white/30"}`}>{s.label}</span>
-                {i < STEPS.length - 1 && <div className="mx-1.5 h-px w-5 bg-white/12" />}
+                <span className={`max-w-full truncate text-[10px] font-medium sm:text-xs ${active ? "text-white" : "text-white/30"}`}>{s.label}</span>
+                {i < STEPS.length - 1 && <div className="mx-1.5 hidden h-px w-5 bg-white/12 sm:block" />}
               </div>
             );
           })}
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.92)_0%,rgba(15,17,31,0.96)_100%)] p-5 shadow-[0_30px_80px_rgba(0,0,0,0.4)]">
+        <div className="w-full min-w-0 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.92)_0%,rgba(15,17,31,0.96)_100%)] p-4 shadow-[0_30px_80px_rgba(0,0,0,0.4)] sm:p-5">
 
           {/* ── STEP 1: ACCOUNT ─────────────────────────────────────────── */}
           {step === "account" && (
@@ -364,7 +367,7 @@ export default function OwnerSignupPage() {
                 </InputField>
                 <div>
                   <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Type</span>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     {(["PG", "RESIDENCE"] as const).map(t => (
                       <button key={t} type="button" onClick={() => setHostelType(t)}
                         className={`flex-1 rounded-xl border py-2 text-sm font-semibold transition ${hostelType === t ? "border-[#f2bb4d]/50 bg-[#f7bf53]/12 text-[#fcd34d]" : "border-white/12 bg-white/[0.03] text-white/50 hover:text-white"}`}>
@@ -374,7 +377,7 @@ export default function OwnerSignupPage() {
                   </div>
                 </div>
                 {error && <ErrorBox>{error}</ErrorBox>}
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <button type="button" onClick={() => { setStep("account"); setError(""); }}
                     className="rounded-xl border border-white/12 px-4 py-2.5 text-sm font-medium text-white/60 hover:text-white">Back</button>
                   <SubmitBtn className="flex-1">Next: Floors &amp; Rooms <ArrowRight className="h-4 w-4" /></SubmitBtn>
@@ -386,13 +389,13 @@ export default function OwnerSignupPage() {
           {/* ── STEP 3: FLOORS & ROOMS ───────────────────────────────────── */}
           {step === "floors" && (
             <>
-              <div className="flex items-center justify-between gap-2">
-                <div>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="min-w-0">
                   <h1 className="text-xl font-semibold tracking-[-0.03em] text-[#f7f0e8]">Floors &amp; Rooms</h1>
                   <p className="mt-0.5 text-sm text-white/45">{hostelName} · {completedFloors.length}/{floors.length} floors done</p>
                 </div>
                 <button type="button" onClick={addFloor}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/60 hover:text-white">
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/60 hover:text-white">
                   <Plus className="h-3.5 w-3.5" /> Add Floor
                 </button>
               </div>
@@ -416,7 +419,7 @@ export default function OwnerSignupPage() {
               {activeFloor && (
                 <div className="mt-4 space-y-3">
                   {/* Floor header */}
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex-1">
                       <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">Floor label</span>
                       <input value={activeFloor.floorLabel}
@@ -442,7 +445,7 @@ export default function OwnerSignupPage() {
                           className={`rounded-xl border p-3 transition ${isActive ? "border-[#f2bb4d]/30 bg-[#f7bf53]/[0.06]" : done ? "border-[#4ade80]/20 bg-[#22c55e]/[0.05]" : "border-white/10 bg-white/[0.02]"}`}>
                           <div className="mb-2 flex items-center justify-between">
                             <button type="button" onClick={() => { setActiveRoomId(room.id); setError(""); }}
-                              className="flex items-center gap-2">
+                              className="flex min-w-0 items-center gap-2 text-left">
                               <span className="text-xs font-semibold text-white/60">Room {idx + 1}</span>
                               {done && <CheckCircle2 className="h-3.5 w-3.5 text-[#4ade80]" />}
                               {room.roomNumber && <span className="text-xs text-white/40">· {room.roomNumber} · {room.bedCount} beds</span>}
@@ -489,7 +492,7 @@ export default function OwnerSignupPage() {
 
               {error && <ErrorBox className="mt-3">{error}</ErrorBox>}
 
-              <div className="mt-5 flex gap-2">
+              <div className="mt-5 flex flex-col gap-2 sm:flex-row">
                 <button type="button" onClick={() => { setStep("hostel"); setError(""); }}
                   className="rounded-xl border border-white/12 px-4 py-2.5 text-sm font-medium text-white/60 hover:text-white">Back</button>
                 <button type="button" onClick={handleSubmit}
@@ -503,8 +506,8 @@ export default function OwnerSignupPage() {
           {/* ── STEP 4: TENANTS ──────────────────────────────────────────── */}
           {step === "tenants" && (
             <>
-              <div className="flex items-start justify-between gap-2">
-                <div>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
                   <h1 className="text-xl font-semibold tracking-[-0.03em] text-[#f7f0e8]">Add Tenants</h1>
                   <p className="mt-0.5 text-sm text-white/45">Optionally onboard existing tenants now.</p>
                 </div>
@@ -609,7 +612,7 @@ export default function OwnerSignupPage() {
 
 // ─── Tiny shared components ──────────────────────────────────────────────────
 
-const inputCls = "w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 pl-9 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50 focus:bg-white/[0.05]";
+const inputCls = "w-full min-w-0 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 pl-9 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50 focus:bg-white/[0.05]";
 
 function InputField({ label, icon, children, action, alignTop }: {
   label: React.ReactNode;
@@ -621,7 +624,7 @@ function InputField({ label, icon, children, action, alignTop }: {
   return (
     <label className="block">
       <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">{label}</span>
-      <div className="relative">
+      <div className="relative min-w-0">
         <span className={`pointer-events-none absolute left-3 ${alignTop ? "top-3" : "top-1/2 -translate-y-1/2"}`}>{icon}</span>
         {children}
         {action}

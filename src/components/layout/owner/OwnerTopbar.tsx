@@ -58,7 +58,7 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 isolate flex items-center justify-between gap-2 border-b border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.84)_100%)] px-3 py-1.5 text-white backdrop-blur-2xl md:px-4 xl:px-5">
+    <header className="sticky top-0 z-50 isolate flex w-full max-w-full min-w-0 items-center justify-between gap-2 overflow-hidden border-b border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.84)_100%)] px-3 py-1.5 text-white backdrop-blur-2xl md:px-4 xl:px-5">
       <div className="flex min-w-0 items-center gap-1.5">
         {/* Mobile: menu button */}
         <button
@@ -112,7 +112,7 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         <button
           type="button"
           onClick={() => router.push("/owner/settings")}
-          className="min-w-0 rounded-[var(--radius-pill)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2.5 py-1 text-left xl:hidden"
+          className="min-w-0 max-w-[min(46vw,15rem)] rounded-[var(--radius-pill)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2.5 py-1 text-left xl:hidden"
         >
           <p className="truncate text-[9px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">Hostel</p>
           <div className="flex items-center gap-1">
@@ -122,7 +122,7 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         </button>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 shrink-0 items-center gap-2">
         <form onSubmit={handleSearchSubmit} className="hidden xl:block">
           <label className="relative block">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[color:var(--accent)]" />

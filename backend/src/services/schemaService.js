@@ -91,6 +91,31 @@ async function initializeDatabase() {
   `);
 
   await query(`
+    CREATE TABLE IF NOT EXISTS tenants (
+      id BIGSERIAL PRIMARY KEY,
+      owner_id BIGINT NOT NULL REFERENCES owners(id) ON DELETE CASCADE,
+      hostel_id BIGINT NOT NULL REFERENCES hostels(id) ON DELETE CASCADE,
+      data JSONB NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_tenants_owner_id
+    ON tenants(owner_id)
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_tenants_hostel_id
+    ON tenants(hostel_id)
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_tenants_owner_hostel_id
+    ON tenants(owner_id, hostel_id)
+  `);
+
+  await query(`
     CREATE TABLE IF NOT EXISTS allocations (
       id BIGSERIAL PRIMARY KEY,
       owner_id BIGINT NOT NULL REFERENCES owners(id) ON DELETE CASCADE,
@@ -103,6 +128,11 @@ async function initializeDatabase() {
       end_date DATE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_hostels_owner_id
+    ON hostels(owner_id)
   `);
 
   await query(`
@@ -121,33 +151,15 @@ async function initializeDatabase() {
   `);
 
   await query(`
-    CREATE TABLE IF NOT EXISTS tenants (
-      id BIGSERIAL PRIMARY KEY,
-      owner_id BIGINT NOT NULL REFERENCES owners(id) ON DELETE CASCADE,
-      hostel_id BIGINT NOT NULL REFERENCES hostels(id) ON DELETE CASCADE,
-      data JSONB NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
+    CREATE UNIQUE INDEX IF NOT EXISTS uniq_active_allocation_bed
+    ON allocations(owner_id, hostel_id, unit_id, bed_id)
+    WHERE status = 'ACTIVE' AND bed_id IS NOT NULL
   `);
 
   await query(`
-    CREATE INDEX IF NOT EXISTS idx_hostels_owner_id
-    ON hostels(owner_id)
-  `);
-
-  await query(`
-    CREATE INDEX IF NOT EXISTS idx_tenants_owner_id
-    ON tenants(owner_id)
-  `);
-
-  await query(`
-    CREATE INDEX IF NOT EXISTS idx_tenants_hostel_id
-    ON tenants(hostel_id)
-  `);
-
-  await query(`
-    CREATE INDEX IF NOT EXISTS idx_tenants_owner_hostel_id
-    ON tenants(owner_id, hostel_id)
+    CREATE UNIQUE INDEX IF NOT EXISTS uniq_active_allocation_unit
+    ON allocations(owner_id, hostel_id, unit_id)
+    WHERE status = 'ACTIVE' AND bed_id IS NULL
   `);
 }
 

@@ -23,8 +23,8 @@ export function OwnerPageHero({
         className,
       )}
     >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
-        <div className="max-w-3xl">
+      <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
+        <div className="min-w-0 max-w-3xl">
           <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)] lg:text-[10px]">{eyebrow}</p>
           <h1 className="font-display mt-1 text-[1.35rem] font-bold tracking-[-0.04em] text-white lg:mt-2 lg:text-[2.5rem]">{title}</h1>
           {description ? <p className="mt-1 text-[12px] leading-5 text-[color:var(--fg-secondary)] lg:mt-2 lg:text-sm lg:leading-6">{description}</p> : null}
@@ -48,7 +48,7 @@ export function OwnerQuickStat({
   className?: string;
 }) {
   return (
-    <div className={cn("nestiq-stat rounded-[14px] px-3 py-2.5 lg:rounded-[18px] lg:px-4 lg:py-3", className)}>
+    <div className={cn("nestiq-stat min-w-0 rounded-[14px] px-3 py-2.5 lg:rounded-[18px] lg:px-4 lg:py-3", className)}>
       <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/55 lg:text-[10px]">{label}</p>
       <p className="mt-0.5 text-lg font-semibold text-white lg:mt-1 lg:text-xl">{value}</p>
       {helper ? <p className="mt-0.5 text-[10px] text-[color:var(--fg-secondary)] lg:mt-1 lg:text-[11px]">{helper}</p> : null}

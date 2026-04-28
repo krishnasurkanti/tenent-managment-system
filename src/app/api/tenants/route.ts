@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOwnerHostelInventory } from "@/data/ownerHostelStore";
-import { createTenantRecord, getTenantRecords } from "@/data/tenantStore";
+import { assignTenantRoom, createTenantRecord, getTenantRecords, removeTenantRecord } from "@/data/tenantStore";
 import { calculateNextDueDate } from "@/utils/payment";
 import { requireOwnerSession } from "@/lib/session-mode";
 import { PENDING_ID_IMAGE, PENDING_ID_NUMBER } from "@/types/tenant";
@@ -90,6 +90,16 @@ export async function POST(request: Request) {
   const idImage = formData.get("idImage");
   const billingCycleRaw = String(formData.get("billingCycle") ?? "monthly").trim();
   const billingCycle = (billingCycleRaw === "daily" || billingCycleRaw === "weekly") ? billingCycleRaw : "monthly" as const;
+  const hostelId = String(formData.get("hostelId") ?? "").trim();
+  const floorNumber = Number(formData.get("floorNumber") ?? 0);
+  const roomNumber = String(formData.get("roomNumber") ?? "").trim();
+  const sharingType = String(formData.get("sharingType") ?? "").trim();
+  const moveInDate = String(formData.get("moveInDate") ?? "").trim();
+  const bedId = String(formData.get("bedId") ?? "").trim();
+  const bedLabel = String(formData.get("bedLabel") ?? "").trim();
+  const propertyTypeRaw = String(formData.get("propertyType") ?? "").trim();
+  const propertyType = propertyTypeRaw === "RESIDENCE" ? "RESIDENCE" : propertyTypeRaw === "PG" ? "PG" : undefined;
+  const hasAssignment = Boolean(hostelId && floorNumber && roomNumber && moveInDate);
 
   const hasValidIdImage = idImage instanceof File && !!idImage.name;
 
@@ -122,17 +132,6 @@ export async function POST(request: Request) {
   }
 
   if (session.isLive) {
-    const hostelId = String(formData.get("hostelId") ?? "").trim();
-    const floorNumber = Number(formData.get("floorNumber") ?? 0);
-    const roomNumber = String(formData.get("roomNumber") ?? "").trim();
-    const sharingType = String(formData.get("sharingType") ?? "").trim();
-    const moveInDate = String(formData.get("moveInDate") ?? "").trim();
-    const bedId = String(formData.get("bedId") ?? "").trim();
-    const bedLabel = String(formData.get("bedLabel") ?? "").trim();
-    const propertyTypeRaw = String(formData.get("propertyType") ?? "").trim();
-    const propertyType = propertyTypeRaw === "RESIDENCE" ? "RESIDENCE" : propertyTypeRaw === "PG" ? "PG" : undefined;
-    const hasAssignment = Boolean(hostelId && floorNumber && roomNumber && moveInDate);
-
     if (!hostelId) {
       return NextResponse.json({ message: "Please choose a hostel before creating the tenant." }, { status: 400 });
     }
@@ -191,6 +190,29 @@ export async function POST(request: Request) {
     emergencyContact: emergencyContact || "To be added later",
     idImageName: hasValidIdImage ? idImage.name : PENDING_ID_IMAGE,
   });
+
+  if (hasAssignment) {
+    try {
+      const assignedTenant = assignTenantRoom(tenant.tenantId, {
+        hostelId,
+        floorNumber,
+        roomNumber,
+        sharingType,
+        moveInDate,
+        propertyType,
+        bedId: bedId || undefined,
+        bedLabel: bedLabel || undefined,
+      });
+
+      return NextResponse.json({ tenant: assignedTenant }, { status: 201 });
+    } catch (error) {
+      removeTenantRecord(tenant.tenantId);
+      return NextResponse.json(
+        { message: error instanceof Error ? error.message : "Unable to assign tenant to the selected room." },
+        { status: 400 },
+      );
+    }
+  }
 
   return NextResponse.json({ tenant }, { status: 201 });
 }

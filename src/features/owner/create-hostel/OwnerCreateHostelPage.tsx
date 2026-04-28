@@ -233,6 +233,7 @@ function CreateHostelPageContent() {
     }
 
     const hostelId = data.hostel?.id ?? editingHostelId ?? "";
+    const savedRooms = data.hostel?.floors.flatMap((floor) => floor.rooms) ?? [];
     if (typeof window !== "undefined" && hostelId) {
       window.localStorage.setItem("currentHostelId", hostelId);
       window.localStorage.removeItem(HOSTEL_DRAFT_KEY);
@@ -241,7 +242,7 @@ function CreateHostelPageContent() {
     // Submit tenants for all filled beds
     if (!isEditMode) {
       const today = new Date().toISOString().split("T")[0];
-      const tenantRequests: Promise<{ ok: boolean; label: string }>[] = [];
+      const tenantRequests: Promise<{ ok: boolean; label: string; message?: string }>[] = [];
 
       cleanedRooms.forEach((room) => {
         room.beds.forEach((bed, bedIdx) => {
@@ -259,28 +260,41 @@ function CreateHostelPageContent() {
           fd.append("paidOnDate", bed.date || today);
           fd.append("sharingType", Number(room.bedCount) === 1 ? "Single sharing" : `${room.bedCount} sharing`);
           fd.append("propertyType", "PG");
-          fd.append("bedId", `${room.id}-bed-${bedIdx + 1}`);
-          fd.append("bedLabel", `Bed ${bedIdx + 1}`);
+          const savedRoom = savedRooms.find((item) => item.id === room.id || item.roomNumber === room.roomNumber);
+          const savedBed = savedRoom?.beds?.[bedIdx];
+          if (savedBed?.id) fd.append("bedId", savedBed.id);
+          fd.append("bedLabel", savedBed?.label ?? `Bed ${bedIdx + 1}`);
           if (bed.idNumber.trim()) fd.append("idNumber", bed.idNumber.trim());
           const photo = bedPhotos[`${room.id}-${bedIdx}`];
           if (photo) fd.append("idImage", photo);
           const label = `${bed.name.trim()} (Room ${room.roomNumber}, Bed ${bedIdx + 1})`;
           tenantRequests.push(
             csrfFetch("/api/tenants", { method: "POST", body: fd })
-              .then(async (res) => ({ ok: res.ok, label }))
-              .catch(() => ({ ok: false, label }))
+              .then(async (res) => {
+                const payload = (await res.json().catch(() => ({}))) as { message?: string };
+                return { ok: res.ok, label, message: payload.message };
+              })
+              .catch((error) => ({
+                ok: false,
+                label,
+                message: error instanceof Error ? error.message : "Network request failed.",
+              }))
           );
         });
       });
 
       const results = await Promise.allSettled(tenantRequests);
       const failed = results
-        .filter((r): r is PromiseFulfilledResult<{ ok: boolean; label: string }> => r.status === "fulfilled" && !r.value.ok)
-        .map((r) => r.value.label);
+        .filter((r): r is PromiseFulfilledResult<{ ok: boolean; label: string; message?: string }> => r.status === "fulfilled" && !r.value.ok)
+        .map((r) => `${r.value.label}: ${r.value.message ?? "Tenant was not created."}`);
 
-      if (failed.length > 0) {
+      const crashed = results
+        .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+        .map((r) => (r.reason instanceof Error ? r.reason.message : "Unexpected tenant save error."));
+
+      if (failed.length > 0 || crashed.length > 0) {
         setSaving(false);
-        setError(`Hostel saved. Failed to add ${failed.length} tenant(s): ${failed.join(", ")}. You can add them manually from the Tenants page.`);
+        setError(`Hostel saved, but tenant save failed. ${[...failed, ...crashed].join(" | ")}`);
         return;
       }
     }
@@ -307,7 +321,7 @@ function CreateHostelPageContent() {
   const completedRooms = rooms.filter(isRoomComplete).length;
 
   return (
-    <div className="space-y-3">
+    <div className="w-full min-w-0 space-y-3">
       <OwnerPageHero
         eyebrow={isEditMode ? "Edit hostel" : "Create hostel"}
         title={isEditMode ? "Update your hostel setup" : "Set up your hostel"}
@@ -436,11 +450,11 @@ function CreateHostelPageContent() {
       {step === 2 ? (
         <Card className={`overflow-hidden rounded-[22px] ${ownerPanelClass}`}>
           <div className="border-b border-[color:var(--border)] px-4 py-3 sm:px-5">
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <div className="rounded-2xl bg-[color:var(--brand-soft)] p-2.5 text-[#9edcff]">
                 <Home className="h-4 w-4" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-sm font-semibold text-white">Rooms & Existing Tenants</h2>
                 <p className="text-[11px] text-[color:var(--fg-secondary)]">
                   Add each room with bed count. Fill in existing tenants per bed — all optional, skip any empty bed.
@@ -458,7 +472,7 @@ function CreateHostelPageContent() {
                   className={`rounded-[16px] border border-[color:var(--border)] ${ownerSubtlePanelClass}`}
                 >
                   {/* Room header */}
-                  <div className="flex items-center justify-between border-b border-[color:var(--border)] px-3 py-2.5">
+                  <div className="flex min-w-0 items-center justify-between gap-2 border-b border-[color:var(--border)] px-3 py-2.5">
                     <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">
                       Room {roomIndex + 1}
                     </span>
@@ -515,7 +529,7 @@ function CreateHostelPageContent() {
                                 : "border-[color:var(--border)] bg-[color:var(--surface-soft)]"
                             }`}
                           >
-                            <div className="mb-2 flex items-center justify-between">
+                            <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
                               <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--fg-secondary)]">
                                 Bed {bedIdx + 1}
                               </span>
@@ -585,7 +599,7 @@ function CreateHostelPageContent() {
                                     className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 pl-8 text-[13px] text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
                                   />
                                 </div>
-                                <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 transition hover:border-white/20 hover:bg-white/[0.05] sm:col-span-2">
+                                <label className="flex min-w-0 cursor-pointer items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 transition hover:border-white/20 hover:bg-white/[0.05] sm:col-span-2">
                                   <ImageIcon className="h-3.5 w-3.5 shrink-0 text-white/30" />
                                   <span className="truncate text-[13px] text-white/40">
                                     {bedPhotos[`${room.id}-${bedIdx}`]?.name ?? "ID photo (optional)"}
