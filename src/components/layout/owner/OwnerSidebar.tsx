@@ -62,13 +62,13 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
         aria-hidden={!open}
         onClick={onClose}
         className={cn(
-          "fixed inset-0 z-30 bg-[color:var(--overlay)] transition lg:hidden",
+          "fixed inset-0 z-[55] bg-[color:var(--overlay)] transition lg:hidden",
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
         )}
       />
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-[288px] max-w-[84vw] flex-col bg-[linear-gradient(180deg,var(--bg-surface)_0%,var(--sidebar)_46%,var(--hero-gradient)_100%)] text-[color:var(--fg-primary)] shadow-[0_30px_90px_rgba(8,18,37,0.34)] backdrop-blur-xl transition-transform duration-[var(--motion-medium)] ease-[var(--ease-standard)] lg:sticky lg:top-0 lg:z-auto lg:h-dvh lg:max-h-dvh lg:w-[280px] lg:max-w-none lg:translate-x-0 lg:border-r lg:border-[color:var(--border)] lg:shadow-none xl:w-[296px]",
+          "fixed inset-y-0 left-0 z-[60] flex w-[288px] max-w-[84vw] flex-col bg-[linear-gradient(180deg,var(--bg-surface)_0%,var(--sidebar)_46%,var(--hero-gradient)_100%)] text-[color:var(--fg-primary)] shadow-[0_30px_90px_rgba(8,18,37,0.34)] backdrop-blur-xl transition-transform duration-[var(--motion-medium)] ease-[var(--ease-standard)] lg:sticky lg:top-0 lg:z-auto lg:h-dvh lg:max-h-dvh lg:w-[280px] lg:max-w-none lg:translate-x-0 lg:border-r lg:border-[color:var(--border)] lg:shadow-none xl:w-[296px]",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -167,7 +167,7 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
         </div>
       </div>
 
-      <div className="border-t border-[color:var(--border)] px-3 py-3">
+      <div className="border-t border-[color:var(--border)] px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <button
           type="button"
           onClick={handleLogout}
