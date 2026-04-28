@@ -30,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="overflow-x-hidden font-sans antialiased">
+      <body className="font-sans antialiased">
         <ThemeProvider>
           <QueryProvider>
             <ToastProvider>{children}</ToastProvider>

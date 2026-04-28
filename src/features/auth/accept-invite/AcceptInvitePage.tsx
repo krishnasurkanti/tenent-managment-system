@@ -137,7 +137,7 @@ export default function AcceptInvitePage() {
   }
 
   return (
-    <main className="min-h-dvh bg-[#090912] text-white [background-image:radial-gradient(circle_at_center,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:18px_18px] [overflow-x:clip] [touch-action:pan-y]">
+    <main className="min-h-dvh bg-[#090912] text-white [background-image:radial-gradient(circle_at_center,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:18px_18px]">
 
       {/* Sticky top bar */}
       <header className="sticky top-0 z-50 flex min-h-[52px] items-center justify-between gap-3 border-b border-white/8 bg-[rgba(9,9,11,0.88)] px-4 py-2.5 backdrop-blur-xl sm:px-6">
