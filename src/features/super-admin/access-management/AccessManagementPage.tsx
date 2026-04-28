@@ -278,27 +278,26 @@ function AccessManagementPageInner() {
             </div>
           </div>
 
-          <div className="flex min-w-0 shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             <button
               type="button"
               onClick={() => router.push("/super-admin/dashboard")}
-              className="inline-flex items-center rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/70 hover:text-white"
+              className="hidden items-center rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/70 hover:text-white sm:inline-flex"
             >
               Dashboard
             </button>
             <button
               type="button"
               onClick={() => { setFormOpen(true); setInviteError(""); setInviteLink(""); }}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[linear-gradient(90deg,#f59e0b_0%,#fcd34d_100%)] px-3 py-2 text-sm font-semibold text-[#1b1207] shadow-[0_14px_28px_rgba(240,175,47,0.24)] sm:px-4 sm:py-2.5"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[linear-gradient(90deg,#f59e0b_0%,#fcd34d_100%)] px-3 py-2 text-sm font-semibold text-[#1b1207] shadow-[0_14px_28px_rgba(240,175,47,0.24)]"
             >
               <Plus className="h-4 w-4" />
-              <span className="hidden xs:inline sm:inline">Invite Owner</span>
-              <span className="xs:hidden sm:hidden">Invite</span>
+              <span className="hidden sm:inline">Invite Owner</span>
             </button>
             <button
               type="button"
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/70 hover:text-white"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.04] px-2.5 py-2 text-sm font-medium text-white/70 hover:text-white"
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Logout</span>

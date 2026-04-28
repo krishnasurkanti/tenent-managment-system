@@ -98,6 +98,7 @@
 
   * {
     border-color: var(--border);
+    min-width: 0;
   }
 
   input:-webkit-autofill,
