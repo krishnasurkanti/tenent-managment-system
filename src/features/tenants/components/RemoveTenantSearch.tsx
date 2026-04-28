@@ -101,7 +101,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
       </Button>
 
       {open ? (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(48,28,75,0.28)] px-4 py-4 sm:py-8">
+        <div className="fixed inset-0 z-50 overflow-y-auto overscroll-none touch-pan-y bg-[rgba(48,28,75,0.28)] px-4 py-4 sm:py-8">
           <div className="flex min-h-full items-center justify-center">
             <Card className="flex max-h-[min(92vh,720px)] w-full max-w-2xl flex-col overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82)_0%,rgba(244,236,255,0.95)_100%)] p-6 shadow-[0_28px_70px_rgba(170,148,255,0.22)]">
             <div className="flex items-start justify-between gap-4">
@@ -122,7 +122,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
               </Button>
             </div>
 
-            <div className="mt-6 flex-1 space-y-4 overflow-y-auto pr-1">
+            <div className="mt-6 flex-1 space-y-4 overflow-y-auto overscroll-none touch-pan-y pr-1">
               <label className="block">
                 <span className="mb-2 block text-sm font-medium">Search by tenant ID or name</span>
                 <div className="relative">

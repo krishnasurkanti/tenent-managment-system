@@ -354,12 +354,12 @@
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    height: 100vh;
     height: 100dvh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     contain: inline-size;
+    touch-action: pan-y;
   }
 
   .nestiq-panel {
@@ -396,9 +396,15 @@
     flex: 1 1 auto;
     overflow-x: hidden;
     overflow-y: auto;
-    overscroll-behavior-y: contain;
+    overscroll-behavior: none;
     scrollbar-gutter: stable;
     position: relative;
+    touch-action: pan-y;
+  }
+
+  /* Restore horizontal scroll for explicit overflow containers inside smart-scroll-area */
+  .smart-scroll-area .overflow-x-auto {
+    touch-action: pan-x pan-y pinch-zoom;
   }
 
   .smart-scroll-shell :where(main, section, article, div, header, footer, form, label) {

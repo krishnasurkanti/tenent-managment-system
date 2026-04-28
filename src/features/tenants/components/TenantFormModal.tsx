@@ -290,7 +290,7 @@ export function TenantFormModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-contain px-3 py-4 animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-8"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-none touch-pan-y px-3 py-4 animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-8"
       style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
     >
       <div className="flex min-h-full w-full max-w-2xl items-start justify-center sm:items-center">

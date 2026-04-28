@@ -91,7 +91,7 @@ export function TenantFamilyMembersModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/40 px-3 py-4 sm:px-4 sm:py-8">
+    <div className="fixed inset-0 z-50 overflow-y-auto overscroll-none touch-pan-y bg-slate-950/40 px-3 py-4 sm:px-4 sm:py-8">
       <div className="flex min-h-full items-center justify-center">
         <Card className="w-full max-w-2xl border-slate-100 bg-white p-0 shadow-[0_28px_70px_rgba(15,23,42,0.14)]">
           <div className="flex items-start justify-between gap-4 px-4 pb-2 pt-4 sm:px-5 sm:pt-5">

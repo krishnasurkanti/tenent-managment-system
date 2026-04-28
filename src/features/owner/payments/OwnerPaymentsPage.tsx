@@ -493,7 +493,7 @@ function AddProofModal({
   useLockBodyScroll(true);
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] overflow-y-auto overscroll-contain bg-[rgba(15,23,42,0.42)] px-3 py-3 sm:py-8">
+    <div className="fixed inset-0 z-[80] overflow-y-auto overscroll-none touch-pan-y bg-[rgba(15,23,42,0.42)] px-3 py-3 sm:py-8">
       <div className="flex min-h-full items-start justify-center sm:items-center">
         <Card className={`flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden p-3.5 sm:max-h-[min(92dvh,520px)] ${ownerPanelClass}`}>
           <div className="flex items-start justify-between gap-3">
@@ -506,7 +506,7 @@ function AddProofModal({
             </Button>
           </div>
 
-          <div className="mt-3 flex-1 space-y-2.5 overflow-y-auto overscroll-contain pr-1">
+          <div className="mt-3 flex-1 space-y-2.5 overflow-y-auto overscroll-none touch-pan-y pr-1">
             <label className="block">
               <span className="mb-1 block text-[11px] font-medium text-[color:var(--fg-primary)]">Txn ID (Optional)</span>
               <input

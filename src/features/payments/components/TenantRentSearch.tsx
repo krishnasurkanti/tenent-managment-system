@@ -190,7 +190,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
       {open && mounted
         ? createPortal(
         <div
-          className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto overscroll-contain px-4 py-4 sm:items-center sm:py-8"
+          className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto overscroll-none touch-pan-y px-4 py-4 sm:items-center sm:py-8"
           style={{ background: "rgba(2,6,23,0.72)", backdropFilter: "blur(6px)" }}
         >
           <div className="flex min-h-full w-full max-w-2xl items-start justify-center sm:items-center">
@@ -211,7 +211,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
                 </Button>
               </div>
 
-              <div className="mt-6 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-1">
+              <div className="mt-6 flex-1 space-y-4 overflow-y-auto overscroll-none touch-pan-y pr-1">
                 <div className="flex flex-wrap gap-2">
                   <StepPill label="1. Tenant" active={step === 1} done={step > 1} />
                   <StepPill label="2. Payment" active={step === 2} done={false} />

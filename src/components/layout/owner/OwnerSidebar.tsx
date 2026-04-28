@@ -96,7 +96,7 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-4" style={{ scrollbarGutter: "stable" }}>
+      <div className="flex-1 overflow-y-auto overscroll-none touch-pan-y px-3 py-4" style={{ scrollbarGutter: "stable" }}>
         <div className="mb-5">
           <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[color:var(--fg-secondary)]">Workspace</p>
           <nav className="space-y-1.5">
