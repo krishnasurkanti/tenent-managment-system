@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen items-center justify-center px-5">
+    <main className="flex min-h-dvh items-center justify-center px-5">
       <Card className="max-w-md p-8 text-center">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">404</p>
         <h1 className="mt-3 text-3xl font-semibold">Page not found</h1>
