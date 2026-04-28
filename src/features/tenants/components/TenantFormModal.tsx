@@ -313,7 +313,7 @@ export function TenantFormModal({
               </Button>
             </div>
 
-            <div className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pt-0 pb-2 sm:px-5">
+            <div className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-none touch-pan-y px-4 pt-0 pb-2 sm:px-5">
               <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
                 <div className="flex flex-wrap gap-2">
                   <StepPill label="1. Details" active={step === 1} done={step > 1} />

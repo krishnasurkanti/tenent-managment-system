@@ -306,7 +306,7 @@ function AccessManagementPageInner() {
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-none max-sm:touch-pan-y">
       <main className="mx-auto w-full max-w-6xl px-4 py-4 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
         {/* Add Owner Form */}
         {formOpen ? (
@@ -416,10 +416,10 @@ function AccessManagementPageInner() {
         ) : null}
 
         {/* Summary */}
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="min-w-0">
-            <h1 className="text-xl font-semibold text-white">Owner Accounts</h1>
-            <p className="mt-0.5 text-sm text-white/40">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <h1 className="truncate text-xl font-semibold text-white">Owner Accounts</h1>
+            <p className="mt-0.5 truncate text-sm text-white/40">
               {owners.length} owner{owners.length !== 1 ? "s" : ""} registered.
             </p>
           </div>
@@ -562,16 +562,16 @@ function AccessManagementPageInner() {
 
         {/* Signup Link */}
         <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2">
-              <Plus className="h-4 w-4 text-[#f7bf53]" />
-              <h2 className="font-display text-base font-semibold text-white">Owner signup link</h2>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+              <Plus className="h-4 w-4 shrink-0 text-[#f7bf53]" />
+              <h2 className="truncate font-display text-base font-semibold text-white">Owner signup link</h2>
             </div>
             <button
               type="button"
               onClick={handleGenerateKey}
               disabled={generatingKey}
-              className="rounded-xl border border-white/12 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white disabled:opacity-50"
+              className="shrink-0 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white disabled:opacity-50"
             >
               {generatingKey ? "Generating…" : signupKey ? "New Link" : "Generate Link"}
             </button>

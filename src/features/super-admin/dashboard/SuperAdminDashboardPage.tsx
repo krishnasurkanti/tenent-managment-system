@@ -82,7 +82,7 @@ export default function SuperAdminDashboardPage() {
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-none">
       <main className="mx-auto max-w-5xl px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
         <div className="mb-6 grid gap-3 sm:grid-cols-2">
           <button
@@ -111,10 +111,10 @@ export default function SuperAdminDashboardPage() {
           </div>
         </div>
 
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-white">Owner Accounts</h1>
-            <p className="mt-0.5 text-sm text-white/40">
+        <div className="mb-6 flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <h1 className="truncate text-xl font-semibold text-white">Owner Accounts</h1>
+            <p className="mt-0.5 truncate text-sm text-white/40">
               {owners.length} owner{owners.length !== 1 ? "s" : ""} registered. Share credentials offline.
             </p>
           </div>

@@ -279,7 +279,7 @@ export default function OwnerSignupPage() {
 
   return (
     <main className="flex h-dvh flex-col overflow-hidden bg-[#090912] text-white">
-      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-none touch-pan-y px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
       <div className="mx-auto w-full max-w-lg min-w-0">
 
         {/* Logo */}
