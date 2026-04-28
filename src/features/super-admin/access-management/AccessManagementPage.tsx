@@ -265,8 +265,8 @@ function AccessManagementPageInner() {
   };
 
   return (
-    <div className="h-dvh w-full max-w-full overflow-x-hidden overflow-y-auto bg-[linear-gradient(180deg,#09090b_0%,#111114_100%)] text-white">
-      <header className="border-b border-white/10 bg-[rgba(9,9,11,0.88)] px-4 py-2 backdrop-blur-xl sm:px-6">
+    <div className="flex h-dvh w-full flex-col overflow-hidden bg-[linear-gradient(180deg,#09090b_0%,#111114_100%)] text-white">
+      <header className="shrink-0 border-b border-white/10 bg-[rgba(9,9,11,0.88)] px-4 py-2 backdrop-blur-xl sm:px-6">
         <div className="mx-auto flex w-full max-w-6xl min-w-0 items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#fcd34d_0%,#f59e0b_100%)] text-[#18120a] shadow-[0_16px_34px_rgba(245,158,11,0.25)]">
@@ -306,7 +306,8 @@ function AccessManagementPageInner() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl min-w-0 px-4 py-4 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+      <main className="mx-auto w-full max-w-6xl px-4 py-4 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
         {/* Add Owner Form */}
         {formOpen ? (
           <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
@@ -650,6 +651,7 @@ function AccessManagementPageInner() {
         </div>
 
       </main>
+      </div>
     </div>
   );
 }

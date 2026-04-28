@@ -278,7 +278,8 @@ export default function OwnerSignupPage() {
   const currentStepIndex = STEPS.findIndex(s => s.key === step);
 
   return (
-    <main className="min-h-dvh w-full max-w-full overflow-x-hidden overflow-y-auto bg-[#090912] px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] text-white sm:px-6">
+    <main className="flex h-dvh flex-col overflow-hidden bg-[#090912] text-white">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
       <div className="mx-auto w-full max-w-lg min-w-0">
 
         {/* Logo */}
@@ -605,6 +606,7 @@ export default function OwnerSignupPage() {
           Already have an account?{" "}
           <a href="/login" className="text-[#f7bf53] hover:text-[#ffd983]">Sign in</a>
         </p>
+      </div>
       </div>
     </main>
   );

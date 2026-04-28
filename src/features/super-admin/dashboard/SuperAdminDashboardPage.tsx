@@ -59,8 +59,8 @@ export default function SuperAdminDashboardPage() {
   };
 
   return (
-    <div className="h-dvh overflow-x-hidden overflow-y-auto bg-[#0f172a] text-white">
-      <header className="border-b border-white/10 bg-[#0d1526] px-4 py-3 sm:px-6">
+    <div className="flex h-dvh flex-col overflow-hidden bg-[#0f172a] text-white">
+      <header className="shrink-0 border-b border-white/10 bg-[#0d1526] px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#ffcc4d_0%,#d9941c_100%)] text-[#18120a]">
@@ -82,7 +82,8 @@ export default function SuperAdminDashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+      <main className="mx-auto max-w-5xl px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
         <div className="mb-6 grid gap-3 sm:grid-cols-2">
           <button
             type="button"
@@ -192,6 +193,7 @@ export default function SuperAdminDashboardPage() {
           </div>
         )}
       </main>
+      </div>
     </div>
   );
 }
