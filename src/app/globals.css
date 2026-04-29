@@ -112,6 +112,7 @@
 
   html {
     max-width: 100%;
+    overflow-x: clip;
     scroll-behavior: smooth;
     overscroll-behavior: none;
     color-scheme: light;
