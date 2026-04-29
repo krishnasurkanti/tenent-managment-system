@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { matchesDemoCredentials, getDemoAdminProfile } from "@/lib/demo-auth";
+import { matchesSuperAdminCredentials, getDemoAdminProfile } from "@/lib/demo-auth";
 import { setAuthCookies } from "@/services/core/backend-api";
 import { signDemoToken } from "@/lib/sign-token";
 
@@ -15,12 +15,16 @@ export async function POST(request: Request) {
   const identifier = body.username?.trim() || body.email?.trim() || "";
   const password = body.password?.trim() ?? "";
 
-  if (matchesDemoCredentials(identifier, password)) {
+  if (!identifier || !password) {
+    return NextResponse.json({ message: "Username and password are required." }, { status: 400 });
+  }
+
+  if (matchesSuperAdminCredentials(identifier, password)) {
     const token = await signDemoToken("super_admin");
     const response = NextResponse.json({ ok: true, admin: getDemoAdminProfile() });
     setAuthCookies(response, token);
     return response;
   }
 
-  return NextResponse.json({ message: "Invalid credentials." }, { status: 401 });
+  return NextResponse.json({ message: "Invalid username or password." }, { status: 401 });
 }
