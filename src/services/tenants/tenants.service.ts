@@ -21,8 +21,12 @@ export async function fetchTenantById(tenantId: string, baseUrl?: string) {
   return { response, data };
 }
 
-export async function createTenant(formData: FormData) {
-  const response = await csrfFetch("/api/tenants", { method: "POST", body: formData });
+export async function createTenant(payload: Record<string, unknown>) {
+  const response = await csrfFetch("/api/tenants", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
   const data = (await response.json()) as { tenant?: TenantRecord; message?: string };
   return { response, data };
 }

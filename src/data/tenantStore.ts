@@ -1,4 +1,4 @@
-import { DEMO_OWNER_HOSTEL_ID, getOwnerHostelInventory } from "@/data/ownerHostelStore";
+﻿import { DEMO_OWNER_HOSTEL_ID, getOwnerHostelInventory } from "@/data/ownerHostelStore";
 import { calculateNextDueDate, getDueStatus } from "@/utils/payment";
 import type { TenantAssignment, TenantFamilyMember, TenantRecord } from "@/types/tenant";
 import fs from "node:fs";
@@ -15,7 +15,6 @@ function getDemoTenantRecords(): TenantRecord[] {
       rentPaid: 8500,
       paidOnDate: "2026-03-15",
       nextDueDate: "2026-04-15",
-      emergencyContact: "9876502201",
       createdAt: "2026-03-15T09:00:00.000Z",
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
@@ -35,7 +34,6 @@ function getDemoTenantRecords(): TenantRecord[] {
       rentPaid: 9000,
       paidOnDate: "2026-03-10",
       nextDueDate: "2026-04-10",
-      emergencyContact: "9876502202",
       createdAt: "2026-03-10T10:00:00.000Z",
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
@@ -55,7 +53,6 @@ function getDemoTenantRecords(): TenantRecord[] {
       rentPaid: 7800,
       paidOnDate: "2026-03-07",
       nextDueDate: "2026-04-07",
-      emergencyContact: "9876502203",
       createdAt: "2026-03-07T11:00:00.000Z",
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
@@ -75,7 +72,6 @@ function getDemoTenantRecords(): TenantRecord[] {
       rentPaid: 9600,
       paidOnDate: "2026-03-01",
       nextDueDate: "2026-04-01",
-      emergencyContact: "9876502204",
       createdAt: "2026-03-01T12:00:00.000Z",
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
@@ -95,7 +91,6 @@ function getDemoTenantRecords(): TenantRecord[] {
       rentPaid: 8200,
       paidOnDate: "2026-03-18",
       nextDueDate: "2026-04-18",
-      emergencyContact: "9876502205",
       createdAt: "2026-03-18T12:00:00.000Z",
       assignment: {
         hostelId: "owner-hostel-lotus",
@@ -115,7 +110,6 @@ function getDemoTenantRecords(): TenantRecord[] {
       rentPaid: 8800,
       paidOnDate: "2026-03-12",
       nextDueDate: "2026-04-12",
-      emergencyContact: "9876502206",
       createdAt: "2026-03-12T12:00:00.000Z",
       assignment: {
         hostelId: "owner-hostel-lotus",
@@ -135,7 +129,6 @@ function getDemoTenantRecords(): TenantRecord[] {
       rentPaid: 9100,
       paidOnDate: "2026-03-09",
       nextDueDate: "2026-04-09",
-      emergencyContact: "9876502207",
       createdAt: "2026-03-09T12:00:00.000Z",
       assignment: {
         hostelId: "owner-hostel-lotus",
@@ -155,7 +148,6 @@ function getDemoTenantRecords(): TenantRecord[] {
       rentPaid: 10000,
       paidOnDate: "2026-03-04",
       nextDueDate: "2026-04-04",
-      emergencyContact: "9876502208",
       createdAt: "2026-03-04T12:00:00.000Z",
       assignment: {
         hostelId: "owner-hostel-skyline",
@@ -175,7 +167,6 @@ function getDemoTenantRecords(): TenantRecord[] {
       rentPaid: 9400,
       paidOnDate: "2026-03-20",
       nextDueDate: "2026-04-20",
-      emergencyContact: "9876502209",
       createdAt: "2026-03-20T12:00:00.000Z",
       assignment: {
         hostelId: "owner-hostel-skyline",
@@ -195,7 +186,6 @@ function getDemoTenantRecords(): TenantRecord[] {
       rentPaid: 8700,
       paidOnDate: "2026-03-14",
       nextDueDate: "2026-04-14",
-      emergencyContact: "9876502210",
       createdAt: "2026-03-14T12:00:00.000Z",
       assignment: {
         hostelId: "owner-hostel-skyline",
@@ -224,7 +214,6 @@ function buildDemoTenant(input: {
   rentPaid: number;
   paidOnDate: string;
   nextDueDate: string;
-  emergencyContact: string;
   createdAt: string;
   assignment: TenantAssignment;
 }): TenantRecord {
@@ -239,8 +228,6 @@ function buildDemoTenant(input: {
     billingAnchorDate: input.assignment.moveInDate,
     nextDueDate: input.nextDueDate,
     idNumber: `TEST-ID-${input.tenantId}`,
-    idImageName: "demo-id.png",
-    emergencyContact: input.emergencyContact,
     createdAt: input.createdAt,
     assignment: { ...input.assignment },
     paymentHistory: [
@@ -297,7 +284,7 @@ function persistTenantRecords(records: TenantRecord[]) {
     fs.mkdirSync(TENANTS_DATA_DIR, { recursive: true });
     fs.writeFileSync(TENANTS_DATA_FILE, JSON.stringify(records, null, 2), "utf8");
   } catch {
-    // read-only filesystem (Vercel) — in-memory only
+    // read-only filesystem (Vercel) â€” in-memory only
   }
 }
 
@@ -530,6 +517,21 @@ export function removeTenantRecord(tenantId: string) {
   return removedTenant;
 }
 
+export function updateTenantProfile(
+  tenantId: string,
+  patch: Partial<Pick<TenantRecord, "fullName" | "fatherName" | "dateOfBirth" | "phone" | "email" | "idType" | "idNumber" | "emergencyContactName" | "emergencyContactRelation" | "emergencyContactPhone" | "monthlyRent" | "billingCycle">>,
+) {
+  const tenant = tenantRecords.find((item) => item.tenantId === tenantId);
+
+  if (!tenant) {
+    throw new Error("Tenant not found.");
+  }
+
+  Object.assign(tenant, patch);
+  persistTenantRecords(tenantRecords);
+  return tenant;
+}
+
 export function updateTenantFamilyMembersRecord(tenantId: string, familyMembers: TenantFamilyMember[]) {
   const tenant = tenantRecords.find((item) => item.tenantId === tenantId);
 
@@ -651,8 +653,6 @@ export function seedDemoTenantsForHostel(hostelId: string) {
       billingAnchorDate: moveInDate,
       nextDueDate,
       idNumber: `TEST-ID-${index + 1}`,
-      emergencyContact: `98765022${String(index + 1).padStart(2, "0")}`,
-      idImageName: "demo-id.png",
     });
 
     assignTenantRoom(tenant.tenantId, {

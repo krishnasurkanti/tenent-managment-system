@@ -1,11 +1,16 @@
 export const PENDING_ID_NUMBER = "PENDING-ID";
-export const PENDING_ID_IMAGE = "pending-id-upload";
 
 export type BillingCycle = "daily" | "weekly" | "monthly";
+
+export type IdType = "aadhar" | "pan" | "driving_licence" | "other";
+
+export type EmergencyRelation = "father" | "mother" | "brother" | "sister" | "spouse" | "friend" | "other";
 
 export type TenantRecord = {
   tenantId: string;
   fullName: string;
+  fatherName?: string;
+  dateOfBirth?: string;
   phone: string;
   email: string;
   monthlyRent: number;
@@ -14,9 +19,11 @@ export type TenantRecord = {
   billingAnchorDate: string;
   nextDueDate: string;
   billingCycle?: BillingCycle;
+  idType?: IdType;
   idNumber: string;
-  idImageName: string;
-  emergencyContact: string;
+  emergencyContactName?: string;
+  emergencyContactRelation?: EmergencyRelation;
+  emergencyContactPhone?: string;
   familyMembers?: TenantFamilyMember[];
   createdAt: string;
   assignment?: TenantAssignment;

@@ -1,26 +1,10 @@
-import path from "node:path";
 import { NextResponse } from "next/server";
 import { requireOwnerSession } from "@/lib/session-mode";
-import { PENDING_ID_IMAGE } from "@/types/tenant";
+import { updateTenantProfile } from "@/data/tenantStore";
 import { backendFetch } from "@/services/core/backend-api";
+import type { TenantRecord } from "@/types/tenant";
 
 export const dynamic = "force-dynamic";
-
-async function saveIdImage(file: File, tenantId: string): Promise<string> {
-  const extension = path.extname(file.name).toLowerCase() || ".jpg";
-  const uniqueName = `${tenantId}-id-${Date.now()}${extension}`;
-
-  try {
-    const { mkdir, writeFile } = await import("node:fs/promises");
-    const dir = path.join(process.cwd(), "public", "uploads", "id-proofs");
-    await mkdir(dir, { recursive: true });
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(path.join(dir, uniqueName), buffer);
-    return uniqueName;
-  } catch {
-    return file.name;
-  }
-}
 
 export async function PATCH(
   request: Request,
@@ -30,30 +14,44 @@ export async function PATCH(
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  const formData = await request.formData();
-  const idNumber = String(formData.get("idNumber") ?? "").trim().toUpperCase();
-  const idImage = formData.get("idImage");
-  const hasImage = idImage instanceof File && idImage.size > 0;
+  const body = (await request.json()) as Record<string, unknown>;
 
-  if (!idNumber) {
-    return NextResponse.json({ message: "ID number is required." }, { status: 400 });
+  const patch: Partial<TenantRecord> = {};
+
+  const str = (key: string) => {
+    const v = String(body[key] ?? "").trim();
+    return v || undefined;
+  };
+
+  if (body.fullName !== undefined) {
+    const name = String(body.fullName ?? "").trim();
+    if (!name) return NextResponse.json({ message: "Name cannot be empty." }, { status: 400 });
+    patch.fullName = name;
   }
-
-  const MAX_SIZE = 5 * 1024 * 1024;
-  const ALLOWED = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
-  if (hasImage && idImage instanceof File) {
-    if (idImage.size > MAX_SIZE) return NextResponse.json({ message: "File too large (max 5 MB)." }, { status: 400 });
-    if (!ALLOWED.includes(idImage.type)) return NextResponse.json({ message: "Invalid file type." }, { status: 400 });
+  if (body.fatherName !== undefined) patch.fatherName = str("fatherName");
+  if (body.dateOfBirth !== undefined) patch.dateOfBirth = str("dateOfBirth");
+  if (body.phone !== undefined) patch.phone = String(body.phone ?? "").trim();
+  if (body.email !== undefined) patch.email = String(body.email ?? "").trim();
+  if (body.idType !== undefined) {
+    const v = str("idType") as TenantRecord["idType"];
+    patch.idType = v;
   }
-
-  let idImageName = PENDING_ID_IMAGE;
-  if (hasImage && idImage instanceof File) {
-    idImageName = await saveIdImage(idImage, id);
+  if (body.idNumber !== undefined) patch.idNumber = String(body.idNumber ?? "").trim().toUpperCase() || "PENDING-ID";
+  if (body.emergencyContactName !== undefined) patch.emergencyContactName = str("emergencyContactName");
+  if (body.emergencyContactRelation !== undefined) {
+    patch.emergencyContactRelation = str("emergencyContactRelation") as TenantRecord["emergencyContactRelation"];
+  }
+  if (body.emergencyContactPhone !== undefined) patch.emergencyContactPhone = str("emergencyContactPhone");
+  if (body.monthlyRent !== undefined) {
+    const v = Number(body.monthlyRent);
+    if (!Number.isNaN(v) && v >= 0) patch.monthlyRent = v;
+  }
+  if (body.billingCycle !== undefined) {
+    const v = String(body.billingCycle ?? "").trim();
+    patch.billingCycle = (v === "daily" || v === "weekly") ? v : "monthly";
   }
 
   if (session.isLive) {
-    const patch: Record<string, unknown> = { idNumber, idImageName };
-
     const backendResponse = await backendFetch(`/api/tenants/${encodeURIComponent(id)}`, {
       method: "PUT",
       body: JSON.stringify(patch),
@@ -66,6 +64,13 @@ export async function PATCH(
     return NextResponse.json({ ok: true, tenant: payload.tenant });
   }
 
-  // Mock mode: return success (in-memory store would need a reload anyway)
-  return NextResponse.json({ ok: true });
+  try {
+    const tenant = updateTenantProfile(id, patch);
+    return NextResponse.json({ ok: true, tenant });
+  } catch (error) {
+    return NextResponse.json(
+      { message: error instanceof Error ? error.message : "Failed to update tenant." },
+      { status: 404 },
+    );
+  }
 }

@@ -53,8 +53,6 @@ function makeTenant(hostelId: string, floorNumber: number, roomNumber: string, b
     billingAnchorDate: "2026-03-01",
     nextDueDate: "2026-04-01",
     idNumber: "ID-001",
-    idImageName: "id.png",
-    emergencyContact: "9876500001",
     createdAt: "2026-03-01T00:00:00Z",
     assignment: {
       hostelId,

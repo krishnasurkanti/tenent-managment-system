@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarDays, IdCard, Mail, Phone, User2, Users2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, CreditCard, IdCard, Mail, Phone, User2, Users2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
 import { getOwnerSession } from "@/lib/session-mode";
@@ -70,7 +70,10 @@ export default async function OwnerTenantDetailsPage({
               <InfoCard icon={Phone} label="Phone" value={tenant.phone} />
               <InfoCard icon={Mail} label="Email" value={tenant.email} />
               <InfoCard icon={IdCard} label="ID Number" value={tenant.idNumber} />
-              <InfoCard icon={Phone} label="Emergency Contact" value={tenant.emergencyContact} />
+              {tenant.fatherName && <InfoCard icon={User2} label="Father / Mother Name" value={tenant.fatherName} />}
+              {tenant.dateOfBirth && <InfoCard icon={CalendarDays} label="Date of Birth" value={tenant.dateOfBirth} />}
+              {tenant.idType && <InfoCard icon={CreditCard} label="ID Type" value={tenant.idType.replace("_", " ").toUpperCase()} />}
+              {tenant.emergencyContactName && <InfoCard icon={Phone} label="Emergency Contact" value={`${tenant.emergencyContactName}${tenant.emergencyContactRelation ? ` (${tenant.emergencyContactRelation})` : ""}${tenant.emergencyContactPhone ? ` · ${tenant.emergencyContactPhone}` : ""}`} />}
               <InfoCard icon={CalendarDays} label="Joined On" value={formatPaymentDate(tenant.createdAt.slice(0, 10))} />
             </div>
           </Card>
@@ -83,7 +86,6 @@ export default async function OwnerTenantDetailsPage({
               <DetailRow label="Room" value={tenant.assignment?.roomNumber ?? "Not assigned"} />
               <DetailRow label="Sharing Type" value={tenant.assignment?.sharingType ?? "Not assigned"} />
               <DetailRow label="Move In Date" value={tenant.assignment?.moveInDate ? formatPaymentDate(tenant.assignment.moveInDate) : "Not assigned"} />
-              <DetailRow label="ID Image" value={tenant.idImageName} />
             </div>
           </Card>
         </div>

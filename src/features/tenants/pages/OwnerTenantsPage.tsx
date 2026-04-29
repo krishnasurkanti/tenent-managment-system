@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, CreditCard, ImageIcon, Plus, Search, UserCheck, UserRound, Wallet, X } from "lucide-react";
+import { AlertTriangle, CreditCard, Plus, Search, UserCheck, UserRound, Wallet, X } from "lucide-react";
 import { TenantFormModal } from "@/features/tenants/components/TenantFormModal";
 import { TenantRoomAssignmentModal } from "@/features/tenants/components/TenantRoomAssignmentModal";
 import { PaymentCollectionModal } from "@/components/ui/payment-collection-modal";
@@ -23,7 +23,7 @@ import {
   ownerTableHeadClass,
 } from "@/components/ui/owner-theme";
 import { formatPaymentDate, getDueStatus } from "@/utils/payment";
-import { PENDING_ID_IMAGE, PENDING_ID_NUMBER, type TenantRecord } from "@/types/tenant";
+import { PENDING_ID_NUMBER, type TenantRecord } from "@/types/tenant";
 
 export default function OwnerTenantsPage() {
   return (
@@ -462,7 +462,7 @@ function ActionButton({
 // ── Missing info helpers ───────────────────────────────────────────────────
 
 function hasMissingInfo(tenant: TenantRecord) {
-  return tenant.idNumber === PENDING_ID_NUMBER || tenant.idImageName === PENDING_ID_IMAGE;
+  return tenant.idNumber === PENDING_ID_NUMBER;
 }
 
 function CompleteProfileModal({
@@ -475,30 +475,23 @@ function CompleteProfileModal({
   onSaved: (updated: TenantRecord) => void;
 }) {
   const [idNumber, setIdNumber] = useState(tenant.idNumber === PENDING_ID_NUMBER ? "" : tenant.idNumber);
-  const [photo, setPhoto] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-
-  const missingId = tenant.idNumber === PENDING_ID_NUMBER;
-  const missingPhoto = tenant.idImageName === PENDING_ID_IMAGE;
 
   const handleSubmit = async () => {
     setError("");
     if (!idNumber.trim()) { setError("Enter the ID number."); return; }
     setSubmitting(true);
     try {
-      const fd = new FormData();
-      fd.append("idNumber", idNumber.trim().toUpperCase());
-      if (photo) fd.append("idImage", photo);
-
       const res = await csrfFetch(`/api/tenants/${encodeURIComponent(tenant.tenantId)}`, {
         method: "PATCH",
-        body: fd,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idNumber: idNumber.trim().toUpperCase() }),
       });
       const data = (await res.json()) as { ok?: boolean; tenant?: TenantRecord; message?: string };
       if (!res.ok) { setError(data.message ?? "Update failed."); return; }
 
-      onSaved(data.tenant ?? { ...tenant, idNumber: idNumber.trim().toUpperCase(), idImageName: photo?.name ?? tenant.idImageName });
+      onSaved(data.tenant ?? { ...tenant, idNumber: idNumber.trim().toUpperCase() });
     } catch {
       setError("Network error. Try again.");
     } finally {
@@ -520,43 +513,20 @@ function CompleteProfileModal({
         </div>
 
         <div className="space-y-3">
-          {missingId && (
-            <label className="block">
-              <span className="mb-1.5 block text-[11px] font-medium text-[color:var(--fg-secondary)]">ID Number <span className="text-orange-400">*</span></span>
-              <div className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.04] px-3 py-2.5">
-                <CreditCard className="h-4 w-4 shrink-0 text-white/30" />
-                <input
-                  type="text"
-                  value={idNumber}
-                  onChange={(e) => setIdNumber(e.target.value.toUpperCase())}
-                  placeholder="Aadhar, PAN, Passport…"
-                  disabled={submitting}
-                  className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                />
-              </div>
-            </label>
-          )}
-
-          {missingPhoto && (
-            <label className="block">
-              <span className="mb-1.5 block text-[11px] font-medium text-[color:var(--fg-secondary)]">ID Photo <span className="text-white/30">(optional)</span></span>
-              <div
-                className={`flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-3 py-3 transition hover:border-white/25 hover:bg-white/[0.05]`}
-                onClick={() => document.getElementById("id-photo-input")?.click()}
-              >
-                <ImageIcon className="h-4 w-4 shrink-0 text-white/30" />
-                <span className="text-[13px] text-white/40">{photo ? photo.name : "Tap to upload photo or PDF"}</span>
-                <input
-                  id="id-photo-input"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,application/pdf"
-                  className="hidden"
-                  disabled={submitting}
-                  onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
-                />
-              </div>
-            </label>
-          )}
+          <label className="block">
+            <span className="mb-1.5 block text-[11px] font-medium text-[color:var(--fg-secondary)]">ID Number <span className="text-orange-400">*</span></span>
+            <div className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.04] px-3 py-2.5">
+              <CreditCard className="h-4 w-4 shrink-0 text-white/30" />
+              <input
+                type="text"
+                value={idNumber}
+                onChange={(e) => setIdNumber(e.target.value.toUpperCase())}
+                placeholder="Aadhar / PAN / Driving Licence…"
+                disabled={submitting}
+                className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
+              />
+            </div>
+          </label>
 
           {error && (
             <p className="rounded-xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-3 py-2 text-[12px] text-[color:var(--error)]">
