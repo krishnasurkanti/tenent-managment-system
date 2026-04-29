@@ -346,8 +346,10 @@
 
   /* ── App shell: locks height to viewport, no page-level scroll ── */
   .app-shell {
-    width: 100%;
-    max-width: 100%;
+    width: 100dvw;
+    max-width: 100dvw;
+    inline-size: 100dvw;
+    max-inline-size: 100dvw;
     min-width: 0;
     height: 100dvh;
     max-height: 100dvh;
@@ -388,6 +390,10 @@
   /* ── Main content column: takes remaining space, stacks topbar + scroll area ── */
   .app-main-col {
     flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
+    inline-size: 100%;
+    max-inline-size: 100%;
     min-width: 0;
     min-height: 0;
     display: flex;
@@ -401,13 +407,43 @@
     min-height: 0;
     min-width: 0;
     width: 100%;
-    overflow-x: hidden;
+    max-width: 100%;
+    inline-size: 100%;
+    max-inline-size: 100%;
+    overflow-x: clip;
     overflow-y: auto;
     overscroll-behavior: none;
     scrollbar-gutter: stable;
     touch-action: pan-y;
     /* Horizontal scroll in explicit overflow containers (tables) */
     & .overflow-x-auto { touch-action: pan-x pan-y pinch-zoom; }
+  }
+
+  @supports not (overflow: clip) {
+    .app-scroll {
+      overflow-x: hidden;
+    }
+  }
+
+  .app-scroll > *,
+  .app-scroll .page-enter {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    inline-size: 100%;
+    max-inline-size: 100%;
+  }
+
+  .app-shell :where(div, main, section, article, header, footer, nav, form, fieldset, label) {
+    max-width: 100%;
+    min-width: 0;
+    max-inline-size: 100%;
+    min-inline-size: 0;
+  }
+
+  .app-shell :where(.flex, .grid) {
+    min-width: 0;
+    min-inline-size: 0;
   }
 
   /* ── End-of-content signal: subtle, visible but not imposing ── */
