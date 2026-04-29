@@ -422,10 +422,10 @@ function AccessManagementPageInner() {
               {owners.length} owner{owners.length !== 1 ? "s" : ""} registered.
             </p>
           </div>
-          <div className="flex min-w-0 shrink items-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.04] px-2.5 py-2 sm:shrink-0 sm:gap-2 sm:px-4 sm:py-2.5">
-            <Users className="h-4 w-4 text-[#f7bf53]" />
+          <div className="flex shrink-0 items-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2 sm:gap-2 sm:px-4 sm:py-2.5">
+            <Users className="h-4 w-4 shrink-0 text-[#f7bf53]" />
             <span className="text-sm font-semibold text-white">{owners.length}</span>
-            <span className="hidden text-xs text-white/40 min-[380px]:inline">owners</span>
+            <span className="hidden text-xs text-white/40 sm:inline">owners</span>
           </div>
         </div>
 
@@ -570,23 +570,26 @@ function AccessManagementPageInner() {
               type="button"
               onClick={handleGenerateKey}
               disabled={generatingKey}
-              className="shrink-0 rounded-xl border border-white/12 bg-white/[0.04] px-2.5 py-1.5 text-xs font-semibold text-white/60 hover:text-white disabled:opacity-50 sm:px-3"
+              aria-label={signupKey ? "Generate new signup link" : "Generate signup link"}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/12 bg-white/[0.04] text-xs font-semibold text-white/60 hover:text-white disabled:opacity-50 sm:h-auto sm:w-auto sm:px-3 sm:py-1.5"
             >
-              {generatingKey ? "Generating…" : signupKey ? "New Link" : "Generate Link"}
+              <Plus className="h-4 w-4 sm:hidden" />
+              <span className="hidden sm:inline">{generatingKey ? "Generating…" : signupKey ? "New Link" : "Generate Link"}</span>
             </button>
           </div>
           <p className="mt-1 text-xs text-white/45">One-time link. Expires after one successful registration. Generate a new one each time.</p>
 
           {signupKey ? (
-            <div className="mt-3 flex min-w-0 items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5">
+            <div className="mt-3 flex min-w-0 items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-2.5 py-2.5 sm:px-3">
               <p className="flex-1 truncate font-mono text-xs text-white/70">{`${typeof window !== "undefined" ? window.location.origin : ""}/owner/signup?key=${signupKey}`}</p>
               <button
                 type="button"
                 onClick={handleCopySignupLink}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${signupKeyCopied ? "bg-[#22c55e]/20 text-[#4ade80]" : "bg-white/10 text-white/70 hover:bg-white/15 hover:text-white"}`}
+                className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-xs font-semibold transition sm:w-auto sm:gap-1.5 sm:px-3 sm:py-1.5 ${signupKeyCopied ? "bg-[#22c55e]/20 text-[#4ade80]" : "bg-white/10 text-white/70 hover:bg-white/15 hover:text-white"}`}
+                aria-label={signupKeyCopied ? "Signup link copied" : "Copy signup link"}
               >
                 {signupKeyCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                {signupKeyCopied ? "Copied" : "Copy"}
+                <span className="hidden sm:inline">{signupKeyCopied ? "Copied" : "Copy"}</span>
               </button>
             </div>
           ) : (
