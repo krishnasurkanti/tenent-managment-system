@@ -168,9 +168,17 @@
   body {
     width: 100%;
     max-width: 100%;
+    overflow-x: clip;
     overscroll-behavior: none;
     user-select: none;
     -webkit-user-select: none;
+  }
+
+  @supports not (overflow: clip) {
+    html,
+    body {
+      overflow-x: hidden;
+    }
   }
 
   /* Allow text selection inside interactive fields */
@@ -182,6 +190,7 @@
   }
 
   body {
+    position: relative;
     min-height: 100dvh;
     /* Simplified background: 2 subtle gradients instead of 5 — faster paint */
     background:
@@ -201,6 +210,32 @@
   canvas {
     max-width: 100%;
     display: block;
+  }
+
+  body > * {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  main,
+  section,
+  article,
+  header,
+  footer,
+  nav,
+  form {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    overflow-wrap: anywhere;
   }
 
   h1,

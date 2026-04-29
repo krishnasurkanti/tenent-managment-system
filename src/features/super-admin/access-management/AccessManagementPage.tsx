@@ -309,7 +309,7 @@ function AccessManagementPageInner() {
       <main className="mx-auto w-full max-w-6xl min-w-0 px-3 py-3 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-4">
         {/* Add Owner Form */}
         {formOpen ? (
-          <div className="mb-3 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.24)] sm:mb-4 sm:p-4">
+          <div className="mb-3 min-w-0 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.24)] sm:mb-4 sm:p-4">
             <div className="mb-3 flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <h2 className="font-display text-base font-semibold text-white">Invite Owner</h2>
@@ -327,19 +327,20 @@ function AccessManagementPageInner() {
 
             {inviteLink ? (
               <div className="space-y-3">
-                <div className="rounded-xl border border-[#4ade80]/20 bg-[#22c55e]/[0.07] px-4 py-3">
+                <div className="min-w-0 rounded-xl border border-[#4ade80]/20 bg-[#22c55e]/[0.07] px-3 py-3 sm:px-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#4ade80]">Invitation created</p>
                   <p className="mt-1 text-xs text-white/60">Copy this link and send it to the owner via WhatsApp or any other channel. It expires in 48 hours.</p>
                 </div>
-                <div className="flex min-w-0 items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5">
+                <div className="flex min-w-0 items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-2.5 py-2.5 sm:px-3">
                   <p className="flex-1 truncate font-mono text-xs text-white/70">{inviteLink}</p>
                   <button
                     type="button"
                     onClick={handleCopyLink}
-                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${copied ? "bg-[#22c55e]/20 text-[#4ade80]" : "bg-white/10 text-white/70 hover:bg-white/15 hover:text-white"}`}
+                    aria-label={copied ? "Invitation link copied" : "Copy invitation link"}
+                    className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-xs font-semibold transition sm:w-auto sm:gap-1.5 sm:px-3 sm:py-1.5 ${copied ? "bg-[#22c55e]/20 text-[#4ade80]" : "bg-white/10 text-white/70 hover:bg-white/15 hover:text-white"}`}
                   >
                     {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                    {copied ? "Copied" : "Copy"}
+                    <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
                   </button>
                 </div>
                 <button
