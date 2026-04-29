@@ -63,7 +63,7 @@ export default async function OwnerTenantDetailsPage({
         </div>
 
         <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-          <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-5 text-white">
+          <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
             <h2 className="text-base font-semibold text-white">Personal details</h2>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <InfoCard icon={User2} label="Full Name" value={tenant.fullName} />
@@ -78,7 +78,7 @@ export default async function OwnerTenantDetailsPage({
             </div>
           </Card>
 
-          <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-5 text-white">
+          <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
             <h2 className="text-base font-semibold text-white">Stay details</h2>
             <div className="mt-4 space-y-3">
               <DetailRow label="Hostel" value={tenant.assignment?.hostelName ?? "Not assigned"} />
@@ -91,7 +91,7 @@ export default async function OwnerTenantDetailsPage({
         </div>
 
         {tenant.familyMembers && tenant.familyMembers.length > 0 ? (
-          <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-5 text-white">
+          <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
             <h2 className="text-base font-semibold text-white">Family members</h2>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {tenant.familyMembers.map((member, index) => (
@@ -131,8 +131,8 @@ export default async function OwnerTenantDetailsPage({
             ))}
           </div>
 
-          <div className="hidden overflow-x-auto md:block">
-            <table className="min-w-full text-left text-sm">
+          <div className="hidden overflow-x-auto touch-action-pan-x md:block">
+            <table className="min-w-[520px] text-left text-sm">
               <thead className="bg-[color:var(--surface-soft)] text-[color:var(--fg-secondary)]">
                 <tr>
                   <th className="px-4 py-3 font-medium">Payment ID</th>

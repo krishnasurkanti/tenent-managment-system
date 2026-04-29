@@ -167,11 +167,11 @@ export function TenantRoomAssignmentModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-none touch-pan-y px-4 py-4 animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:py-8"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-none touch-pan-y px-3 py-3 animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
       style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
     >
-      <div className="flex min-h-full w-full max-w-4xl items-start justify-center sm:items-center">
-        <Card className="w-full overflow-visible border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-5 shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:p-6">
+      <div className="flex min-h-full w-full items-start justify-center sm:items-center">
+        <Card className="max-h-[90dvh] w-[min(calc(100vw-2rem),56rem)] overflow-y-auto border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-3 shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:p-4">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/50">Room Assignment</span>
@@ -197,9 +197,9 @@ export function TenantRoomAssignmentModal({
                 </div>
               </div>
             ) : (
-              <div className="space-y-5">
+              <div className="space-y-3 sm:space-y-4">
                 {step === 1 ? (
-                  <div className="space-y-5">
+                  <div className="space-y-3 sm:space-y-4">
                     <PillGroup label="Hostel">
                       {hostels.map((hostel) => (
                         <PillButton
@@ -311,7 +311,7 @@ export function TenantRoomAssignmentModal({
                     </div>
 
                     {selectedRoom ? (
-                      <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 md:grid-cols-3">
+                      <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4 md:grid-cols-3">
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">{isResidence ? "Selected Unit" : "Selected Room"}</p>
                           <p className="mt-2 text-lg font-semibold text-white">{isResidence ? "Unit" : "Room"} {selectedRoom.roomNumber}</p>

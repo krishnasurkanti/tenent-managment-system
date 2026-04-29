@@ -14,7 +14,7 @@ export function SectionHeader({
       <div className="space-y-2">
         {eyebrow ? <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted-foreground)]">{eyebrow}</p> : null}
         <div className="space-y-1">
-          <h1 className="text-3xl font-semibold tracking-tight text-[var(--foreground)]">{title}</h1>
+          <h1 className="text-xl font-semibold tracking-tight text-[var(--foreground)] sm:text-2xl">{title}</h1>
           <p className="max-w-2xl text-sm text-[var(--muted-foreground)]">{description}</p>
         </div>
       </div>

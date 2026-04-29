@@ -169,8 +169,8 @@ export default function OwnerPaymentsPage() {
             <div className="border-b border-[color:var(--border)] px-3 py-2.5">
               <h2 className="text-[13px] font-semibold text-white">Payment History</h2>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-[12px]">
+            <div className="overflow-x-auto touch-action-pan-x">
+              <table className="min-w-[520px] text-left text-[12px]">
                 <thead className={ownerTableHeadClass}>
                   <tr>
                     <th className="px-3 py-3 font-medium">Tenant</th>
@@ -186,7 +186,7 @@ export default function OwnerPaymentsPage() {
                 <tbody>
                   {tenants.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-3 py-6 text-center text-sm text-[color:var(--fg-secondary)]">
+                      <td colSpan={8} className="px-3 py-3 sm:py-4 text-center text-sm text-[color:var(--fg-secondary)]">
                         No tenant payment data exists yet for this hostel.
                       </td>
                     </tr>
@@ -493,9 +493,9 @@ function AddProofModal({
   useLockBodyScroll(true);
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] overflow-y-auto overscroll-none touch-pan-y bg-[rgba(15,23,42,0.42)] px-3 py-3 sm:py-8">
+    <div className="fixed inset-0 z-[80] overflow-y-auto overscroll-none touch-pan-y bg-[rgba(15,23,42,0.42)] px-3 py-3 sm:py-4">
       <div className="flex min-h-full items-start justify-center sm:items-center">
-        <Card className={`flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden p-3.5 sm:max-h-[min(92dvh,520px)] ${ownerPanelClass}`}>
+        <Card className={`flex max-h-[90dvh] w-[min(calc(100vw-2rem),28rem)] flex-col overflow-hidden p-3.5 ${ownerPanelClass}`}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-[14px] font-semibold text-white">Add Payment Proof</h2>

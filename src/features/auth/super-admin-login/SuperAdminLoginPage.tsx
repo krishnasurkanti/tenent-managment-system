@@ -61,9 +61,9 @@ export default function SuperAdminLoginPage() {
       </header>
 
       {/* Centered card */}
-      <div className="flex min-h-[calc(100dvh-52px)] items-center justify-center py-8 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+      <div className="flex min-h-[calc(100dvh-52px)] items-center justify-center py-3 sm:py-4 pb-[calc(2rem+env(safe-area-inset-bottom))]">
         <div className="w-[min(calc(100vw-2rem),420px)]">
-          <div className="rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-7">
+          <div className="rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-4">
 
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#ffcc4d_0%,#d9941c_100%)] text-[#18120a] shadow-[0_12px_28px_rgba(245,177,52,0.22)]">

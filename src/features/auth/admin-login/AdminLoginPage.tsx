@@ -76,7 +76,7 @@ export default function AdminLoginPage() {
       </header>
 
       {/* Content */}
-      <div className="mx-auto w-full max-w-[1100px] px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6 lg:grid lg:grid-cols-[1fr_0.92fr] lg:items-center lg:gap-10 lg:py-10">
+      <div className="mx-auto w-full max-w-[1100px] px-4 py-3 sm:py-4 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6 lg:grid lg:grid-cols-[1fr_0.92fr] lg:items-center lg:gap-10 lg:py-10">
 
         {/* Desktop left column */}
         <div className="hidden lg:flex lg:flex-col lg:justify-center">
@@ -91,12 +91,12 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
-            <h1 className="mt-7 text-[clamp(2.55rem,4.4vw,3.5rem)] font-bold leading-[0.96] tracking-[-0.05em] text-[#f8f3eb]">
+            <h1 className="mt-3 text-[clamp(1.5rem,4vw,2rem)] font-bold leading-tight text-[#f8f3eb] sm:mt-4">
               Control billing.
               <span className="mt-1.5 block text-[#ffd15a]">Review every hostel.</span>
             </h1>
 
-            <div className="mt-6 space-y-3">
+            <div className="mt-3 sm:mt-4 space-y-3">
               {adminPoints.map((point) => (
                 <div key={point} className="flex items-center gap-3 text-base text-[#e7ded2]">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#f7cb5f_0%,#ca8e1f_100%)] text-[#18120a]">
@@ -111,7 +111,7 @@ export default function AdminLoginPage() {
 
         {/* Login card */}
         <div className="w-[min(calc(100vw-2rem),440px)] mx-auto lg:w-full lg:max-w-[440px] lg:mx-0">
-          <div className="rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-6 lg:p-7">
+          <div className="rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-4">
 
             {/* Mobile logo */}
             <div className="mb-5 flex items-center gap-2.5 lg:hidden">

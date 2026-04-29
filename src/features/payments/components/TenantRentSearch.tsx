@@ -190,11 +190,11 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
       {open && mounted
         ? createPortal(
         <div
-          className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto overscroll-none touch-pan-y px-4 py-4 sm:items-center sm:py-8"
+          className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto overscroll-none touch-pan-y px-3 py-3 sm:items-center sm:px-4 sm:py-4"
           style={{ background: "rgba(2,6,23,0.72)", backdropFilter: "blur(6px)" }}
         >
           <div className="flex min-h-full w-full max-w-2xl items-start justify-center sm:items-center">
-            <Card className="flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-6 shadow-[0_40px_100px_rgba(0,0,0,0.6)] sm:max-h-[min(92dvh,760px)]">
+            <Card className="flex max-h-[90dvh] w-[min(calc(100vw-2rem),42rem)] flex-col overflow-hidden border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-3 sm:p-4 shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-[13px] font-semibold text-white/70">
@@ -203,7 +203,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
                     </span>
                     Payment Collection
                   </div>
-                  <h2 className="mt-3 text-2xl font-semibold text-white">Collect Rent</h2>
+                  <h2 className="mt-3 text-xl font-semibold text-white sm:text-2xl">Collect Rent</h2>
                   <p className="mt-1 text-sm text-white/45">Collect rent, record payment, and attach proof if needed.</p>
                 </div>
                 <Button variant="ghost" disabled={submitting} aria-label="Close" className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={resetState}>
@@ -211,7 +211,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
                 </Button>
               </div>
 
-              <div className="mt-6 flex-1 space-y-4 overflow-y-auto overscroll-none touch-pan-y pr-1">
+              <div className="mt-3 sm:mt-4 flex-1 space-y-4 overflow-y-auto overscroll-none touch-pan-y pr-1">
                 <div className="flex flex-wrap gap-2">
                   <StepPill label="1. Tenant" active={step === 1} done={step > 1} />
                   <StepPill label="2. Payment" active={step === 2} done={false} />
@@ -362,7 +362,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
 
               {error ? <p role="alert" className="mt-4 text-sm text-red-400">{error}</p> : null}
 
-              <div className="mt-6 flex flex-col-reverse gap-3 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
+              <div className="mt-3 sm:mt-4 flex flex-col-reverse gap-3 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
                 <Button
                   variant="secondary"
                   onClick={step === 1 ? resetState : () => setStep(1)}

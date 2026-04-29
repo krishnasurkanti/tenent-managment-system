@@ -61,14 +61,14 @@ export default function AdminBillingPage() {
 
   return (
     <div className="space-y-4 text-white">
-      <Card className="bg-[radial-gradient(circle_at_top_right,rgba(249,193,42,0.14),transparent_28%),linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-5">
+      <Card className="bg-[radial-gradient(circle_at_top_right,rgba(249,193,42,0.14),transparent_28%),linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4">
         <h1 className="text-2xl font-semibold text-white">Pricing & Billing Control</h1>
         <p className="mt-2 text-sm text-[color:var(--fg-secondary)]">Apply plan upgrades, overrides, discounts, free months, and invoice actions.</p>
       </Card>
 
       <div className="space-y-3">
         {rows.map((row) => (
-          <Card key={row.hostelId} className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-5 text-white">
+          <Card key={row.hostelId} className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-lg font-semibold text-white">{row.hostelName}</p>
@@ -140,7 +140,7 @@ export default function AdminBillingPage() {
         ))}
       </div>
 
-      <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-5 text-white">
+      <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
         <h2 className="text-lg font-semibold text-white">Upgrade Requests</h2>
         <div className="mt-3 space-y-2">
           {upgradeRequests.length === 0 ? (
@@ -167,7 +167,7 @@ export default function AdminBillingPage() {
         </div>
       </Card>
 
-      <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-5 text-white">
+      <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
         <h2 className="text-lg font-semibold text-white">Billing History</h2>
         <div className="mt-3 space-y-2">
           {history.length === 0 ? (

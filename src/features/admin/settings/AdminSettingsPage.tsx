@@ -25,7 +25,7 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-[10px] border border-white/70 bg-white/90 p-5 shadow-sm">
+      <div className="rounded-[10px] border border-white/70 bg-white/90 p-3 sm:p-4 shadow-sm">
         <h1 className="text-2xl font-semibold text-slate-900">System Controls</h1>
         <p className="mt-1 text-sm text-slate-600">Manage feature access, usage controls, and basic activity logs.</p>
       </div>

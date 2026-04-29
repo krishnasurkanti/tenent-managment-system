@@ -26,7 +26,7 @@ export class ErrorBoundary extends Component<Props, State> {
         this.props.fallback ?? (
           <div
             role="alert"
-            className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[color:var(--error-soft)] bg-[color:var(--error-soft)] p-6 text-center"
+            className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[color:var(--error-soft)] bg-[color:var(--error-soft)] p-3 sm:p-4 text-center"
           >
             <p className="text-sm font-semibold text-[color:var(--error)]">
               {this.props.message ?? "Something went wrong"}

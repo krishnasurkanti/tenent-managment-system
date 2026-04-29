@@ -58,7 +58,7 @@ export default function OwnerNotificationsPage() {
       </div>
 
       {alerts.length === 0 ? (
-        <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] px-4 py-6 text-center text-white">
+        <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] px-4 py-3 sm:py-4 text-center text-white">
           <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] shadow-[0_8px_20px_rgba(34,197,94,0.24)]">
             <Bell className="h-4 w-4" />
           </div>

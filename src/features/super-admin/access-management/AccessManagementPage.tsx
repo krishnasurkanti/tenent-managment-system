@@ -492,8 +492,8 @@ function AccessManagementPageInner() {
             </div>
 
             {/* Desktop: table */}
-            <div className="hidden overflow-x-auto rounded-2xl border border-white/10 sm:block">
-              <table className="min-w-full text-sm">
+            <div className="hidden overflow-x-auto touch-action-pan-x rounded-2xl border border-white/10 sm:block">
+              <table className="min-w-[520px] text-sm">
                 <thead className="border-b border-white/10 bg-white/[0.03]">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Name</th>

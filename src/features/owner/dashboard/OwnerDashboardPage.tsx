@@ -157,13 +157,13 @@ export default function OwnerDashboardPage() {
       </section>
 
       <section className="hidden gap-3 lg:grid">
-        <div className="nestiq-grid-bg relative overflow-hidden rounded-[22px] border border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.24),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(245,158,11,0.16),transparent_26%),linear-gradient(180deg,#111114_0%,#18181c_100%)] p-5 text-white shadow-[0_28px_70px_rgba(0,0,0,0.38)]">
+        <div className="nestiq-grid-bg relative overflow-hidden rounded-[22px] border border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.24),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(245,158,11,0.16),transparent_26%),linear-gradient(180deg,#111114_0%,#18181c_100%)] p-3 sm:p-4 text-white shadow-[0_28px_70px_rgba(0,0,0,0.38)]">
           <div className="pointer-events-none absolute -right-12 top-0 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(129,140,248,0.24)_0%,rgba(255,255,255,0)_70%)] blur-2xl animate-[dashboard-glow_8s_ease-in-out_infinite]" />
           <div className="pointer-events-none absolute bottom-[-6rem] left-[-3rem] h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(245,158,11,0.18)_0%,rgba(245,158,11,0)_70%)] blur-3xl" />
           <div className="relative grid items-start gap-4 xl:grid-cols-[1.15fr_0.85fr]">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-100/70">Owner dashboard</p>
-              <h1 className="font-display mt-1.5 max-w-2xl text-[2.35rem] font-bold leading-[0.94] tracking-[-0.05em] text-white xl:text-[2.55rem]">{currentHostel.hostelName}</h1>
+              <h1 className="font-display mt-1.5 max-w-2xl text-[clamp(1.5rem,8vw,2rem)] font-bold leading-tight text-white xl:text-[2.25rem]">{currentHostel.hostelName}</h1>
               <p className="mt-2 max-w-xl text-[13px] leading-5 text-zinc-300">{currentHostel.address}</p>
               <div className="mt-4 inline-flex items-center rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur">
                 {paymentHealthScore}/100 health score • {attentionCount} collections need attention
@@ -191,8 +191,8 @@ export default function OwnerDashboardPage() {
             <div className="border-b border-[color:var(--border)] px-4 py-2.5">
               <h2 className="font-display text-[15px] font-semibold text-white">Upcoming dues</h2>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-[13px]">
+            <div className="overflow-x-auto touch-action-pan-x">
+              <table className="min-w-[520px] text-left text-[13px]">
                 <thead className="bg-[color:var(--surface-strong)] text-[color:var(--fg-secondary)]">
                   <tr>
                     <th className="px-4 py-2.5 font-medium">Tenant</th>
@@ -415,7 +415,7 @@ function LoadingState() {
       {/* desktop skeleton — mirrors hidden lg:grid section */}
       <section className="hidden gap-3 lg:grid">
         {/* hero banner */}
-        <div className="rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-5">
+        <div className="rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-3 sm:p-4">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-3 py-1.5 text-[11px] font-semibold text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]">
             <span className="h-2 w-2 rounded-full bg-[var(--cta)] animate-[status-breathe_1s_ease-in-out_infinite]" />
             Preparing dashboard

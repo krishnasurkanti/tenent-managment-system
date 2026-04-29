@@ -19,7 +19,7 @@ export function OwnerPageHero({
   return (
     <Card
       className={cn(
-        "nestiq-grid-bg overflow-hidden border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.22),transparent_30%),linear-gradient(180deg,#111114_0%,#09090b_100%)] p-3 lg:p-5",
+        "nestiq-grid-bg overflow-hidden border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.22),transparent_30%),linear-gradient(180deg,#111114_0%,#09090b_100%)] p-3 lg:p-3 sm:p-4",
         className,
       )}
     >

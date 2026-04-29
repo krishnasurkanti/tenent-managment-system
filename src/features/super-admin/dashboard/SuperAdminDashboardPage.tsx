@@ -82,8 +82,8 @@ export default function SuperAdminDashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
-        <div className="mb-6 grid gap-3 sm:grid-cols-2">
+      <main className="mx-auto max-w-5xl px-4 py-3 sm:py-4 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
+        <div className="mb-3 sm:mb-4 grid gap-3 sm:grid-cols-2">
           <button
             type="button"
             onClick={() => router.push("/super-admin/access-management")}
@@ -110,7 +110,7 @@ export default function SuperAdminDashboardPage() {
           </div>
         </div>
 
-        <div className="mb-6 flex items-center justify-between gap-2">
+        <div className="mb-3 sm:mb-4 flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1 overflow-hidden">
             <h1 className="truncate text-xl font-semibold text-white">Owner Accounts</h1>
             <p className="mt-0.5 truncate text-sm text-white/40">
@@ -140,8 +140,8 @@ export default function SuperAdminDashboardPage() {
             <p className="mt-1 text-xs text-white/25">Click Add Owner to create an account.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-white/10">
-            <table className="min-w-full text-sm">
+          <div className="overflow-x-auto touch-action-pan-x rounded-2xl border border-white/10">
+            <table className="min-w-[520px] text-sm">
               <thead className="border-b border-white/10 bg-white/[0.03]">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/40">Name</th>

@@ -66,14 +66,14 @@ export default function AdminHostelsPage() {
 
   return (
     <div className="space-y-4 text-white">
-      <Card className="bg-[radial-gradient(circle_at_top_right,rgba(249,193,42,0.14),transparent_28%),linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-5">
+      <Card className="bg-[radial-gradient(circle_at_top_right,rgba(249,193,42,0.14),transparent_28%),linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Admin Control</p>
         <h1 className="mt-1 text-2xl font-semibold text-white">Hostel Management</h1>
       </Card>
 
       <div className="space-y-3">
         {rows.map((row) => (
-          <Card key={row.hostelId} className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-5 text-white">
+          <Card key={row.hostelId} className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-lg font-semibold text-white">{row.hostelName}</p>

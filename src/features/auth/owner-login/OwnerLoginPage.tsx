@@ -115,16 +115,16 @@ export default function LoginPage() {
       </header>
 
       {/* Page content */}
-      <div className="mx-auto w-full max-w-[1100px] px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6 lg:grid lg:grid-cols-[1fr_0.92fr] lg:items-center lg:gap-10 lg:py-10">
+      <div className="mx-auto w-full max-w-[1100px] px-4 py-3 sm:py-4 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6 lg:grid lg:grid-cols-[1fr_0.92fr] lg:items-center lg:gap-10 lg:py-10">
 
         {/* Desktop left marketing column */}
         <div className="hidden lg:flex lg:flex-col lg:justify-center">
           <p className="mb-3 text-sm font-bold uppercase tracking-[0.14em] text-[#ffd15a]">HostelHub</p>
-          <h1 className="text-[clamp(2.4rem,4.5vw,3.4rem)] font-bold leading-[0.95] tracking-[-0.05em] text-[#f8f3eb]">
+          <h1 className="text-[clamp(1.5rem,4vw,2rem)] font-bold leading-tight text-[#f8f3eb]">
             Manage tenants.<br />
             <span className="text-[#ffd15a]">Never miss rent.</span>
           </h1>
-          <div className="mt-6 space-y-3">
+          <div className="mt-3 sm:mt-4 space-y-3">
             {featurePoints.map((point) => (
               <div key={point} className="flex items-center gap-3 text-base text-[#e7ded2]">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#f7cb5f_0%,#ca8e1f_100%)] text-[#18120a]">
@@ -138,7 +138,7 @@ export default function LoginPage() {
 
         {/* Login card */}
         <div className="w-[min(calc(100vw-2rem),440px)] mx-auto lg:w-full lg:max-w-[440px] lg:mx-0">
-          <div className="rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-6 lg:p-7">
+          <div className="rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-4">
 
             {/* Mobile logo */}
             <div className="mb-5 flex items-center gap-3 lg:hidden">

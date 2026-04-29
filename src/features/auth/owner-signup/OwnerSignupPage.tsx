@@ -269,7 +269,7 @@ export default function OwnerSignupPage() {
           </div>
           <h1 className="mt-4 text-xl font-semibold">Link not valid</h1>
           <p className="mt-2 text-sm text-white/50">{invalidReason}</p>
-          <a href="/login" className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-white/70 hover:text-white">Go to login</a>
+          <a href="/login" className="mt-3 sm:mt-4 inline-flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-white/70 hover:text-white">Go to login</a>
         </div>
       </main>
     );
@@ -278,7 +278,7 @@ export default function OwnerSignupPage() {
   const currentStepIndex = STEPS.findIndex(s => s.key === step);
 
   return (
-    <main className="min-h-dvh bg-[#090912] px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] text-white sm:px-6">
+    <main className="min-h-dvh bg-[#090912] px-4 py-3 sm:py-4 pb-[calc(2rem+env(safe-area-inset-bottom))] text-white sm:px-6">
       <div className="mx-auto w-full max-w-lg min-w-0">
 
         {/* Logo */}
@@ -293,7 +293,7 @@ export default function OwnerSignupPage() {
         </div>
 
         {/* Step bar */}
-        <div className="mb-5 grid grid-cols-4 gap-1 sm:flex sm:items-center">
+        <div className="mb-3 grid grid-cols-2 gap-1 sm:mb-4 sm:flex sm:items-center">
           {STEPS.map((s, i) => {
             const done = i < currentStepIndex;
             const active = i === currentStepIndex;
@@ -309,7 +309,7 @@ export default function OwnerSignupPage() {
           })}
         </div>
 
-        <div className="w-full min-w-0 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.92)_0%,rgba(15,17,31,0.96)_100%)] p-4 shadow-[0_30px_80px_rgba(0,0,0,0.4)] sm:p-5">
+        <div className="w-full min-w-0 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.92)_0%,rgba(15,17,31,0.96)_100%)] p-3 shadow-[0_30px_80px_rgba(0,0,0,0.4)] sm:p-4">
 
           {/* ── STEP 1: ACCOUNT ─────────────────────────────────────────── */}
           {step === "account" && (

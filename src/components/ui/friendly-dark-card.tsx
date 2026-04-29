@@ -17,7 +17,7 @@ export function FriendlyDarkCard({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-[14px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.08),transparent_34%),linear-gradient(180deg,#111322_0%,#090b16_100%)] p-6 shadow-[0_30px_70px_rgba(0,0,0,0.35)]",
+        "overflow-hidden rounded-[14px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.08),transparent_34%),linear-gradient(180deg,#111322_0%,#090b16_100%)] p-3 sm:p-4 shadow-[0_30px_70px_rgba(0,0,0,0.35)]",
         className,
       )}
     >

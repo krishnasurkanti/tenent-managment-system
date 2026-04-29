@@ -105,7 +105,7 @@ export function PaymentCollectionModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[90] flex items-center justify-center px-3 py-4 sm:px-4 sm:py-8"
+      className="fixed inset-0 z-[90] flex items-center justify-center px-3 py-3 sm:px-4 sm:py-4"
       style={{ background: "rgba(2,6,23,0.72)", backdropFilter: "blur(6px)" }}
     >
       <div
@@ -138,10 +138,10 @@ export function PaymentCollectionModal({
         </div>
 
         {/* Scrollable body */}
-        <div className="max-h-[calc(100dvh-12rem)] overflow-y-auto overscroll-none touch-pan-y px-5 pb-2 sm:px-6">
+        <div className="max-h-[90dvh] overflow-y-auto overscroll-none touch-pan-y px-3 pb-2 sm:px-4">
           {/* Tenant info card */}
           {tenant ? (
-            <div className="mb-5 rounded-[8px] border border-white/10 bg-white/[0.04] p-4">
+            <div className="mb-3 rounded-[8px] border border-white/10 bg-white/[0.04] p-3 sm:mb-4 sm:p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">Tenant</p>
               <p className="mt-1.5 text-base font-semibold text-white">{tenant.fullName}</p>
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -188,7 +188,7 @@ export function PaymentCollectionModal({
 
             <div>
               <p className="mb-1.5 text-[12px] font-semibold text-white/60">Payment Mode</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {PAYMENT_MODES.map((mode) => (
                   <button
                     key={mode.value}

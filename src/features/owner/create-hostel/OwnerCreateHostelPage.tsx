@@ -673,7 +673,7 @@ function CreateHostelPageContent() {
 function CreateHostelLoadingState() {
   return (
     <div className="space-y-3">
-      <Card className="nestiq-grid-bg overflow-hidden border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.22),transparent_30%),linear-gradient(180deg,#111114_0%,#09090b_100%)] p-5">
+      <Card className="nestiq-grid-bg overflow-hidden border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.22),transparent_30%),linear-gradient(180deg,#111114_0%,#09090b_100%)] p-3 sm:p-4">
         <div className="h-20 animate-pulse rounded-[18px] bg-white/6" />
       </Card>
       <Card className={`p-4 text-center text-sm text-[color:var(--fg-secondary)] ${ownerPanelClass}`}>

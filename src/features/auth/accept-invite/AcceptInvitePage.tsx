@@ -116,7 +116,7 @@ export default function AcceptInvitePage() {
           <p className="mt-2 text-sm text-white/50">{invalidReason}</p>
           <a
             href="/login"
-            className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-white/70 hover:text-white"
+            className="mt-3 sm:mt-4 inline-flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-white/70 hover:text-white"
           >
             Go to login
           </a>
@@ -154,7 +154,7 @@ export default function AcceptInvitePage() {
       </header>
 
       {/* Content */}
-      <div className="mx-auto w-full max-w-[1100px] px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6 lg:grid lg:grid-cols-[1fr_1fr] lg:items-center lg:gap-10 lg:py-10">
+      <div className="mx-auto w-full max-w-[1100px] px-4 py-3 sm:py-4 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6 lg:grid lg:grid-cols-[1fr_1fr] lg:items-center lg:gap-10 lg:py-10">
 
         {/* Left — invite context (desktop only) */}
         <div className="hidden lg:flex lg:flex-col lg:justify-center">
@@ -162,14 +162,14 @@ export default function AcceptInvitePage() {
             <div className="inline-flex items-center gap-2 rounded-full border border-[#f59e0b]/30 bg-[#f59e0b]/[0.08] px-3.5 py-1.5">
               <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#f7bf53]">You&apos;re invited</span>
             </div>
-            <h1 className="mt-5 text-[clamp(2rem,3.5vw,2.8rem)] font-bold leading-[0.97] tracking-[-0.05em] text-[#f8f3eb]">
+            <h1 className="mt-3 text-[clamp(1.5rem,4vw,2rem)] font-bold leading-tight text-[#f8f3eb] sm:mt-4">
               Set up your<br />
               <span className="text-[#ffd15a]">{invite?.pgName ? invite.pgName : "owner account"}</span>
             </h1>
             <p className="mt-4 text-base leading-relaxed text-white/50">
               You&apos;ve been invited to manage your property on HostelHub. Complete your account setup below.
             </p>
-            <div className="mt-6 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3.5">
+            <div className="mt-3 sm:mt-4 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3.5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">Signing in as</p>
               <p className="mt-1 font-mono text-sm text-white/70">{invite?.email}</p>
             </div>
@@ -193,7 +193,7 @@ export default function AcceptInvitePage() {
             </p>
           </div>
 
-          <div className="rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-6">
+          <div className="rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-4">
             <h2 className="text-[1.55rem] font-bold tracking-[-0.04em] text-[#f7f0e8]">Create your account</h2>
             <p className="mt-1 text-sm text-white/45">Your email is pre-set. Add your name and a password to get started.</p>
 

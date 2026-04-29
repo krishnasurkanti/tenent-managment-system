@@ -133,7 +133,7 @@ function OwnerTenantsPageContent() {
 
   if (!currentHostel) {
     return (
-      <Card className="rounded-[10px] p-5 text-center">
+      <Card className="rounded-[10px] p-3 sm:p-4 text-center">
         <p className="text-sm font-semibold text-white">No hostel selected.</p>
         <Link
           href="/owner/create-hostel"
@@ -278,8 +278,8 @@ function OwnerTenantsPageContent() {
           </div>
 
           {/* Table — horizontal scroll only, page handles vertical */}
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-[13px]">
+          <div className="overflow-x-auto touch-action-pan-x">
+            <table className="min-w-[520px] text-left text-[13px]">
               <thead className={ownerTableHeadClass}>
                 <tr>
                   <th className="px-3 py-2.5 font-medium">Tenant ID</th>
@@ -501,7 +501,7 @@ function CompleteProfileModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-[20px] border border-white/10 bg-[#0d1117] p-5 shadow-2xl">
+      <div className="max-h-[90dvh] w-[min(calc(100vw-2rem),28rem)] overflow-y-auto rounded-[20px] border border-white/10 bg-[#0d1117] p-3 sm:p-4 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-white">Complete Profile</h2>
@@ -616,8 +616,8 @@ function LoadingState() {
         </div>
 
         {/* Table rows */}
-        <div className="hidden lg:block">
-          <table className="min-w-full">
+        <div className="hidden overflow-x-auto touch-action-pan-x lg:block">
+          <table className="min-w-[520px]">
             <thead>
               <tr className="bg-white/[0.03]">
                 {["Tenant ID", "Name", "Contact", "Room", "Monthly Rent", "Next Due", "Action"].map((col) => (

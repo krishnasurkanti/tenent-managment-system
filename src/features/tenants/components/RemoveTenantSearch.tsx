@@ -101,9 +101,9 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
       </Button>
 
       {open ? (
-        <div className="fixed inset-0 z-50 overflow-y-auto overscroll-none touch-pan-y bg-[rgba(48,28,75,0.28)] px-4 py-4 sm:py-8">
+        <div className="fixed inset-0 z-50 overflow-y-auto overscroll-none touch-pan-y bg-[rgba(48,28,75,0.28)] px-3 py-3 sm:px-4 sm:py-4">
           <div className="flex min-h-full items-center justify-center">
-            <Card className="flex max-h-[min(92vh,720px)] w-full max-w-2xl flex-col overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82)_0%,rgba(244,236,255,0.95)_100%)] p-6 shadow-[0_28px_70px_rgba(170,148,255,0.22)]">
+            <Card className="flex max-h-[90dvh] w-[min(calc(100vw-2rem),42rem)] flex-col overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82)_0%,rgba(244,236,255,0.95)_100%)] p-3 sm:p-4 shadow-[0_28px_70px_rgba(170,148,255,0.22)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/72 px-3 py-1.5 text-[13px] font-semibold text-slate-700 shadow-sm">
@@ -112,7 +112,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                   </span>
                   Remove Tenant
                 </div>
-                <h2 className="mt-3 text-2xl font-semibold">Remove Tenant</h2>
+                <h2 className="mt-3 text-xl font-semibold sm:text-2xl">Remove Tenant</h2>
                 <p className="mt-1 text-sm text-[var(--muted-foreground)]">
                   Search by tenant ID or name, confirm room and floor details, then remove the tenant from the hostel.
                 </p>
@@ -122,7 +122,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
               </Button>
             </div>
 
-            <div className="mt-6 flex-1 space-y-4 overflow-y-auto overscroll-none touch-pan-y pr-1">
+            <div className="mt-3 sm:mt-4 flex-1 space-y-4 overflow-y-auto overscroll-none touch-pan-y pr-1">
               <label className="block">
                 <span className="mb-2 block text-sm font-medium">Search by tenant ID or name</span>
                 <div className="relative">
@@ -215,7 +215,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
             {error ? <p className="mt-4 text-sm text-[color:var(--error)]">{error}</p> : null}
             {message ? <p className="mt-4 text-sm text-emerald-600">{message}</p> : null}
 
-            <div className="mt-6 flex flex-col-reverse gap-3 border-t border-[var(--border)] pt-4 sm:flex-row sm:justify-end">
+            <div className="mt-3 sm:mt-4 flex flex-col-reverse gap-3 border-t border-[var(--border)] pt-4 sm:flex-row sm:justify-end">
               <Button variant="secondary" disabled={submitting} onClick={closeModal} className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]">
                 Cancel
               </Button>
