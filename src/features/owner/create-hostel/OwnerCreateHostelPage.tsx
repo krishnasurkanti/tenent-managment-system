@@ -329,7 +329,7 @@ function CreateHostelPageContent() {
         badge={<span className="inline-flex rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[11px] font-semibold text-white/70">Step {step} of 2</span>}
       />
 
-      <div className="grid gap-2.5 sm:grid-cols-3">
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         <OwnerQuickStat label="Rooms" value={String(rooms.length)} helper="Current setup draft" />
         <OwnerQuickStat label="Completed rooms" value={String(completedRooms)} helper="Ready to save" />
         <OwnerQuickStat label="Mode" value={isEditMode ? "Editing" : "New hostel"} helper="Draft autosave enabled" />

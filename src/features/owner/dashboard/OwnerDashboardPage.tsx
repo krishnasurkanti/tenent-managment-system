@@ -73,7 +73,7 @@ export default function OwnerDashboardPage() {
   return (
     <div className={`space-y-3 transition-opacity lg:space-y-3 ${isSwitching ? "opacity-70" : "opacity-100"}`}>
       <section className="grid gap-3 lg:hidden">
-        <Card className="nestiq-grid-bg overflow-hidden border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.22),transparent_34%),linear-gradient(160deg,#111114_0%,#09090b_62%,#131324_100%)] p-4 shadow-[0_18px_46px_rgba(0,0,0,0.34)]">
+        <Card className="nestiq-grid-bg overflow-hidden border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.22),transparent_34%),linear-gradient(160deg,#111114_0%,#09090b_62%,#131324_100%)] p-3 shadow-[0_18px_46px_rgba(0,0,0,0.34)] sm:p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Live snapshot</p>
@@ -95,7 +95,7 @@ export default function OwnerDashboardPage() {
               <MetricTile label="Overdue" value={String(overdue.length)} tone="danger" />
             </div>
           </div>
-          <div className="mt-2.5 grid grid-cols-3 gap-2 text-center">
+          <div className="mt-2.5 grid grid-cols-2 gap-2 text-center min-[420px]:grid-cols-3">
             <MiniMetric label={isResidence ? "Units" : "Beds"} value={String(isResidence ? totalRooms : totalBeds)} />
             <MiniMetric label="Free" value={String(availableBeds)} />
             <MiniMetric label={isResidence ? "Floors" : "Rooms"} value={String(isResidence ? currentHostel.floors.length : totalRooms)} />
@@ -361,16 +361,16 @@ function DesktopMetric({
         </div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/65">{label}</p>
       </div>
-      <p className="mt-2 text-[1.85rem] font-semibold leading-none text-white">{value}</p>
+      <p className="mt-2 text-xl font-semibold leading-none text-white sm:text-2xl">{value}</p>
     </div>
   );
 }
 
 function SnapshotRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
-      <span className="text-sm text-[color:var(--fg-secondary)]">{label}</span>
-      <span className="text-sm font-semibold text-white">{value}</span>
+    <div className="flex min-w-0 items-center justify-between gap-2 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
+      <span className="min-w-0 truncate text-sm text-[color:var(--fg-secondary)]">{label}</span>
+      <span className="shrink-0 text-sm font-semibold text-white">{value}</span>
     </div>
   );
 }
@@ -394,7 +394,7 @@ function LoadingState() {
               <SkeletonBlock className="h-11 rounded-[6px]" />
             </div>
           </div>
-          <div className="mt-2.5 grid grid-cols-3 gap-2">
+          <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <SkeletonBlock key={i} className="h-12 rounded-[6px]" />
             ))}
@@ -426,7 +426,7 @@ function LoadingState() {
               <SkeletonBlock className="mt-2 h-10 w-72" />
               <SkeletonBlock className="mt-2 h-3.5 w-56" />
               <SkeletonBlock className="mt-3 h-6 w-64 rounded-full" />
-              <div className="mt-4 grid grid-cols-4 gap-2.5">
+              <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <SkeletonBlock key={i} className="h-20 rounded-[8px]" />
                 ))}

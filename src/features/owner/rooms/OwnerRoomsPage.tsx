@@ -284,7 +284,7 @@ function OwnerRoomsPageContent() {
                               <SmallInfo label="Free" value={String(available)} />
                             </div>
                           ) : (
-                            <div className="mt-3 grid grid-cols-3 gap-1.5">
+                            <div className="mt-3 grid grid-cols-2 gap-1.5 min-[420px]:grid-cols-3">
                               <SmallInfo label="Beds" value={String(room.capacity)} />
                               <SmallInfo label="Used" value={String(occupied)} />
                               <SmallInfo label="Free" value={String(available)} />

@@ -144,7 +144,7 @@ export default function OwnerPaymentsPage() {
                     <span className={statusClass(status.tone)}>{status.label}</span>
                   </div>
 
-                  <div className="mt-3 grid grid-cols-3 gap-2">
+                  <div className="mt-3 grid grid-cols-2 gap-2 min-[420px]:grid-cols-3">
                     <MiniValue label="Amount" value={`Rs ${tenant.rentPaid.toLocaleString("en-IN")}`} />
                     <MiniValue label="Paid" value={formatPaymentDate(tenant.paidOnDate)} />
                     <MiniValue label="Next" value={formatPaymentDate(tenant.nextDueDate)} />

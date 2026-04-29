@@ -265,14 +265,14 @@ function AccessManagementPageInner() {
   };
 
   return (
-    <div className="min-h-dvh w-full bg-[linear-gradient(180deg,#09090b_0%,#111114_100%)] text-white">
-      <header className="sticky top-0 z-10 border-b border-white/10 bg-[rgba(9,9,11,0.96)] px-4 py-2 backdrop-blur-xl sm:px-6">
+    <div className="min-h-dvh w-full max-w-full bg-[linear-gradient(180deg,#09090b_0%,#111114_100%)] text-white">
+      <header className="sticky top-0 z-10 max-w-full border-b border-white/10 bg-[rgba(9,9,11,0.96)] px-3 py-2 backdrop-blur-xl sm:px-6">
         <div className="mx-auto flex w-full max-w-6xl min-w-0 items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#fcd34d_0%,#f59e0b_100%)] text-[#18120a] shadow-[0_16px_34px_rgba(245,158,11,0.25)]">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#fcd34d_0%,#f59e0b_100%)] text-[#18120a] shadow-[0_16px_34px_rgba(245,158,11,0.25)]">
               <ServerCog className="h-5 w-5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="font-display text-sm font-semibold text-white">Super Admin</p>
               <p className="text-xs text-white/40">Access management</p>
             </div>
@@ -289,7 +289,7 @@ function AccessManagementPageInner() {
             <button
               type="button"
               onClick={() => { setFormOpen(true); setInviteError(""); setInviteLink(""); }}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[linear-gradient(90deg,#f59e0b_0%,#fcd34d_100%)] px-3 py-2 text-sm font-semibold text-[#1b1207] shadow-[0_14px_28px_rgba(240,175,47,0.24)]"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(90deg,#f59e0b_0%,#fcd34d_100%)] text-sm font-semibold text-[#1b1207] shadow-[0_14px_28px_rgba(240,175,47,0.24)] sm:w-auto sm:gap-1.5 sm:px-3"
             >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Invite Owner</span>
@@ -306,12 +306,12 @@ function AccessManagementPageInner() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-4 py-4 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
+      <main className="mx-auto w-full max-w-6xl min-w-0 px-3 py-3 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-4">
         {/* Add Owner Form */}
         {formOpen ? (
-          <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
-            <div className="mb-3 flex items-center justify-between">
-              <div>
+          <div className="mb-3 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.24)] sm:mb-4 sm:p-4">
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div className="min-w-0">
                 <h2 className="font-display text-base font-semibold text-white">Invite Owner</h2>
                 <p className="mt-1 text-xs text-white/45">Enter their email. They click the link and set their own password — no credential sharing needed.</p>
               </div>
@@ -331,7 +331,7 @@ function AccessManagementPageInner() {
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#4ade80]">Invitation created</p>
                   <p className="mt-1 text-xs text-white/60">Copy this link and send it to the owner via WhatsApp or any other channel. It expires in 48 hours.</p>
                 </div>
-                <div className="flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5">
+                <div className="flex min-w-0 items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5">
                   <p className="flex-1 truncate font-mono text-xs text-white/70">{inviteLink}</p>
                   <button
                     type="button"
@@ -415,17 +415,17 @@ function AccessManagementPageInner() {
         ) : null}
 
         {/* Summary */}
-        <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="mb-3 flex min-w-0 items-start justify-between gap-2">
           <div className="min-w-0 flex-1 overflow-hidden">
             <h1 className="truncate text-xl font-semibold text-white">Owner Accounts</h1>
             <p className="mt-0.5 truncate text-sm text-white/40">
               {owners.length} owner{owners.length !== 1 ? "s" : ""} registered.
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 sm:px-4 sm:py-2.5">
+          <div className="flex min-w-0 shrink items-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.04] px-2.5 py-2 sm:shrink-0 sm:gap-2 sm:px-4 sm:py-2.5">
             <Users className="h-4 w-4 text-[#f7bf53]" />
             <span className="text-sm font-semibold text-white">{owners.length}</span>
-            <span className="text-xs text-white/40">owners</span>
+            <span className="hidden text-xs text-white/40 min-[380px]:inline">owners</span>
           </div>
         </div>
 
@@ -450,7 +450,7 @@ function AccessManagementPageInner() {
               {owners.map((owner) => {
                 const ownerStats = stats[owner.id];
                 return (
-                  <div key={owner.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                  <div key={owner.id} className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-white">{owner.name || "—"}</p>
@@ -560,8 +560,8 @@ function AccessManagementPageInner() {
         </div>
 
         {/* Signup Link */}
-        <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
-          <div className="flex items-center justify-between gap-2">
+        <div className="mb-3 min-w-0 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.24)] sm:mb-4 sm:p-4">
+          <div className="flex min-w-0 items-start justify-between gap-2">
             <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
               <Plus className="h-4 w-4 shrink-0 text-[#f7bf53]" />
               <h2 className="truncate font-display text-base font-semibold text-white">Owner signup link</h2>
@@ -570,7 +570,7 @@ function AccessManagementPageInner() {
               type="button"
               onClick={handleGenerateKey}
               disabled={generatingKey}
-              className="shrink-0 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white disabled:opacity-50"
+              className="shrink-0 rounded-xl border border-white/12 bg-white/[0.04] px-2.5 py-1.5 text-xs font-semibold text-white/60 hover:text-white disabled:opacity-50 sm:px-3"
             >
               {generatingKey ? "Generating…" : signupKey ? "New Link" : "Generate Link"}
             </button>
@@ -596,10 +596,10 @@ function AccessManagementPageInner() {
           )}
         </div>
 
-        <div className="mb-4 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
-          <div className="flex items-center gap-2">
-            <ArrowRightLeft className="h-4 w-4 text-[#f7bf53]" />
-            <h2 className="font-display text-base font-semibold text-white">Plan change requests</h2>
+        <div className="mb-3 min-w-0 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.24)] sm:mb-4 sm:p-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <ArrowRightLeft className="h-4 w-4 shrink-0 text-[#f7bf53]" />
+            <h2 className="min-w-0 font-display text-base font-semibold text-white">Plan change requests</h2>
           </div>
           <p className="mt-1 text-xs text-white/45">Owners wait here for super-admin approval before upgrades or downgrades take effect.</p>
 
@@ -610,8 +610,8 @@ function AccessManagementPageInner() {
               </div>
             ) : (
               upgradeRequests.map((request) => (
-                <div key={request.requestId} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                  <div>
+                <div key={request.requestId} className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 sm:px-4">
+                  <div className="min-w-0">
                     <p className="text-sm font-semibold text-white">
                       {request.hostelName}: {request.currentPlanId.toUpperCase()} {"->"} {request.requestedPlanId.toUpperCase()}
                     </p>

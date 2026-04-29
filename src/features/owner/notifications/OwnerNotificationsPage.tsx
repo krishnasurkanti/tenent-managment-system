@@ -51,7 +51,7 @@ export default function OwnerNotificationsPage() {
         }
       />
 
-      <div className="grid gap-2.5 sm:grid-cols-3">
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         <OwnerQuickStat label="Urgent alerts" value={String(alerts.filter(({ status }) => status.tone === "red").length)} helper="Overdue right now" />
         <OwnerQuickStat label="Due soon" value={String(alerts.filter(({ status }) => status.tone === "orange").length)} helper="Collect before they slip" />
         <OwnerQuickStat label="Alert state" value={alerts.length === 0 ? "Stable" : "Action needed"} helper={currentHostel.hostelName} />
@@ -83,7 +83,7 @@ export default function OwnerNotificationsPage() {
                     </div>
                     <span className={ownerStatusClass(status.tone)}>{status.label}</span>
                   </div>
-                  <div className="mt-2 flex items-center justify-between gap-2">
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                     <span className="text-[11px] text-[color:var(--fg-secondary)]">Due {formatPaymentDate(tenant.nextDueDate)}</span>
                     <Button
                       className="min-h-10 px-3 text-[11px]"

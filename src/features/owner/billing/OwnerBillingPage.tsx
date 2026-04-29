@@ -255,7 +255,7 @@ export default function OwnerBillingPage() {
                 Due by {data.dueDate}
               </span>
             </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               <UsageMetric label="Monthly counted" value={String(data.billing.billableTenantCount)} />
               <UsageMetric label="Extra tenants" value={String(data.billing.extraTenants)} />
               <UsageMetric label="Extra charges" value={`Rs ${data.billing.extraCharges.toLocaleString("en-IN")}`} />
@@ -288,7 +288,7 @@ export default function OwnerBillingPage() {
         </Card>
       ) : null}
 
-      <section className="grid gap-2.5 sm:grid-cols-3">
+      <section className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {PLANS.map((plan) => {
           const requestedPlanId = mapRequestedPlanId(plan.id);
           const isCurrentPlan = requestedPlanId === data.planId;
