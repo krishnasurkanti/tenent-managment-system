@@ -10,7 +10,7 @@ import { useOwnerTenants } from "@/hooks/use-owner-tenants";
 import { useOwnerProfile } from "@/hooks/use-owner-profile";
 import { getDueStatus } from "@/utils/payment";
 
-const PLAN_HOSTEL_LIMITS: Record<string, number> = { starter: 1, growth: 2, pro: 3, scale: 5 };
+const PLAN_HOSTEL_LIMITS: Record<string, number> = { free: 1, starter: 1, growth: 3, pro: 5, scale: 5 };
 
 export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const pathname = usePathname();

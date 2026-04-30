@@ -10,7 +10,7 @@ import { fetchOwnerBilling, requestOwnerPlanUpgrade, type OwnerBillingData } fro
 import { useHostelContext } from "@/store/hostel-context";
 import { cn } from "@/utils/cn";
 
-type PlanId = "starter" | "growth" | "pro" | "scale";
+type PlanId = "free" | "starter" | "growth" | "pro" | "scale";
 
 type PlanCard = {
   id: PlanId | "founding";
@@ -24,24 +24,39 @@ type PlanCard = {
   features: string[];
 };
 
-const PLAN_ORDER: PlanId[] = ["starter", "growth", "pro", "scale"];
+const PLAN_ORDER: PlanId[] = ["free", "starter", "growth", "pro", "scale"];
 
 const PLANS: PlanCard[] = [
+  {
+    id: "free",
+    title: "Free",
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    tenantLimit: 25,
+    tone: "border-white/10 bg-[linear-gradient(180deg,#111827_0%,#0c1018_100%)]",
+    valueLine: "Get started free. No card needed. Weekly and daily guests always free.",
+    features: [
+      "25 monthly tenants included",
+      "1 hostel",
+      "Weekly & daily guests — free forever",
+      "Rs 10 per tenant after 25",
+      "Rs 199 per extra hostel/month",
+    ],
+  },
   {
     id: "starter",
     title: "Silver",
     monthlyPrice: 299,
     yearlyPrice: 2990,
     tenantLimit: 50,
-    tone: "border-white/10 bg-[linear-gradient(180deg,#111827_0%,#0c1018_100%)]",
-    valueLine: "Built for a single hostel. Upgrade when you outgrow 50 monthly tenants.",
+    tone: "border-white/20 bg-[linear-gradient(180deg,#141a27_0%,#0e1420_100%)]",
+    valueLine: "Single hostel, 50 monthly tenants. Rs 8 per tenant after that.",
     features: [
       "50 monthly tenants included",
-      "1 hostel included",
-      "No per-tenant overage — upgrade when full",
+      "1 hostel",
+      "Weekly & daily guests — free forever",
+      "Rs 8 per tenant after 50",
       "Rs 199 per extra hostel/month",
-      "Rent tracking and reminders",
-      "Payment history",
     ],
   },
   {
@@ -49,17 +64,17 @@ const PLANS: PlanCard[] = [
     title: "Gold",
     monthlyPrice: 499,
     yearlyPrice: 4990,
-    tenantLimit: 100,
+    tenantLimit: 150,
     badge: "Best Value",
     tone:
       "border-[color:color-mix(in_srgb,var(--success)_40%,var(--brand)_60%)] bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.12),transparent_50%),linear-gradient(180deg,#0e1a2e_0%,#0b101c_100%)] shadow-[0_0_0_1px_rgba(56,189,248,0.15),0_32px_80px_rgba(37,99,235,0.2)]",
-    valueLine: "2 hostels and 100 tenants included. Rs 5 per extra tenant.",
+    valueLine: "3 hostels, 150 monthly tenants. Rs 5 per tenant after that.",
     features: [
-      "100 monthly tenants included",
-      "2 hostels included",
-      "Rs 5 per tenant after 100",
+      "150 monthly tenants included",
+      "3 hostels",
+      "Weekly & daily guests — free forever",
+      "Rs 5 per tenant after 150",
       "Rs 199 per extra hostel/month",
-      "Everything in Silver",
     ],
   },
   {
@@ -67,18 +82,17 @@ const PLANS: PlanCard[] = [
     title: "Diamond",
     monthlyPrice: 799,
     yearlyPrice: 7990,
-    tenantLimit: 200,
+    tenantLimit: 300,
     badge: "Most Popular",
     tone:
       "border-[#38bdf8]/30 bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.16),transparent_50%),linear-gradient(180deg,#0a1628_0%,#07101e_100%)] shadow-[0_0_0_1px_rgba(56,189,248,0.18),0_32px_80px_rgba(37,99,235,0.24)]",
-    valueLine: "3 hostels and 200 tenants. Best for growing multi-hostel owners.",
+    valueLine: "5 hostels, 300 monthly tenants. Best for multi-hostel owners.",
     features: [
-      "200 monthly tenants included",
-      "3 hostels included",
-      "Rs 5 per tenant after 200",
+      "300 monthly tenants included",
+      "5 hostels",
+      "Weekly & daily guests — free forever",
+      "Rs 5 per tenant after 300",
       "Rs 199 per extra hostel/month",
-      "Everything in Gold",
-      "Advanced reports",
     ],
   },
   {
@@ -90,13 +104,12 @@ const PLANS: PlanCard[] = [
     badge: "First 15 Owners",
     tone:
       "border-[#f59e0b]/40 bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.12),transparent_50%),linear-gradient(180deg,#151208_0%,#0c1018_100%)] ring-1 ring-[#f59e0b]/20",
-    valueLine: "Special pricing for the first 15 owners. 5 hostels and 200 tenants at a founder price.",
+    valueLine: "50% off your chosen plan for 12 months. For the first 15 owners only.",
     features: [
-      "Only for the first 15 owners",
-      "200 monthly tenants included",
-      "5 hostels included",
-      "Rs 5 per tenant after 200",
-      "Rs 199 per extra hostel/month",
+      "First 15 owners only",
+      "50% off Silver, Gold or Diamond base price for 12 months",
+      "Weekly & daily guests — free forever",
+      "Extra tenants and hostels at standard rates",
     ],
   },
 ];
@@ -117,6 +130,7 @@ function getCurrentPlanLabel(planId: PlanId) {
   if (planId === "pro") return "Diamond";
   if (planId === "growth") return "Gold";
   if (planId === "starter") return "Silver";
+  if (planId === "free") return "Free";
   const plan = PLANS.find((item) => item.id === planId);
   return plan?.title ?? planId;
 }
@@ -359,24 +373,28 @@ export default function OwnerBillingPage() {
 
               <p className={cn("mt-0.5 text-[10px]", plan.id === "founding" ? "text-[#fbbf24]/55" : "text-white/30")}>
                 {plan.id === "founding"
-                  ? "Founding member plan • Rs 5 per tenant after 200 • Rs 199 per extra hostel"
+                  ? "50% off base plan for 12 months • overages at standard rates"
                   : plan.id === "pro"
-                    ? "Rs 5 per tenant after 200 • Rs 199 per extra hostel"
+                    ? "Rs 5/tenant after 300 • Rs 199/extra hostel • weekly & daily free"
                     : plan.id === "growth"
-                      ? "Rs 5 per tenant after 100 • Rs 199 per extra hostel"
-                      : "Flat cap at 50 tenants • Rs 199 per extra hostel"}
+                      ? "Rs 5/tenant after 150 • Rs 199/extra hostel • weekly & daily free"
+                      : plan.id === "starter"
+                        ? "Rs 8/tenant after 50 • Rs 199/extra hostel • weekly & daily free"
+                        : "Rs 10/tenant after 25 • weekly & daily guests always free"}
               </p>
 
               <div className="mt-3 rounded-[14px] border border-white/10 bg-white/[0.03] px-3 py-2.5">
                 <p className="text-[11px] font-semibold text-white">{plan.valueLine}</p>
                 <p className="mt-1 text-[11px] text-[color:var(--fg-secondary)]">
-                  {plan.id === "starter"
-                    ? "50 monthly tenants included. You must upgrade when full — no per-tenant billing on this plan."
-                    : plan.id === "growth"
-                      ? "100 monthly tenants included. Rs 5 per tenant after that."
-                      : plan.id === "pro"
-                        ? "200 monthly tenants included. Rs 5 per tenant after that."
-                        : "200 monthly tenants included. Rs 5 per tenant after that. Locked-in founder pricing."}
+                  {plan.id === "free"
+                    ? "25 monthly tenants free forever. Weekly and daily guests never counted."
+                    : plan.id === "starter"
+                      ? "50 monthly tenants. Rs 8 per tenant after. Weekly and daily guests free."
+                      : plan.id === "growth"
+                        ? "150 monthly tenants. Rs 5 per tenant after. Weekly and daily guests free."
+                        : plan.id === "pro"
+                          ? "300 monthly tenants. Rs 5 per tenant after. Weekly and daily guests free."
+                          : "50% off base price for your first 12 months. Overages billed at standard rates."}
                 </p>
               </div>
 

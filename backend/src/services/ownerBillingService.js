@@ -1,10 +1,11 @@
 const { query, getClient } = require("../config/db");
 
 const PLAN_SLABS = [
-  { id: "starter", label: "Silver",   price: 299, limit: 50,  extra_per_tenant: 0, hostel_limit: 1, extra_per_hostel: 199 },
-  { id: "growth",  label: "Gold",     price: 499, limit: 100, extra_per_tenant: 5, hostel_limit: 2, extra_per_hostel: 199 },
-  { id: "pro",     label: "Diamond",  price: 799, limit: 200, extra_per_tenant: 5, hostel_limit: 3, extra_per_hostel: 199 },
-  { id: "scale",   label: "Founding", price: 499, limit: 200, extra_per_tenant: 5, hostel_limit: 5, extra_per_hostel: 199 },
+  { id: "free",    label: "Free",     price: 0,   limit: 25,  extra_per_tenant: 10, hostel_limit: 1, extra_per_hostel: 199 },
+  { id: "starter", label: "Silver",   price: 299, limit: 50,  extra_per_tenant: 8,  hostel_limit: 1, extra_per_hostel: 199 },
+  { id: "growth",  label: "Gold",     price: 499, limit: 150, extra_per_tenant: 5,  hostel_limit: 3, extra_per_hostel: 199 },
+  { id: "pro",     label: "Diamond",  price: 799, limit: 300, extra_per_tenant: 5,  hostel_limit: 5, extra_per_hostel: 199 },
+  { id: "scale",   label: "Founding", price: 499, limit: 200, extra_per_tenant: 5,  hostel_limit: 5, extra_per_hostel: 199 },
 ];
 
 function getPlan(planId) {
@@ -70,7 +71,9 @@ async function getOwnerRow(ownerId) {
 
 async function getLiveTenantCount(ownerId) {
   const result = await query(
-    `SELECT COUNT(*)::int AS count FROM tenants WHERE owner_id = $1`,
+    `SELECT COUNT(*)::int AS count FROM tenants
+     WHERE owner_id = $1
+       AND (data->>'billingCycle' IS NULL OR data->>'billingCycle' = 'monthly')`,
     [ownerId],
   );
   return result.rows[0]?.count ?? 0;

@@ -7,9 +7,10 @@ import { cn } from "@/utils/cn";
 import { useHostelContext } from "@/store/hostel-context";
 
 const PLAN_HOSTEL_LIMITS: Record<string, number> = {
+  free: 1,
   starter: 1,
-  growth: 2,
-  pro: 3,
+  growth: 3,
+  pro: 5,
   scale: 5,
 };
 
