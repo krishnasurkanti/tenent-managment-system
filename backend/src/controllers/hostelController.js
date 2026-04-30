@@ -3,47 +3,84 @@ const { createHttpError } = require("../utils/httpErrors");
 
 const VALID_HOSTEL_TYPES = ["PG", "RESIDENCE"];
 
-function mapHostel(row) {
+function buildOccupancy(allocs) {
+  const map = {};
+  for (const { hostel_id, unit_id, bed_id } of allocs) {
+    const hId = String(hostel_id);
+    if (!map[hId]) map[hId] = {};
+    if (!map[hId][unit_id]) map[hId][unit_id] = { totalAllocs: 0, beds: new Set() };
+    map[hId][unit_id].totalAllocs++;
+    if (bed_id) map[hId][unit_id].beds.add(bed_id);
+  }
+  return map;
+}
+
+function mapHostel(row, hostelOccupancy = {}) {
+  const floors = Array.isArray(row.data?.floors) ? row.data.floors : [];
   return {
     id: String(row.id),
     hostelName: row.name,
     address: row.address || "",
     type: VALID_HOSTEL_TYPES.includes(row.type) ? row.type : "PG",
-    floors: Array.isArray(row.data?.floors) ? row.data.floors : [],
+    floors: floors.map((floor) => ({
+      ...floor,
+      rooms: (floor.rooms ?? []).map((room) => {
+        const unitId = room.unitId ?? room.id;
+        const unitData = hostelOccupancy[unitId] ?? { totalAllocs: 0, beds: new Set() };
+        return {
+          ...room,
+          occupied: unitData.totalAllocs,
+          beds: (room.beds ?? []).map((bed) => ({
+            ...bed,
+            occupied: unitData.beds.has(bed.id),
+          })),
+        };
+      }),
+    })),
     createdAt: row.created_at,
   };
 }
 
 async function getHostels(req, res) {
-  const result = await query(
-    `
-      SELECT id, owner_id, name, address, type, data, created_at
-      FROM hostels
-      WHERE owner_id = $1
-      ORDER BY created_at DESC, id DESC
-    `,
-    [req.user.ownerId],
-  );
+  const [hostelResult, allocResult] = await Promise.all([
+    query(
+      `SELECT id, owner_id, name, address, type, data, created_at
+       FROM hostels WHERE owner_id = $1 ORDER BY created_at DESC, id DESC`,
+      [req.user.ownerId],
+    ),
+    query(
+      `SELECT hostel_id, unit_id, bed_id FROM allocations
+       WHERE owner_id = $1 AND status = 'ACTIVE'`,
+      [req.user.ownerId],
+    ),
+  ]);
 
-  return res.json({ hostels: result.rows.map(mapHostel) });
+  const occupancy = buildOccupancy(allocResult.rows);
+  return res.json({
+    hostels: hostelResult.rows.map((row) => mapHostel(row, occupancy[String(row.id)] ?? {})),
+  });
 }
 
 async function getHostelById(req, res) {
-  const result = await query(
-    `
-      SELECT id, owner_id, name, address, type, data, created_at
-      FROM hostels
-      WHERE id = $1 AND owner_id = $2
-      LIMIT 1
-    `,
-    [req.params.id, req.user.ownerId],
-  );
+  const [result, allocResult] = await Promise.all([
+    query(
+      `SELECT id, owner_id, name, address, type, data, created_at
+       FROM hostels WHERE id = $1 AND owner_id = $2 LIMIT 1`,
+      [req.params.id, req.user.ownerId],
+    ),
+    query(
+      `SELECT hostel_id, unit_id, bed_id FROM allocations
+       WHERE hostel_id = $1 AND owner_id = $2 AND status = 'ACTIVE'`,
+      [req.params.id, req.user.ownerId],
+    ),
+  ]);
 
   if (result.rowCount === 0) {
     throw createHttpError(404, "Hostel not found.");
   }
 
-  return res.json({ hostel: mapHostel(result.rows[0]) });
+  const occupancy = buildOccupancy(allocResult.rows);
+  return res.json({ hostel: mapHostel(result.rows[0], occupancy[String(result.rows[0].id)] ?? {}) });
 }
 
 async function createHostel(req, res) {

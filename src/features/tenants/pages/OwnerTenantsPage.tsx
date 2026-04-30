@@ -22,7 +22,7 @@ import {
   ownerSubtlePanelClass,
   ownerTableHeadClass,
 } from "@/components/ui/owner-theme";
-import { formatPaymentDate, getDueStatus } from "@/utils/payment";
+import { formatPaymentDate, getDueStatus, fmtTenantId } from "@/utils/payment";
 import { PENDING_ID_NUMBER, type TenantRecord } from "@/types/tenant";
 
 export default function OwnerTenantsPage() {
@@ -204,7 +204,7 @@ function OwnerTenantsPageContent() {
                     <div className="flex items-center gap-2">
                       <p className="truncate text-sm font-semibold text-white">{tenant.fullName}</p>
                       <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--fg-secondary)]">
-                        #{tenant.tenantId}
+                        #{fmtTenantId(tenant.tenantId)}
                       </span>
                       {hasMissingInfo(tenant) && (
                         <button
@@ -305,7 +305,7 @@ function OwnerTenantsPageContent() {
 
                     return (
                       <tr key={tenant.tenantId} className="border-t border-[color:var(--border)] transition hover:bg-white/[0.02]">
-                        <td className="px-3 py-3 font-semibold text-[color:var(--fg-secondary)]">{tenant.tenantId}</td>
+                        <td className="px-3 py-3 font-semibold text-[color:var(--fg-secondary)]">{fmtTenantId(tenant.tenantId)}</td>
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-2">
                             <Link href={`/owner/tenants/${tenant.tenantId}`} className="font-medium text-white transition hover:text-[var(--accent-electric)]">

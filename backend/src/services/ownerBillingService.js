@@ -1,10 +1,10 @@
 const { query, getClient } = require("../config/db");
 
 const PLAN_SLABS = [
-  { id: "starter", label: "Starter", price: 999,  limit: 50 },
-  { id: "growth",  label: "Growth",  price: 1500, limit: 100 },
-  { id: "pro",     label: "Pro",     price: 2000, limit: 150 },
-  { id: "scale",   label: "Scale",   price: 2999, limit: Infinity },
+  { id: "starter", label: "Silver",   price: 299, limit: 50,  extra_per_tenant: 0 },
+  { id: "growth",  label: "Growth",   price: 499, limit: 100, extra_per_tenant: 5 },
+  { id: "pro",     label: "Gold",     price: 799, limit: 150, extra_per_tenant: 5 },
+  { id: "scale",   label: "Founding", price: 499, limit: 200, extra_per_tenant: 5 },
 ];
 
 function getPlan(planId) {
@@ -21,20 +21,21 @@ function calculateBill(tenantCount, planId) {
   let nextPlan = getNextPlan(plan.id);
   let upgradeForced = false;
 
-  while (nextPlan && nextPlan.limit !== Infinity && tenantCount > plan.limit) {
+  while (nextPlan && plan.extra_per_tenant === 0 && tenantCount > plan.limit) {
     plan = nextPlan;
     nextPlan = getNextPlan(plan.id);
     upgradeForced = true;
   }
 
-  const extraTenants = plan.limit !== Infinity ? Math.max(0, tenantCount - plan.limit) : 0;
-  const totalAmount = plan.price + extraTenants * 10;
+  const extraTenants = Math.max(0, tenantCount - plan.limit);
+  const totalAmount = plan.price + extraTenants * (plan.extra_per_tenant ?? 0);
 
   return {
     plan_applied: plan.id,
     plan_label: plan.label,
     plan_limit: plan.limit,
     extra_tenants: extraTenants,
+    extra_per_tenant: plan.extra_per_tenant,
     base_amount: plan.price,
     total_amount: totalAmount,
     upgrade_forced: upgradeForced,
@@ -52,7 +53,7 @@ function addOneMonth(dateStr) {
 
 async function getOwnerRow(ownerId) {
   const result = await query(
-    `SELECT id, plan, plan_status, billing_cycle_start, billing_cycle_end,
+    `SELECT id, name, plan, plan_status, billing_cycle_start, billing_cycle_end,
             auto_pay_enabled, free_months_remaining,
             billing_plan_override, billing_tenants_override
      FROM owners WHERE id = $1 LIMIT 1`,

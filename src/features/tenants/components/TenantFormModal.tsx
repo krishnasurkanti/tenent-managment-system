@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, CalendarDays, CreditCard, FileBadge2, IndianRupee, Mail, Phone, Plus, ShieldAlert, Trash2, User, UserCheck, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -119,6 +119,7 @@ export function TenantFormModal({
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const duePreview = useMemo(() => getNextDuePreview(form.paidOnDate, billingCycle), [billingCycle, form.paidOnDate]);
   const paymentCoverage = Number(form.monthlyRent) > 0
@@ -132,6 +133,10 @@ export function TenantFormModal({
     if (!open || typeof window === "undefined") return;
     window.localStorage.setItem(DRAFT_KEY, JSON.stringify({ step, billingCycle, form, familyMembers }));
   }, [billingCycle, familyMembers, form, open, step]);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [step, open]);
 
   if (!open) return null;
 
@@ -272,7 +277,7 @@ export function TenantFormModal({
             </div>
 
             {/* Scrollable content */}
-            <div className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-none touch-pan-y px-4 pb-2 pt-0 sm:px-5">
+            <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-none touch-pan-y px-4 pb-2 pt-0 sm:px-5">
               <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
 
                 {/* Step indicators */}

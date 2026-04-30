@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { removeTenant } from "@/services/tenants/tenants.service";
+import { fmtTenantId } from "@/utils/payment";
 import type { TenantRecord } from "@/types/tenant";
 
 export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
@@ -175,7 +176,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                       >
                         <p className="font-semibold text-[var(--foreground)]">{tenant.fullName}</p>
                         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                          Tenant ID {tenant.tenantId} • {tenant.phone}
+                          Tenant ID {fmtTenantId(tenant.tenantId)} • {tenant.phone}
                         </p>
                         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
                           Floor {tenant.assignment?.floorNumber ?? "-"} • Room {tenant.assignment?.roomNumber ?? "-"}
@@ -190,7 +191,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                 <>
                   <div className="rounded-2xl border border-[color:var(--error)] bg-[linear-gradient(180deg,rgba(220,38,38,0.14)_0%,rgba(254,226,226,0.92)_100%)] p-4 text-sm text-[color:var(--error)]">
                     <p className="font-semibold text-[#991b1b]">{selectedTenant.fullName}</p>
-                    <p className="mt-1">Tenant ID: {selectedTenant.tenantId}</p>
+                    <p className="mt-1">Tenant ID: {fmtTenantId(selectedTenant.tenantId)}</p>
                     <p className="mt-1">
                       Floor {selectedTenant.assignment?.floorNumber ?? "-"} / Room {selectedTenant.assignment?.roomNumber ?? "-"}
                     </p>

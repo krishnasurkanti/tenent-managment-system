@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { useToast } from "@/components/ui/toast";
 import { recordTenantPayment } from "@/services/tenants/tenants.service";
-import { formatPaymentDate } from "@/utils/payment";
+import { formatPaymentDate, fmtTenantId } from "@/utils/payment";
 import type { TenantRecord } from "@/types/tenant";
 
 export function TenantRentSearch({ tenants, hideButton }: { tenants: TenantRecord[]; hideButton?: boolean }) {
@@ -269,7 +269,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
                               }`}
                             >
                               <p className="font-semibold text-white">{tenant.fullName}</p>
-                              <p className="mt-1 text-sm text-white/50">Tenant ID {tenant.tenantId} • {tenant.phone}</p>
+                              <p className="mt-1 text-sm text-white/50">Tenant ID {fmtTenantId(tenant.tenantId)} • {tenant.phone}</p>
                               <p className="mt-1 text-sm text-white/50">
                                 Floor {tenant.assignment?.floorNumber ?? "-"} • Room {tenant.assignment?.roomNumber ?? "-"}
                               </p>
@@ -284,7 +284,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
                 {selectedTenant && step >= 2 ? (
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-white/50">
                     <p className="font-semibold text-white">{selectedTenant.fullName}</p>
-                    <p className="mt-1">Tenant ID: {selectedTenant.tenantId}</p>
+                    <p className="mt-1">Tenant ID: {fmtTenantId(selectedTenant.tenantId)}</p>
                     <p className="mt-1">Floor {selectedTenant.assignment?.floorNumber ?? "-"} / Room {selectedTenant.assignment?.roomNumber ?? "-"}</p>
                     <p className="mt-1">Next due: {formatPaymentDate(selectedTenant.nextDueDate)}</p>
                   </div>

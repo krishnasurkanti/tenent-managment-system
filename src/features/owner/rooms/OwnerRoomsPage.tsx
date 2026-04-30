@@ -171,17 +171,14 @@ function OwnerRoomsPageContent() {
                             <div className="mt-3 grid grid-cols-2 gap-2">
                                 {(room.beds ?? []).map((bed, index) => {
                                 const assignedTenant = roomTenants.find((tenant) => tenant.assignment?.bedId === bed.id) ?? roomTenants[index];
-                                const paymentStatus = assignedTenant ? getDueStatus(assignedTenant.nextDueDate) : null;
+                                const isOverdue = assignedTenant ? getDueStatus(assignedTenant.nextDueDate).tone === "red" : false;
                                 const toneClass = !assignedTenant
-                                  ? "border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]"
-                                  : paymentStatus?.tone === "red"
-                                    ? "border border-[#ef4444] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] text-white shadow-[0_12px_24px_rgba(220,38,38,0.24)]"
-                                    : paymentStatus?.tone === "orange" || paymentStatus?.tone === "yellow"
-                                      ? "border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]"
-                                      : "border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white shadow-[0_10px_22px_rgba(34,197,94,0.24)]";
+                                  ? "border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white shadow-[0_10px_22px_rgba(34,197,94,0.24)]"
+                                  : "border border-[#ef4444] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] text-white shadow-[0_12px_24px_rgba(220,38,38,0.24)]";
 
                                 return (
-                                  <div key={`${room.id}-bed-${index + 1}`} className={`rounded-2xl px-2.5 py-2 ${toneClass}`}>
+                                  <div key={`${room.id}-bed-${index + 1}`} className={`relative rounded-2xl px-2.5 py-2 ${toneClass}`}>
+                                    {isOverdue ? <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-yellow-400" /> : null}
                                     <p className="text-[10px] font-semibold uppercase tracking-[0.12em]">{bed.label}</p>
                                     <p className="mt-1 truncate text-[11px] font-semibold">
                                       {assignedTenant ? assignedTenant.fullName : "Available"}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ownerPayBilling } from "@/data/adminStore";
+import { backendFetch } from "@/services/core/backend-api";
 import { requireOwnerSession } from "@/lib/session-mode";
 
 export const dynamic = "force-dynamic";
@@ -8,20 +8,12 @@ export async function POST(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  const body = (await request.json()) as {
-    hostelId?: string;
-    paymentMethod?: "online" | "manual";
-  };
+  const body = (await request.json()) as { paymentMethod?: "online" | "manual" };
 
-  if (!body.hostelId) {
-    return NextResponse.json({ message: "hostelId is required." }, { status: 400 });
-  }
-
-  try {
-    const invoice = ownerPayBilling(body.hostelId, body.paymentMethod ?? "online");
-    return NextResponse.json({ invoice });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to process payment.";
-    return NextResponse.json({ message }, { status: 400 });
-  }
+  const response = await backendFetch("/api/owner/billing/pay", {
+    method: "POST",
+    body: JSON.stringify({ paymentMethod: body.paymentMethod ?? "online" }),
+  });
+  const payload = (await response.json()) as unknown;
+  return NextResponse.json(payload, { status: response.status });
 }

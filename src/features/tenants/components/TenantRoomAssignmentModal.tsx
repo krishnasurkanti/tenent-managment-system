@@ -265,18 +265,19 @@ export function TenantRoomAssignmentModal({
 
                     {!isResidence && selectedRoom ? (
                       <PillGroup label="Bed">
-                        {(selectedRoom.beds ?? []).filter((bed) => !bed.occupied).length === 0 ? (
-                          <span className="text-sm text-white/40">No available beds</span>
+                        {(selectedRoom.beds ?? []).length === 0 ? (
+                          <span className="text-sm text-white/40">No beds configured</span>
                         ) : (
-                          (selectedRoom.beds ?? []).filter((bed) => !bed.occupied).map((bed) => (
-                            <PillButton
+                          (selectedRoom.beds ?? []).map((bed) => (
+                            <BedPillButton
                               key={bed.id}
                               selected={bed.id === bedId}
-                              disabled={saving}
+                              occupied={bed.occupied ?? false}
+                              disabled={saving || (bed.occupied ?? false)}
                               onClick={() => setBedId(bed.id)}
                             >
                               {bed.label}
-                            </PillButton>
+                            </BedPillButton>
                           ))
                         )}
                       </PillGroup>
@@ -370,13 +371,13 @@ function mapHostelInventory(hostel: OwnerHostel): HostelRoomInventory {
         unitId: room.unitId,
         roomNumber: room.roomNumber,
         capacity: hostel.type === "RESIDENCE" ? 1 : room.bedCount,
-        occupied: 0,
+        occupied: room.occupied ?? 0,
         sharingType: room.sharingType,
         propertyType: hostel.type ?? "PG",
         beds: room.beds?.map((bed) => ({
           id: bed.id,
           label: bed.label,
-          occupied: false,
+          occupied: bed.occupied ?? false,
         })),
       })),
     })),
@@ -461,6 +462,38 @@ function PillButton({
         selected
           ? "border-blue-500/60 bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.3)]"
           : "border-white/12 bg-white/[0.06] text-white/70 hover:border-white/25 hover:text-white",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function BedPillButton({
+  selected,
+  occupied,
+  disabled,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  occupied: boolean;
+  disabled: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "rounded-xl border px-4 py-2 text-sm font-semibold transition",
+        selected
+          ? "border-blue-500/60 bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.3)]"
+          : occupied
+            ? "cursor-not-allowed border-[#ef4444] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] text-white opacity-80"
+            : "border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white shadow-[0_4px_12px_rgba(34,197,94,0.22)] hover:brightness-110",
       )}
     >
       {children}

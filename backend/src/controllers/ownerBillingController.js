@@ -13,6 +13,16 @@ async function getOwnerBilling(req, res, next) {
     const owner = await getOwnerRow(ownerId);
     if (!owner) return res.status(404).json({ message: "Owner not found." });
 
+    const cycleCountResult = await query(
+      `SELECT
+         COUNT(*) FILTER (WHERE data->>'billingCycle' = 'weekly')::int  AS weekly_count,
+         COUNT(*) FILTER (WHERE data->>'billingCycle' = 'daily')::int   AS daily_count,
+         COUNT(*) FILTER (WHERE data->>'billingCycle' IS NULL OR data->>'billingCycle' = 'monthly')::int AS monthly_count
+       FROM tenants WHERE owner_id = $1`,
+      [ownerId],
+    );
+    const { weekly_count, daily_count, monthly_count } = cycleCountResult.rows[0] ?? {};
+
     const liveTenants = await getLiveTenantCount(ownerId);
     const effectiveTenants =
       owner.billing_tenants_override != null ? owner.billing_tenants_override : liveTenants;
@@ -33,6 +43,8 @@ async function getOwnerBilling(req, res, next) {
     const pendingUpgrade = upgradeResult.rows[0] ?? null;
 
     return res.json({
+      ownerName: owner.name ?? "",
+      ownerId,
       plan: {
         current: planId,
         status: owner.plan_status,
@@ -43,14 +55,20 @@ async function getOwnerBilling(req, res, next) {
         cycleEnd: owner.billing_cycle_end,
         liveTenantCount: liveTenants,
         effectiveTenants,
-        planLimit: bill.plan_limit === Infinity ? null : bill.plan_limit,
+        planLimit: bill.plan_limit,
         extraTenants: bill.extra_tenants,
         baseAmount: bill.base_amount,
-        extraCharges: bill.extra_tenants * 10,
+        extraCharges: bill.extra_tenants * (bill.extra_per_tenant ?? 0),
         totalAmount: displayAmount,
         freeMonthsRemaining: freeMonths,
         upgradeSuggested: bill.upgrade_forced,
         nextPlan: bill.next_plan,
+      },
+      tenantCounts: {
+        weekly: weekly_count ?? 0,
+        daily: daily_count ?? 0,
+        monthly: monthly_count ?? 0,
+        total: liveTenants,
       },
       invoice: {
         id: invoice.id,

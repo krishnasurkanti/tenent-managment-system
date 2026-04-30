@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { CalendarDays, Check, CreditCard, IndianRupee, WalletCards, X } from "lucide-react";
+import { Check, CreditCard, IndianRupee, WalletCards, X } from "lucide-react";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { useToast } from "@/components/ui/toast";
 import { recordTenantPayment } from "@/services/tenants/tenants.service";
-import { formatPaymentDate } from "@/utils/payment";
+import { formatPaymentDate, fmtTenantId } from "@/utils/payment";
 import type { TenantRecord } from "@/types/tenant";
 
 type PaymentMode = "cash" | "upi" | "bank";
@@ -145,7 +145,7 @@ export function PaymentCollectionModal({
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">Tenant</p>
               <p className="mt-1.5 text-base font-semibold text-white">{tenant.fullName}</p>
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <InfoPill label="ID" value={`#${tenant.tenantId}`} />
+                <InfoPill label="ID" value={`#${fmtTenantId(tenant.tenantId)}`} />
                 <InfoPill
                   label="Room"
                   value={
@@ -162,7 +162,7 @@ export function PaymentCollectionModal({
 
           {/* Form */}
           <div className="space-y-3">
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-3">
               <DarkField label="Paid Amount" icon={<IndianRupee className="h-4 w-4" />}>
                 <input
                   type="number"
@@ -175,7 +175,7 @@ export function PaymentCollectionModal({
                 />
               </DarkField>
 
-              <DarkField label="Paid On Date" icon={<CalendarDays className="h-4 w-4" />}>
+              <DarkField label="Paid On Date">
                 <input
                   type="date"
                   value={paidOnDate}
@@ -275,14 +275,14 @@ function DarkField({
   children,
 }: {
   label: string;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-[12px] font-semibold text-white/60">{label}</span>
       <div className="flex items-center gap-2.5 rounded-2xl border border-white/12 bg-white/[0.05] px-3.5 py-3 text-white/40 transition focus-within:border-[#38bdf8]/40 focus-within:bg-white/[0.07]">
-        <span className="flex-shrink-0">{icon}</span>
+        {icon ? <span className="flex-shrink-0">{icon}</span> : null}
         {children}
       </div>
     </label>

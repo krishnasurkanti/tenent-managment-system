@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { setOwnerAutoPay } from "@/data/adminStore";
+import { backendFetch } from "@/services/core/backend-api";
 import { requireOwnerSession } from "@/lib/session-mode";
 
 export const dynamic = "force-dynamic";
@@ -8,17 +8,12 @@ export async function PATCH(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  const body = (await request.json()) as { hostelId?: string; enabled?: boolean };
+  const body = (await request.json()) as { enabled?: boolean };
 
-  if (!body.hostelId) {
-    return NextResponse.json({ message: "hostelId is required." }, { status: 400 });
-  }
-
-  try {
-    const control = setOwnerAutoPay(body.hostelId, Boolean(body.enabled));
-    return NextResponse.json({ hostelId: control.hostelId, autoPayEnabled: control.autoPayEnabled });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to update auto-pay.";
-    return NextResponse.json({ message }, { status: 400 });
-  }
+  const response = await backendFetch("/api/owner-billing/autopay", {
+    method: "PATCH",
+    body: JSON.stringify({ enabled: Boolean(body.enabled) }),
+  });
+  const payload = (await response.json()) as unknown;
+  return NextResponse.json(payload, { status: response.status });
 }

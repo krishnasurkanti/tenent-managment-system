@@ -25,7 +25,7 @@ import { useToast } from "@/components/ui/toast";
 import { TenantRentSearch } from "@/features/payments/components/TenantRentSearch";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
 import { uploadTenantPaymentProof } from "@/services/tenants/tenants.service";
-import { formatPaymentDate, getDueStatus } from "@/utils/payment";
+import { formatPaymentDate, getDueStatus, fmtTenantId } from "@/utils/payment";
 import type { TenantRecord } from "@/types/tenant";
 
 export default function OwnerPaymentsPage() {
@@ -201,7 +201,7 @@ export default function OwnerPaymentsPage() {
                             <Link href={`/owner/tenants/${tenant.tenantId}`} className="font-semibold text-white transition hover:text-[var(--accent-electric)]">
                               {tenant.fullName}
                             </Link>
-                            <p className="mt-1 text-[10px] text-[color:var(--fg-secondary)]">{tenant.tenantId} / {tenant.phone}</p>
+                            <p className="mt-1 text-[10px] text-[color:var(--fg-secondary)]">{fmtTenantId(tenant.tenantId)} / {tenant.phone}</p>
                           </td>
                           <td className="px-3 py-3 text-[color:var(--fg-secondary)]">
                             {tenant.assignment ? `R-${tenant.assignment.roomNumber} / F-${tenant.assignment.floorNumber}` : "-"}
@@ -253,7 +253,7 @@ export default function OwnerPaymentsPage() {
                         <div>
                           <p className="text-[11px] font-semibold text-white">{tenant.fullName}</p>
                           <p className="mt-0.5 text-[9px] text-[color:var(--fg-secondary)]">
-                            {tenant.tenantId} / Room {tenant.assignment?.roomNumber} / Floor {tenant.assignment?.floorNumber}
+                            {fmtTenantId(tenant.tenantId)} / Room {tenant.assignment?.roomNumber} / Floor {tenant.assignment?.floorNumber}
                           </p>
                           <p className="mt-0.5 text-[9px] text-[color:var(--fg-secondary)]">Next due {formatPaymentDate(tenant.nextDueDate)}</p>
                         </div>

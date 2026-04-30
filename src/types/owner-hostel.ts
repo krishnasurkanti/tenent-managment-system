@@ -6,11 +6,13 @@ export type OwnerRoom = {
   unitId?: string;
   propertyType?: "PG" | "RESIDENCE";
   beds?: OwnerBed[];
+  occupied?: number;
 };
 
 export type OwnerBed = {
   id: string;
   label: string;
+  occupied?: boolean;
 };
 
 export type OwnerFloor = {

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
 import { ownerInputClass, ownerPanelClass, ownerSubtlePanelClass } from "@/components/ui/owner-theme";
-import { fetchOwnerHostel, saveOwnerHostel } from "@/services/owner/owner-hostels.service";
+import { saveOwnerHostel } from "@/services/owner/owner-hostels.service";
 import { csrfFetch } from "@/lib/csrf-client";
 import { getSharingLabel } from "@/utils/hostel-occupancy";
 import { useHostelContext } from "@/store/hostel-context";
@@ -65,7 +65,7 @@ export default function CreateHostelPage() {
 
 function CreateHostelPageContent() {
   const router = useRouter();
-  const { refreshHostels } = useHostelContext();
+  const { refreshHostels, currentHostel, loading: hostelLoading } = useHostelContext();
   const searchParams = useSearchParams();
   const isEditMode = searchParams.get("mode") === "edit";
   const autoSetup = searchParams.get("autoSetup") === "1";
@@ -113,35 +113,28 @@ function CreateHostelPageContent() {
 
   useEffect(() => {
     if (!isEditMode) return;
-    let active = true;
+    if (hostelLoading) return;
+    if (!loadingExisting) return;
 
-    const loadExistingHostel = async () => {
-      try {
-        const storedHostelId = window.localStorage.getItem("currentHostelId");
-        setEditingHostelId(storedHostelId);
-        const { data } = await fetchOwnerHostel(storedHostelId);
-        if (!active) return;
-        if (!data.hostel) { router.replace("/owner/create-hostel"); return; }
+    if (!currentHostel) {
+      router.replace("/owner/create-hostel");
+      return;
+    }
 
-        const allRooms: RoomForm[] = data.hostel.floors.flatMap((floor: { rooms: { id: string; roomNumber: string; bedCount: number }[] }) =>
-          floor.rooms.map((room) => ({
-            id: room.id,
-            roomNumber: room.roomNumber,
-            bedCount: String(room.bedCount),
-            beds: syncBeds([], room.bedCount),
-          }))
-        );
-        setHostelName(data.hostel.hostelName);
-        setAddress(data.hostel.address);
-        setRooms(allRooms.length > 0 ? allRooms : [createRoom()]);
-      } finally {
-        if (active) setLoadingExisting(false);
-      }
-    };
-
-    loadExistingHostel();
-    return () => { active = false; };
-  }, [isEditMode, router]);
+    setEditingHostelId(currentHostel.id);
+    const allRooms: RoomForm[] = currentHostel.floors.flatMap((floor) =>
+      floor.rooms.map((room) => ({
+        id: room.id,
+        roomNumber: room.roomNumber,
+        bedCount: String(room.bedCount),
+        beds: syncBeds([], room.bedCount),
+      }))
+    );
+    setHostelName(currentHostel.hostelName);
+    setAddress(currentHostel.address);
+    setRooms(allRooms.length > 0 ? allRooms : [createRoom()]);
+    setLoadingExisting(false);
+  }, [isEditMode, hostelLoading, currentHostel, loadingExisting, router]);
 
   const updateRoomField = (roomId: string, key: "roomNumber" | "bedCount", value: string) => {
     setRooms((current) =>

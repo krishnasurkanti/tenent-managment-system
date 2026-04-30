@@ -1,18 +1,87 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getBillingHistory, getBillingSummary } from "@/data/adminStore";
 import { isAdminAuthenticated } from "@/lib/admin-session";
+import { backendFetch } from "@/services/core/backend-api";
 
 export const dynamic = "force-dynamic";
+
+type PlanSlab = { limit: number | null; base: number; extra_per_tenant: number };
 
 export async function GET(request: NextRequest) {
   if (!isAdminAuthenticated(request)) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const month = request.nextUrl.searchParams.get("month") ?? undefined;
-  return NextResponse.json({
-    summary: getBillingSummary(month),
-    history: getBillingHistory(),
+  const response = await backendFetch("/api/admin/billing/owners");
+  if (!response.ok) {
+    const payload = (await response.json()) as unknown;
+    return NextResponse.json(payload, { status: response.status });
+  }
+
+  const { owners, plans } = (await response.json()) as {
+    owners: Array<{
+      id: number;
+      name: string;
+      plan: string;
+      free_months_remaining: number;
+      tenant_count: number;
+      latest_invoice_id: number | null;
+      latest_invoice_status: string | null;
+      latest_invoice_amount: string | null;
+    }>;
+    plans: Record<string, PlanSlab>;
+  };
+
+  const summary = owners.map((owner) => {
+    const planId = owner.plan ?? "starter";
+    const slab: PlanSlab = plans[planId] ?? plans["starter"] ?? { limit: 50, base: 999, extra_per_tenant: 10 };
+    const planLimit = slab.limit ?? Infinity;
+    const tenantCount = owner.tenant_count ?? 0;
+    const freeMonths = owner.free_months_remaining ?? 0;
+    const extraTenants = planLimit === Infinity ? 0 : Math.max(0, tenantCount - planLimit);
+    const extraCharges = extraTenants * (slab.extra_per_tenant ?? 10);
+    const baseAmount = slab.base ?? 0;
+    const finalAmount = freeMonths > 0 ? 0 : baseAmount + extraCharges;
+
+    return {
+      hostelId: String(owner.id),
+      hostelName: owner.name,
+      plan: {
+        id: planId,
+        name: planId,
+        basePrice: slab.base,
+        limit: slab.limit ?? 0,
+      },
+      control: {
+        planId,
+        pricingOverride: null,
+        discountPercent: 0,
+        freeMonthsRemaining: freeMonths,
+      },
+      billing: {
+        tenantCount,
+        billableTenantCount: tenantCount,
+        extraTenants,
+        extraCharges,
+        baseAmount,
+        discountAmount: 0,
+        finalAmount,
+        upgradeSuggested: false,
+        blockedAtNextPlan: false,
+        nextPlanName: null,
+      },
+    };
   });
+
+  const history = owners
+    .filter((o) => o.latest_invoice_id != null)
+    .map((o) => ({
+      invoiceId: String(o.latest_invoice_id),
+      hostelId: String(o.id),
+      monthKey: new Date().toISOString().slice(0, 7),
+      finalAmount: Number(o.latest_invoice_amount) || 0,
+      paymentStatus: o.latest_invoice_status === "paid" ? "paid" : "pending",
+    }));
+
+  return NextResponse.json({ summary, history });
 }

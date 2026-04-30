@@ -6,7 +6,7 @@ import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
 import { getOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
 import { getTenantRecords } from "@/data/tenantStore";
-import { formatPaymentDate, getDueStatus } from "@/utils/payment";
+import { formatPaymentDate, getDueStatus, fmtTenantId } from "@/utils/payment";
 import type { TenantRecord } from "@/types/tenant";
 
 export const dynamic = "force-dynamic";
@@ -59,7 +59,7 @@ export default async function OwnerTenantDetailsPage({
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <OwnerQuickStat label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} helper="Current monthly amount" />
           <OwnerQuickStat label="Last paid" value={formatPaymentDate(tenant.paidOnDate)} helper="Most recent payment date" />
-          <OwnerQuickStat label="Next due" value={formatPaymentDate(tenant.nextDueDate)} helper={`Tenant ID ${tenant.tenantId}`} />
+          <OwnerQuickStat label="Next due" value={formatPaymentDate(tenant.nextDueDate)} helper={`Tenant ID ${fmtTenantId(tenant.tenantId)}`} />
         </div>
 
         <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">

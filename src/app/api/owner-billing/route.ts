@@ -1,69 +1,80 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getOwnerHostels } from "@/data/ownerHostelStore";
-import { getOwnerBilling } from "@/data/adminStore";
-import { getTenantRecords } from "@/data/tenantStore";
+import { backendFetch } from "@/services/core/backend-api";
 import { requireOwnerSession } from "@/lib/session-mode";
 
 export const dynamic = "force-dynamic";
-
-const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
-
-function getCycleWindow(anchorDateIso: string) {
-  const anchor = new Date(anchorDateIso);
-  const now = new Date();
-  const anchorDay = anchor.getDate();
-
-  let cycleStart = new Date(now.getFullYear(), now.getMonth(), anchorDay);
-  if (cycleStart > now) {
-    cycleStart = new Date(now.getFullYear(), now.getMonth() - 1, anchorDay);
-  }
-  if (cycleStart < anchor) {
-    cycleStart = new Date(anchor);
-  }
-
-  const nextBillingDate = new Date(cycleStart.getFullYear(), cycleStart.getMonth() + 1, anchorDay);
-  return { cycleStart, nextBillingDate };
-}
 
 export async function GET(request: NextRequest) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  const hostelId = request.nextUrl.searchParams.get("hostelId");
-  if (!hostelId) {
-    return NextResponse.json({ message: "hostelId is required." }, { status: 400 });
+  const response = await backendFetch("/api/owner-billing");
+  if (!response.ok) {
+    const payload = (await response.json()) as unknown;
+    return NextResponse.json(payload, { status: response.status });
   }
 
-  const hostel = getOwnerHostels().find((item) => item.id === hostelId);
-  if (!hostel) {
-    return NextResponse.json({ message: "Hostel not found." }, { status: 404 });
-  }
+  const raw = (await response.json()) as {
+    ownerName: string;
+    ownerId: number;
+    plan: { current: string; status: string };
+    billing: {
+      cycleStart: string;
+      cycleEnd: string;
+      liveTenantCount: number;
+      effectiveTenants: number;
+      extraTenants: number;
+      baseAmount: number;
+      extraCharges: number;
+      totalAmount: number;
+      upgradeSuggested: boolean;
+      nextPlan: { id: string; label: string } | null;
+    };
+    tenantCounts: { weekly: number; daily: number; monthly: number; total: number };
+    invoice: { id: number; status: string; amount: number; cycleStart: string; cycleEnd: string };
+    autoPayEnabled: boolean;
+    upgradePending: boolean;
+    upgradeRequest: { id: number; requested_plan: string; status: string; created_at: string } | null;
+  };
 
-  try {
-    const billing = getOwnerBilling(hostelId);
-    const hostelTenants = getTenantRecords().filter((tenant) => tenant.assignment?.hostelId === hostelId);
-    const monthlyTenants = hostelTenants.filter((tenant) => !tenant.billingCycle || tenant.billingCycle === "monthly");
-    const weeklyTenantCount = hostelTenants.filter((tenant) => tenant.billingCycle === "weekly").length;
-    const dailyTenantCount = hostelTenants.filter((tenant) => tenant.billingCycle === "daily").length;
+  const planId = raw.plan.current as "starter" | "growth" | "pro" | "scale";
+  const monthKey = raw.billing.cycleStart
+    ? new Date(raw.billing.cycleStart).toISOString().slice(0, 7)
+    : new Date().toISOString().slice(0, 7);
 
-    const { cycleStart, nextBillingDate } = getCycleWindow(hostel.createdAt);
-    const cutoff = new Date(nextBillingDate.getTime() - TEN_DAYS_MS);
-    const monthlyTenantCount = monthlyTenants.filter((tenant) => new Date(tenant.paidOnDate) < cutoff).length;
-    const nextMonthCount = monthlyTenants.filter((tenant) => new Date(tenant.paidOnDate) >= cutoff).length;
-
-    return NextResponse.json({
-      ...billing,
-      weeklyTenantCount,
-      dailyTenantCount,
-      monthlyTenantCount,
-      nextMonthCount,
-      cycleStart: cycleStart.toISOString().slice(0, 10),
-      nextBillingDate: nextBillingDate.toISOString().slice(0, 10),
-      onboardingDate: hostel.createdAt.slice(0, 10),
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to load billing.";
-    return NextResponse.json({ message }, { status: 400 });
-  }
+  return NextResponse.json({
+    hostelId: String(raw.ownerId),
+    hostelName: raw.ownerName,
+    monthKey,
+    dueDate: raw.billing.cycleEnd ?? "",
+    planId,
+    autoPayEnabled: raw.autoPayEnabled,
+    paymentStatus: raw.invoice.status === "paid" ? "paid" : "pending",
+    accessActive: true,
+    payableAmount: raw.billing.totalAmount,
+    weeklyTenantCount: raw.tenantCounts.weekly,
+    dailyTenantCount: raw.tenantCounts.daily,
+    monthlyTenantCount: raw.tenantCounts.monthly,
+    nextMonthCount: 0,
+    billing: {
+      tenantCount: raw.billing.liveTenantCount,
+      billableTenantCount: raw.billing.effectiveTenants,
+      extraTenants: raw.billing.extraTenants,
+      extraCharges: raw.billing.extraCharges,
+      finalAmount: raw.billing.totalAmount,
+      upgradeSuggested: raw.billing.upgradeSuggested,
+      blockedAtNextPlan: raw.billing.upgradeSuggested,
+      nextPlanName: raw.billing.nextPlan?.id ?? null,
+    },
+    upgradePending: raw.upgradePending,
+    upgradeRequest: raw.upgradeRequest
+      ? {
+          requestId: String(raw.upgradeRequest.id),
+          requestedPlanId: raw.upgradeRequest.requested_plan,
+          status: raw.upgradeRequest.status,
+          requestedAt: raw.upgradeRequest.created_at,
+        }
+      : null,
+  });
 }

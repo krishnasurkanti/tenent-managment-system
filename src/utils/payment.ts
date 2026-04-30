@@ -1,3 +1,7 @@
+export function fmtTenantId(id: string | number): string {
+  return String(id).padStart(6, "0");
+}
+
 export function calculateNextDueDate(
   paidOnDate: string,
   billingAnchorDate: string,
