@@ -1,4 +1,4 @@
-const { runInvoiceCycleJob, trackDailyTenantCounts } = require("../services/adminBillingService");
+const { trackDailyTenantCounts, runInvoiceCycleJob } = require("../services/ownerBillingService");
 
 let started = false;
 
@@ -11,15 +11,13 @@ function startBillingJobs() {
   if (started) return;
   started = true;
 
-  // Run once on boot for catch-up in MVP environments.
   runAllJobs().catch((error) => {
-    console.error("Billing bootstrap job failed", error);
+    console.error("[billing-jobs] bootstrap run failed:", error.message);
   });
 
-  // Daily execution (24h). Keep simple for MVP.
   setInterval(() => {
     runAllJobs().catch((error) => {
-      console.error("Billing interval job failed", error);
+      console.error("[billing-jobs] interval run failed:", error.message);
     });
   }, 24 * 60 * 60 * 1000);
 }

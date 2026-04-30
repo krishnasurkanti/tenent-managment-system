@@ -1,59 +1,66 @@
-const Hostel = require("../models/Hostel");
-const Invoice = require("../models/Invoice");
-const UpgradeRequest = require("../models/UpgradeRequest");
-const { calculateBill, getEffectiveTenants, generateInvoiceForHostel } = require("../services/adminBillingService");
-
-async function resolveOwnerHostel(ownerId, hostelId) {
-  const query = { ownerId };
-  if (hostelId) query._id = hostelId;
-  const hostel = await Hostel.findOne(query).sort({ createdAt: 1 });
-  return hostel;
-}
+const { query } = require("../config/db");
+const {
+  PLAN_SLABS,
+  calculateBill,
+  getLiveTenantCount,
+  getOwnerRow,
+  getOrCreateCurrentInvoice,
+} = require("../services/ownerBillingService");
 
 async function getOwnerBilling(req, res, next) {
   try {
-    const hostel = await resolveOwnerHostel(req.user.id, req.query.hostelId);
-    if (!hostel) return res.status(404).json({ message: "Hostel not found for owner." });
+    const ownerId = req.user.ownerId;
+    const owner = await getOwnerRow(ownerId);
+    if (!owner) return res.status(404).json({ message: "Owner not found." });
 
-    const effectiveTenants = await getEffectiveTenants(hostel._id, hostel.billing_cycle_start, hostel.billing_cycle_end);
-    const bill = calculateBill(effectiveTenants, hostel.current_plan);
+    const liveTenants = await getLiveTenantCount(ownerId);
+    const effectiveTenants =
+      owner.billing_tenants_override != null ? owner.billing_tenants_override : liveTenants;
+    const planId = owner.billing_plan_override ?? owner.plan ?? "starter";
+    const bill = calculateBill(effectiveTenants, planId);
+    const freeMonths = owner.free_months_remaining ?? 0;
+    const invoice = await getOrCreateCurrentInvoice(ownerId, owner);
+    const displayAmount = freeMonths > 0 ? 0 : bill.total_amount;
 
-    let invoice = await Invoice.findOne({
-      hostel_id: hostel._id,
-      cycle_start: hostel.billing_cycle_start,
-      cycle_end: hostel.billing_cycle_end,
-    });
-    if (!invoice) {
-      invoice = await generateInvoiceForHostel(hostel, { force: true });
-    }
-
-    const pendingUpgrade = await UpgradeRequest.findOne({
-      ownerId: req.user.id,
-      hostelId: hostel._id,
-      status: "pending",
-    }).sort({ createdAt: -1 });
+    // Check pending upgrade request
+    const upgradeResult = await query(
+      `SELECT id, requested_plan, status, created_at
+       FROM owner_upgrade_requests
+       WHERE owner_id = $1 AND status = 'pending'
+       ORDER BY created_at DESC LIMIT 1`,
+      [ownerId],
+    );
+    const pendingUpgrade = upgradeResult.rows[0] ?? null;
 
     return res.json({
-      hostelId: hostel._id,
-      hostelName: hostel.name,
-      planId: hostel.current_plan,
-      dueDate: hostel.billing_cycle_end,
-      autoPayEnabled: hostel.auto_pay_enabled,
-      paymentStatus: invoice.status,
-      payableAmount: invoice.total_amount,
-      accessActive: invoice.status === "paid" || invoice.total_amount === 0,
-      billing: {
-        tenantCount: effectiveTenants,
-        billableTenantCount: effectiveTenants,
-        extraTenants: bill.extra_tenants,
-        extraCharges: bill.extra_tenants * 10,
-        baseAmount: bill.total_amount - bill.extra_tenants * 10,
-        discountAmount: 0,
-        finalAmount: invoice.total_amount,
-        upgradeSuggested: bill.upgrade_forced,
-        blockedAtNextPlan: false,
-        nextPlanName: null,
+      plan: {
+        current: planId,
+        status: owner.plan_status,
+        slabs: PLAN_SLABS,
       },
+      billing: {
+        cycleStart: owner.billing_cycle_start,
+        cycleEnd: owner.billing_cycle_end,
+        liveTenantCount: liveTenants,
+        effectiveTenants,
+        planLimit: bill.plan_limit === Infinity ? null : bill.plan_limit,
+        extraTenants: bill.extra_tenants,
+        baseAmount: bill.base_amount,
+        extraCharges: bill.extra_tenants * 10,
+        totalAmount: displayAmount,
+        freeMonthsRemaining: freeMonths,
+        upgradeSuggested: bill.upgrade_forced,
+        nextPlan: bill.next_plan,
+      },
+      invoice: {
+        id: invoice.id,
+        status: invoice.status,
+        amount: invoice.total_amount,
+        cycleStart: invoice.cycle_start,
+        cycleEnd: invoice.cycle_end,
+        planApplied: invoice.plan_applied,
+      },
+      autoPayEnabled: owner.auto_pay_enabled,
       upgradePending: Boolean(pendingUpgrade),
       upgradeRequest: pendingUpgrade,
     });
@@ -64,11 +71,10 @@ async function getOwnerBilling(req, res, next) {
 
 async function setOwnerAutopay(req, res, next) {
   try {
-    const hostel = await resolveOwnerHostel(req.user.id, null);
-    if (!hostel) return res.status(404).json({ message: "Hostel not found for owner." });
-    hostel.auto_pay_enabled = req.body.enabled;
-    await hostel.save();
-    return res.json({ hostelId: hostel._id, autoPayEnabled: hostel.auto_pay_enabled });
+    const ownerId = req.user.ownerId;
+    const { enabled } = req.body;
+    await query(`UPDATE owners SET auto_pay_enabled = $2 WHERE id = $1`, [ownerId, enabled]);
+    return res.json({ autoPayEnabled: enabled });
   } catch (error) {
     return next(error);
   }
@@ -76,27 +82,25 @@ async function setOwnerAutopay(req, res, next) {
 
 async function payOwnerInvoice(req, res, next) {
   try {
-    const hostel = await resolveOwnerHostel(req.user.id, null);
-    if (!hostel) return res.status(404).json({ message: "Hostel not found for owner." });
+    const ownerId = req.user.ownerId;
+    const { paymentMethod } = req.body;
+    const owner = await getOwnerRow(ownerId);
+    if (!owner) return res.status(404).json({ message: "Owner not found." });
 
-    const invoice = await Invoice.findOneAndUpdate(
-      {
-        hostel_id: hostel._id,
-        cycle_start: hostel.billing_cycle_start,
-        cycle_end: hostel.billing_cycle_end,
-      },
-      {
-        $set: {
-          status: "paid",
-          payment_provider: req.body.paymentMethod === "online" ? "razorpay" : "manual",
-          payment_note: "Marked paid by owner checkout flow.",
-        },
-      },
-      { new: true },
+    const invoice = await getOrCreateCurrentInvoice(ownerId, owner);
+
+    const result = await query(
+      `UPDATE owner_invoices
+       SET status = 'paid',
+           payment_provider = $3,
+           payment_note = 'Marked paid by owner.',
+           updated_at = NOW()
+       WHERE id = $2 AND owner_id = $1
+       RETURNING *`,
+      [ownerId, invoice.id, paymentMethod === "online" ? "razorpay" : "manual"],
     );
 
-    if (!invoice) return res.status(404).json({ message: "Invoice not found." });
-    return res.json({ invoice });
+    return res.json({ invoice: result.rows[0] });
   } catch (error) {
     return next(error);
   }
@@ -104,32 +108,30 @@ async function payOwnerInvoice(req, res, next) {
 
 async function requestUpgrade(req, res, next) {
   try {
-    const hostel = await resolveOwnerHostel(req.user.id, null);
-    if (!hostel) return res.status(404).json({ message: "Hostel not found for owner." });
+    const ownerId = req.user.ownerId;
+    const { requestedPlan, note } = req.body;
+    const owner = await getOwnerRow(ownerId);
+    if (!owner) return res.status(404).json({ message: "Owner not found." });
 
-    const existing = await UpgradeRequest.findOne({
-      ownerId: req.user.id,
-      hostelId: hostel._id,
-      status: "pending",
-    });
-    if (existing) return res.status(400).json({ message: "Upgrade request already pending." });
+    const existing = await query(
+      `SELECT id FROM owner_upgrade_requests WHERE owner_id = $1 AND status = 'pending' LIMIT 1`,
+      [ownerId],
+    );
+    if (existing.rowCount > 0) {
+      return res.status(400).json({ message: "Upgrade request already pending." });
+    }
 
-    const request = await UpgradeRequest.create({
-      hostelId: hostel._id,
-      ownerId: req.user.id,
-      currentPlan: hostel.current_plan,
-      requestedPlan: req.body.requestedPlan,
-      note: req.body.note || "",
-    });
-    return res.status(201).json({ upgradeRequest: request });
+    const result = await query(
+      `INSERT INTO owner_upgrade_requests (owner_id, current_plan, requested_plan, note)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [ownerId, owner.plan ?? "starter", requestedPlan, note?.trim() ?? ""],
+    );
+
+    return res.status(201).json({ upgradeRequest: result.rows[0] });
   } catch (error) {
     return next(error);
   }
 }
 
-module.exports = {
-  getOwnerBilling,
-  setOwnerAutopay,
-  payOwnerInvoice,
-  requestUpgrade,
-};
+module.exports = { getOwnerBilling, setOwnerAutopay, payOwnerInvoice, requestUpgrade };

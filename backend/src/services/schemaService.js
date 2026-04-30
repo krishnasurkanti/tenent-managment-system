@@ -161,6 +161,76 @@ async function initializeDatabase() {
     ON allocations(owner_id, hostel_id, unit_id)
     WHERE status = 'ACTIVE' AND bed_id IS NULL
   `);
+
+  // Billing columns on owners (idempotent)
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS billing_cycle_start DATE`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS billing_cycle_end DATE`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS auto_pay_enabled BOOLEAN NOT NULL DEFAULT false`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS free_months_remaining INTEGER NOT NULL DEFAULT 0`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS billing_plan_override TEXT`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS billing_tenants_override INTEGER`);
+
+  // Set billing cycle for existing owners who have none
+  await query(`
+    UPDATE owners
+    SET billing_cycle_start = CURRENT_DATE,
+        billing_cycle_end   = (CURRENT_DATE + INTERVAL '1 month')::date
+    WHERE billing_cycle_start IS NULL
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS owner_invoices (
+      id               BIGSERIAL PRIMARY KEY,
+      owner_id         BIGINT NOT NULL REFERENCES owners(id) ON DELETE CASCADE,
+      cycle_start      DATE NOT NULL,
+      cycle_end        DATE NOT NULL,
+      effective_tenants INTEGER NOT NULL DEFAULT 0,
+      plan_applied     TEXT NOT NULL DEFAULT 'starter',
+      extra_tenants    INTEGER NOT NULL DEFAULT 0,
+      total_amount     INTEGER NOT NULL DEFAULT 0,
+      status           TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid')),
+      payment_provider TEXT,
+      payment_note     TEXT,
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (owner_id, cycle_start)
+    )
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_owner_invoices_owner_id ON owner_invoices(owner_id)
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS owner_tenant_logs (
+      id                  BIGSERIAL PRIMARY KEY,
+      owner_id            BIGINT NOT NULL REFERENCES owners(id) ON DELETE CASCADE,
+      date                DATE NOT NULL,
+      active_tenant_count INTEGER NOT NULL DEFAULT 0,
+      created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (owner_id, date)
+    )
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_owner_tenant_logs_owner_date ON owner_tenant_logs(owner_id, date)
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS owner_upgrade_requests (
+      id             BIGSERIAL PRIMARY KEY,
+      owner_id       BIGINT NOT NULL REFERENCES owners(id) ON DELETE CASCADE,
+      current_plan   TEXT NOT NULL,
+      requested_plan TEXT NOT NULL,
+      note           TEXT NOT NULL DEFAULT '',
+      status         TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+      created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_owner_upgrade_requests_owner ON owner_upgrade_requests(owner_id)
+  `);
 }
 
 module.exports = { initializeDatabase };
