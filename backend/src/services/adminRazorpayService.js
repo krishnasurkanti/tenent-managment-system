@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const Invoice = require("../models/Invoice");
+const { query } = require("../config/db");
 
 function requireRazorpayConfig() {
   const keyId = (process.env.RAZORPAY_KEY_ID || "").trim();
@@ -15,16 +15,16 @@ function requireRazorpayConfig() {
 
 async function createRazorpayOrderForInvoice(invoiceId) {
   const { keyId, keySecret } = requireRazorpayConfig();
-  const invoice = await Invoice.findById(invoiceId);
 
-  if (!invoice) {
-    throw new Error("Invoice not found.");
-  }
+  const result = await query(
+    `SELECT id, owner_id, total_amount FROM owner_invoices WHERE id = $1 LIMIT 1`,
+    [invoiceId],
+  );
+  if (result.rowCount === 0) throw new Error("Invoice not found.");
 
-  const amount = Math.round(invoice.total_amount * 100);
-  if (amount <= 0) {
-    throw new Error("Invoice amount must be greater than zero for Razorpay order.");
-  }
+  const invoice = result.rows[0];
+  const amount = Math.round(Number(invoice.total_amount) * 100);
+  if (amount <= 0) throw new Error("Invoice amount must be greater than zero for Razorpay order.");
 
   const response = await fetch("https://api.razorpay.com/v1/orders", {
     method: "POST",
@@ -35,10 +35,10 @@ async function createRazorpayOrderForInvoice(invoiceId) {
     body: JSON.stringify({
       amount,
       currency: "INR",
-      receipt: String(invoice._id),
+      receipt: String(invoice.id),
       notes: {
-        invoice_id: String(invoice._id),
-        hostel_id: String(invoice.hostel_id),
+        invoice_id: String(invoice.id),
+        owner_id: String(invoice.owner_id),
       },
     }),
   });
@@ -48,12 +48,13 @@ async function createRazorpayOrderForInvoice(invoiceId) {
     throw new Error(data.error?.description || "Unable to create Razorpay order.");
   }
 
-  invoice.payment_provider = "razorpay";
-  invoice.razorpay_order_id = data.id;
-  await invoice.save();
+  await query(
+    `UPDATE owner_invoices SET payment_provider = 'razorpay', razorpay_order_id = $2, updated_at = NOW() WHERE id = $1`,
+    [invoice.id, data.id],
+  );
 
   return {
-    invoice_id: invoice._id,
+    invoice_id: invoice.id,
     razorpay_key_id: keyId,
     razorpay_order_id: data.id,
     amount: data.amount,
@@ -63,15 +64,9 @@ async function createRazorpayOrderForInvoice(invoiceId) {
 
 function verifyRazorpayWebhookSignature(rawBody, signature) {
   const { webhookSecret } = requireRazorpayConfig();
-  if (!webhookSecret) {
-    throw new Error("Razorpay webhook secret is not configured.");
-  }
+  if (!webhookSecret) throw new Error("Razorpay webhook secret is not configured.");
 
-  const expected = crypto
-    .createHmac("sha256", webhookSecret)
-    .update(rawBody)
-    .digest("hex");
-
+  const expected = crypto.createHmac("sha256", webhookSecret).update(rawBody).digest("hex");
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature || ""));
 }
 
@@ -82,37 +77,46 @@ async function processRazorpayWebhook(rawBody, signature) {
 
   const payload = JSON.parse(rawBody.toString("utf8"));
   const event = payload.event;
-  const orderId = payload.payload?.payment?.entity?.order_id || payload.payload?.order?.entity?.id;
+  const orderId =
+    payload.payload?.payment?.entity?.order_id || payload.payload?.order?.entity?.id;
   const paymentId = payload.payload?.payment?.entity?.id || "";
 
-  if (!orderId) {
-    return { ignored: true, reason: "Missing order id." };
-  }
+  if (!orderId) return { ignored: true, reason: "Missing order id." };
 
-  const invoice = await Invoice.findOne({ razorpay_order_id: orderId });
-  if (!invoice) {
-    return { ignored: true, reason: "Invoice not found for order id." };
-  }
+  const result = await query(
+    `SELECT id FROM owner_invoices WHERE razorpay_order_id = $1 LIMIT 1`,
+    [orderId],
+  );
+  if (result.rowCount === 0) return { ignored: true, reason: "Invoice not found for order id." };
+
+  const invoiceId = result.rows[0].id;
 
   if (event === "payment.captured" || event === "order.paid") {
-    invoice.status = "paid";
-    invoice.razorpay_payment_id = paymentId || invoice.razorpay_payment_id;
-    invoice.payment_note = "Auto-marked paid from Razorpay webhook.";
-    await invoice.save();
-    return { ok: true, invoice_id: invoice._id, status: invoice.status };
+    await query(
+      `UPDATE owner_invoices
+       SET status = 'paid',
+           razorpay_payment_id = $2,
+           payment_note = 'Auto-marked paid from Razorpay webhook.',
+           updated_at = NOW()
+       WHERE id = $1`,
+      [invoiceId, paymentId || null],
+    );
+    return { ok: true, invoice_id: invoiceId, status: "paid" };
   }
 
   if (event === "payment.failed") {
-    invoice.status = "pending";
-    invoice.payment_note = "Razorpay payment failed event received.";
-    await invoice.save();
-    return { ok: true, invoice_id: invoice._id, status: invoice.status };
+    await query(
+      `UPDATE owner_invoices
+       SET status = 'pending',
+           payment_note = 'Razorpay payment failed event received.',
+           updated_at = NOW()
+       WHERE id = $1`,
+      [invoiceId],
+    );
+    return { ok: true, invoice_id: invoiceId, status: "pending" };
   }
 
   return { ignored: true, reason: `Unhandled event: ${event}` };
 }
 
-module.exports = {
-  createRazorpayOrderForInvoice,
-  processRazorpayWebhook,
-};
+module.exports = { createRazorpayOrderForInvoice, processRazorpayWebhook };

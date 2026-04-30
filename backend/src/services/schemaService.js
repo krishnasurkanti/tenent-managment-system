@@ -231,6 +231,10 @@ async function initializeDatabase() {
   await query(`
     CREATE INDEX IF NOT EXISTS idx_owner_upgrade_requests_owner ON owner_upgrade_requests(owner_id)
   `);
+
+  // Razorpay columns on owner_invoices (idempotent)
+  await query(`ALTER TABLE owner_invoices ADD COLUMN IF NOT EXISTS razorpay_order_id TEXT`);
+  await query(`ALTER TABLE owner_invoices ADD COLUMN IF NOT EXISTS razorpay_payment_id TEXT`);
 }
 
 module.exports = { initializeDatabase };
