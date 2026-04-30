@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Banknote, Building2, ChevronRight, CreditCard, Home, ImageIcon, MapPin, Phone, Plus, Trash2, User } from "lucide-react";
+import { Banknote, Building2, ChevronRight, CreditCard, Home, MapPin, Phone, Plus, Trash2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
@@ -19,6 +19,7 @@ type BedForm = {
   rent: string;
   date: string;
   idNumber: string;
+  billingCycle: "daily" | "weekly" | "monthly";
   skipped: boolean;
 };
 
@@ -30,7 +31,7 @@ type RoomForm = {
 };
 
 function createBed(): BedForm {
-  return { name: "", phone: "", rent: "", date: new Date().toISOString().split("T")[0], idNumber: "", skipped: false };
+  return { name: "", phone: "", rent: "", date: new Date().toISOString().split("T")[0], idNumber: "", billingCycle: "monthly" as const, skipped: false };
 }
 
 function createRoom(): RoomForm {
@@ -73,7 +74,6 @@ function CreateHostelPageContent() {
   const [address, setAddress] = useState("");
   const [hostelType] = useState<"PG" | "RESIDENCE">("PG");
   const [rooms, setRooms] = useState<RoomForm[]>([createRoom()]);
-  const [bedPhotos, setBedPhotos] = useState<Record<string, File>>({});
   const [step, setStep] = useState<1 | 2>(1);
   const [saving, setSaving] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(isEditMode);
@@ -247,37 +247,44 @@ function CreateHostelPageContent() {
       cleanedRooms.forEach((room) => {
         room.beds.forEach((bed, bedIdx) => {
           if (bed.skipped || !bed.name.trim()) return;
-          const fd = new FormData();
-          fd.append("tenantType", "old");
-          fd.append("fullName", bed.name.trim());
-          if (bed.phone.trim()) fd.append("phone", bed.phone.trim());
-          fd.append("hostelId", hostelId);
-          fd.append("floorNumber", "1");
-          fd.append("roomNumber", room.roomNumber);
-          fd.append("moveInDate", bed.date || today);
-          fd.append("monthlyRent", bed.rent.trim() || "0");
-          fd.append("rentPaid", "0");
-          fd.append("paidOnDate", bed.date || today);
-          fd.append("sharingType", Number(room.bedCount) === 1 ? "Single sharing" : `${room.bedCount} sharing`);
-          fd.append("propertyType", "PG");
           const savedRoom = savedRooms.find((item) => item.id === room.id || item.roomNumber === room.roomNumber);
+          const unitId = savedRoom?.unitId ?? savedRoom?.id;
           const savedBed = savedRoom?.beds?.[bedIdx];
-          if (savedBed?.id) fd.append("bedId", savedBed.id);
-          fd.append("bedLabel", savedBed?.label ?? `Bed ${bedIdx + 1}`);
-          if (bed.idNumber.trim()) fd.append("idNumber", bed.idNumber.trim());
-          const photo = bedPhotos[`${room.id}-${bedIdx}`];
-          if (photo) fd.append("idImage", photo);
+          const bedId = savedBed?.id ?? (unitId ? `${unitId}-bed-${bedIdx + 1}` : undefined);
+          const bedLabel = savedBed?.label ?? `Bed ${bedIdx + 1}`;
+          const moveInDate = bed.date || today;
           const label = `${bed.name.trim()} (Room ${room.roomNumber}, Bed ${bedIdx + 1})`;
+          const payload = {
+            fullName: bed.name.trim(),
+            phone: bed.phone.trim() || undefined,
+            hostelId,
+            floorNumber: 1,
+            roomNumber: room.roomNumber,
+            moveInDate,
+            monthlyRent: Number(bed.rent.trim()) || 0,
+            rentPaid: 0,
+            paidOnDate: moveInDate,
+            billingCycle: bed.billingCycle,
+            sharingType: Number(room.bedCount) === 1 ? "Single sharing" : `${room.bedCount} sharing`,
+            propertyType: "PG",
+            bedId,
+            bedLabel,
+            idNumber: bed.idNumber.trim() || undefined,
+          };
           tenantRequests.push(
-            csrfFetch("/api/tenants", { method: "POST", body: fd })
+            csrfFetch("/api/tenants", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            })
               .then(async (res) => {
-                const payload = (await res.json().catch(() => ({}))) as { message?: string };
-                return { ok: res.ok, label, message: payload.message };
+                const data = (await res.json().catch(() => ({}))) as { message?: string };
+                return { ok: res.ok, label, message: data.message };
               })
-              .catch((error) => ({
+              .catch((err) => ({
                 ok: false,
                 label,
-                message: error instanceof Error ? error.message : "Network request failed.",
+                message: err instanceof Error ? err.message : "Network request failed.",
               }))
           );
         });
@@ -599,24 +606,26 @@ function CreateHostelPageContent() {
                                     className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 pl-8 text-[13px] text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
                                   />
                                 </div>
-                                <label className="flex min-w-0 cursor-pointer items-center gap-2 rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 transition hover:border-white/20 hover:bg-white/[0.05] sm:col-span-2">
-                                  <ImageIcon className="h-3.5 w-3.5 shrink-0 text-white/30" />
-                                  <span className="truncate text-[13px] text-white/40">
-                                    {bedPhotos[`${room.id}-${bedIdx}`]?.name ?? "ID photo (optional)"}
-                                  </span>
-                                  <input
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp,application/pdf"
-                                    className="hidden"
-                                    disabled={saving}
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (!file) return;
-                                      const key = `${room.id}-${bedIdx}`;
-                                      setBedPhotos((prev) => ({ ...prev, [key]: file }));
-                                    }}
-                                  />
-                                </label>
+                                <div className="sm:col-span-2 lg:col-span-3">
+                                  <p className="mb-1.5 text-[10px] font-medium text-white/40">Billing cycle</p>
+                                  <div className="flex gap-1.5">
+                                    {(["daily", "weekly", "monthly"] as const).map((cycle) => (
+                                      <button
+                                        key={cycle}
+                                        type="button"
+                                        disabled={saving}
+                                        onClick={() => updateBed(room.id, bedIdx, "billingCycle", cycle)}
+                                        className={`flex-1 rounded-lg px-2 py-1.5 text-[12px] font-medium capitalize transition ${
+                                          bed.billingCycle === cycle
+                                            ? "bg-[#f2bb4d]/20 border border-[#f2bb4d]/50 text-[#f2bb4d]"
+                                            : "border border-white/10 bg-white/[0.03] text-white/40 hover:text-white/60"
+                                        }`}
+                                      >
+                                        {cycle}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
                               </div>
                             )}
                           </div>
