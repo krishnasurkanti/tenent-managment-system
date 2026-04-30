@@ -10,6 +10,7 @@ import { ownerInputClass, ownerPanelClass, ownerSubtlePanelClass } from "@/compo
 import { fetchOwnerHostel, saveOwnerHostel } from "@/services/owner/owner-hostels.service";
 import { csrfFetch } from "@/lib/csrf-client";
 import { getSharingLabel } from "@/utils/hostel-occupancy";
+import { useHostelContext } from "@/store/hostel-context";
 
 const HOSTEL_DRAFT_KEY = "owner-create-hostel-draft-v1";
 
@@ -64,6 +65,7 @@ export default function CreateHostelPage() {
 
 function CreateHostelPageContent() {
   const router = useRouter();
+  const { refreshHostels } = useHostelContext();
   const searchParams = useSearchParams();
   const isEditMode = searchParams.get("mode") === "edit";
   const autoSetup = searchParams.get("autoSetup") === "1";
@@ -306,8 +308,8 @@ function CreateHostelPageContent() {
       }
     }
 
+    await refreshHostels();
     router.replace("/owner/dashboard");
-    router.refresh();
   };
 
   const handleNextFromBasics = () => {
