@@ -19,6 +19,10 @@ export type OwnerBillingData = {
     billableTenantCount: number;
     extraTenants: number;
     extraCharges: number;
+    hostelCount: number;
+    hostelLimit: number;
+    extraHostels: number;
+    hostelExtraCharges: number;
     finalAmount: number;
     upgradeSuggested: boolean;
     blockedAtNextPlan: boolean;

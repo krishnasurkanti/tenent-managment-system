@@ -23,11 +23,17 @@ async function getOwnerBilling(req, res, next) {
     );
     const { weekly_count, daily_count, monthly_count } = cycleCountResult.rows[0] ?? {};
 
+    const hostelCountResult = await query(
+      `SELECT COUNT(*)::int AS hostel_count FROM hostels WHERE owner_id = $1`,
+      [ownerId],
+    );
+    const hostelCount = hostelCountResult.rows[0]?.hostel_count ?? 0;
+
     const liveTenants = await getLiveTenantCount(ownerId);
     const effectiveTenants =
       owner.billing_tenants_override != null ? owner.billing_tenants_override : liveTenants;
     const planId = owner.billing_plan_override ?? owner.plan ?? "starter";
-    const bill = calculateBill(effectiveTenants, planId);
+    const bill = calculateBill(effectiveTenants, planId, hostelCount);
     const freeMonths = owner.free_months_remaining ?? 0;
     const invoice = await getOrCreateCurrentInvoice(ownerId, owner);
     const displayAmount = freeMonths > 0 ? 0 : bill.total_amount;
@@ -59,6 +65,10 @@ async function getOwnerBilling(req, res, next) {
         extraTenants: bill.extra_tenants,
         baseAmount: bill.base_amount,
         extraCharges: bill.extra_tenants * (bill.extra_per_tenant ?? 0),
+        hostelCount,
+        hostelLimit: bill.hostel_limit,
+        extraHostels: bill.extra_hostels,
+        hostelExtraCharges: bill.hostel_extra_charges,
         totalAmount: displayAmount,
         freeMonthsRemaining: freeMonths,
         upgradeSuggested: bill.upgrade_forced,

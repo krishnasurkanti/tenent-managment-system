@@ -1,10 +1,10 @@
 const { query, getClient } = require("../config/db");
 
 const PLAN_SLABS = [
-  { id: "starter", label: "Silver",   price: 299, limit: 50,  extra_per_tenant: 0 },
-  { id: "growth",  label: "Growth",   price: 499, limit: 100, extra_per_tenant: 5 },
-  { id: "pro",     label: "Gold",     price: 799, limit: 150, extra_per_tenant: 5 },
-  { id: "scale",   label: "Founding", price: 499, limit: 200, extra_per_tenant: 5 },
+  { id: "starter", label: "Silver",   price: 299, limit: 50,  extra_per_tenant: 0, hostel_limit: 1, extra_per_hostel: 199 },
+  { id: "growth",  label: "Gold",     price: 499, limit: 100, extra_per_tenant: 5, hostel_limit: 2, extra_per_hostel: 199 },
+  { id: "pro",     label: "Diamond",  price: 799, limit: 200, extra_per_tenant: 5, hostel_limit: 3, extra_per_hostel: 199 },
+  { id: "scale",   label: "Founding", price: 499, limit: 200, extra_per_tenant: 5, hostel_limit: 5, extra_per_hostel: 199 },
 ];
 
 function getPlan(planId) {
@@ -16,7 +16,7 @@ function getNextPlan(planId) {
   return idx >= 0 ? (PLAN_SLABS[idx + 1] ?? null) : null;
 }
 
-function calculateBill(tenantCount, planId) {
+function calculateBill(tenantCount, planId, hostelCount = 0) {
   let plan = getPlan(planId);
   let nextPlan = getNextPlan(plan.id);
   let upgradeForced = false;
@@ -28,7 +28,10 @@ function calculateBill(tenantCount, planId) {
   }
 
   const extraTenants = Math.max(0, tenantCount - plan.limit);
-  const totalAmount = plan.price + extraTenants * (plan.extra_per_tenant ?? 0);
+  const hostelLimit = plan.hostel_limit ?? 1;
+  const extraHostels = Math.max(0, hostelCount - hostelLimit);
+  const hostelExtraCharges = extraHostels * (plan.extra_per_hostel ?? 199);
+  const totalAmount = plan.price + extraTenants * (plan.extra_per_tenant ?? 0) + hostelExtraCharges;
 
   return {
     plan_applied: plan.id,
@@ -36,6 +39,9 @@ function calculateBill(tenantCount, planId) {
     plan_limit: plan.limit,
     extra_tenants: extraTenants,
     extra_per_tenant: plan.extra_per_tenant,
+    hostel_limit: hostelLimit,
+    extra_hostels: extraHostels,
+    hostel_extra_charges: hostelExtraCharges,
     base_amount: plan.price,
     total_amount: totalAmount,
     upgrade_forced: upgradeForced,

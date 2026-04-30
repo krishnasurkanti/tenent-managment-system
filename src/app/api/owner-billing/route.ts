@@ -27,6 +27,10 @@ export async function GET(request: NextRequest) {
       extraTenants: number;
       baseAmount: number;
       extraCharges: number;
+      hostelCount: number;
+      hostelLimit: number;
+      extraHostels: number;
+      hostelExtraCharges: number;
       totalAmount: number;
       upgradeSuggested: boolean;
       nextPlan: { id: string; label: string } | null;
@@ -62,6 +66,10 @@ export async function GET(request: NextRequest) {
       billableTenantCount: raw.billing.effectiveTenants,
       extraTenants: raw.billing.extraTenants,
       extraCharges: raw.billing.extraCharges,
+      hostelCount: raw.billing.hostelCount,
+      hostelLimit: raw.billing.hostelLimit,
+      extraHostels: raw.billing.extraHostels,
+      hostelExtraCharges: raw.billing.hostelExtraCharges,
       finalAmount: raw.billing.totalAmount,
       upgradeSuggested: raw.billing.upgradeSuggested,
       blockedAtNextPlan: raw.billing.upgradeSuggested,

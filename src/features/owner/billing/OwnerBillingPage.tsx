@@ -34,32 +34,50 @@ const PLANS: PlanCard[] = [
     yearlyPrice: 2990,
     tenantLimit: 50,
     tone: "border-white/10 bg-[linear-gradient(180deg,#111827_0%,#0c1018_100%)]",
-    valueLine: "Built for a single hostel with a simple flat cap for monthly tenants.",
+    valueLine: "Built for a single hostel. Upgrade when you outgrow 50 monthly tenants.",
     features: [
       "50 monthly tenants included",
-      "1 hostel",
-      "No per-tenant overage on this plan",
-      "Upgrade when you outgrow the 50-tenant cap",
+      "1 hostel included",
+      "No per-tenant overage — upgrade when full",
+      "Rs 199 per extra hostel/month",
       "Rent tracking and reminders",
       "Payment history",
     ],
   },
   {
-    id: "pro",
+    id: "growth",
     title: "Gold",
-    monthlyPrice: 799,
-    yearlyPrice: 7990,
-    tenantLimit: 150,
-    badge: "Most Popular",
+    monthlyPrice: 499,
+    yearlyPrice: 4990,
+    tenantLimit: 100,
+    badge: "Best Value",
     tone:
       "border-[color:color-mix(in_srgb,var(--success)_40%,var(--brand)_60%)] bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.12),transparent_50%),linear-gradient(180deg,#0e1a2e_0%,#0b101c_100%)] shadow-[0_0_0_1px_rgba(56,189,248,0.15),0_32px_80px_rgba(37,99,235,0.2)]",
-    valueLine: "Best fit for growing owners who need more tenant headroom and multiple hostels.",
+    valueLine: "2 hostels and 100 tenants included. Rs 5 per extra tenant.",
     features: [
-      "150 monthly tenants included",
-      "3 hostels included",
-      "Rs 5 per tenant after 150",
-      "Rs 250 per hostel after the included 3",
+      "100 monthly tenants included",
+      "2 hostels included",
+      "Rs 5 per tenant after 100",
+      "Rs 199 per extra hostel/month",
       "Everything in Silver",
+    ],
+  },
+  {
+    id: "pro",
+    title: "Diamond",
+    monthlyPrice: 799,
+    yearlyPrice: 7990,
+    tenantLimit: 200,
+    badge: "Most Popular",
+    tone:
+      "border-[#38bdf8]/30 bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.16),transparent_50%),linear-gradient(180deg,#0a1628_0%,#07101e_100%)] shadow-[0_0_0_1px_rgba(56,189,248,0.18),0_32px_80px_rgba(37,99,235,0.24)]",
+    valueLine: "3 hostels and 200 tenants. Best for growing multi-hostel owners.",
+    features: [
+      "200 monthly tenants included",
+      "3 hostels included",
+      "Rs 5 per tenant after 200",
+      "Rs 199 per extra hostel/month",
+      "Everything in Gold",
       "Advanced reports",
     ],
   },
@@ -72,13 +90,13 @@ const PLANS: PlanCard[] = [
     badge: "First 15 Owners",
     tone:
       "border-[#f59e0b]/40 bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.12),transparent_50%),linear-gradient(180deg,#151208_0%,#0c1018_100%)] ring-1 ring-[#f59e0b]/20",
-    valueLine: "Special pricing for the first 15 owners with more tenant and hostel capacity before overage starts.",
+    valueLine: "Special pricing for the first 15 owners. 5 hostels and 200 tenants at a founder price.",
     features: [
       "Only for the first 15 owners",
       "200 monthly tenants included",
       "5 hostels included",
       "Rs 5 per tenant after 200",
-      "Rs 250 per hostel after the included 5",
+      "Rs 199 per extra hostel/month",
     ],
   },
 ];
@@ -95,15 +113,10 @@ function getDirection(currentPlanId: PlanId, nextPlanId: PlanId) {
 }
 
 function getCurrentPlanLabel(planId: PlanId) {
-  if (planId === "scale") {
-    return "Founding Member";
-  }
-  if (planId === "pro" || planId === "growth") {
-    return "Gold";
-  }
-  if (planId === "starter") {
-    return "Silver";
-  }
+  if (planId === "scale") return "Founding Member";
+  if (planId === "pro") return "Diamond";
+  if (planId === "growth") return "Gold";
+  if (planId === "starter") return "Silver";
   const plan = PLANS.find((item) => item.id === planId);
   return plan?.title ?? planId;
 }
@@ -258,7 +271,10 @@ export default function OwnerBillingPage() {
             <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               <UsageMetric label="Monthly counted" value={String(data.billing.billableTenantCount)} />
               <UsageMetric label="Extra tenants" value={String(data.billing.extraTenants)} />
-              <UsageMetric label="Extra charges" value={`Rs ${data.billing.extraCharges.toLocaleString("en-IN")}`} />
+              <UsageMetric label="Tenant overages" value={`Rs ${data.billing.extraCharges.toLocaleString("en-IN")}`} />
+              <UsageMetric label="Hostels" value={`${data.billing.hostelCount ?? 0} / ${data.billing.hostelLimit ?? 1}`} />
+              <UsageMetric label="Extra hostels" value={String(data.billing.extraHostels ?? 0)} />
+              <UsageMetric label="Hostel overages" value={`Rs ${(data.billing.hostelExtraCharges ?? 0).toLocaleString("en-IN")}`} />
             </div>
           </div>
 
@@ -287,6 +303,8 @@ export default function OwnerBillingPage() {
           {error}
         </Card>
       ) : null}
+
+      <UpgradeHook data={data} currentPlanLabel={currentPlanLabel} />
 
       <section className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {PLANS.map((plan) => {
@@ -341,20 +359,24 @@ export default function OwnerBillingPage() {
 
               <p className={cn("mt-0.5 text-[10px]", plan.id === "founding" ? "text-[#fbbf24]/55" : "text-white/30")}>
                 {plan.id === "founding"
-                  ? "Founding member plan • Rs 5 per tenant after 200"
+                  ? "Founding member plan • Rs 5 per tenant after 200 • Rs 199 per extra hostel"
                   : plan.id === "pro"
-                    ? `Rs 5 per tenant after 150 • Rs 250 per extra hostel`
-                    : `Flat cap at 50 tenants • Rs 250 per extra hostel`}
+                    ? "Rs 5 per tenant after 200 • Rs 199 per extra hostel"
+                    : plan.id === "growth"
+                      ? "Rs 5 per tenant after 100 • Rs 199 per extra hostel"
+                      : "Flat cap at 50 tenants • Rs 199 per extra hostel"}
               </p>
 
               <div className="mt-3 rounded-[14px] border border-white/10 bg-white/[0.03] px-3 py-2.5">
                 <p className="text-[11px] font-semibold text-white">{plan.valueLine}</p>
                 <p className="mt-1 text-[11px] text-[color:var(--fg-secondary)]">
                   {plan.id === "starter"
-                    ? "50 monthly tenants are included. Move to Gold when you need more headroom."
-                    : plan.id === "pro"
-                      ? "150 monthly tenants are included, then Rs 5 is billed for each additional monthly tenant."
-                      : "200 monthly tenants are included, then Rs 5 is billed for each additional monthly tenant."}
+                    ? "50 monthly tenants included. You must upgrade when full — no per-tenant billing on this plan."
+                    : plan.id === "growth"
+                      ? "100 monthly tenants included. Rs 5 per tenant after that."
+                      : plan.id === "pro"
+                        ? "200 monthly tenants included. Rs 5 per tenant after that."
+                        : "200 monthly tenants included. Rs 5 per tenant after that. Locked-in founder pricing."}
                 </p>
               </div>
 
@@ -472,6 +494,54 @@ export default function OwnerBillingPage() {
           </div>
         </Card>
       ) : null}
+    </div>
+  );
+}
+
+function UpgradeHook({ data, currentPlanLabel }: { data: OwnerBillingData; currentPlanLabel: string }) {
+  const tenantPct = data.billing.billableTenantCount && data.billing.tenantCount
+    ? Math.round((data.billing.tenantCount / data.billing.billableTenantCount) * 100)
+    : 0;
+  const hostelCount = data.billing.hostelCount ?? 0;
+  const hostelLimit = data.billing.hostelLimit ?? 1;
+  const hostelPct = hostelLimit > 0 ? Math.round((hostelCount / hostelLimit) * 100) : 0;
+
+  const showTenantWarning = tenantPct >= 80;
+  const showHostelWarning = hostelPct >= 80;
+  const isOnMaxPlan = data.planId === "scale" || data.planId === "pro";
+
+  if (!showTenantWarning && !showHostelWarning) return null;
+
+  return (
+    <div className="rounded-[18px] border border-[#f59e0b]/25 bg-[rgba(245,158,11,0.06)] p-3">
+      <div className="flex items-start gap-3">
+        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#fbbf24]" />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[#fbbf24]">
+            {showTenantWarning && showHostelWarning
+              ? "Approaching tenant and hostel limits"
+              : showTenantWarning
+                ? "Approaching tenant limit"
+                : "Approaching hostel limit"}
+          </p>
+          <p className="mt-1 text-[12px] text-[color:var(--fg-secondary)]">
+            {showTenantWarning
+              ? `You've used ${data.billing.tenantCount} of your ${data.billing.billableTenantCount}-tenant limit on ${currentPlanLabel}. `
+              : ""}
+            {showHostelWarning
+              ? `You have ${hostelCount} of ${hostelLimit} hostel slots filled. `
+              : ""}
+            {isOnMaxPlan
+              ? "Extra usage is billed at Rs 5/tenant and Rs 199/hostel per month."
+              : "Upgrade for a higher limit or pay per extra usage."}
+          </p>
+          {!isOnMaxPlan ? (
+            <p className="mt-1.5 text-[11px] font-medium text-[#fbbf24]">
+              See the plans below to upgrade →
+            </p>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

@@ -177,9 +177,16 @@ function OwnerRoomsPageContent() {
                                   : "border border-[#ef4444] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] text-white shadow-[0_12px_24px_rgba(220,38,38,0.24)]";
 
                                 return (
-                                  <div key={`${room.id}-bed-${index + 1}`} className={`relative rounded-2xl px-2.5 py-2 ${toneClass}`}>
-                                    {isOverdue ? <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-yellow-400" /> : null}
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em]">{bed.label}</p>
+                                  <div key={`${room.id}-bed-${index + 1}`} className={`rounded-2xl px-2.5 py-2 ${toneClass}`}>
+                                    <div className="flex items-center justify-between gap-1">
+                                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em]">{bed.label}</p>
+                                      {isOverdue ? (
+                                        <span className="flex items-center gap-0.5 rounded-full bg-yellow-400/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-yellow-300">
+                                          <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
+                                          Overdue
+                                        </span>
+                                      ) : null}
+                                    </div>
                                     <p className="mt-1 truncate text-[11px] font-semibold">
                                       {assignedTenant ? assignedTenant.fullName : "Available"}
                                     </p>

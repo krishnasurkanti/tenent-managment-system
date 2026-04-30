@@ -1,18 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Bell, ChevronDown, House, Menu, Search } from "lucide-react";
+import { ArrowLeft, Bell, ChevronDown, House, Menu, Plus, Search } from "lucide-react";
 import { HostelSwitcher } from "@/components/layout/owner/HostelSwitcher";
 import { useHostelContext } from "@/store/hostel-context";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
 import { useOwnerProfile } from "@/hooks/use-owner-profile";
 import { getDueStatus } from "@/utils/payment";
 
+const PLAN_HOSTEL_LIMITS: Record<string, number> = { starter: 1, growth: 2, pro: 3, scale: 5 };
+
 export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [addingHostel, setAddingHostel] = useState(false);
   const searchParams = useSearchParams();
   const { currentHostel, currentHostelId, hostels } = useHostelContext();
   const { tenants } = useOwnerTenants(currentHostelId);
@@ -41,6 +44,28 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
     }
 
     router.push("/owner/dashboard");
+  };
+
+  const handleAddHostelMobile = async () => {
+    if (addingHostel) return;
+    setAddingHostel(true);
+    try {
+      const res = await fetch("/api/owner-billing");
+      let hostelLimit = 1;
+      if (res.ok) {
+        const data = (await res.json()) as { planId?: string; billing?: { hostelLimit?: number } };
+        hostelLimit = data.billing?.hostelLimit ?? PLAN_HOSTEL_LIMITS[data.planId ?? "starter"] ?? 1;
+      }
+      if (hostels.length < hostelLimit) {
+        router.push("/owner/create-hostel");
+      } else {
+        router.push("/owner/billing");
+      }
+    } catch {
+      router.push("/owner/create-hostel");
+    } finally {
+      setAddingHostel(false);
+    }
   };
 
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -112,13 +137,24 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         <button
           type="button"
           onClick={() => router.push("/owner/settings")}
-          className="min-w-0 max-w-[min(46vw,15rem)] rounded-[var(--radius-pill)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2.5 py-1 text-left xl:hidden"
+          className="min-w-0 max-w-[min(38vw,13rem)] rounded-[var(--radius-pill)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2.5 py-1 text-left xl:hidden"
         >
           <p className="truncate text-[9px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">Hostel</p>
           <div className="flex items-center gap-1">
             <p className="truncate text-[12px] font-semibold leading-tight text-white">{currentHostel?.hostelName ?? "Select"}</p>
             {hostels.length > 1 ? <ChevronDown className="h-3 w-3 shrink-0 text-[color:var(--fg-secondary)]" /> : null}
           </div>
+        </button>
+
+        {/* Mobile + tablet: add hostel button */}
+        <button
+          type="button"
+          onClick={handleAddHostelMobile}
+          disabled={addingHostel}
+          aria-label="Add hostel"
+          className="shrink-0 rounded-[var(--radius-pill)] border border-[color:color-mix(in_srgb,var(--warning)_40%,transparent)] bg-[color:var(--surface-soft)] p-2 text-[color:var(--accent)] transition hover:bg-[color:var(--surface-strong)] disabled:opacity-50 xl:hidden"
+        >
+          <Plus className="h-4 w-4" />
         </button>
       </div>
 
