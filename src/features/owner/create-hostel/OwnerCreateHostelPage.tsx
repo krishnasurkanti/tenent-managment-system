@@ -11,6 +11,9 @@ import { saveOwnerHostel } from "@/services/owner/owner-hostels.service";
 import { csrfFetch } from "@/lib/csrf-client";
 import { getSharingLabel } from "@/utils/hostel-occupancy";
 import { useHostelContext } from "@/store/hostel-context";
+import { PricingCarousel } from "@/components/ui/pricing-carousel";
+import { requestOwnerPlanUpgrade } from "@/services/owner/owner-billing.service";
+import type { PlanId } from "@/config/pricing";
 
 const HOSTEL_DRAFT_KEY = "owner-create-hostel-draft-v1";
 
@@ -79,6 +82,9 @@ function CreateHostelPageContent() {
   const [step, setStep] = useState<1 | 2>(1);
   const [saving, setSaving] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(isEditMode);
+  const [pageStep, setPageStep] = useState<"setup" | "pricing">("setup");
+  const [submittingPlanId, setSubmittingPlanId] = useState<PlanId | null>(null);
+  const [savedHostelId, setSavedHostelId] = useState<string>("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -233,6 +239,7 @@ function CreateHostelPageContent() {
       window.localStorage.setItem("currentHostelId", hostelId);
       window.localStorage.removeItem(HOSTEL_DRAFT_KEY);
     }
+    setSavedHostelId(hostelId);
 
     // Submit tenants for all filled beds
     if (!isEditMode) {
@@ -302,6 +309,22 @@ function CreateHostelPageContent() {
     }
 
     await refreshHostels();
+    if (!isEditMode) {
+      setPageStep("pricing");
+    } else {
+      router.replace("/owner/dashboard");
+    }
+  };
+
+  const handlePlanSelect = async (planId: PlanId) => {
+    setSubmittingPlanId(planId);
+    try {
+      if (planId !== "free" && savedHostelId) {
+        await requestOwnerPlanUpgrade(savedHostelId, "free", planId);
+      }
+    } finally {
+      setSubmittingPlanId(null);
+    }
     router.replace("/owner/dashboard");
   };
 
@@ -319,6 +342,30 @@ function CreateHostelPageContent() {
   };
 
   if (loadingExisting) return <CreateHostelLoadingState />;
+
+  if (pageStep === "pricing") {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center bg-[#090912] px-4 py-10 text-white">
+        <div className="w-full max-w-[720px]">
+          <div className="mb-6 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#4ade80]/30 bg-[#4ade80]/[0.08] px-3.5 py-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#4ade80]" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#4ade80]">Hostel saved</span>
+            </div>
+            <h2 className="font-display mt-3 text-2xl font-bold text-white sm:text-3xl">Choose your plan</h2>
+            <p className="mt-1.5 text-sm text-white/45">Swipe to compare. Pick what fits — you can change anytime.</p>
+          </div>
+          <PricingCarousel
+            currentPlanId="free"
+            onSelect={handlePlanSelect}
+            onSkip={() => router.replace("/owner/dashboard")}
+            submittingPlanId={submittingPlanId}
+            onboardingMode
+          />
+        </div>
+      </div>
+    );
+  }
 
   const completedRooms = rooms.filter(isRoomComplete).length;
 

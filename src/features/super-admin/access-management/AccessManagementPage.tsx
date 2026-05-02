@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, Suspense, useCallback, useEffect, useState } from "react";
-import { ArrowRightLeft, Check, Copy, LogOut, Mail, Phone, Plus, ServerCog, Trash2, Users, X } from "lucide-react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { ArrowRightLeft, Check, Copy, LogOut, Plus, ServerCog, Trash2, Users, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { csrfFetch } from "@/lib/csrf-client";
 
@@ -93,8 +93,6 @@ function AccessManagementPageInner() {
   const [stats, setStats] = useState<Record<string, OwnerStats>>({});
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(searchParams.get("new") === "1");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [invitePgName, setInvitePgName] = useState("");
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [inviteLink, setInviteLink] = useState("");
@@ -161,8 +159,7 @@ function AccessManagementPageInner() {
     router.refresh();
   };
 
-  const handleInvite = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleInvite = async () => {
     if (inviting) return;
     setInviting(true);
     setInviteError("");
@@ -172,7 +169,6 @@ function AccessManagementPageInner() {
       const res = await csrfFetch("/api/super-admin/invitations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: inviteEmail.trim(), pgName: invitePgName.trim() }),
       });
       const data = (await res.json()) as { message?: string; token?: string };
 
@@ -218,8 +214,6 @@ function AccessManagementPageInner() {
 
   const handleCloseForm = () => {
     setFormOpen(false);
-    setInviteEmail("");
-    setInvitePgName("");
     setInviteError("");
     setInviteLink("");
     setCopied(false);
@@ -306,7 +300,7 @@ function AccessManagementPageInner() {
             <div className="mb-3 flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <h2 className="font-display text-base font-semibold text-white">Invite Owner</h2>
-                <p className="mt-1 text-xs text-white/45">Enter their email. They click the link and set their own password — no credential sharing needed.</p>
+                <p className="mt-1 text-xs text-white/45">Generate a one-time link. The owner fills in their own details when they open it.</p>
               </div>
               <button
                 type="button"
@@ -345,52 +339,16 @@ function AccessManagementPageInner() {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleInvite} className="space-y-3">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Owner Email</span>
-                    <div className="relative">
-                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
-                      <input
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        disabled={inviting}
-                        placeholder="owner@example.com"
-                        autoComplete="off"
-                        required
-                        className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 pl-9 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
-                      />
-                    </div>
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">
-                      PG / Hostel Name <span className="normal-case font-normal text-white/30">(optional)</span>
-                    </span>
-                    <div className="relative">
-                      <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
-                      <input
-                        type="text"
-                        value={invitePgName}
-                        onChange={(e) => setInvitePgName(e.target.value)}
-                        disabled={inviting}
-                        placeholder="e.g. Sai Krishna PG"
-                        autoComplete="off"
-                        className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2.5 pl-9 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"
-                      />
-                    </div>
-                  </label>
-                </div>
-
+              <div className="space-y-3">
                 {inviteError ? (
                   <p role="alert" className="text-sm text-red-400">{inviteError}</p>
                 ) : null}
 
-                <div className="flex flex-col gap-2 pt-1 sm:flex-row">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <button
-                    type="submit"
+                    type="button"
                     disabled={inviting}
+                    onClick={() => void handleInvite()}
                     className="rounded-xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_100%)] px-5 py-2 text-sm font-semibold text-[#1b1207] disabled:opacity-60"
                   >
                     {inviting ? "Generating…" : "Generate Invite Link"}
@@ -403,7 +361,7 @@ function AccessManagementPageInner() {
                     Cancel
                   </button>
                 </div>
-              </form>
+              </div>
             )}
           </div>
         ) : null}

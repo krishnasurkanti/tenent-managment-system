@@ -2,14 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Building2, Eye, EyeOff, Lock, MapPin, Phone, ShieldCheck, User } from "lucide-react";
+import { ArrowRight, Building2, Eye, EyeOff, Lock, Mail, MapPin, Phone, ShieldCheck, User } from "lucide-react";
 import { csrfFetch } from "@/lib/csrf-client";
-
-type InviteDetails = {
-  email: string;
-  pgName: string;
-  expiresAt: string;
-};
 
 type PageState = "loading" | "invalid" | "form" | "done";
 
@@ -19,11 +13,13 @@ export default function AcceptInvitePage() {
   const token = searchParams.get("token") ?? "";
 
   const [pageState, setPageState] = useState<PageState>("loading");
-  const [invite, setInvite] = useState<InviteDetails | null>(null);
   const [invalidReason, setInvalidReason] = useState("");
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
+  const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [hostelName, setHostelName] = useState("");
   const [address, setAddress] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -42,13 +38,13 @@ export default function AcceptInvitePage() {
     void (async () => {
       try {
         const res = await fetch(`/api/owner/invitations/${encodeURIComponent(token)}`);
-        const data = (await res.json()) as { ok?: boolean; invitation?: InviteDetails; message?: string };
+        const data = (await res.json()) as { ok?: boolean; invitation?: { expiresAt?: string }; message?: string };
         if (!res.ok || !data.invitation) {
           setInvalidReason(data.message ?? "This invitation link is invalid or expired.");
           setPageState("invalid");
           return;
         }
-        setInvite(data.invitation);
+        if (data.invitation.expiresAt) setExpiresAt(data.invitation.expiresAt);
         setPageState("form");
       } catch {
         setInvalidReason("Unable to verify invitation. Check your connection.");
@@ -61,7 +57,9 @@ export default function AcceptInvitePage() {
     event.preventDefault();
     if (submitting) return;
 
+    if (!email.trim() || !email.includes("@")) { setFormError("Enter a valid email address."); return; }
     if (!name.trim()) { setFormError("Enter your full name."); return; }
+    if (!hostelName.trim()) { setFormError("Enter your hostel / PG name."); return; }
     if (!address.trim()) { setFormError("Enter your property address."); return; }
     if (password.length < 6) { setFormError("Password must be at least 6 characters."); return; }
     if (password !== confirmPassword) { setFormError("Passwords do not match."); return; }
@@ -73,7 +71,12 @@ export default function AcceptInvitePage() {
       const res = await csrfFetch(`/api/owner/invitations/${encodeURIComponent(token)}/accept`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), phoneNumber: phone.trim() || undefined, password }),
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          name: name.trim(),
+          phoneNumber: phone.trim() || undefined,
+          password,
+        }),
       });
       const data = (await res.json()) as { ok?: boolean; message?: string };
       if (!res.ok) {
@@ -82,7 +85,7 @@ export default function AcceptInvitePage() {
       }
       setPageState("done");
       const params = new URLSearchParams();
-      if (invite?.pgName) params.set("pgName", invite.pgName);
+      if (hostelName.trim()) params.set("pgName", hostelName.trim());
       if (address.trim()) params.set("address", address.trim());
       params.set("autoSetup", "1");
       router.replace(`/owner/create-hostel?${params.toString()}`);
@@ -115,8 +118,8 @@ export default function AcceptInvitePage() {
           <h1 className="mt-4 text-xl font-semibold text-white">Link not valid</h1>
           <p className="mt-2 text-sm text-white/50">{invalidReason}</p>
           <a
-            href="/login"
-            className="mt-3 sm:mt-4 inline-flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-white/70 hover:text-white"
+            href="/owner/login"
+            className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-white/70 hover:text-white"
           >
             Go to login
           </a>
@@ -139,7 +142,7 @@ export default function AcceptInvitePage() {
   return (
     <main className="min-h-dvh bg-[#090912] text-white [background-image:radial-gradient(circle_at_center,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:18px_18px]">
 
-      {/* Sticky top bar */}
+      {/* Top bar */}
       <header className="sticky top-0 z-50 flex min-h-[52px] items-center justify-between gap-3 border-b border-white/8 bg-[rgba(9,9,11,0.88)] px-4 py-2.5 backdrop-blur-xl sm:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#ffcc4d_0%,#d9941c_100%)] text-[#18120a]">
@@ -150,102 +153,107 @@ export default function AcceptInvitePage() {
             <p className="mt-0.5 text-[11px] leading-none text-white/40">Owner setup</p>
           </div>
         </div>
-        <a href="/owner/login" className="shrink-0 text-xs font-medium text-white/40 transition hover:text-white/70">Sign in instead</a>
+        <a href="/owner/login" className="shrink-0 text-xs font-medium text-white/40 transition hover:text-white/70">
+          Sign in instead
+        </a>
       </header>
 
-      {/* Content */}
-      <div className="mx-auto w-full max-w-[1100px] px-4 py-3 sm:py-4 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6 lg:grid lg:grid-cols-[1fr_1fr] lg:items-center lg:gap-10 lg:py-10">
+      <div className="mx-auto w-full max-w-[520px] px-4 py-6 pb-[calc(3rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-10">
 
-        {/* Left — invite context (desktop only) */}
-        <div className="hidden lg:flex lg:flex-col lg:justify-center">
-          <div className="max-w-md">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#f59e0b]/30 bg-[#f59e0b]/[0.08] px-3.5 py-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#f7bf53]">You&apos;re invited</span>
-            </div>
-            <h1 className="mt-3 text-[clamp(1.5rem,4vw,2rem)] font-bold leading-tight text-[#f8f3eb] sm:mt-4">
-              Set up your<br />
-              <span className="text-[#ffd15a]">{invite?.pgName ? invite.pgName : "owner account"}</span>
-            </h1>
-            <p className="mt-4 text-base leading-relaxed text-white/50">
-              You&apos;ve been invited to manage your property on HostelHub. Complete your account setup below.
+        {/* Invite banner */}
+        <div className="mb-5 rounded-2xl border border-[#f59e0b]/20 bg-[#f59e0b]/[0.06] px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#f7bf53]">You&apos;re invited</p>
+          <p className="mt-0.5 text-sm font-semibold text-white">Set up your owner account on HostelHub</p>
+          {expiresAt ? (
+            <p className="mt-1 text-xs text-white/40">
+              Link expires {new Date(expiresAt).toLocaleString()}
             </p>
-            <div className="mt-3 sm:mt-4 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3.5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">Signing in as</p>
-              <p className="mt-1 font-mono text-sm text-white/70">{invite?.email}</p>
-            </div>
-          </div>
+          ) : null}
         </div>
 
-        {/* Right — form */}
-        <div className="w-[min(calc(100vw-2rem),440px)] mx-auto lg:w-full lg:max-w-none lg:mx-0">
-          {/* Mobile invite banner */}
-          <div className="mb-5 rounded-2xl border border-[#f59e0b]/20 bg-[#f59e0b]/[0.06] px-4 py-3 lg:hidden">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#f7bf53]">You&apos;re invited</p>
-            {invite?.pgName ? (
-              <p className="mt-0.5 text-sm font-semibold text-white">
-                Set up your account for <span className="text-[#fcd34d]">{invite.pgName}</span>
-              </p>
-            ) : (
-              <p className="mt-0.5 text-sm font-semibold text-white">Set up your owner account</p>
-            )}
-            <p className="mt-1 text-xs text-white/50">
-              Signing in as <span className="font-mono text-white/70">{invite?.email}</span>
-            </p>
-          </div>
+        <div className="rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-5">
+          <h2 className="text-[1.4rem] font-bold tracking-[-0.03em] text-[#f7f0e8]">Create your account</h2>
+          <p className="mt-1 text-sm text-white/40">Fill in your details to get started.</p>
 
-          <div className="rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-4">
-            <h2 className="text-[1.55rem] font-bold tracking-[-0.04em] text-[#f7f0e8]">Create your account</h2>
-            <p className="mt-1 text-sm text-white/45">Your email is pre-set. Add your name and a password to get started.</p>
+          <form onSubmit={handleSubmit} className="mt-5 space-y-3">
 
-            <form onSubmit={handleSubmit} className="mt-5 space-y-3">
-              {/* Email — read-only */}
-              <div>
-                <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">Email</span>
-                <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5 text-sm text-white/60">
-                  {invite?.email}
-                </div>
+            {/* Email */}
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">Email</span>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+                <input
+                  type="email"
+                  inputMode="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={submitting}
+                  placeholder="your@email.com"
+                  autoComplete="email"
+                  className="w-full rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 pl-10 text-sm text-[#f7f0e8] outline-none transition placeholder:text-white/28 focus:border-[#f2bb4d]/60 focus:bg-white/[0.05]"
+                />
               </div>
+            </label>
 
-              {/* Name */}
+            {/* Full Name */}
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">Full Name</span>
+              <div className="relative">
+                <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={submitting}
+                  placeholder="e.g. Raghuveer Reddy"
+                  autoComplete="name"
+                  className="w-full rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 pl-10 text-sm text-[#f7f0e8] outline-none transition placeholder:text-white/28 focus:border-[#f2bb4d]/60 focus:bg-white/[0.05]"
+                />
+              </div>
+            </label>
+
+            {/* Phone */}
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
+                Phone <span className="normal-case font-normal text-white/30">(optional)</span>
+              </span>
+              <div className="relative">
+                <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                  disabled={submitting}
+                  placeholder="10-digit mobile number"
+                  autoComplete="tel"
+                  className="w-full rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 pl-10 text-sm text-[#f7f0e8] outline-none transition placeholder:text-white/28 focus:border-[#f2bb4d]/60 focus:bg-white/[0.05]"
+                />
+              </div>
+            </label>
+
+            <div className="border-t border-white/8 pt-3">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">Property details</p>
+
+              {/* Hostel Name */}
               <label className="block">
-                <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Full Name</span>
+                <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">Hostel / PG Name</span>
                 <div className="relative">
-                  <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+                  <Building2 className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                   <input
                     type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    value={hostelName}
+                    onChange={(e) => setHostelName(e.target.value)}
                     disabled={submitting}
-                    placeholder="e.g. Raghuveer Reddy"
-                    autoComplete="name"
-                    className="w-full rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 pl-10 text-sm text-[#f7f0e8] outline-none transition placeholder:text-white/28 focus:border-[#f2bb4d]/60 focus:bg-white/[0.05]"
-                  />
-                </div>
-              </label>
-
-              {/* Phone */}
-              <label className="block">
-                <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">
-                  Phone Number <span className="normal-case font-normal text-white/30">(optional)</span>
-                </span>
-                <div className="relative">
-                  <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                    disabled={submitting}
-                    placeholder="10-digit mobile number"
-                    autoComplete="tel"
+                    placeholder="e.g. Skykine PG"
                     className="w-full rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 pl-10 text-sm text-[#f7f0e8] outline-none transition placeholder:text-white/28 focus:border-[#f2bb4d]/60 focus:bg-white/[0.05]"
                   />
                 </div>
               </label>
 
               {/* Address */}
-              <label className="block">
-                <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Property Address</span>
+              <label className="mt-3 block">
+                <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">Property Address</span>
                 <div className="relative">
                   <MapPin className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                   <input
@@ -259,10 +267,13 @@ export default function AcceptInvitePage() {
                   />
                 </div>
               </label>
+            </div>
+
+            <div className="border-t border-white/8 pt-3">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">Set password</p>
 
               {/* Password */}
               <label className="block">
-                <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Password</span>
                 <div className="relative">
                   <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                   <input
@@ -274,21 +285,15 @@ export default function AcceptInvitePage() {
                     autoComplete="new-password"
                     className="w-full rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 pl-10 pr-12 text-sm text-[#f7f0e8] outline-none transition placeholder:text-white/28 focus:border-[#f2bb4d]/60 focus:bg-white/[0.05]"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((s) => !s)}
-                    disabled={submitting}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="absolute right-3 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
-                  >
+                  <button type="button" onClick={() => setShowPassword((s) => !s)} disabled={submitting}
+                    className="absolute right-3 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white">
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </label>
 
-              {/* Confirm Password */}
-              <label className="block">
-                <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Confirm Password</span>
+              {/* Confirm */}
+              <label className="mt-3 block">
                 <div className="relative">
                   <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                   <input
@@ -300,36 +305,31 @@ export default function AcceptInvitePage() {
                     autoComplete="new-password"
                     className="w-full rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 pl-10 pr-12 text-sm text-[#f7f0e8] outline-none transition placeholder:text-white/28 focus:border-[#f2bb4d]/60 focus:bg-white/[0.05]"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm((s) => !s)}
-                    disabled={submitting}
-                    aria-label={showConfirm ? "Hide password" : "Show password"}
-                    className="absolute right-3 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
-                  >
+                  <button type="button" onClick={() => setShowConfirm((s) => !s)} disabled={submitting}
+                    className="absolute right-3 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white">
                     {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </label>
+            </div>
 
-              {formError ? (
-                <div role="alert" className="rounded-2xl border border-[#cf4637] bg-[#3a1718]/85 px-4 py-3 text-sm text-[#ffb7ae]">
-                  {formError}
-                </div>
-              ) : null}
-
-              <div className="pt-1">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] px-5 text-base font-bold text-[#1b1207] shadow-[0_10px_24px_rgba(240,175,47,0.22)] transition hover:brightness-105 disabled:opacity-60"
-                >
-                  {submitting ? "Creating account…" : "Create Account & Login"}
-                  {!submitting ? <ArrowRight className="h-4 w-4" /> : null}
-                </button>
+            {formError ? (
+              <div role="alert" className="rounded-2xl border border-[#cf4637] bg-[#3a1718]/85 px-4 py-3 text-sm text-[#ffb7ae]">
+                {formError}
               </div>
-            </form>
-          </div>
+            ) : null}
+
+            <div className="pt-1">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] px-5 text-base font-bold text-[#1b1207] shadow-[0_10px_24px_rgba(240,175,47,0.22)] transition hover:brightness-105 disabled:opacity-60"
+              >
+                {submitting ? "Creating account…" : "Create Account & Continue"}
+                {!submitting ? <ArrowRight className="h-4 w-4" /> : null}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </main>

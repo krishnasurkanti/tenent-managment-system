@@ -9,7 +9,7 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
-  const body = (await request.json()) as { name?: string; phoneNumber?: string; password?: string };
+  const body = (await request.json()) as { email?: string; name?: string; phoneNumber?: string; password?: string };
   try {
     const res = await fetch(
       `${getApiBaseUrl()}/api/admin/invitations/${encodeURIComponent(token)}/accept`,

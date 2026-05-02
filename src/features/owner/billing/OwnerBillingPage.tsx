@@ -1,23 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ArrowRightLeft, Check, Clock3, Crown, Info, Sparkles, Wallet, Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { Clock3, Crown, Sparkles, Wallet } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
 import { SkeletonBlock } from "@/components/ui/skeleton";
+import { PricingCarousel } from "@/components/ui/pricing-carousel";
 import { fetchOwnerBilling, requestOwnerPlanUpgrade, type OwnerBillingData } from "@/services/owner/owner-billing.service";
 import { useHostelContext } from "@/store/hostel-context";
-import { cn } from "@/utils/cn";
-import { getPlanLabel, PLAN_ORDER, PRICING_PLANS as PLANS, type PlanId } from "@/config/pricing";
-
-function mapRequestedPlanId(planId: PlanId): PlanId {
-  return planId;
-}
-
-function getDirection(currentPlanId: PlanId, nextPlanId: PlanId) {
-  return PLAN_ORDER.indexOf(nextPlanId) > PLAN_ORDER.indexOf(currentPlanId) ? "upgrade" : "downgrade";
-}
+import { getPlanLabel, type PlanId } from "@/config/pricing";
 
 export default function OwnerBillingPage() {
   const { currentHostel, loading: hostelLoading } = useHostelContext();
@@ -25,7 +16,6 @@ export default function OwnerBillingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [requestingPlanId, setRequestingPlanId] = useState<PlanId | null>(null);
-  const [selectedPlanId, setSelectedPlanId] = useState<PlanId | null>(null);
   const [billingClock] = useState(() => Date.now());
 
   useEffect(() => {
@@ -63,11 +53,6 @@ export default function OwnerBillingPage() {
     };
   }, [currentHostel]);
 
-  const selectedPlan = useMemo(
-    () => PLANS.find((plan) => plan.id === selectedPlanId) ?? null,
-    [selectedPlanId],
-  );
-
   if (hostelLoading || loading) {
     return <LoadingState />;
   }
@@ -85,27 +70,20 @@ export default function OwnerBillingPage() {
     0,
     Math.ceil((new Date(data.dueDate).getTime() - billingClock) / (1000 * 60 * 60 * 24)),
   );
-  const selectedRequestedPlanId = selectedPlan ? mapRequestedPlanId(selectedPlan.id) : null;
-  const selectedDirection =
-    selectedRequestedPlanId && selectedRequestedPlanId !== data.planId
-      ? getDirection(data.planId, selectedRequestedPlanId)
-      : null;
 
-  const handlePlanRequest = async () => {
-    if (!selectedPlan || !currentHostel?.id) return;
+  const handlePlanRequest = async (planId: PlanId) => {
+    if (!currentHostel?.id) return;
 
-    const requestedPlanId = mapRequestedPlanId(selectedPlan.id);
-    setRequestingPlanId(selectedPlan.id);
+    setRequestingPlanId(planId);
     setError("");
 
-    const { response, data: responseData } = await requestOwnerPlanUpgrade(currentHostel.id, data.planId, requestedPlanId);
+    const { response, data: responseData } = await requestOwnerPlanUpgrade(currentHostel.id, data.planId, planId);
     if (!response.ok) {
       setError(responseData.message ?? "Unable to send request.");
       setRequestingPlanId(null);
       return;
     }
 
-    setSelectedPlanId(null);
     setRequestingPlanId(null);
     setLoading(true);
     setError("");
@@ -204,192 +182,11 @@ export default function OwnerBillingPage() {
 
       <UpgradeHook data={data} currentPlanLabel={currentPlanLabel} />
 
-      <section className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-        {PLANS.map((plan) => {
-          const requestedPlanId = mapRequestedPlanId(plan.id);
-          const isCurrentPlan = requestedPlanId === data.planId;
-          const isSelected = selectedPlanId === plan.id;
-          const isBusy = requestingPlanId === plan.id;
-          const direction = getDirection(data.planId, requestedPlanId);
-
-          return (
-            <article
-              key={plan.id}
-              className={cn(
-                "relative flex flex-col rounded-[20px] border p-3 transition",
-                plan.tone,
-                isSelected ? "ring-2 ring-[rgba(99,102,241,0.34)]" : "",
-              )}
-            >
-              {plan.badge ? (
-                <div
-                  className={cn(
-                    "absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)]",
-                    "border border-[#38bdf8]/50 bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)]",
-                  )}
-                >
-                  {plan.badge}
-                </div>
-              ) : null}
-
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">
-                    {plan.title}
-                  </p>
-                  {isCurrentPlan ? (
-                    <span className="mt-1 inline-block rounded-full border border-[#4ade80] bg-[#22c55e]/20 px-2 py-0.5 text-[9px] font-semibold uppercase text-[#4ade80]">
-                      Current
-                    </span>
-                  ) : null}
-                </div>
-                <TenantUsageBar used={data.monthlyTenantCount} limit={plan.tenantLimit} isCurrent={isCurrentPlan} />
-              </div>
-
-              <div className="mt-2.5 flex items-end gap-1.5">
-                <span className="text-2xl font-semibold leading-none tracking-[-0.04em] text-white">
-                  Rs {plan.monthlyPrice.toLocaleString("en-IN")}
-                </span>
-                <span className="mb-0.5 text-xs text-white/40">/mo</span>
-              </div>
-
-              <p className="mt-0.5 text-[10px] text-white/30">
-                {plan.id === "pro"
-                  ? "Rs 5/tenant after 300 - Rs 199/extra hostel - weekly & daily free"
-                  : plan.id === "growth"
-                    ? "Rs 8/tenant after 150 - Rs 199/extra hostel - weekly & daily free"
-                    : plan.id === "starter"
-                      ? "Rs 10/tenant after 50 - Rs 199/extra hostel - weekly & daily free"
-                      : "25 tenants included - upgrade required after trial limit"}
-              </p>
-
-              <div className="mt-3 rounded-[14px] border border-white/10 bg-white/[0.03] px-3 py-2.5">
-                <p className="text-[11px] font-semibold text-white">{plan.valueLine}</p>
-                <p className="mt-1 text-[11px] text-[color:var(--fg-secondary)]">
-                  {plan.id === "free"
-                    ? "25 monthly tenants during trial. Upgrade required after the trial limit."
-                    : plan.id === "starter"
-                      ? "50 monthly tenants. Rs 10 per tenant after. Weekly and daily guests free."
-                      : plan.id === "growth"
-                        ? "150 monthly tenants. Rs 8 per tenant after. Weekly and daily guests free."
-                        : "300 monthly tenants. Rs 5 per tenant after. Weekly and daily guests free."}
-                </p>
-              </div>
-
-              <ul className="mt-3 grid gap-x-3 gap-y-1.5 md:grid-cols-1 xl:grid-cols-1">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-[12px] text-white/70">
-                    <span
-                      className={cn(
-                        "mt-0.5 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border",
-                        "border-[#4ade80]/35 bg-[#22c55e]/12",
-                      )}
-                    >
-                      <Check className="h-2.5 w-2.5 text-[#4ade80]" />
-                    </span>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-3 rounded-[14px] border border-[#22c55e]/20 bg-[#22c55e]/[0.05] px-3 py-2.5">
-                <p className="text-[11px] font-semibold text-[#86efac]">Free value included</p>
-                <div className="mt-2 grid gap-1.5">
-                  <FreeValueRow label="Weekly free" detail={`Current: ${data.weeklyTenantCount}`} />
-                  <FreeValueRow label="Daily free" detail={`Current: ${data.dailyTenantCount}`} />
-                </div>
-              </div>
-
-              <div className="mt-auto pt-3">
-                {isCurrentPlan ? (
-                  <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-center text-sm font-semibold text-white/70">
-                    Current plan
-                  </div>
-                ) : (
-                  <Button
-                    variant={isSelected ? "primary" : "secondary"}
-                    className="w-full"
-                    disabled={data.upgradePending || isBusy || plan.id === "free"}
-                    onClick={() => setSelectedPlanId(plan.id)}
-                  >
-                    <Zap className="mr-1.5 h-3.5 w-3.5" />
-                    {isBusy ? "Sending..." : plan.id === "free" ? "Trial only" : direction === "upgrade" ? `Choose ${plan.title}` : `Downgrade to ${plan.title}`}
-                  </Button>
-                )}
-              </div>
-            </article>
-          );
-        })}
-      </section>
-
-      {selectedPlan && selectedDirection ? (
-        <Card className="rounded-[20px] border border-[rgba(99,102,241,0.24)] bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.12),transparent_40%),linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">
-                {selectedDirection === "upgrade" ? "Upgrade request" : "Downgrade request"}
-              </p>
-              <h3 className="mt-1 text-lg font-semibold text-white">
-                {selectedDirection === "upgrade"
-                  ? `Move from ${currentPlanLabel} to ${selectedPlan.title}`
-                  : `Request downgrade from ${currentPlanLabel} to ${selectedPlan.title}`}
-              </h3>
-              <p className="mt-2 text-sm text-[color:var(--fg-secondary)]">
-                {selectedDirection === "upgrade"
-                  ? `Once super admin approves, this hostel will be billed Rs ${selectedPlan.monthlyPrice.toLocaleString("en-IN")} per month on ${selectedPlan.title}.`
-                  : `This sends a downgrade request to super admin. Your current plan remains active until they approve it.`}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={() => setSelectedPlanId(null)}>
-                Cancel
-              </Button>
-              <Button disabled={requestingPlanId !== null || data.upgradePending} onClick={handlePlanRequest}>
-                {selectedDirection === "upgrade" ? "Ok, send upgrade request" : "Yes, send downgrade request"}
-              </Button>
-            </div>
-          </div>
-
-          <div className="mt-3 grid gap-2.5 lg:grid-cols-2">
-            <div className="rounded-[16px] border border-white/10 bg-white/[0.03] px-3 py-3">
-              <div className="flex items-center gap-2 text-white">
-                <Sparkles className="h-4 w-4 text-[#38bdf8]" />
-                <p className="text-sm font-semibold">Benefits you get</p>
-              </div>
-              <ul className="mt-2 space-y-1.5">
-                {selectedPlan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-[12px] text-[color:var(--fg-secondary)]">
-                    <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#4ade80]" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="rounded-[16px] border border-white/10 bg-white/[0.03] px-3 py-3">
-              <div className="flex items-center gap-2 text-white">
-                <ArrowRightLeft className="h-4 w-4 text-[#fbbf24]" />
-                <p className="text-sm font-semibold">What happens next</p>
-              </div>
-              <ul className="mt-2 space-y-1.5 text-[12px] text-[color:var(--fg-secondary)]">
-                <li className="flex items-start gap-2">
-                  <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#38bdf8]" />
-                  Super admin receives your request in the approval queue.
-                </li>
-                <li className="flex items-start gap-2">
-                  <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#38bdf8]" />
-                  Your current access stays active until they approve or reject it.
-                </li>
-                <li className="flex items-start gap-2">
-                  <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#38bdf8]" />
-                  Weekly and daily tenants remain free regardless of the package selected.
-                </li>
-              </ul>
-            </div>
-          </div>
-        </Card>
-      ) : null}
+      <PricingCarousel
+        currentPlanId={data.planId}
+        onSelect={handlePlanRequest}
+        submittingPlanId={requestingPlanId}
+      />
     </div>
   );
 }
@@ -453,68 +250,6 @@ function UsageMetric({ label, value }: { label: string; value: string }) {
 
 function CompactInfoPill({ text }: { text: string }) {
   return <div className="rounded-[12px] border border-white/10 bg-white/[0.03] px-3 py-2">{text}</div>;
-}
-
-function FreeValueRow({ label, detail }: { label: string; detail: string }) {
-  return (
-    <div className="rounded-[12px] border border-white/10 bg-white/[0.03] px-3 py-2">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#86efac]">{label}</p>
-        <p className="text-[11px] text-white/65">{detail}</p>
-      </div>
-    </div>
-  );
-}
-
-function TenantUsageBar({
-  used,
-  limit,
-  isCurrent,
-}: {
-  used: number;
-  limit: number | null;
-  isCurrent: boolean;
-}) {
-  if (limit === null) {
-    return (
-      <div className="w-[96px] flex-shrink-0">
-        <div className="mb-1 flex items-center justify-between gap-1">
-          <span className="text-[9px] font-medium text-white/45">{used} active</span>
-          <span className="text-[9px] font-bold text-[#fbbf24]">Unlimited</span>
-        </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-          <div className="h-full w-full rounded-full bg-[#f59e0b]" />
-        </div>
-        <p className="mt-0.5 text-[8px] text-white/20">No tenant cap on this offer</p>
-      </div>
-    );
-  }
-
-  const pct = Math.min(100, Math.round((used / limit) * 100));
-  const left = limit - used;
-  const isFull = used >= limit;
-  const isWarning = pct >= 80;
-  const barColor = isFull ? "bg-red-500" : isWarning ? "bg-amber-400" : "bg-[#4ade80]";
-
-  return (
-    <div className="w-[96px] flex-shrink-0">
-      <div className="mb-1 flex items-center justify-between gap-1">
-        <span className="text-[9px] font-medium text-white/45">{used}/{limit}</span>
-        {isFull ? (
-          <span className="text-[9px] font-bold text-red-400">Full</span>
-        ) : (
-          <span className="text-[9px] text-white/35">{left} left</span>
-        )}
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-        <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
-      </div>
-      <p className="mt-0.5 text-[8px] text-white/20">Only monthly tenants count</p>
-      {isFull && isCurrent ? (
-        <p className="mt-0.5 text-[9px] font-semibold text-amber-400">Upgrade for more</p>
-      ) : null}
-    </div>
-  );
 }
 
 function LoadingState() {

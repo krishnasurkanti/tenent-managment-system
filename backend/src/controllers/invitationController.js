@@ -4,6 +4,12 @@ const jwt = require("jsonwebtoken");
 const { query } = require("../config/db");
 const { createHttpError } = require("../utils/httpErrors");
 
+// DB migration required (run once):
+//   ALTER TABLE owner_invitations ALTER COLUMN email DROP NOT NULL;
+//   ALTER TABLE owner_invitations ALTER COLUMN pg_name DROP NOT NULL;
+
+const INVITE_TTL_MS = 48 * 60 * 60 * 1000; // 48 hours
+
 function signToken(owner) {
   return jwt.sign(
     { ownerId: owner.id, email: owner.email, role: "owner" },
@@ -12,35 +18,18 @@ function signToken(owner) {
   );
 }
 
+function isExpired(createdAt) {
+  return Date.now() - new Date(createdAt).getTime() > INVITE_TTL_MS;
+}
+
 async function createInvitation(req, res) {
-  const { email, pgName } = req.body;
-
-  if (!email || !email.includes("@")) {
-    throw createHttpError(400, "Valid email is required.");
-  }
-
-  const normalizedEmail = email.trim().toLowerCase();
-
-  // Block if owner already exists
-  const existing = await query("SELECT id FROM owners WHERE email = $1 LIMIT 1", [normalizedEmail]);
-  if (existing.rowCount > 0) {
-    throw createHttpError(409, "An owner with this email already exists.");
-  }
-
-  // Cancel any previous pending invites for this email
-  await query(
-    "UPDATE owner_invitations SET status = 'superseded' WHERE email = $1 AND status = 'pending'",
-    [normalizedEmail],
-  );
-
   const token = crypto.randomBytes(32).toString("hex");
-  // Far-future date = effectively never expires (only invalidated when used/superseded)
-  const expiresAt = new Date("2099-12-31T23:59:59Z");
+  const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
 
   await query(
     `INSERT INTO owner_invitations (token, email, pg_name, status, expires_at)
-     VALUES ($1, $2, $3, 'pending', $4)`,
-    [token, normalizedEmail, (pgName || "").trim(), expiresAt],
+     VALUES ($1, NULL, NULL, 'pending', $2)`,
+    [token, expiresAt],
   );
 
   return res.status(201).json({ ok: true, token, expiresAt });
@@ -50,7 +39,7 @@ async function getInvitation(req, res) {
   const { token } = req.params;
 
   const result = await query(
-    `SELECT id, email, pg_name, status, expires_at FROM owner_invitations WHERE token = $1 LIMIT 1`,
+    `SELECT id, email, pg_name, status, created_at FROM owner_invitations WHERE token = $1 LIMIT 1`,
     [token],
   );
 
@@ -64,25 +53,24 @@ async function getInvitation(req, res) {
     throw createHttpError(410, inv.status === "accepted" ? "Invitation already used." : "Invitation is no longer valid.");
   }
 
-  return res.json({
-    ok: true,
-    invitation: {
-      email: inv.email,
-      pgName: inv.pg_name,
-      expiresAt: inv.expires_at,
-    },
-  });
+  if (isExpired(inv.created_at)) {
+    await query("UPDATE owner_invitations SET status = 'superseded' WHERE id = $1", [inv.id]);
+    throw createHttpError(410, "This invitation link has expired (48-hour limit).");
+  }
+
+  return res.json({ ok: true, invitation: { expiresAt: new Date(new Date(inv.created_at).getTime() + INVITE_TTL_MS) } });
 }
 
 async function acceptInvitation(req, res) {
   const { token } = req.params;
-  const { name, phoneNumber, password } = req.body;
+  const { email, name, phoneNumber, password } = req.body;
 
+  if (!email || !email.includes("@")) throw createHttpError(400, "Valid email is required.");
   if (!name || !name.trim()) throw createHttpError(400, "Name is required.");
   if (!password || password.length < 6) throw createHttpError(400, "Password must be at least 6 characters.");
 
   const result = await query(
-    `SELECT id, email, pg_name, status, expires_at FROM owner_invitations WHERE token = $1 LIMIT 1`,
+    `SELECT id, status, created_at FROM owner_invitations WHERE token = $1 LIMIT 1`,
     [token],
   );
 
@@ -94,7 +82,13 @@ async function acceptInvitation(req, res) {
     throw createHttpError(410, inv.status === "accepted" ? "Invitation already used." : "Invitation is no longer valid.");
   }
 
-  const existingOwner = await query("SELECT id FROM owners WHERE email = $1 LIMIT 1", [inv.email]);
+  if (isExpired(inv.created_at)) {
+    await query("UPDATE owner_invitations SET status = 'superseded' WHERE id = $1", [inv.id]);
+    throw createHttpError(410, "This invitation link has expired (48-hour limit).");
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const existingOwner = await query("SELECT id FROM owners WHERE email = $1 LIMIT 1", [normalizedEmail]);
   if (existingOwner.rowCount > 0) {
     throw createHttpError(409, "An account with this email already exists.");
   }
@@ -106,14 +100,14 @@ async function acceptInvitation(req, res) {
     `INSERT INTO owners (email, password, name, phone_number, status, plan, plan_status, trial_start_date)
      VALUES ($1, $2, $3, $4, 'active', 'free', 'trial', NOW())
      RETURNING id, email, name, phone_number, status, plan, plan_status, trial_start_date`,
-    [inv.email, hashedPassword, name.trim(), normalizedPhone],
+    [normalizedEmail, hashedPassword, name.trim(), normalizedPhone],
   );
 
   const owner = ownerResult.rows[0];
 
   await query(
-    "UPDATE owner_invitations SET status = 'accepted', accepted_at = NOW() WHERE id = $1",
-    [inv.id],
+    "UPDATE owner_invitations SET status = 'accepted', accepted_at = NOW(), email = $1 WHERE id = $2",
+    [normalizedEmail, inv.id],
   );
 
   return res.status(201).json({
