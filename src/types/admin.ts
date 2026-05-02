@@ -1,4 +1,4 @@
-export type AdminPlanId = "starter" | "growth" | "pro" | "scale";
+export type AdminPlanId = "free" | "starter" | "growth" | "pro";
 
 export type AdminPlan = {
   id: AdminPlanId;
@@ -30,11 +30,16 @@ export type AdminHostelControl = {
 export type BillingBreakdown = {
   tenantCount: number;
   billableTenantCount: number;
+  planLimit: number;
   extraTenants: number;
   extraCharges: number;
   baseAmount: number;
   discountAmount: number;
   finalAmount: number;
+  hostelCount: number;
+  hostelLimit: number;
+  extraHostels: number;
+  hostelExtraCharges: number;
   upgradeSuggested: boolean;
   blockedAtNextPlan: boolean;
   nextPlanName: string | null;

@@ -104,7 +104,7 @@ async function acceptInvitation(req, res) {
 
   const ownerResult = await query(
     `INSERT INTO owners (email, password, name, phone_number, status, plan, plan_status, trial_start_date)
-     VALUES ($1, $2, $3, $4, 'active', 'starter', 'trial', NOW())
+     VALUES ($1, $2, $3, $4, 'active', 'free', 'trial', NOW())
      RETURNING id, email, name, phone_number, status, plan, plan_status, trial_start_date`,
     [inv.email, hashedPassword, name.trim(), normalizedPhone],
   );

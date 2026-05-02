@@ -3,17 +3,18 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { getOwnerHostels } from "@/data/ownerHostelStore";
 import { getTenantRecords } from "@/data/tenantStore";
+import { getNextPricingPlan, getPricingPlan, PRICING_PLANS } from "@/config/pricing";
 import type { AdminHostelControl, AdminInvoice, AdminLog, AdminPlan, AdminPlanId, BillingBreakdown, PaymentStatus, UpgradeRequest } from "@/types/admin";
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const ADMIN_FILE = path.join(DATA_DIR, "admin-control.json");
 
-const PLANS: AdminPlan[] = [
-  { id: "starter", name: "Silver", basePrice: 299, limit: 50 },
-  { id: "growth", name: "Gold", basePrice: 799, limit: 150 },
-  { id: "pro", name: "Gold", basePrice: 799, limit: 150 },
-  { id: "scale", name: "Founding Member", basePrice: 499, limit: 200 },
-];
+const PLANS: AdminPlan[] = PRICING_PLANS.map((plan) => ({
+  id: plan.id,
+  name: plan.title,
+  basePrice: plan.monthlyPrice,
+  limit: plan.tenantLimit,
+}));
 
 type AdminState = {
   controls: Record<string, AdminHostelControl>;
@@ -84,7 +85,7 @@ function syncHostelControls() {
         lockedUntil: null,
         ownerSuspended: false,
         hostelActive: true,
-        planId: "starter",
+        planId: "free",
         pricingOverride: null,
         discountPercent: 0,
         freeMonthsRemaining: 0,
@@ -100,33 +101,17 @@ function getPlan(planId: AdminPlanId) {
 }
 
 function getNextPlan(planId: AdminPlanId) {
-  if (planId === "starter") return getPlan("pro");
-  if (planId === "growth") return getPlan("scale");
-  if (planId === "pro") return getPlan("scale");
-  return null;
+  const nextPlan = getNextPricingPlan(planId);
+  return nextPlan ? getPlan(nextPlan.id) : null;
 }
 
 function getPlanSettings(planId: AdminPlanId) {
-  if (planId === "starter") {
-    return {
-      extraTenantRate: 0,
-      includedHostels: 1,
-      extraHostelPrice: 250,
-    };
-  }
-
-  if (planId === "scale") {
-    return {
-      extraTenantRate: 5,
-      includedHostels: 5,
-      extraHostelPrice: 250,
-    };
-  }
-
+  const plan = getPricingPlan(planId);
   return {
-    extraTenantRate: 5,
-    includedHostels: 3,
-    extraHostelPrice: 250,
+    extraTenantRate: plan.extraTenantRate,
+    includedHostels: plan.includedHostels,
+    extraHostelPrice: plan.extraHostelPrice,
+    trialOnly: plan.trialOnly,
   };
 }
 
@@ -169,11 +154,13 @@ function calculateBilling(hostelId: string, monthKey: string): BillingBreakdown 
   const tenants = getTenantRecords().filter((tenant) => tenant.assignment?.hostelId === hostelId);
   const billableTenantCount = tenants.filter((tenant) => isBillableInMonth(tenant.assignment?.moveInDate ?? tenant.createdAt, monthKey)).length;
   const tenantCount = tenants.length;
+  const hostelCount = getOwnerHostels().filter((hostel) => hostel.ownerId === control.ownerId).length;
+  const extraHostels = Math.max(0, hostelCount - planSettings.includedHostels);
 
   const baseAmount = control.pricingOverride ?? plan.basePrice;
   const extraTenants = Math.max(0, billableTenantCount - plan.limit);
-  const extraTenantCharges = extraTenants * planSettings.extraTenantRate;
-  const extraHostelCharges = getPerHostelSurcharge(hostelId, control.ownerId, planSettings.includedHostels, planSettings.extraHostelPrice);
+  const extraTenantCharges = planSettings.trialOnly ? 0 : extraTenants * planSettings.extraTenantRate;
+  const extraHostelCharges = planSettings.trialOnly ? 0 : getPerHostelSurcharge(hostelId, control.ownerId, planSettings.includedHostels, planSettings.extraHostelPrice);
   const extraCharges = extraTenantCharges + extraHostelCharges;
   const discountAmount = Math.round((baseAmount + extraCharges) * (control.discountPercent / 100));
   const rawFinal = baseAmount + extraCharges - discountAmount;
@@ -182,13 +169,18 @@ function calculateBilling(hostelId: string, monthKey: string): BillingBreakdown 
   return {
     tenantCount,
     billableTenantCount,
+    planLimit: plan.limit,
     extraTenants,
+    hostelCount,
+    hostelLimit: planSettings.includedHostels,
+    extraHostels,
+    hostelExtraCharges: extraHostelCharges,
     extraCharges,
     baseAmount,
     discountAmount,
     finalAmount,
-    upgradeSuggested: nextPlan ? billableTenantCount > plan.limit && plan.id !== "scale" : false,
-    blockedAtNextPlan: false,
+    upgradeSuggested: nextPlan ? billableTenantCount > plan.limit && plan.id !== "pro" : false,
+    blockedAtNextPlan: planSettings.trialOnly && (billableTenantCount > plan.limit || extraHostels > 0),
     nextPlanName: nextPlan?.name ?? null,
   };
 }

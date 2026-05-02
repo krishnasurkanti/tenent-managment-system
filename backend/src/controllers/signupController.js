@@ -64,7 +64,7 @@ async function registerWithKey(req, res) {
 
     const ownerResult = await client.query(
       `INSERT INTO owners (email, password, name, phone_number, status, plan, plan_status, trial_start_date)
-       VALUES ($1, $2, $3, $4, 'active', 'starter', 'trial', NOW())
+       VALUES ($1, $2, $3, $4, 'active', 'free', 'trial', NOW())
        RETURNING id, email, name, phone_number, status, plan, plan_status, trial_start_date`,
       [normalizedEmail, hashedPassword, name.trim(), normalizedPhone],
     );

@@ -12,7 +12,7 @@ type OwnerRow = {
   phoneNumber: string;
   status: "active" | "inactive";
   createdAt: string;
-  plan: "starter" | "pro" | "founding";
+  plan: "free" | "starter" | "growth" | "pro";
   planStatus: "trial" | "active" | "due_soon" | "overdue";
   trialStartDate: string;
 };
@@ -43,13 +43,6 @@ function trialDaysLeft(trialStartDate: string) {
 }
 
 function PlanBadge({ owner }: { owner: OwnerRow }) {
-  if (owner.plan === "founding") {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-[#f7bf53]/15 px-2.5 py-1 text-xs font-semibold text-[#f7bf53]">
-        ★ Gold Founder
-      </span>
-    );
-  }
 
   if (owner.planStatus === "trial") {
     const left = trialDaysLeft(owner.trialStartDate);
@@ -77,7 +70,7 @@ function PlanBadge({ owner }: { owner: OwnerRow }) {
   }
 
   // active / paid
-  const planLabel = owner.plan === "pro" ? "Pro · Paid" : "Starter · Paid";
+  const planLabel = owner.plan === "pro" ? "Diamond - Paid" : owner.plan === "growth" ? "Gold - Paid" : "Silver - Paid";
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-green-400">
       {planLabel}
@@ -121,7 +114,7 @@ function AccessManagementPageInner() {
       const [ownersRes, statsRes, requestsRes, keyRes] = await Promise.all([
         fetch("/api/super-admin/owners"),
         fetch("/api/super-admin/owner-stats"),
-        fetch("/api/super-admin/upgrade-requests"),
+        fetch("/api/admin/billing/upgrade-requests"),
         fetch("/api/super-admin/signup-key"),
       ]);
       const ownersData = (await ownersRes.json()) as { owners?: OwnerRow[] };
@@ -151,7 +144,7 @@ function AccessManagementPageInner() {
     if (requestActionId) return;
     setRequestActionId(requestId);
     try {
-      await csrfFetch("/api/super-admin/upgrade-requests", {
+      await csrfFetch("/api/admin/billing/upgrade-requests", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ requestId, action }),

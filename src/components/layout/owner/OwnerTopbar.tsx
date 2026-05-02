@@ -9,8 +9,7 @@ import { useHostelContext } from "@/store/hostel-context";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
 import { useOwnerProfile } from "@/hooks/use-owner-profile";
 import { getDueStatus } from "@/utils/payment";
-
-const PLAN_HOSTEL_LIMITS: Record<string, number> = { free: 1, starter: 1, growth: 3, pro: 5, scale: 5 };
+import { getPricingPlan } from "@/config/pricing";
 
 export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const pathname = usePathname();
@@ -54,7 +53,7 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
       let hostelLimit = 1;
       if (res.ok) {
         const data = (await res.json()) as { planId?: string; billing?: { hostelLimit?: number } };
-        hostelLimit = data.billing?.hostelLimit ?? PLAN_HOSTEL_LIMITS[data.planId ?? "starter"] ?? 1;
+        hostelLimit = data.billing?.hostelLimit ?? getPricingPlan(data.planId).includedHostels;
       }
       if (hostels.length < hostelLimit) {
         router.push("/owner/create-hostel");

@@ -12,12 +12,12 @@ function protect(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (!decoded.ownerId) {
+    if (!decoded.ownerId && decoded.role !== "super_admin") {
       return res.status(401).json({ message: "Invalid token payload." });
     }
 
     req.user = {
-      ownerId: decoded.ownerId,
+      ownerId: decoded.ownerId ?? decoded.sub,
       email: decoded.email,
       role: decoded.role,
     };

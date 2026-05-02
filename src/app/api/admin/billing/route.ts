@@ -5,7 +5,7 @@ import { backendFetch } from "@/services/core/backend-api";
 
 export const dynamic = "force-dynamic";
 
-type PlanSlab = { limit: number | null; base: number; extra_per_tenant: number };
+type PlanSlab = { id?: string; label?: string; price?: number; limit: number | null; base?: number; extra_per_tenant: number };
 
 export async function GET(request: NextRequest) {
   if (!isAdminAuthenticated(request)) {
@@ -24,23 +24,28 @@ export async function GET(request: NextRequest) {
       name: string;
       plan: string;
       free_months_remaining: number;
+      hostel_count: number;
       tenant_count: number;
       latest_invoice_id: number | null;
       latest_invoice_status: string | null;
       latest_invoice_amount: string | null;
     }>;
-    plans: Record<string, PlanSlab>;
+    plans: PlanSlab[] | Record<string, PlanSlab>;
   };
+
+  const planMap = Array.isArray(plans)
+    ? Object.fromEntries(plans.map((plan) => [plan.id, plan]))
+    : plans;
 
   const summary = owners.map((owner) => {
     const planId = owner.plan ?? "starter";
-    const slab: PlanSlab = plans[planId] ?? plans["starter"] ?? { limit: 50, base: 999, extra_per_tenant: 10 };
+    const slab: PlanSlab = planMap[planId] ?? planMap["starter"] ?? { limit: 50, price: 299, extra_per_tenant: 10 };
     const planLimit = slab.limit ?? Infinity;
     const tenantCount = owner.tenant_count ?? 0;
     const freeMonths = owner.free_months_remaining ?? 0;
     const extraTenants = planLimit === Infinity ? 0 : Math.max(0, tenantCount - planLimit);
     const extraCharges = extraTenants * (slab.extra_per_tenant ?? 10);
-    const baseAmount = slab.base ?? 0;
+    const baseAmount = slab.base ?? slab.price ?? 0;
     const finalAmount = freeMonths > 0 ? 0 : baseAmount + extraCharges;
 
     return {
@@ -48,8 +53,8 @@ export async function GET(request: NextRequest) {
       hostelName: owner.name,
       plan: {
         id: planId,
-        name: planId,
-        basePrice: slab.base,
+        name: slab.label ?? planId,
+        basePrice: baseAmount,
         limit: slab.limit ?? 0,
       },
       control: {
@@ -61,8 +66,13 @@ export async function GET(request: NextRequest) {
       billing: {
         tenantCount,
         billableTenantCount: tenantCount,
+        planLimit: planLimit === Infinity ? 0 : planLimit,
         extraTenants,
         extraCharges,
+        hostelCount: owner.hostel_count ?? 0,
+        hostelLimit: 0,
+        extraHostels: 0,
+        hostelExtraCharges: 0,
         baseAmount,
         discountAmount: 0,
         finalAmount,

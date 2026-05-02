@@ -21,7 +21,7 @@ type Invoice = {
   paymentStatus: PaymentStatus;
 };
 
-const plans = ["starter", "growth", "pro", "scale"] as const;
+const plans = ["free", "starter", "growth", "pro"] as const;
 
 export default function AdminBillingPage() {
   const [rows, setRows] = useState<AdminBillingRow[]>([]);

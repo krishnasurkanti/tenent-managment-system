@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
       cycleEnd: string;
       liveTenantCount: number;
       effectiveTenants: number;
+      planLimit: number;
       extraTenants: number;
       baseAmount: number;
       extraCharges: number;
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
     upgradeRequest: { id: number; requested_plan: string; status: string; created_at: string } | null;
   };
 
-  const planId = raw.plan.current as "starter" | "growth" | "pro" | "scale";
+  const planId = raw.plan.current as "free" | "starter" | "growth" | "pro";
   const monthKey = raw.billing.cycleStart
     ? new Date(raw.billing.cycleStart).toISOString().slice(0, 7)
     : new Date().toISOString().slice(0, 7);
@@ -64,6 +65,7 @@ export async function GET(request: NextRequest) {
     billing: {
       tenantCount: raw.billing.liveTenantCount,
       billableTenantCount: raw.billing.effectiveTenants,
+      planLimit: raw.billing.planLimit,
       extraTenants: raw.billing.extraTenants,
       extraCharges: raw.billing.extraCharges,
       hostelCount: raw.billing.hostelCount,

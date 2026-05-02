@@ -1,12 +1,5 @@
 const { query, getClient } = require("../config/db");
-
-const PLAN_SLABS = [
-  { id: "free",    label: "Free",     price: 0,   limit: 25,  extra_per_tenant: 10, hostel_limit: 1, extra_per_hostel: 199 },
-  { id: "starter", label: "Silver",   price: 299, limit: 50,  extra_per_tenant: 8,  hostel_limit: 1, extra_per_hostel: 199 },
-  { id: "growth",  label: "Gold",     price: 499, limit: 150, extra_per_tenant: 5,  hostel_limit: 3, extra_per_hostel: 199 },
-  { id: "pro",     label: "Diamond",  price: 799, limit: 300, extra_per_tenant: 5,  hostel_limit: 5, extra_per_hostel: 199 },
-  { id: "scale",   label: "Founding", price: 499, limit: 200, extra_per_tenant: 5,  hostel_limit: 5, extra_per_hostel: 199 },
-];
+const { PLAN_SLABS } = require("../config/pricing");
 
 function getPlan(planId) {
   return PLAN_SLABS.find((p) => p.id === planId) ?? PLAN_SLABS[0];
@@ -22,17 +15,16 @@ function calculateBill(tenantCount, planId, hostelCount = 0) {
   let nextPlan = getNextPlan(plan.id);
   let upgradeForced = false;
 
-  while (nextPlan && plan.extra_per_tenant === 0 && tenantCount > plan.limit) {
-    plan = nextPlan;
-    nextPlan = getNextPlan(plan.id);
+  if (plan.trial_only && (tenantCount > plan.limit || hostelCount > plan.hostel_limit)) {
     upgradeForced = true;
   }
 
   const extraTenants = Math.max(0, tenantCount - plan.limit);
   const hostelLimit = plan.hostel_limit ?? 1;
   const extraHostels = Math.max(0, hostelCount - hostelLimit);
-  const hostelExtraCharges = extraHostels * (plan.extra_per_hostel ?? 199);
-  const totalAmount = plan.price + extraTenants * (plan.extra_per_tenant ?? 0) + hostelExtraCharges;
+  const hostelExtraCharges = plan.trial_only ? 0 : extraHostels * (plan.extra_per_hostel ?? 199);
+  const tenantExtraCharges = plan.trial_only ? 0 : extraTenants * (plan.extra_per_tenant ?? 0);
+  const totalAmount = plan.price + tenantExtraCharges + hostelExtraCharges;
 
   return {
     plan_applied: plan.id,

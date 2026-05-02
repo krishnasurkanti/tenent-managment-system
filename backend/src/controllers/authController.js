@@ -37,7 +37,7 @@ async function register(req, res) {
   const result = await query(
     `
       INSERT INTO owners (email, password, name, phone_number, status, plan, plan_status, trial_start_date)
-      VALUES ($1, $2, $3, $4, 'active', 'starter', 'trial', $5)
+      VALUES ($1, $2, $3, $4, 'active', 'free', 'trial', $5)
       RETURNING id, email, name, phone_number, status, plan, plan_status, trial_start_date, created_at
     `,
     [normalizedEmail, hashedPassword, name?.trim() || "", normalizedPhone, now],

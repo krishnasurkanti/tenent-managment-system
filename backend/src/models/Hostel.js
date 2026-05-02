@@ -41,8 +41,8 @@ const hostelSchema = new mongoose.Schema(
     },
     current_plan: {
       type: String,
-      enum: ["starter", "growth", "pro", "scale"],
-      default: "starter",
+      enum: ["free", "starter", "growth", "pro"],
+      default: "free",
     },
     billing_cycle_start: {
       type: Date,
@@ -67,7 +67,7 @@ const hostelSchema = new mongoose.Schema(
       },
       plan: {
         type: String,
-        enum: ["starter", "growth", "pro", "scale", null],
+        enum: ["free", "starter", "growth", "pro", null],
         default: null,
       },
       note: {

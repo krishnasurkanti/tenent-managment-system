@@ -5,14 +5,7 @@ import { useRouter } from "next/navigation";
 import { Building2, Check, ChevronDown, Plus, X } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useHostelContext } from "@/store/hostel-context";
-
-const PLAN_HOSTEL_LIMITS: Record<string, number> = {
-  free: 1,
-  starter: 1,
-  growth: 3,
-  pro: 5,
-  scale: 5,
-};
+import { getPricingPlan } from "@/config/pricing";
 
 export function HostelSwitcher() {
   const router = useRouter();
@@ -57,7 +50,7 @@ export function HostelSwitcher() {
         if (res.ok) {
           const data = (await res.json()) as { planId?: string; billing?: { hostelLimit?: number } };
           const planId = data.planId ?? "starter";
-          const hostelLimit = data.billing?.hostelLimit ?? PLAN_HOSTEL_LIMITS[planId] ?? 1;
+          const hostelLimit = data.billing?.hostelLimit ?? getPricingPlan(planId).includedHostels;
           limit = { limit: hostelLimit, planId };
           setCachedLimit(limit);
         } else {

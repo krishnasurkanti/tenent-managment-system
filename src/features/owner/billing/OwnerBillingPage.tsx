@@ -9,115 +9,9 @@ import { SkeletonBlock } from "@/components/ui/skeleton";
 import { fetchOwnerBilling, requestOwnerPlanUpgrade, type OwnerBillingData } from "@/services/owner/owner-billing.service";
 import { useHostelContext } from "@/store/hostel-context";
 import { cn } from "@/utils/cn";
+import { getPlanLabel, PLAN_ORDER, PRICING_PLANS as PLANS, type PlanId } from "@/config/pricing";
 
-type PlanId = "free" | "starter" | "growth" | "pro" | "scale";
-
-type PlanCard = {
-  id: PlanId | "founding";
-  title: string;
-  monthlyPrice: number;
-  yearlyPrice: number;
-  tenantLimit: number | null;
-  badge?: string;
-  tone: string;
-  valueLine: string;
-  features: string[];
-};
-
-const PLAN_ORDER: PlanId[] = ["free", "starter", "growth", "pro", "scale"];
-
-const PLANS: PlanCard[] = [
-  {
-    id: "free",
-    title: "Free",
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    tenantLimit: 25,
-    tone: "border-white/10 bg-[linear-gradient(180deg,#111827_0%,#0c1018_100%)]",
-    valueLine: "Get started free. No card needed. Weekly and daily guests always free.",
-    features: [
-      "25 monthly tenants included",
-      "1 hostel",
-      "Weekly & daily guests — free forever",
-      "Rs 10 per tenant after 25",
-      "Rs 199 per extra hostel/month",
-    ],
-  },
-  {
-    id: "starter",
-    title: "Silver",
-    monthlyPrice: 299,
-    yearlyPrice: 2990,
-    tenantLimit: 50,
-    tone: "border-white/20 bg-[linear-gradient(180deg,#141a27_0%,#0e1420_100%)]",
-    valueLine: "Single hostel, 50 monthly tenants. Rs 8 per tenant after that.",
-    features: [
-      "50 monthly tenants included",
-      "1 hostel",
-      "Weekly & daily guests — free forever",
-      "Rs 8 per tenant after 50",
-      "Rs 199 per extra hostel/month",
-    ],
-  },
-  {
-    id: "growth",
-    title: "Gold",
-    monthlyPrice: 499,
-    yearlyPrice: 4990,
-    tenantLimit: 150,
-    badge: "Best Value",
-    tone:
-      "border-[color:color-mix(in_srgb,var(--success)_40%,var(--brand)_60%)] bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.12),transparent_50%),linear-gradient(180deg,#0e1a2e_0%,#0b101c_100%)] shadow-[0_0_0_1px_rgba(56,189,248,0.15),0_32px_80px_rgba(37,99,235,0.2)]",
-    valueLine: "3 hostels, 150 monthly tenants. Rs 5 per tenant after that.",
-    features: [
-      "150 monthly tenants included",
-      "3 hostels",
-      "Weekly & daily guests — free forever",
-      "Rs 5 per tenant after 150",
-      "Rs 199 per extra hostel/month",
-    ],
-  },
-  {
-    id: "pro",
-    title: "Diamond",
-    monthlyPrice: 799,
-    yearlyPrice: 7990,
-    tenantLimit: 300,
-    badge: "Most Popular",
-    tone:
-      "border-[#38bdf8]/30 bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.16),transparent_50%),linear-gradient(180deg,#0a1628_0%,#07101e_100%)] shadow-[0_0_0_1px_rgba(56,189,248,0.18),0_32px_80px_rgba(37,99,235,0.24)]",
-    valueLine: "5 hostels, 300 monthly tenants. Best for multi-hostel owners.",
-    features: [
-      "300 monthly tenants included",
-      "5 hostels",
-      "Weekly & daily guests — free forever",
-      "Rs 5 per tenant after 300",
-      "Rs 199 per extra hostel/month",
-    ],
-  },
-  {
-    id: "founding",
-    title: "Founding Member",
-    monthlyPrice: 499,
-    yearlyPrice: 4990,
-    tenantLimit: 200,
-    badge: "First 15 Owners",
-    tone:
-      "border-[#f59e0b]/40 bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.12),transparent_50%),linear-gradient(180deg,#151208_0%,#0c1018_100%)] ring-1 ring-[#f59e0b]/20",
-    valueLine: "50% off your chosen plan for 12 months. For the first 15 owners only.",
-    features: [
-      "First 15 owners only",
-      "50% off Silver, Gold or Diamond base price for 12 months",
-      "Weekly & daily guests — free forever",
-      "Extra tenants and hostels at standard rates",
-    ],
-  },
-];
-
-function mapRequestedPlanId(planId: PlanCard["id"]): PlanId {
-  if (planId === "founding") {
-    return "scale";
-  }
+function mapRequestedPlanId(planId: PlanId): PlanId {
   return planId;
 }
 
@@ -125,23 +19,13 @@ function getDirection(currentPlanId: PlanId, nextPlanId: PlanId) {
   return PLAN_ORDER.indexOf(nextPlanId) > PLAN_ORDER.indexOf(currentPlanId) ? "upgrade" : "downgrade";
 }
 
-function getCurrentPlanLabel(planId: PlanId) {
-  if (planId === "scale") return "Founding Member";
-  if (planId === "pro") return "Diamond";
-  if (planId === "growth") return "Gold";
-  if (planId === "starter") return "Silver";
-  if (planId === "free") return "Free";
-  const plan = PLANS.find((item) => item.id === planId);
-  return plan?.title ?? planId;
-}
-
 export default function OwnerBillingPage() {
   const { currentHostel, loading: hostelLoading } = useHostelContext();
   const [data, setData] = useState<OwnerBillingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [requestingPlanId, setRequestingPlanId] = useState<PlanCard["id"] | null>(null);
-  const [selectedPlanId, setSelectedPlanId] = useState<PlanCard["id"] | null>(null);
+  const [requestingPlanId, setRequestingPlanId] = useState<PlanId | null>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState<PlanId | null>(null);
   const [billingClock] = useState(() => Date.now());
 
   useEffect(() => {
@@ -196,7 +80,7 @@ export default function OwnerBillingPage() {
     );
   }
 
-  const currentPlanLabel = getCurrentPlanLabel(data.planId);
+  const currentPlanLabel = getPlanLabel(data.planId);
   const trialDaysLeft = Math.max(
     0,
     Math.ceil((new Date(data.dueDate).getTime() - billingClock) / (1000 * 60 * 60 * 24)),
@@ -341,18 +225,16 @@ export default function OwnerBillingPage() {
                 <div
                   className={cn(
                     "absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)]",
-                    plan.id === "founding"
-                      ? "border border-[#f59e0b]/50 bg-[linear-gradient(90deg,#b45309_0%,#d97706_100%)]"
-                      : "border border-[#38bdf8]/50 bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)]",
+                    "border border-[#38bdf8]/50 bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)]",
                   )}
                 >
-                  {plan.id === "founding" ? "Founding" : plan.badge}
+                  {plan.badge}
                 </div>
               ) : null}
 
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className={cn("text-[11px] font-semibold uppercase tracking-[0.16em]", plan.id === "founding" ? "text-[#fbbf24]" : "text-white/70")}>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">
                     {plan.title}
                   </p>
                   {isCurrentPlan ? (
@@ -371,30 +253,26 @@ export default function OwnerBillingPage() {
                 <span className="mb-0.5 text-xs text-white/40">/mo</span>
               </div>
 
-              <p className={cn("mt-0.5 text-[10px]", plan.id === "founding" ? "text-[#fbbf24]/55" : "text-white/30")}>
-                {plan.id === "founding"
-                  ? "50% off base plan for 12 months • overages at standard rates"
-                  : plan.id === "pro"
-                    ? "Rs 5/tenant after 300 • Rs 199/extra hostel • weekly & daily free"
-                    : plan.id === "growth"
-                      ? "Rs 5/tenant after 150 • Rs 199/extra hostel • weekly & daily free"
-                      : plan.id === "starter"
-                        ? "Rs 8/tenant after 50 • Rs 199/extra hostel • weekly & daily free"
-                        : "Rs 10/tenant after 25 • weekly & daily guests always free"}
+              <p className="mt-0.5 text-[10px] text-white/30">
+                {plan.id === "pro"
+                  ? "Rs 5/tenant after 300 - Rs 199/extra hostel - weekly & daily free"
+                  : plan.id === "growth"
+                    ? "Rs 8/tenant after 150 - Rs 199/extra hostel - weekly & daily free"
+                    : plan.id === "starter"
+                      ? "Rs 10/tenant after 50 - Rs 199/extra hostel - weekly & daily free"
+                      : "25 tenants included - upgrade required after trial limit"}
               </p>
 
               <div className="mt-3 rounded-[14px] border border-white/10 bg-white/[0.03] px-3 py-2.5">
                 <p className="text-[11px] font-semibold text-white">{plan.valueLine}</p>
                 <p className="mt-1 text-[11px] text-[color:var(--fg-secondary)]">
                   {plan.id === "free"
-                    ? "25 monthly tenants free forever. Weekly and daily guests never counted."
+                    ? "25 monthly tenants during trial. Upgrade required after the trial limit."
                     : plan.id === "starter"
-                      ? "50 monthly tenants. Rs 8 per tenant after. Weekly and daily guests free."
+                      ? "50 monthly tenants. Rs 10 per tenant after. Weekly and daily guests free."
                       : plan.id === "growth"
-                        ? "150 monthly tenants. Rs 5 per tenant after. Weekly and daily guests free."
-                        : plan.id === "pro"
-                          ? "300 monthly tenants. Rs 5 per tenant after. Weekly and daily guests free."
-                          : "50% off base price for your first 12 months. Overages billed at standard rates."}
+                        ? "150 monthly tenants. Rs 8 per tenant after. Weekly and daily guests free."
+                        : "300 monthly tenants. Rs 5 per tenant after. Weekly and daily guests free."}
                 </p>
               </div>
 
@@ -404,10 +282,10 @@ export default function OwnerBillingPage() {
                     <span
                       className={cn(
                         "mt-0.5 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border",
-                        plan.id === "founding" ? "border-[#f59e0b]/40 bg-[#f59e0b]/12" : "border-[#4ade80]/35 bg-[#22c55e]/12",
+                        "border-[#4ade80]/35 bg-[#22c55e]/12",
                       )}
                     >
-                      <Check className={cn("h-2.5 w-2.5", plan.id === "founding" ? "text-[#fbbf24]" : "text-[#4ade80]")} />
+                      <Check className="h-2.5 w-2.5 text-[#4ade80]" />
                     </span>
                     {feature}
                   </li>
@@ -431,11 +309,11 @@ export default function OwnerBillingPage() {
                   <Button
                     variant={isSelected ? "primary" : "secondary"}
                     className="w-full"
-                    disabled={data.upgradePending || isBusy}
+                    disabled={data.upgradePending || isBusy || plan.id === "free"}
                     onClick={() => setSelectedPlanId(plan.id)}
                   >
                     <Zap className="mr-1.5 h-3.5 w-3.5" />
-                    {isBusy ? "Sending..." : direction === "upgrade" ? `Choose ${plan.title}` : `Downgrade to ${plan.title}`}
+                    {isBusy ? "Sending..." : plan.id === "free" ? "Trial only" : direction === "upgrade" ? `Choose ${plan.title}` : `Downgrade to ${plan.title}`}
                   </Button>
                 )}
               </div>
@@ -517,8 +395,8 @@ export default function OwnerBillingPage() {
 }
 
 function UpgradeHook({ data, currentPlanLabel }: { data: OwnerBillingData; currentPlanLabel: string }) {
-  const tenantPct = data.billing.billableTenantCount && data.billing.tenantCount
-    ? Math.round((data.billing.tenantCount / data.billing.billableTenantCount) * 100)
+  const tenantPct = data.billing.planLimit && data.billing.tenantCount
+    ? Math.round((data.billing.tenantCount / data.billing.planLimit) * 100)
     : 0;
   const hostelCount = data.billing.hostelCount ?? 0;
   const hostelLimit = data.billing.hostelLimit ?? 1;
@@ -526,7 +404,7 @@ function UpgradeHook({ data, currentPlanLabel }: { data: OwnerBillingData; curre
 
   const showTenantWarning = tenantPct >= 80;
   const showHostelWarning = hostelPct >= 80;
-  const isOnMaxPlan = data.planId === "scale" || data.planId === "pro";
+  const isOnMaxPlan = data.planId === "pro";
 
   if (!showTenantWarning && !showHostelWarning) return null;
 
@@ -544,7 +422,7 @@ function UpgradeHook({ data, currentPlanLabel }: { data: OwnerBillingData; curre
           </p>
           <p className="mt-1 text-[12px] text-[color:var(--fg-secondary)]">
             {showTenantWarning
-              ? `You've used ${data.billing.tenantCount} of your ${data.billing.billableTenantCount}-tenant limit on ${currentPlanLabel}. `
+              ? `You've used ${data.billing.tenantCount} of your ${data.billing.planLimit}-tenant limit on ${currentPlanLabel}. `
               : ""}
             {showHostelWarning
               ? `You have ${hostelCount} of ${hostelLimit} hostel slots filled. `
@@ -555,7 +433,7 @@ function UpgradeHook({ data, currentPlanLabel }: { data: OwnerBillingData; curre
           </p>
           {!isOnMaxPlan ? (
             <p className="mt-1.5 text-[11px] font-medium text-[#fbbf24]">
-              See the plans below to upgrade →
+              See the plans below to upgrade
             </p>
           ) : null}
         </div>

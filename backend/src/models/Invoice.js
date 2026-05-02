@@ -25,7 +25,7 @@ const invoiceSchema = new mongoose.Schema(
     },
     plan_applied: {
       type: String,
-      enum: ["starter", "growth", "pro", "scale"],
+      enum: ["free", "starter", "growth", "pro"],
       required: true,
     },
     extra_tenants: {

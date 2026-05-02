@@ -14,6 +14,7 @@ const {
 const { protect } = require("../middleware/authMiddleware");
 const { requireRoles } = require("../middleware/roleMiddleware");
 const { validateBody } = require("../middleware/validate");
+const { PLAN_IDS } = require("../config/pricing");
 
 const router = express.Router();
 
@@ -38,7 +39,7 @@ router.post(
     z.object({
       owner_id: z.coerce.number().int().positive(),
       effective_tenants: z.number().int().nonnegative().optional(),
-      plan: z.enum(["starter", "growth", "pro", "scale"]).optional(),
+      plan: z.enum(PLAN_IDS).optional(),
       free_months: z.number().int().nonnegative().optional(),
       note: z.string().max(500).optional(),
     }),

@@ -5,7 +5,7 @@ export type OwnerBillingData = {
   hostelName: string;
   monthKey: string;
   dueDate: string;
-  planId: "starter" | "growth" | "pro" | "scale";
+  planId: "free" | "starter" | "growth" | "pro";
   autoPayEnabled: boolean;
   paymentStatus: "paid" | "pending" | "failed";
   accessActive: boolean;
@@ -17,6 +17,7 @@ export type OwnerBillingData = {
   billing: {
     tenantCount: number;
     billableTenantCount: number;
+    planLimit: number;
     extraTenants: number;
     extraCharges: number;
     hostelCount: number;
@@ -64,7 +65,7 @@ export async function setOwnerAutoPay(hostelId: string, enabled: boolean) {
 }
 
 export async function requestOwnerPlanUpgrade(hostelId: string, currentPlanId: string, requestedPlanId: string) {
-  const planOrder = ["starter", "growth", "pro", "scale"];
+  const planOrder = ["free", "starter", "growth", "pro"];
   const direction =
     currentPlanId === requestedPlanId
       ? "same_plan"

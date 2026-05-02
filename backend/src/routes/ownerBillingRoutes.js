@@ -3,6 +3,7 @@ const { z } = require("zod");
 const { protect } = require("../middleware/authMiddleware");
 const { requireRoles } = require("../middleware/roleMiddleware");
 const { validateBody } = require("../middleware/validate");
+const { PAID_PLAN_IDS } = require("../config/pricing");
 const {
   getOwnerBilling,
   setOwnerAutopay,
@@ -41,7 +42,7 @@ router.post(
   "/request-upgrade",
   validateBody(
     z.object({
-      requestedPlan: z.enum(["starter", "growth", "pro", "scale"]),
+      requestedPlan: z.enum(PAID_PLAN_IDS),
       note: z.string().max(500).optional(),
     }),
   ),

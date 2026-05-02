@@ -21,9 +21,10 @@ type OwnerStats = {
 };
 
 function getPlanLabel(tenantCount: number) {
-  if (tenantCount > 150) return { label: "Founding", color: "bg-purple-500/15 text-purple-300" };
-  if (tenantCount > 60) return { label: "Pro", color: "bg-blue-500/15 text-blue-300" };
-  return { label: "Starter", color: "bg-white/10 text-white/60" };
+  if (tenantCount > 150) return { label: "Diamond", color: "bg-purple-500/15 text-purple-300" };
+  if (tenantCount > 50) return { label: "Gold", color: "bg-blue-500/15 text-blue-300" };
+  if (tenantCount > 25) return { label: "Silver", color: "bg-white/10 text-white/60" };
+  return { label: "Free Trial", color: "bg-white/10 text-white/60" };
 }
 
 export default function SuperAdminDashboardPage() {

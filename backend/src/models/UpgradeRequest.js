@@ -16,12 +16,12 @@ const upgradeRequestSchema = new mongoose.Schema(
     },
     currentPlan: {
       type: String,
-      enum: ["starter", "growth", "pro", "scale"],
+      enum: ["free", "starter", "growth", "pro"],
       required: true,
     },
     requestedPlan: {
       type: String,
-      enum: ["starter", "growth", "pro", "scale"],
+      enum: ["starter", "growth", "pro"],
       required: true,
     },
     note: {
