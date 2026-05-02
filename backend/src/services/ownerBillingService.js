@@ -50,6 +50,76 @@ function addOneMonth(dateStr) {
   return d.toISOString().split("T")[0];
 }
 
+/**
+ * activeDays = max(moveIn, cycleStart) → min(moveOut || today, cycleEnd)
+ * All dates: YYYY-MM-DD strings. Returns 0 if no overlap.
+ */
+function calculateActiveDays(moveInDate, moveOutDate, cycleStart, cycleEnd) {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  const moveIn  = new Date(moveInDate  + "T00:00:00Z");
+  const moveOut = moveOutDate ? new Date(moveOutDate + "T00:00:00Z") : today;
+  const cStart  = new Date(cycleStart  + "T00:00:00Z");
+  const cEnd    = new Date(cycleEnd    + "T00:00:00Z");
+
+  // effective window = overlap of [moveIn, moveOut] and [cStart, cEnd]
+  const windowStart = moveIn  > cStart ? moveIn  : cStart;
+  const windowEnd   = moveOut < cEnd   ? moveOut : cEnd;
+
+  if (windowEnd <= windowStart) return 0;
+  return Math.floor((windowEnd - windowStart) / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Returns billing eligibility for every monthly tenant of an owner
+ * within the given cycle window.
+ *
+ * Rule: billable = activeDays > 10
+ */
+async function getBillableTenants(ownerId, cycleStart, cycleEnd) {
+  const result = await query(
+    `SELECT
+       data->>'id'                       AS "tenantId",
+       data->'assignment'->>'moveInDate' AS "moveInDate",
+       data->>'moveOutDate'              AS "moveOutDate"
+     FROM tenants
+     WHERE owner_id = $1
+       AND (data->>'billingCycle' IS NULL OR data->>'billingCycle' = 'monthly')`,
+    [ownerId],
+  );
+
+  return result.rows.map(({ tenantId, moveInDate, moveOutDate }) => {
+    if (!moveInDate) {
+      return { tenantId, activeDays: 0, billable: false };
+    }
+    const activeDays = calculateActiveDays(moveInDate, moveOutDate ?? null, cycleStart, cycleEnd);
+    return { tenantId, activeDays, billable: activeDays > 10 };
+  });
+}
+
+/**
+ * Count of billable tenants (activeDays > 10) for use in invoice calculation.
+ */
+async function getBillableTenantCount(ownerId, cycleStart, cycleEnd) {
+  const list = await getBillableTenants(ownerId, cycleStart, cycleEnd);
+  return list.filter((t) => t.billable).length;
+}
+
+/**
+ * Raw count of all monthly tenants — used only for daily tracking logs.
+ * Does NOT apply the 10-day rule.
+ */
+async function getLiveTenantCount(ownerId) {
+  const result = await query(
+    `SELECT COUNT(*)::int AS count FROM tenants
+     WHERE owner_id = $1
+       AND (data->>'billingCycle' IS NULL OR data->>'billingCycle' = 'monthly')`,
+    [ownerId],
+  );
+  return result.rows[0]?.count ?? 0;
+}
+
 async function getOwnerRow(ownerId) {
   const result = await query(
     `SELECT id, name, plan, plan_status, billing_cycle_start, billing_cycle_end,
@@ -61,20 +131,13 @@ async function getOwnerRow(ownerId) {
   return result.rows[0] ?? null;
 }
 
-async function getLiveTenantCount(ownerId) {
-  const result = await query(
-    `SELECT COUNT(*)::int AS count FROM tenants
-     WHERE owner_id = $1
-       AND (data->>'billingCycle' IS NULL OR data->>'billingCycle' = 'monthly')`,
-    [ownerId],
-  );
-  return result.rows[0]?.count ?? 0;
-}
-
 async function getOrCreateCurrentInvoice(ownerId, owner) {
   const cycleStart = owner.billing_cycle_start
     ? new Date(owner.billing_cycle_start).toISOString().split("T")[0]
     : new Date().toISOString().split("T")[0];
+  const cycleEnd = owner.billing_cycle_end
+    ? new Date(owner.billing_cycle_end).toISOString().split("T")[0]
+    : addOneMonth(cycleStart);
 
   const existing = await query(
     `SELECT * FROM owner_invoices WHERE owner_id = $1 AND cycle_start = $2 LIMIT 1`,
@@ -82,17 +145,16 @@ async function getOrCreateCurrentInvoice(ownerId, owner) {
   );
   if (existing.rowCount > 0) return existing.rows[0];
 
+  // Use billable count (10-day rule) unless manually overridden
   const tenantCount =
     owner.billing_tenants_override != null
       ? owner.billing_tenants_override
-      : await getLiveTenantCount(ownerId);
+      : await getBillableTenantCount(ownerId, cycleStart, cycleEnd);
+
   const planId = owner.billing_plan_override ?? owner.plan ?? "starter";
   const bill = calculateBill(tenantCount, planId);
   const freeMonths = owner.free_months_remaining ?? 0;
   const totalAmount = freeMonths > 0 ? 0 : bill.total_amount;
-  const cycleEnd = owner.billing_cycle_end
-    ? new Date(owner.billing_cycle_end).toISOString().split("T")[0]
-    : addOneMonth(cycleStart);
 
   const result = await query(
     `INSERT INTO owner_invoices
@@ -110,6 +172,7 @@ async function trackDailyTenantCounts() {
   const owners = await query(`SELECT id FROM owners WHERE status = 'active'`);
 
   for (const row of owners.rows) {
+    // Raw count for the log — not filtered by 10-day rule
     const count = await getLiveTenantCount(row.id);
     await query(
       `INSERT INTO owner_tenant_logs (owner_id, date, active_tenant_count)
@@ -137,16 +200,19 @@ async function runInvoiceCycleJob() {
     try {
       await client.query("BEGIN");
 
+      const cycleStart = new Date(owner.billing_cycle_start).toISOString().split("T")[0];
+      const cycleEnd   = new Date(owner.billing_cycle_end).toISOString().split("T")[0];
+
+      // Apply 10-day rule at invoice close time
       const tenantCount =
         owner.billing_tenants_override != null
           ? owner.billing_tenants_override
-          : await getLiveTenantCount(owner.id);
+          : await getBillableTenantCount(owner.id, cycleStart, cycleEnd);
+
       const planId = owner.billing_plan_override ?? owner.plan ?? "starter";
       const bill = calculateBill(tenantCount, planId);
       const freeMonths = owner.free_months_remaining ?? 0;
       const totalAmount = freeMonths > 0 ? 0 : bill.total_amount;
-      const cycleStart = new Date(owner.billing_cycle_start).toISOString().split("T")[0];
-      const cycleEnd = new Date(owner.billing_cycle_end).toISOString().split("T")[0];
 
       await client.query(
         `INSERT INTO owner_invoices
@@ -162,7 +228,7 @@ async function runInvoiceCycleJob() {
       );
 
       const newCycleStart = cycleEnd;
-      const newCycleEnd = addOneMonth(cycleEnd);
+      const newCycleEnd   = addOneMonth(cycleEnd);
       const newFreeMonths = Math.max(0, freeMonths - 1);
 
       await client.query(
@@ -189,6 +255,9 @@ module.exports = {
   PLAN_SLABS,
   getPlan,
   calculateBill,
+  calculateActiveDays,
+  getBillableTenants,
+  getBillableTenantCount,
   getLiveTenantCount,
   getOwnerRow,
   getOrCreateCurrentInvoice,

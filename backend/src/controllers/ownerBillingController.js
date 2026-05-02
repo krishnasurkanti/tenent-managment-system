@@ -3,6 +3,8 @@ const {
   PLAN_SLABS,
   calculateBill,
   getLiveTenantCount,
+  getBillableTenantCount,
+  getBillableTenants,
   getOwnerRow,
   getOrCreateCurrentInvoice,
 } = require("../services/ownerBillingService");
@@ -29,9 +31,26 @@ async function getOwnerBilling(req, res, next) {
     );
     const hostelCount = hostelCountResult.rows[0]?.hostel_count ?? 0;
 
+    const cycleStart = owner.billing_cycle_start
+      ? new Date(owner.billing_cycle_start).toISOString().split("T")[0]
+      : new Date().toISOString().split("T")[0];
+    const cycleEnd = owner.billing_cycle_end
+      ? new Date(owner.billing_cycle_end).toISOString().split("T")[0]
+      : null;
+
     const liveTenants = await getLiveTenantCount(ownerId);
-    const effectiveTenants =
-      owner.billing_tenants_override != null ? owner.billing_tenants_override : liveTenants;
+
+    // Billable count applies 10-day rule; only available when cycle window is known
+    const billableList = cycleEnd
+      ? await getBillableTenants(ownerId, cycleStart, cycleEnd)
+      : [];
+    const billableCount = cycleEnd
+      ? (owner.billing_tenants_override != null
+          ? owner.billing_tenants_override
+          : billableList.filter((t) => t.billable).length)
+      : liveTenants;
+
+    const effectiveTenants = billableCount;
     const planId = owner.billing_plan_override ?? owner.plan ?? "starter";
     const bill = calculateBill(effectiveTenants, planId, hostelCount);
     const freeMonths = owner.free_months_remaining ?? 0;
@@ -60,6 +79,7 @@ async function getOwnerBilling(req, res, next) {
         cycleStart: owner.billing_cycle_start,
         cycleEnd: owner.billing_cycle_end,
         liveTenantCount: liveTenants,
+        billableCount,
         effectiveTenants,
         planLimit: bill.plan_limit,
         extraTenants: bill.extra_tenants,
@@ -91,6 +111,7 @@ async function getOwnerBilling(req, res, next) {
       autoPayEnabled: owner.auto_pay_enabled,
       upgradePending: Boolean(pendingUpgrade),
       upgradeRequest: pendingUpgrade,
+      billableTenants: billableList,
     });
   } catch (error) {
     return next(error);
