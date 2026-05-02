@@ -47,7 +47,7 @@ function OwnerTenantsPageContent() {
   const [pendingTenant, setPendingTenant] = useState<TenantRecord | null>(null);
   const [paymentTenant, setPaymentTenant] = useState<TenantRecord | null>(null);
   const [completingTenant, setCompletingTenant] = useState<TenantRecord | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get("q") ?? "");
 
   const preferredAssignment = useMemo(
     () => ({
@@ -69,6 +69,8 @@ function OwnerTenantsPageContent() {
 
   useEffect(() => {
     setModalOpen(searchParams.get("action") === "add-tenant");
+    const q = searchParams.get("q");
+    if (q !== null) setSearchQuery(q);
   }, [searchParams]);
 
   const closeModal = useCallback(() => {

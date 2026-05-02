@@ -52,7 +52,7 @@ const tenantCreateSchema = z
   .passthrough();
 
 const tenantListSchema = z.object({
-  hostel_id: z.coerce.number().int().positive(),
+  hostel_id: z.coerce.number().int().positive().optional(),
 });
 
 module.exports = {

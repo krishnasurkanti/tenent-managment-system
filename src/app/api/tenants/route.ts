@@ -30,26 +30,21 @@ export async function GET(request: Request) {
       return NextResponse.json({ tenants: filtered, hostels: [] });
     }
 
-    const hostelsResponse = await backendFetch("/api/hostels");
+    // Single backend call — returns all owner tenants without N+1 per-hostel loop
+    const [allTenantsResponse, hostelsResponse] = await Promise.all([
+      backendFetch("/api/tenants"),
+      backendFetch("/api/hostels"),
+    ]);
+
+    const allTenantsPayload = (await allTenantsResponse.json()) as { tenants?: unknown[]; message?: string };
     const hostelsPayload = (await hostelsResponse.json()) as { hostels?: Array<{ id?: string }>; message?: string };
 
-    if (!hostelsResponse.ok) {
-      return NextResponse.json({ message: hostelsPayload.message || "Unable to load hostels." }, { status: hostelsResponse.status });
+    if (!allTenantsResponse.ok) {
+      return NextResponse.json({ message: allTenantsPayload.message || "Unable to load tenants." }, { status: allTenantsResponse.status });
     }
 
     const hostels = Array.isArray(hostelsPayload.hostels) ? hostelsPayload.hostels : [];
-    const tenantResults = await Promise.all(
-      hostels
-        .map((hostel) => hostel.id)
-        .filter((id): id is string => Boolean(id))
-        .map(async (id) => {
-          const tenantResponse = await backendFetch(`/api/tenants?hostel_id=${encodeURIComponent(id)}`);
-          const tenantPayload = (await tenantResponse.json()) as { tenants?: unknown[] };
-          return Array.isArray(tenantPayload.tenants) ? tenantPayload.tenants : [];
-        }),
-    );
-
-    const tenants = tenantResults.flat();
+    const tenants = Array.isArray(allTenantsPayload.tenants) ? allTenantsPayload.tenants : [];
     const filtered = tenantId ? tenants.filter((tenant) => (tenant as { tenantId?: string }).tenantId === tenantId) : tenants;
     return NextResponse.json({ tenants: filtered, hostels });
   }

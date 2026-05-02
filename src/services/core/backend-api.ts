@@ -20,6 +20,7 @@ export async function backendFetch(
     ...init,
     headers,
     cache: cacheStrategy,
+    signal: AbortSignal.timeout(3000),
   });
 }
 

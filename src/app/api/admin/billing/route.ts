@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 type PlanSlab = { id?: string; label?: string; price?: number; limit: number | null; base?: number; extra_per_tenant: number };
 
 export async function GET(request: NextRequest) {
-  if (!isAdminAuthenticated(request)) {
+  if (!(await isAdminAuthenticated(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 

@@ -25,10 +25,7 @@ function getJwtSecret(): Uint8Array | null {
 export async function verifyJwtPayload(token: string): Promise<Record<string, unknown> | null> {
   if (!token) return null;
   const secret = getJwtSecret();
-  if (!secret) {
-    // No secret configured — fall back to decode-only (dev / misconfigured env)
-    return decodeJwtPayload(token);
-  }
+  if (!secret) return null;
   try {
     const { payload } = await jwtVerify(token, secret);
     return payload as Record<string, unknown>;

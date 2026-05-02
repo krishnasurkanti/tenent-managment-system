@@ -6,7 +6,7 @@ import { isAdminAuthenticated } from "@/lib/admin-session";
 export const dynamic = "force-dynamic";
 
 export async function PATCH(request: NextRequest) {
-  if (!isAdminAuthenticated(request)) {
+  if (!(await isAdminAuthenticated(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
@@ -30,7 +30,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!isAdminAuthenticated(request)) {
+  if (!(await isAdminAuthenticated(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 

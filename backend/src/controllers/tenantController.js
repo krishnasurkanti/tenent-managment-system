@@ -310,20 +310,37 @@ async function getTenants(req, res) {
   const { hostel_id: hostelId } = req.validatedQuery;
   const ownerId = req.user.ownerId;
 
-  await getHostelForOwner(ownerId, hostelId);
+  if (hostelId) {
+    await getHostelForOwner(ownerId, hostelId);
 
+    const result = await query(
+      `
+        SELECT id, owner_id, hostel_id, data, created_at
+        FROM tenants
+        WHERE owner_id = $1 AND hostel_id = $2
+        ORDER BY created_at DESC, id DESC
+      `,
+      [ownerId, hostelId],
+    );
+
+    return res.json({
+      hostel_id: hostelId,
+      tenants: result.rows.map(mapTenantRow),
+    });
+  }
+
+  // No hostel_id — return all tenants for this owner in one query
   const result = await query(
     `
       SELECT id, owner_id, hostel_id, data, created_at
       FROM tenants
-      WHERE owner_id = $1 AND hostel_id = $2
+      WHERE owner_id = $1
       ORDER BY created_at DESC, id DESC
     `,
-    [ownerId, hostelId],
+    [ownerId],
   );
 
   return res.json({
-    hostel_id: hostelId,
     tenants: result.rows.map(mapTenantRow),
   });
 }

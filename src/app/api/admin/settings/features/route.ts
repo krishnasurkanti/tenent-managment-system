@@ -6,14 +6,14 @@ import { isAdminAuthenticated } from "@/lib/admin-session";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  if (!isAdminAuthenticated(request)) {
+  if (!(await isAdminAuthenticated(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
   return NextResponse.json({ features: getAdminFeatures() });
 }
 
 export async function PATCH(request: NextRequest) {
-  if (!isAdminAuthenticated(request)) {
+  if (!(await isAdminAuthenticated(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 

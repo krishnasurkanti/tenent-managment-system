@@ -6,7 +6,7 @@ import { backendFetch } from "@/services/core/backend-api";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  if (!isAdminAuthenticated(request)) {
+  if (!(await isAdminAuthenticated(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 

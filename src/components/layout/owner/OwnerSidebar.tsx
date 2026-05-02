@@ -93,7 +93,7 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
       window.localStorage.removeItem("currentHostelId");
     }
     onClose();
-    router.push("/login");
+    router.push("/owner/login");
     router.refresh();
   };
 
