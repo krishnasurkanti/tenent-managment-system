@@ -73,36 +73,7 @@ export default function OwnerDashboardPage() {
       {/* ── MOBILE LAYOUT ── */}
       <section className="grid gap-3 lg:hidden">
 
-        {/* 1. Platform Trust Card */}
-        <div className="relative overflow-hidden rounded-[18px] border border-[rgba(99,102,241,0.35)] bg-[linear-gradient(135deg,rgba(99,102,241,0.12)_0%,rgba(99,102,241,0.04)_100%)] px-3 py-3 shadow-[0_0_0_1px_rgba(99,102,241,0.1),0_8px_32px_rgba(99,102,241,0.14)]">
-          {/* live dot */}
-          <div className="absolute right-3 top-3 flex items-center gap-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#22c55e] opacity-60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#22c55e]" />
-            </span>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#22c55e]">Live</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* building illustration */}
-            <div className="shrink-0">
-              <BuildingIllustration />
-            </div>
-
-            {/* stats */}
-            <div className="flex-1 min-w-0">
-              <div className="grid grid-cols-3 gap-2">
-                <TrustStat value="18" label="Owners" />
-                <TrustStat value="42" label="Hostels" />
-                <TrustStat value="1,240" label="Tenants" />
-              </div>
-              <p className="mt-2 text-[10px] italic text-white/30">Trusted by owners across India</p>
-            </div>
-          </div>
-        </div>
-
-        {/* 2. Action Tiles */}
+        {/* 1. Action Tiles */}
         <div className="grid grid-cols-2 gap-2.5">
           <ActionTile href="/owner/payments" icon={CreditCard} label="Pay Rent" note="Record collection" variant="mobile" />
           <ActionTile href="/owner/payments" icon={ReceiptText} label="Due List" note={`${dueSoon.length} due soon`} variant="mobile" tone="neutral" />
@@ -309,64 +280,6 @@ export default function OwnerDashboardPage() {
       </section>
 
       <TenantRentSearch tenants={tenants} hideButton />
-    </div>
-  );
-}
-
-// ── Trust card sub-components ──────────────────────────────────────────
-
-function BuildingIllustration() {
-  return (
-    <svg viewBox="0 0 72 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-16 w-[72px]">
-      {/* back-left building */}
-      <rect x="2" y="22" width="20" height="42" fill="#111114" rx="2" />
-      <rect x="5" y="26" width="5" height="4" rx="1" fill="#6366f1" fillOpacity="0.5" />
-      <rect x="13" y="26" width="5" height="4" rx="1" fill="#6366f1" fillOpacity="0.25" />
-      <rect x="5" y="34" width="5" height="4" rx="1" fill="#6366f1" fillOpacity="0.35" />
-      <rect x="13" y="34" width="5" height="4" rx="1" fill="#6366f1" fillOpacity="0.6" />
-      <rect x="5" y="42" width="5" height="4" rx="1" fill="#6366f1" fillOpacity="0.2" />
-      <rect x="13" y="42" width="5" height="4" rx="1" fill="#6366f1" fillOpacity="0.45" />
-
-      {/* back-right building */}
-      <rect x="50" y="18" width="20" height="46" fill="#0d0d10" rx="2" />
-      <rect x="53" y="22" width="5" height="4" rx="1" fill="#818cf8" fillOpacity="0.4" />
-      <rect x="61" y="22" width="5" height="4" rx="1" fill="#818cf8" fillOpacity="0.2" />
-      <rect x="53" y="30" width="5" height="4" rx="1" fill="#818cf8" fillOpacity="0.55" />
-      <rect x="61" y="30" width="5" height="4" rx="1" fill="#818cf8" fillOpacity="0.3" />
-      <rect x="53" y="38" width="5" height="4" rx="1" fill="#818cf8" fillOpacity="0.15" />
-      <rect x="61" y="38" width="5" height="4" rx="1" fill="#818cf8" fillOpacity="0.5" />
-
-      {/* front building */}
-      <rect x="18" y="10" width="36" height="54" fill="#18181c" rx="2" />
-      {/* windows row 1 */}
-      <rect x="22" y="15" width="6" height="5" rx="1" fill="#6366f1" fillOpacity="0.7" />
-      <rect x="32" y="15" width="6" height="5" rx="1" fill="#6366f1" fillOpacity="0.4" />
-      <rect x="42" y="15" width="6" height="5" rx="1" fill="#6366f1" fillOpacity="0.65" />
-      {/* windows row 2 */}
-      <rect x="22" y="25" width="6" height="5" rx="1" fill="#6366f1" fillOpacity="0.3" />
-      <rect x="32" y="25" width="6" height="5" rx="1" fill="#6366f1" fillOpacity="0.75" />
-      <rect x="42" y="25" width="6" height="5" rx="1" fill="#6366f1" fillOpacity="0.5" />
-      {/* windows row 3 */}
-      <rect x="22" y="35" width="6" height="5" rx="1" fill="#6366f1" fillOpacity="0.55" />
-      <rect x="32" y="35" width="6" height="5" rx="1" fill="#6366f1" fillOpacity="0.2" />
-      <rect x="42" y="35" width="6" height="5" rx="1" fill="#6366f1" fillOpacity="0.6" />
-      {/* door */}
-      <rect x="31" y="50" width="10" height="14" rx="1" fill="#6366f1" fillOpacity="0.2" />
-      {/* rooftop water tank */}
-      <rect x="28" y="6" width="8" height="5" rx="1" fill="#18181c" stroke="#6366f1" strokeOpacity="0.3" strokeWidth="0.5" />
-      <rect x="33" y="2" width="1.5" height="5" fill="#6366f1" fillOpacity="0.4" />
-
-      {/* ground glow */}
-      <ellipse cx="36" cy="64" rx="30" ry="3" fill="#6366f1" fillOpacity="0.18" />
-    </svg>
-  );
-}
-
-function TrustStat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="rounded-[10px] border border-[rgba(99,102,241,0.2)] bg-[rgba(99,102,241,0.1)] px-2 py-1.5 text-center">
-      <p className="text-sm font-bold leading-none text-white">{value}</p>
-      <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-white/45">{label}</p>
     </div>
   );
 }

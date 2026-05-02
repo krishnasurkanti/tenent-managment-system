@@ -9,6 +9,7 @@ const invitationRoutes = require("./routes/invitationRoutes");
 const signupRoutes = require("./routes/signupRoutes");
 const ownerBillingRoutes = require("./routes/ownerBillingRoutes");
 const adminBillingRoutes = require("./routes/adminBillingRoutes");
+const platformStatsRoutes = require("./routes/platformStatsRoutes");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 const app = express();
@@ -50,6 +51,7 @@ app.use("/api/admin/invitations", invitationRoutes);
 app.use("/api/signup", signupRoutes);
 app.use("/api/owner-billing", ownerBillingRoutes);
 app.use("/api/admin/billing", adminBillingRoutes);
+app.use("/api/platform-stats", platformStatsRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

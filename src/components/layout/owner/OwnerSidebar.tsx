@@ -16,8 +16,54 @@ import {
 } from "lucide-react";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { useOwnerProfile } from "@/hooks/use-owner-profile";
+import { usePlatformStats, useCountUp } from "@/hooks/use-platform-stats";
 import { logoutOwner } from "@/services/auth/auth.service";
 import { cn } from "@/utils/cn";
+
+function PlatformStatsCard() {
+  const { data } = usePlatformStats();
+  const tenants = useCountUp(data?.tenants ?? 0);
+  const hostels = useCountUp(data?.hostels ?? 0);
+  const owners  = useCountUp(data?.owners  ?? 0);
+
+  return (
+    <div className="mx-3 mt-3 mb-1 rounded-[14px] border border-[rgba(99,102,241,0.25)] bg-[linear-gradient(135deg,rgba(99,102,241,0.1)_0%,rgba(99,102,241,0.03)_100%)] px-3 py-2.5">
+      {/* trusted by row */}
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] font-semibold text-[color:var(--fg-secondary)]">
+          Trusted by{" "}
+          <span className="font-bold text-[color:var(--accent-electric)]">
+            {owners.toLocaleString("en-IN")}
+          </span>{" "}
+          owners
+        </p>
+        <div className="flex items-center gap-1">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#22c55e] opacity-60" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#22c55e]" />
+          </span>
+          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#22c55e]">Live</span>
+        </div>
+      </div>
+
+      {/* stats row */}
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <div className="rounded-[8px] border border-[rgba(99,102,241,0.15)] bg-[rgba(99,102,241,0.08)] px-2.5 py-1.5">
+          <p className="text-base font-bold leading-none text-white">
+            {tenants.toLocaleString("en-IN")}
+          </p>
+          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-[color:var(--fg-secondary)]">Tenants</p>
+        </div>
+        <div className="rounded-[8px] border border-[rgba(99,102,241,0.15)] bg-[rgba(99,102,241,0.08)] px-2.5 py-1.5">
+          <p className="text-base font-bold leading-none text-white">
+            {hostels.toLocaleString("en-IN")}
+          </p>
+          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-[color:var(--fg-secondary)]">Hostels</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const workspaceNavigation = [
   { name: "Dashboard", href: "/owner/dashboard", icon: LayoutDashboard },
@@ -95,6 +141,9 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
           </button>
         </div>
       </div>
+
+      {/* Platform live stats */}
+      <PlatformStatsCard />
 
       <div className="flex-1 overflow-y-auto overscroll-none touch-pan-y px-3 py-4" style={{ scrollbarGutter: "stable" }}>
         <div className="mb-5">
