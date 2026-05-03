@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-const MIN_INTERVAL_MS = 12 * 60 * 1000;
+const MIN_INTERVAL_MS = 10 * 60 * 1000;
 const MAX_INTERVAL_MS = 15 * 60 * 1000;
 const ACTIVE_START_HOUR = 6;
 const ACTIVE_END_HOUR = 24;
