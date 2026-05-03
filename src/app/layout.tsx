@@ -3,6 +3,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/query-provider";
 import { ToastProvider } from "@/components/ui/toast";
+import { ServerWakeOverlay } from "@/components/ServerWakeOverlay";
+import { KeepAlivePinger } from "@/components/KeepAlivePinger";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -36,6 +38,8 @@ export default function RootLayout({
           <QueryProvider>
             <ToastProvider>{children}</ToastProvider>
           </QueryProvider>
+          <ServerWakeOverlay />
+          <KeepAlivePinger />
         </ThemeProvider>
       </body>
     </html>
