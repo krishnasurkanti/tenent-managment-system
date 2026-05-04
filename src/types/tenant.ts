@@ -26,6 +26,7 @@ export type TenantRecord = {
   emergencyContactPhone?: string;
   familyMembers?: TenantFamilyMember[];
   createdAt: string;
+  updatedAt: string;
   assignment?: TenantAssignment;
   paymentHistory: TenantPaymentHistory[];
 };

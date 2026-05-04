@@ -72,6 +72,7 @@ function mapTenantRow(row) {
     emergencyContactRelation: data.emergencyContactRelation || undefined,
     emergencyContactPhone: data.emergencyContactPhone || undefined,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
     assignment: data.assignment || undefined,
     paymentHistory: Array.isArray(data.paymentHistory) ? data.paymentHistory : [],
   };
@@ -371,7 +372,7 @@ async function updateTenant(req, res) {
 
     const existing = await client.query(
       `
-        SELECT id, owner_id, hostel_id, data, created_at
+        SELECT id, owner_id, hostel_id, data, created_at, updated_at
         FROM tenants
         WHERE id = $1 AND owner_id = $2
         LIMIT 1
@@ -385,6 +386,19 @@ async function updateTenant(req, res) {
 
     const current = existing.rows[0];
     const patch = req.body && typeof req.body === "object" ? req.body : {};
+    
+    // Check for version conflict if client provided expected updated_at
+    if (patch.expectedUpdatedAt) {
+      const expectedTime = new Date(patch.expectedUpdatedAt);
+      const currentTime = new Date(current.updated_at);
+      
+      // Allow small clock skew (5 seconds)
+      const timeDiff = Math.abs(currentTime.getTime() - expectedTime.getTime());
+      if (timeDiff > 5000) {
+        throw createHttpError(409, "This record was updated by another session. Please refresh and try again.");
+      }
+    }
+
     const nextData = { ...(current.data || {}), ...patch };
     const nextHostelId = patch.hostel_id ?? current.hostel_id;
     const hostel = await getHostelForOwner(req.user.ownerId, nextHostelId, client);
@@ -429,9 +443,9 @@ async function updateTenant(req, res) {
     const result = await client.query(
       `
         UPDATE tenants
-        SET hostel_id = $3, data = $4::jsonb
+        SET hostel_id = $3, data = $4::jsonb, updated_at = NOW()
         WHERE id = $1 AND owner_id = $2
-        RETURNING id, owner_id, hostel_id, data, created_at
+        RETURNING id, owner_id, hostel_id, data, created_at, updated_at
       `,
       [req.params.id, req.user.ownerId, nextHostelId, JSON.stringify(nextData)],
     );

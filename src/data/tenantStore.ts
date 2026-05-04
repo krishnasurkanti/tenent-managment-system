@@ -229,6 +229,7 @@ function buildDemoTenant(input: {
     nextDueDate: input.nextDueDate,
     idNumber: `TEST-ID-${input.tenantId}`,
     createdAt: input.createdAt,
+    updatedAt: input.createdAt,
     assignment: { ...input.assignment },
     paymentHistory: [
       {
@@ -348,11 +349,13 @@ function getOccupiedBedIds(hostelId: string, floorNumber: number, roomNumber: st
   );
 }
 
-export function createTenantRecord(input: Omit<TenantRecord, "tenantId" | "createdAt" | "paymentHistory">) {
+export function createTenantRecord(input: Omit<TenantRecord, "tenantId" | "createdAt" | "updatedAt" | "paymentHistory">) {
+  const now = new Date().toISOString();
   const status = getDueStatus(input.nextDueDate);
   const tenant: TenantRecord = {
     tenantId: generateTenantIdFromPhone(input.phone),
-    createdAt: new Date().toISOString(),
+    createdAt: now,
+    updatedAt: now,
     paymentHistory: [
       {
         paymentId: `pay-${Date.now()}`,

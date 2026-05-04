@@ -488,10 +488,21 @@ function CompleteProfileModal({
       const res = await csrfFetch(`/api/tenants/${encodeURIComponent(tenant.tenantId)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idNumber: idNumber.trim().toUpperCase() }),
+        body: JSON.stringify({ 
+          idNumber: idNumber.trim().toUpperCase(),
+          expectedUpdatedAt: tenant.updatedAt // Include for concurrency control
+        }),
       });
       const data = (await res.json()) as { ok?: boolean; tenant?: TenantRecord; message?: string };
-      if (!res.ok) { setError(data.message ?? "Update failed."); return; }
+      if (!res.ok) { 
+        // Handle concurrency conflict
+        if (res.status === 409) {
+          setError("This tenant was updated by another session. Please refresh the page and try again.");
+          return;
+        }
+        setError(data.message ?? "Update failed."); 
+        return; 
+      }
 
       onSaved(data.tenant ?? { ...tenant, idNumber: idNumber.trim().toUpperCase() });
     } catch {

@@ -51,11 +51,11 @@ export async function GET(request: Request) {
 
   const allTenants = getTenantRecords();
 
-  const matched = tenantId
-    ? allTenants.filter((tenant) => tenant.tenantId === tenantId)
-    : hostelId
-      ? allTenants.filter((tenant) => tenant.assignment?.hostelId === hostelId)
-      : allTenants;
+  const matched = allTenants.filter((tenant) => {
+    if (tenantId && tenant.tenantId !== tenantId) return false;
+    if (hostelId && tenant.assignment?.hostelId !== hostelId) return false;
+    return true;
+  });
 
   // Trim payment history to avoid sending large blobs on list views
   const tenants = matched.map((t) => ({

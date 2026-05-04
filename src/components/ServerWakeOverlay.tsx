@@ -42,30 +42,10 @@ export function ServerWakeOverlay() {
 
   useEffect(() => { phaseRef.current = phase; }, [phase]);
 
-  // Initial check on mount
-  useEffect(() => { void initialCheck(); }, []);
-
-  // Global fetch interceptor for mid-session 503s
-  useEffect(() => {
-    const orig = window.fetch;
-    window.fetch = async (...args: Parameters<typeof fetch>) => {
-      const res = await orig(...args);
-      if (res.status === 503 && phaseRef.current !== "sleeping") {
-        const url = typeof args[0] === "string" ? args[0]
-          : args[0] instanceof URL ? args[0].href
-          : (args[0] as Request).url;
-        if (url.startsWith("/api/") && !url.includes("keep-alive")) {
-          triggerSleeping();
-        }
-      }
-      return res;
-    };
-    return () => { window.fetch = orig; };
-  }, []);
-
   // Elapsed counter + stage + message rotation while sleeping
   useEffect(() => {
     if (phase !== "sleeping") return;
+    sleepStartRef.current = Date.now();
     const timer = setInterval(() => {
       const secs = Math.floor((Date.now() - sleepStartRef.current) / 1000);
       setElapsed(secs);
@@ -91,7 +71,7 @@ export function ServerWakeOverlay() {
   function triggerSleeping() {
     if (pollingRef.current) return;
     pollingRef.current = true;
-    sleepStartRef.current = Date.now();
+    sleepStartRef.current = 0;
     setPhase("sleeping");
     phaseRef.current = "sleeping";
     setVisible(true);
@@ -125,6 +105,34 @@ export function ServerWakeOverlay() {
     };
     setTimeout(poll, POLL_INTERVAL_MS);
   }
+
+  // Initial check on mount
+  useEffect(() => {
+    const isLocalApp = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (isLocalApp || process.env.NEXT_PUBLIC_DISABLE_WAKE_OVERLAY === "1") {
+      return;
+    }
+
+    void initialCheck();
+  }, []);
+
+  // Global fetch interceptor for mid-session 503s
+  useEffect(() => {
+    const orig = window.fetch;
+    window.fetch = async (...args: Parameters<typeof fetch>) => {
+      const res = await orig(...args);
+      if (res.status === 503 && phaseRef.current !== "sleeping") {
+        const url = typeof args[0] === "string" ? args[0]
+          : args[0] instanceof URL ? args[0].href
+          : (args[0] as Request).url;
+        if (url.startsWith("/api/") && !url.includes("keep-alive")) {
+          triggerSleeping();
+        }
+      }
+      return res;
+    };
+    return () => { window.fetch = orig; };
+  }, []);
 
   if (!visible) return null;
 

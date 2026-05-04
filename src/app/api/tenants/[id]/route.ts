@@ -52,9 +52,15 @@ export async function PATCH(
   }
 
   if (session.isLive) {
+    // Include expectedUpdatedAt for concurrency control
+    const backendPayload: Partial<TenantRecord> & { expectedUpdatedAt?: unknown } = { ...patch };
+    if (body.expectedUpdatedAt) {
+      backendPayload.expectedUpdatedAt = body.expectedUpdatedAt;
+    }
+
     const backendResponse = await backendFetch(`/api/tenants/${encodeURIComponent(id)}`, {
       method: "PUT",
-      body: JSON.stringify(patch),
+      body: JSON.stringify(backendPayload),
     });
 
     const payload = (await backendResponse.json()) as { tenant?: unknown; message?: string };

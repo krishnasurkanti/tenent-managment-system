@@ -10,10 +10,19 @@
     "build": "next build",
     "start": "next start",
     "start:api": "node backend/src/server.js",
+    "seed:fake": "node scripts/seed-fake-data.mjs",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
+    ,
+    "test:e2e:layout": "playwright test tests/e2e/layout.spec.ts --project=desktop-chrome",
+    "test:e2e:scroll": "playwright test tests/e2e/scrolling.spec.ts --project=desktop-chrome",
+    "test:e2e:visual-approve": "npx playwright test --update-snapshots"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.99.0",
@@ -23,7 +32,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
-"helmet": "^8.1.0",
+    "helmet": "^8.1.0",
     "ioredis": "^5.6.1",
     "jose": "^6.2.2",
     "jsonwebtoken": "^9.0.2",
@@ -38,6 +47,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.9.2",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

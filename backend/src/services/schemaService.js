@@ -96,7 +96,8 @@ async function initializeDatabase() {
       owner_id BIGINT NOT NULL REFERENCES owners(id) ON DELETE CASCADE,
       hostel_id BIGINT NOT NULL REFERENCES hostels(id) ON DELETE CASCADE,
       data JSONB NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
 

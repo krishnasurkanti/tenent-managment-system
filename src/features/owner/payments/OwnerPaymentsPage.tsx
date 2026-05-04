@@ -118,7 +118,7 @@ export default function OwnerPaymentsPage() {
             </div>
           </div>
           <div className="mt-3">
-            <TenantRentSearch tenants={tenants} />
+            <PayRentLink />
           </div>
         </Card>
 
@@ -235,7 +235,7 @@ export default function OwnerPaymentsPage() {
                 <MetricBox label="Due Soon" value={String(dueSoonCount)} tone="warning" />
               </div>
               <div className="mt-3">
-                <TenantRentSearch tenants={tenants} />
+                <PayRentLink />
               </div>
             </Card>
 
@@ -333,7 +333,20 @@ export default function OwnerPaymentsPage() {
           }}
         />
       ) : null}
+
+      <TenantRentSearch tenants={tenants} hideButton />
     </div>
+  );
+}
+
+function PayRentLink() {
+  return (
+    <Link
+      href="/owner/payments?action=pay-rent"
+      className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl border border-blue-500 bg-blue-600 px-4 text-[13px] font-semibold text-white shadow-[var(--shadow-soft)] transition hover:opacity-95"
+    >
+      Pay Rent
+    </Link>
   );
 }
 
