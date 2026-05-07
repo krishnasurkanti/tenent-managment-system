@@ -8,6 +8,7 @@ export default defineConfig({
   timeout: 60_000,
   expect: {
     timeout: 10_000,
+    toHaveScreenshot: { maxDiffPixelRatio: 0.03 },
   },
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
@@ -22,11 +23,7 @@ export default defineConfig({
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
-    // make screenshots deterministic where possible
     locale: 'en-US',
-  },
-  expect: {
-    toHaveScreenshot: { maxDiffPixelRatio: 0.03 },
   },
   webServer: {
     command: `npm run dev:web -- --hostname localhost --port ${PORT}`,
