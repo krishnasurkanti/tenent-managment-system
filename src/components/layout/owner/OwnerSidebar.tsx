@@ -8,6 +8,7 @@ import {
   Building2,
   CreditCard,
   CircleDollarSign,
+  HardDriveDownload,
   PencilLine,
   LayoutDashboard,
   LogOut,
@@ -67,7 +68,7 @@ function PlatformStatsCard() {
 
 const workspaceNavigation = [
   { name: "Dashboard", href: "/owner/dashboard", icon: LayoutDashboard },
-  { name: "Pricing", href: "/owner/billing", icon: CircleDollarSign },
+  { name: "Billing", href: "/owner/billing", icon: CircleDollarSign },
   { name: "Notifications", href: "/owner/notifications", icon: Bell },
   { name: "Rooms", href: "/owner/rooms", icon: BedDouble },
   { name: "Tenants", href: "/owner/tenants", icon: Users },
@@ -77,6 +78,7 @@ const workspaceNavigation = [
 const hostelNavigation = [
   { name: "Edit Hostel", href: "/owner/create-hostel?mode=edit", icon: PencilLine },
   { name: "Settings", href: "/owner/settings", icon: Settings },
+  { name: "Backup", href: "/owner/backup", icon: HardDriveDownload },
 ];
 
 export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {

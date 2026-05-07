@@ -1,10 +1,16 @@
 ﻿import { DEMO_OWNER_HOSTEL_ID, getOwnerHostelInventory } from "@/data/ownerHostelStore";
 import { calculateNextDueDate, getDueStatus } from "@/utils/payment";
+import { atomicWrite, maybeAutoBackup } from "@/lib/backup";
 import type { TenantAssignment, TenantFamilyMember, TenantRecord } from "@/types/tenant";
 import fs from "node:fs";
 import path from "node:path";
 
 function getDemoTenantRecords(): TenantRecord[] {
+  // Use relative offsets so demo data always shows a realistic mix of statuses
+  // regardless of the current date: ~5 active, ~3 due-soon, ~2 overdue.
+  const d = (offset: number) => formatDateFromToday(offset);
+  const nd = (paidOffset: number) => calculateNextDueDate(d(paidOffset), d(paidOffset));
+
   const demoTenantRecords: TenantRecord[] = [
     buildDemoTenant({
       tenantId: "51201",
@@ -13,16 +19,16 @@ function getDemoTenantRecords(): TenantRecord[] {
       email: "aarav.test@example.com",
       monthlyRent: 8500,
       rentPaid: 8500,
-      paidOnDate: "2026-03-15",
-      nextDueDate: "2026-04-15",
-      createdAt: "2026-03-15T09:00:00.000Z",
+      paidOnDate: d(-20),   // active — due in ~10 days
+      nextDueDate: nd(-20),
+      createdAt: `${d(-20)}T09:00:00.000Z`,
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
         hostelName: "Aurora Residency",
         floorNumber: 1,
         roomNumber: "101",
         sharingType: "3 sharing",
-        moveInDate: "2026-03-15",
+        moveInDate: d(-20),
       },
     }),
     buildDemoTenant({
@@ -32,16 +38,16 @@ function getDemoTenantRecords(): TenantRecord[] {
       email: "diya.test@example.com",
       monthlyRent: 9000,
       rentPaid: 9000,
-      paidOnDate: "2026-03-10",
-      nextDueDate: "2026-04-10",
-      createdAt: "2026-03-10T10:00:00.000Z",
+      paidOnDate: d(-25),   // due soon — due in ~5 days (yellow)
+      nextDueDate: nd(-25),
+      createdAt: `${d(-25)}T10:00:00.000Z`,
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
         hostelName: "Aurora Residency",
         floorNumber: 1,
         roomNumber: "101",
         sharingType: "3 sharing",
-        moveInDate: "2026-03-10",
+        moveInDate: d(-25),
       },
     }),
     buildDemoTenant({
@@ -51,16 +57,16 @@ function getDemoTenantRecords(): TenantRecord[] {
       email: "kabir.test@example.com",
       monthlyRent: 7800,
       rentPaid: 7800,
-      paidOnDate: "2026-03-07",
-      nextDueDate: "2026-04-07",
-      createdAt: "2026-03-07T11:00:00.000Z",
+      paidOnDate: d(-28),   // due soon — due in ~2 days (orange)
+      nextDueDate: nd(-28),
+      createdAt: `${d(-28)}T11:00:00.000Z`,
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
         hostelName: "Aurora Residency",
         floorNumber: 2,
         roomNumber: "202",
         sharingType: "2 sharing",
-        moveInDate: "2026-03-07",
+        moveInDate: d(-28),
       },
     }),
     buildDemoTenant({
@@ -70,16 +76,16 @@ function getDemoTenantRecords(): TenantRecord[] {
       email: "meera.test@example.com",
       monthlyRent: 9600,
       rentPaid: 9600,
-      paidOnDate: "2026-03-01",
-      nextDueDate: "2026-04-01",
-      createdAt: "2026-03-01T12:00:00.000Z",
+      paidOnDate: d(-34),   // overdue — ~4 days past due (red)
+      nextDueDate: nd(-34),
+      createdAt: `${d(-34)}T12:00:00.000Z`,
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
         hostelName: "Aurora Residency",
         floorNumber: 4,
         roomNumber: "401",
         sharingType: "3 sharing",
-        moveInDate: "2026-03-01",
+        moveInDate: d(-34),
       },
     }),
     buildDemoTenant({
@@ -89,16 +95,16 @@ function getDemoTenantRecords(): TenantRecord[] {
       email: "rohan.test@example.com",
       monthlyRent: 8200,
       rentPaid: 8200,
-      paidOnDate: "2026-03-18",
-      nextDueDate: "2026-04-18",
-      createdAt: "2026-03-18T12:00:00.000Z",
+      paidOnDate: d(-17),   // active — due in ~13 days
+      nextDueDate: nd(-17),
+      createdAt: `${d(-17)}T12:00:00.000Z`,
       assignment: {
         hostelId: "owner-hostel-lotus",
         hostelName: "Lotus Elite Stay",
         floorNumber: 1,
         roomNumber: "101",
         sharingType: "3 sharing",
-        moveInDate: "2026-03-18",
+        moveInDate: d(-17),
       },
     }),
     buildDemoTenant({
@@ -108,16 +114,16 @@ function getDemoTenantRecords(): TenantRecord[] {
       email: "sana.test@example.com",
       monthlyRent: 8800,
       rentPaid: 8800,
-      paidOnDate: "2026-03-12",
-      nextDueDate: "2026-04-12",
-      createdAt: "2026-03-12T12:00:00.000Z",
+      paidOnDate: d(-23),   // active — due in ~7 days
+      nextDueDate: nd(-23),
+      createdAt: `${d(-23)}T12:00:00.000Z`,
       assignment: {
         hostelId: "owner-hostel-lotus",
         hostelName: "Lotus Elite Stay",
         floorNumber: 2,
         roomNumber: "201",
         sharingType: "3 sharing",
-        moveInDate: "2026-03-12",
+        moveInDate: d(-23),
       },
     }),
     buildDemoTenant({
@@ -127,16 +133,16 @@ function getDemoTenantRecords(): TenantRecord[] {
       email: "neha.test@example.com",
       monthlyRent: 9100,
       rentPaid: 9100,
-      paidOnDate: "2026-03-09",
-      nextDueDate: "2026-04-09",
-      createdAt: "2026-03-09T12:00:00.000Z",
+      paidOnDate: d(-26),   // due soon — due in ~4 days (yellow)
+      nextDueDate: nd(-26),
+      createdAt: `${d(-26)}T12:00:00.000Z`,
       assignment: {
         hostelId: "owner-hostel-lotus",
         hostelName: "Lotus Elite Stay",
         floorNumber: 4,
         roomNumber: "402",
         sharingType: "2 sharing",
-        moveInDate: "2026-03-09",
+        moveInDate: d(-26),
       },
     }),
     buildDemoTenant({
@@ -146,16 +152,16 @@ function getDemoTenantRecords(): TenantRecord[] {
       email: "arjun.test@example.com",
       monthlyRent: 10000,
       rentPaid: 10000,
-      paidOnDate: "2026-03-04",
-      nextDueDate: "2026-04-04",
-      createdAt: "2026-03-04T12:00:00.000Z",
+      paidOnDate: d(-31),   // overdue — ~1 day past due (red)
+      nextDueDate: nd(-31),
+      createdAt: `${d(-31)}T12:00:00.000Z`,
       assignment: {
         hostelId: "owner-hostel-skyline",
         hostelName: "Skyline Comforts",
         floorNumber: 1,
         roomNumber: "102",
         sharingType: "2 sharing",
-        moveInDate: "2026-03-04",
+        moveInDate: d(-31),
       },
     }),
     buildDemoTenant({
@@ -165,16 +171,16 @@ function getDemoTenantRecords(): TenantRecord[] {
       email: "pooja.test@example.com",
       monthlyRent: 9400,
       rentPaid: 9400,
-      paidOnDate: "2026-03-20",
-      nextDueDate: "2026-04-20",
-      createdAt: "2026-03-20T12:00:00.000Z",
+      paidOnDate: d(-15),   // active — due in ~15 days
+      nextDueDate: nd(-15),
+      createdAt: `${d(-15)}T12:00:00.000Z`,
       assignment: {
         hostelId: "owner-hostel-skyline",
         hostelName: "Skyline Comforts",
         floorNumber: 2,
         roomNumber: "201",
         sharingType: "3 sharing",
-        moveInDate: "2026-03-20",
+        moveInDate: d(-15),
       },
     }),
     buildDemoTenant({
@@ -184,16 +190,16 @@ function getDemoTenantRecords(): TenantRecord[] {
       email: "vikram.test@example.com",
       monthlyRent: 8700,
       rentPaid: 8700,
-      paidOnDate: "2026-03-14",
-      nextDueDate: "2026-04-14",
-      createdAt: "2026-03-14T12:00:00.000Z",
+      paidOnDate: d(-21),   // active — due in ~9 days
+      nextDueDate: nd(-21),
+      createdAt: `${d(-21)}T12:00:00.000Z`,
       assignment: {
         hostelId: "owner-hostel-skyline",
         hostelName: "Skyline Comforts",
         floorNumber: 3,
         roomNumber: "302",
         sharingType: "2 sharing",
-        moveInDate: "2026-03-14",
+        moveInDate: d(-21),
       },
     }),
   ];
@@ -283,10 +289,17 @@ function loadTenantRecords() {
 function persistTenantRecords(records: TenantRecord[]) {
   try {
     fs.mkdirSync(TENANTS_DATA_DIR, { recursive: true });
-    fs.writeFileSync(TENANTS_DATA_FILE, JSON.stringify(records, null, 2), "utf8");
+    maybeAutoBackup();
+    atomicWrite(TENANTS_DATA_FILE, JSON.stringify(records, null, 2));
   } catch {
-    // read-only filesystem (Vercel) â€” in-memory only
+    // read-only filesystem — in-memory only
   }
+}
+
+export function reloadTenantRecords() {
+  const fresh = loadTenantRecords();
+  tenantRecords.splice(0, tenantRecords.length, ...fresh);
+  return tenantRecords;
 }
 
 function generateUniqueFiveDigitId() {
@@ -445,11 +458,11 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
   };
 
   tenant.billingAnchorDate = assignment.moveInDate;
-  tenant.nextDueDate = calculateNextDueDate(tenant.paidOnDate, tenant.billingAnchorDate);
-
-  if (tenant.paymentHistory[0]) {
-    tenant.paymentHistory[0].nextDueDate = tenant.nextDueDate;
-  }
+  tenant.nextDueDate = calculateNextDueDate(
+    tenant.paidOnDate,
+    tenant.billingAnchorDate,
+    tenant.billingCycle ?? "monthly",
+  );
 
   persistTenantRecords(tenantRecords);
   return tenant;
@@ -479,8 +492,12 @@ export function recordTenantPayment(
     throw new Error("Select a valid payment mode.");
   }
 
-  const nextDueDate = calculateNextDueDate(paidOnDate, tenant.billingAnchorDate);
-  const status = getDueStatus(nextDueDate);
+  const nextDueDate = calculateNextDueDate(
+    paidOnDate,
+    tenant.billingAnchorDate,
+    tenant.billingCycle ?? "monthly",
+  );
+  const status = getDueStatus(nextDueDate, tenant.billingCycle ?? "monthly");
 
   tenant.rentPaid = amount;
   tenant.paidOnDate = paidOnDate;
@@ -531,6 +548,16 @@ export function updateTenantProfile(
   }
 
   Object.assign(tenant, patch);
+
+  if (patch.billingCycle || patch.monthlyRent !== undefined) {
+    // billingCycle change invalidates the stored nextDueDate
+    tenant.nextDueDate = calculateNextDueDate(
+      tenant.paidOnDate,
+      tenant.billingAnchorDate,
+      tenant.billingCycle ?? "monthly",
+    );
+  }
+
   persistTenantRecords(tenantRecords);
   return tenant;
 }

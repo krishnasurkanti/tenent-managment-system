@@ -135,9 +135,15 @@ function isBillableInMonth(joinDate: string, monthKey: string) {
   const joinMonth = date.getUTCMonth() + 1;
   const joinDay = date.getUTCDate();
 
+  // Joined before this month → always billable
   if (joinYear < year || (joinYear === year && joinMonth < month)) return true;
+  // Joined after this month → not billable
   if (joinYear > year || (joinYear === year && joinMonth > month)) return false;
-  return joinDay <= 20;
+
+  // Joined within this month: billable only if they joined early enough to
+  // accumulate at least 10 active days — matching the backend 10-day rule.
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate(); // days in month
+  return joinDay <= lastDay - 10;
 }
 
 function monthKeyFromDate(date = new Date()) {
@@ -448,7 +454,8 @@ export function getOwnerBilling(hostelId: string, monthKey = monthKeyFromDate())
     autoPayEnabled: control.autoPayEnabled,
     paymentStatus: invoice.paymentStatus,
     accessActive,
-    payableAmount: invoice.finalAmount,
+    // use live calculation so mid-month tenant additions are reflected immediately
+    payableAmount: billing.finalAmount,
     billing,
     upgradePending: Boolean(pendingRequest),
     upgradeRequest: pendingRequest,

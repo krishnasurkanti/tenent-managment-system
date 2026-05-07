@@ -220,28 +220,32 @@ export default function OwnerSignupPage() {
     const selectedRoom = selectedFloor?.rooms[tRoomIdx];
     if (!selectedFloor || !selectedRoom) { setTError("Select a valid floor and room."); return; }
 
-    const fd = new FormData();
-    fd.append("tenantType", "old");
-    fd.append("fullName", tName.trim());
-    fd.append("phone", tPhone.trim());
-    fd.append("email", tEmail.trim());
-    fd.append("monthlyRent", tRent);
-    fd.append("rentPaid", "0");
-    fd.append("paidOnDate", tMoveIn);
-    fd.append("hostelId", createdHostelId);
-    fd.append("floorNumber", String(tFloorIdx + 1));
-    fd.append("roomNumber", selectedRoom.roomNumber);
-    fd.append("moveInDate", tMoveIn);
-    fd.append("sharingType", getSharingLabel(selectedRoom.bedCount) || "1 sharing");
-    fd.append("propertyType", hostelType);
+    const payload: Record<string, unknown> = {
+      fullName: tName.trim(),
+      phone: tPhone.trim(),
+      email: tEmail.trim(),
+      monthlyRent: tRent,
+      rentPaid: "0",
+      paidOnDate: tMoveIn,
+      hostelId: createdHostelId,
+      floorNumber: String(tFloorIdx + 1),
+      roomNumber: selectedRoom.roomNumber,
+      moveInDate: tMoveIn,
+      sharingType: getSharingLabel(selectedRoom.bedCount) || "1 sharing",
+      propertyType: hostelType,
+    };
     if (hostelType === "PG" && Number(selectedRoom.bedCount) > 0) {
-      fd.append("bedId", getSignupBedId(selectedRoom, tBedIdx));
-      fd.append("bedLabel", `Bed ${tBedIdx + 1}`);
+      payload.bedId = getSignupBedId(selectedRoom, tBedIdx);
+      payload.bedLabel = `Bed ${tBedIdx + 1}`;
     }
 
     setTSaving(true);
     try {
-      const res = await csrfFetch("/api/tenants", { method: "POST", body: fd });
+      const res = await csrfFetch("/api/tenants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
       const data = (await res.json()) as { message?: string };
       if (!res.ok) { setTError(data.message ?? "Failed to add tenant."); setTSaving(false); return; }
       setAddedTenants(prev => [...prev, {

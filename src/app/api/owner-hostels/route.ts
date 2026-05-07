@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { getOwnerHostels, saveOwnerHostel } from "@/data/ownerHostelStore";
 import { seedDemoTenantsForHostel } from "@/data/tenantStore";
-import type { OwnerFloor } from "@/types/owner-hostel";
+import type { OwnerFloor, OwnerHostel } from "@/types/owner-hostel";
 import { requireOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
-import { normalizeFloors } from "@/utils/hostel-occupancy";
+import { normalizeFloors, normalizeHostel } from "@/utils/hostel-occupancy";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,8 @@ export async function GET() {
       return NextResponse.json({ message: payload.message || "Unable to load hostels." }, { status: backendResponse.status });
     }
 
-    return NextResponse.json({ hostels: payload.hostels ?? [] });
+    const normalized = (payload.hostels ?? []).map((h) => normalizeHostel(h as OwnerHostel));
+    return NextResponse.json({ hostels: normalized });
   }
 
   return NextResponse.json({ hostels: getOwnerHostels() });

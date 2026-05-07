@@ -15,6 +15,7 @@ import { ownerStatusClass } from "@/components/ui/owner-theme";
 import { formatPaymentDate, getDueStatus } from "@/utils/payment";
 import { getHostelOccupancySummary } from "@/utils/hostel-occupancy";
 import { TenantRentSearch } from "@/features/payments/components/TenantRentSearch";
+import { OnboardingChecklist } from "./OnboardingChecklist";
 import type { OwnerHostel } from "@/types/owner-hostel";
 import type { TenantRecord } from "@/types/tenant";
 
@@ -74,11 +75,13 @@ function DashboardContent({
   }, [tenants]);
 
   const { totalCollected, dueAmount, overdueAmount, expectedRevenue } = useMemo(() => ({
-    totalCollected: tenants.reduce((sum, t) => sum + t.rentPaid, 0),
+    // only count rentPaid for tenants whose nextDueDate is still in the future —
+    // overdue/due-today tenants have not paid for the current cycle
+    totalCollected: paid.reduce((sum, t) => sum + t.rentPaid, 0),
     dueAmount: dueSoon.reduce((sum, t) => sum + t.monthlyRent, 0),
     overdueAmount: overdue.reduce((sum, t) => sum + t.monthlyRent, 0),
     expectedRevenue: tenants.reduce((sum, t) => sum + t.monthlyRent, 0),
-  }), [tenants, dueSoon, overdue]);
+  }), [tenants, dueSoon, overdue, paid]);
 
   const { occupancyPercent, collectionRate, paymentHealthScore, attentionCount, urgentShare } = useMemo(() => {
     const capacityBase = isResidence ? totalRooms : totalBeds;
@@ -112,13 +115,12 @@ function DashboardContent({
   return (
     <div className={`space-y-3 transition-opacity lg:space-y-3 ${isSwitching ? "opacity-70" : "opacity-100"}`}>
 
+      <OnboardingChecklist hostel={hostel} tenants={tenants} />
+
       {/* ── MOBILE LAYOUT ── */}
       <section className="grid gap-3 lg:hidden">
 
-        {/* 1. Building Hero */}
-        <HeroBuildingCard />
-
-        {/* 2. Action Tiles */}
+        {/* 1. Action Tiles */}
         <div className="grid grid-cols-2 gap-2.5">
           <ActionTile href="/owner/payments" icon={CreditCard} label="Pay Rent" note="Record collection" variant="mobile" />
           <ActionTile href="/owner/payments" icon={ReceiptText} label="Due List" note={`${dueSoon.length} due soon`} variant="mobile" tone="neutral" />
@@ -126,19 +128,13 @@ function DashboardContent({
           <ActionTile href="/owner/payments" icon={Users} label="History" note="Latest payments" variant="mobile" />
         </div>
 
-        {/* 3. Live Snapshot */}
+        {/* 3. Today's Snapshot */}
         <Card className="nestiq-grid-bg overflow-hidden border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.22),transparent_34%),linear-gradient(160deg,#111114_0%,#09090b_62%,#131324_100%)] p-0 shadow-[0_18px_46px_rgba(0,0,0,0.34)]">
 
           {/* header */}
           <div className="flex items-start justify-between gap-3 px-3 pt-3">
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#6366f1] opacity-60" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#6366f1]" />
-                </span>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Live Snapshot</p>
-              </div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Today&apos;s Snapshot</p>
               <h1 className="font-display mt-1 text-xl font-bold text-white">{hostel.hostelName}</h1>
               <p className="mt-0.5 truncate text-xs text-[color:var(--fg-secondary)]">{hostel.address}</p>
             </div>
@@ -181,11 +177,12 @@ function DashboardContent({
             <CompactMetric icon={DoorOpen} label="Rooms" value={String(isResidence ? hostel.floors.length : totalRooms)} />
           </div>
 
-          {/* payment health | attention */}
-          <div className="grid grid-cols-2 gap-2 px-3 pb-3 pt-2">
-            <CompactInlineStat icon={TrendingUp} label="Payment health" value={`${paymentHealthScore}/100`} color="indigo" />
-            <CompactInlineStat icon={CalendarClock} label="Attention" value={String(attentionCount)} color="amber" />
-          </div>
+          {/* need action — only shown when > 0 */}
+          {attentionCount > 0 && (
+            <div className="px-3 pb-3 pt-2">
+              <CompactInlineStat icon={CalendarClock} label="Need action" value={String(attentionCount)} color="amber" />
+            </div>
+          )}
         </Card>
 
         {/* 4. Recent Activity */}
@@ -339,177 +336,6 @@ function DashboardContent({
 
 
 
-function HeroBuildingCard() {
-  return (
-    <Card className="overflow-hidden border-white/8 bg-[#0b0d1f] p-0 shadow-[0_18px_46px_rgba(0,0,0,0.5)]">
-      <div className="relative w-full overflow-hidden bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,#1a2060_0%,#0b0d1f_100%)]">
-        {/* Stars */}
-        {([
-          [8,6],[22,4],[40,3],[60,5],[78,4],[92,7],
-          [15,16],[35,12],[52,10],[70,14],[85,10],
-          [5,24],[30,20],[65,18],[90,22],
-        ] as [number,number][]).map(([x, y], i) => (
-          <span
-            key={i}
-            className="absolute rounded-full bg-white"
-            style={{ left: `${x}%`, top: `${y}%`, width: i % 3 === 0 ? 3 : 2, height: i % 3 === 0 ? 3 : 2, opacity: 0.5 + (i % 4) * 0.12 }}
-          />
-        ))}
-
-        {/* Clouds */}
-        <div className="absolute left-4 top-6 h-5 w-20 rounded-full bg-[#1e2a6a] opacity-60" />
-        <div className="absolute left-8 top-8 h-4 w-14 rounded-full bg-[#1e2a6a] opacity-40" />
-        <div className="absolute right-6 top-5 h-4 w-16 rounded-full bg-[#1e2a6a] opacity-50" />
-        <div className="absolute right-10 top-7 h-3 w-10 rounded-full bg-[#1e2a6a] opacity-35" />
-
-        {/* SVG Building Scene */}
-        <svg
-          viewBox="0 0 360 200"
-          xmlns="http://www.w3.org/2000/svg"
-          className="relative z-10 w-full"
-          aria-hidden="true"
-        >
-          <defs>
-            <radialGradient id="winGlow2" cx="50%" cy="50%" r="60%">
-              <stop offset="0%" stopColor="#fff7c0" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="groundGlow" cx="50%" cy="0%" r="80%">
-              <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.12" />
-              <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-
-          {/* Ground */}
-          <rect x="0" y="182" width="360" height="18" fill="#151830" />
-          <rect x="0" y="182" width="360" height="4" fill="#1e2448" />
-
-          {/* Ground glow from door light */}
-          <ellipse cx="180" cy="184" rx="60" ry="8" fill="url(#groundGlow)" />
-
-          {/* ── FAR BACKGROUND building (left) ── */}
-          <rect x="20" y="100" width="55" height="84" fill="#151a45" rx="2" />
-          <rect x="20" y="94" width="55" height="9" fill="#1c2254" rx="2" />
-          {[30, 50].map((x) => [115, 135, 155].map((y) => (
-            <rect key={`${x}-${y}`} x={x} y={y} width="10" height="14" fill="#f59e0b" rx="1" opacity="0.55" />
-          )))}
-
-          {/* ── FAR BACKGROUND building (right) ── */}
-          <rect x="285" y="110" width="55" height="74" fill="#151a45" rx="2" />
-          <rect x="285" y="104" width="55" height="9" fill="#1c2254" rx="2" />
-          {[295, 315].map((x) => [125, 145, 162].map((y) => (
-            <rect key={`${x}-${y}`} x={x} y={y} width="10" height="14" fill="#f59e0b" rx="1" opacity="0.5" />
-          )))}
-
-          {/* ── LEFT TREE (big) ── */}
-          <rect x="70" y="148" width="10" height="36" fill="#3a2e1c" rx="3" />
-          <ellipse cx="75" cy="134" rx="26" ry="30" fill="#173060" />
-          <ellipse cx="75" cy="125" rx="20" ry="22" fill="#1e3d80" />
-          <ellipse cx="75" cy="118" rx="14" ry="16" fill="#243a6e" />
-
-          {/* ── RIGHT TREE (big) ── */}
-          <rect x="280" y="148" width="10" height="36" fill="#3a2e1c" rx="3" />
-          <ellipse cx="285" cy="134" rx="26" ry="30" fill="#173060" />
-          <ellipse cx="285" cy="125" rx="20" ry="22" fill="#1e3d80" />
-          <ellipse cx="285" cy="118" rx="14" ry="16" fill="#243a6e" />
-
-          {/* ── SMALL LEFT TREE ── */}
-          <rect x="108" y="158" width="7" height="26" fill="#3a2e1c" rx="2" />
-          <ellipse cx="111" cy="147" rx="18" ry="20" fill="#173060" />
-          <ellipse cx="111" cy="140" rx="13" ry="14" fill="#1e3d80" />
-
-          {/* ── SMALL RIGHT TREE ── */}
-          <rect x="245" y="158" width="7" height="26" fill="#3a2e1c" rx="2" />
-          <ellipse cx="249" cy="147" rx="18" ry="20" fill="#173060" />
-          <ellipse cx="249" cy="140" rx="13" ry="14" fill="#1e3d80" />
-
-          {/* ── MAIN BUILDING ── */}
-          {/* Shadow */}
-          <rect x="118" y="36" width="124" height="148" fill="#0f1230" rx="3" />
-
-          {/* Body */}
-          <rect x="115" y="34" width="130" height="150" fill="#3b42a8" rx="3" />
-
-          {/* Left face shade */}
-          <rect x="115" y="34" width="18" height="150" fill="#2e3590" rx="3" />
-
-          {/* Right face shade */}
-          <rect x="227" y="34" width="18" height="150" fill="#2e3590" />
-
-          {/* Horizontal floor bands */}
-          <rect x="115" y="90" width="130" height="4" fill="#2a3082" opacity="0.8" />
-          <rect x="115" y="136" width="130" height="4" fill="#2a3082" opacity="0.8" />
-
-          {/* ── ROOF ── */}
-          <rect x="108" y="26" width="144" height="12" fill="#4a52c8" rx="3" />
-          <rect x="116" y="18" width="128" height="12" fill="#5560d8" rx="3" />
-          <rect x="126" y="12" width="108" height="10" fill="#6070e0" rx="2" />
-
-          {/* Roof railing */}
-          {[130,150,170,190,210].map((x) => (
-            <rect key={x} x={x} y="10" width="3" height="8" fill="#7080f0" rx="1" />
-          ))}
-          <rect x="128" y="8" width="86" height="3" fill="#7080f0" rx="1" />
-
-          {/* Chimney */}
-          <rect x="162" y="0" width="14" height="14" fill="#4050c0" rx="2" />
-          <rect x="159" y="0" width="20" height="4" fill="#5060d0" rx="1" />
-
-          {/* ── WINDOWS FLOOR 1 (top, y~46) ── */}
-          {[127, 155, 183, 208].map((x) => (
-            <g key={`f1-${x}`}>
-              <rect x={x} y="46" width="18" height="34" fill="#0a0c20" rx="2" />
-              <rect x={x} y="46" width="18" height="34" fill="#f59e0b" rx="2" opacity="0.88" />
-              <rect x={x} y="46" width="18" height="34" fill="url(#winGlow2)" rx="2" />
-              <rect x={x + 8} y="46" width="2" height="34" fill="#92600a" opacity="0.5" />
-              <rect x={x} y="61" width="18" height="2" fill="#92600a" opacity="0.5" />
-            </g>
-          ))}
-
-          {/* ── WINDOWS FLOOR 2 (y~98) ── */}
-          {[127, 155, 183, 208].map((x) => (
-            <g key={`f2-${x}`}>
-              <rect x={x} y="98" width="18" height="30" fill="#f59e0b" rx="2" opacity="0.82" />
-              <rect x={x} y="98" width="18" height="30" fill="url(#winGlow2)" rx="2" />
-              <rect x={x + 8} y="98" width="2" height="30" fill="#92600a" opacity="0.5" />
-              <rect x={x} y="112" width="18" height="2" fill="#92600a" opacity="0.5" />
-            </g>
-          ))}
-
-          {/* ── WINDOWS FLOOR 3 (y~144) ── */}
-          {[127, 155, 183, 208].map((x) => (
-            <g key={`f3-${x}`}>
-              <rect x={x} y="144" width="18" height="26" fill="#f59e0b" rx="2" opacity="0.76" />
-              <rect x={x} y="144" width="18" height="26" fill="url(#winGlow2)" rx="2" />
-              <rect x={x + 8} y="144" width="2" height="26" fill="#92600a" opacity="0.5" />
-            </g>
-          ))}
-
-          {/* ── MAIN DOOR ── */}
-          <rect x="160" y="148" width="40" height="36" fill="#1a1f52" rx="3" />
-          {/* Door panels */}
-          <rect x="163" y="151" width="15" height="33" fill="#f59e0b" rx="2" opacity="0.7" />
-          <rect x="180" y="151" width="15" height="33" fill="#f59e0b" rx="2" opacity="0.6" />
-          {/* Door knobs */}
-          <circle cx="178" cy="170" r="2" fill="#c87d00" />
-          <circle cx="182" cy="170" r="2" fill="#c87d00" />
-          {/* Door arch */}
-          <path d="M160 152 Q180 138 200 152" fill="none" stroke="#5560d8" strokeWidth="3" />
-          {/* Door step */}
-          <rect x="153" y="181" width="54" height="5" fill="#4a52c8" rx="1" />
-
-          {/* Pillar left */}
-          <rect x="152" y="152" width="8" height="34" fill="#4a52c8" rx="1" />
-          {/* Pillar right */}
-          <rect x="200" y="152" width="8" height="34" fill="#4a52c8" rx="1" />
-
-          {/* Warm door light spill on ground */}
-          <ellipse cx="180" cy="185" rx="30" ry="5" fill="#f59e0b" opacity="0.18" />
-        </svg>
-      </div>
-    </Card>
-  );
-}
 
 function CompactMetric({
   icon: Icon,

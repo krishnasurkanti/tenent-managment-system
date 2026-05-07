@@ -102,7 +102,12 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
       </Button>
 
       {open ? (
-        <div className="fixed inset-0 z-50 overflow-y-auto overscroll-none touch-pan-y bg-[rgba(48,28,75,0.28)] px-3 py-3 sm:px-4 sm:py-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="remove-tenant-modal-title"
+          className="fixed inset-0 z-50 overflow-y-auto overscroll-none touch-pan-y bg-[rgba(48,28,75,0.28)] px-3 py-3 sm:px-4 sm:py-4"
+        >
           <div className="flex min-h-full items-center justify-center">
             <Card className="flex max-h-[90dvh] w-[min(calc(100vw-2rem),42rem)] flex-col overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82)_0%,rgba(244,236,255,0.95)_100%)] p-3 sm:p-4 shadow-[0_28px_70px_rgba(170,148,255,0.22)]">
             <div className="flex items-start justify-between gap-4">
@@ -113,7 +118,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                   </span>
                   Remove Tenant
                 </div>
-                <h2 className="mt-3 text-xl font-semibold sm:text-2xl">Remove Tenant</h2>
+                <h2 id="remove-tenant-modal-title" className="mt-3 text-xl font-semibold sm:text-2xl">Remove Tenant</h2>
                 <p className="mt-1 text-sm text-[var(--muted-foreground)]">
                   Search by tenant ID or name, confirm room and floor details, then remove the tenant from the hostel.
                 </p>

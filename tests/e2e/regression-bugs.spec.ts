@@ -25,10 +25,6 @@ type Tenant = {
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function visibleText(page: Page, text: string | RegExp) {
-  return page.getByText(text).filter({ visible: true }).first();
-}
-
 async function loginAsDemoOwner(page: Page) {
   await page.addInitScript(() => window.localStorage.clear());
   await page.goto("/owner/login");
@@ -479,4 +475,117 @@ test("Bug 8 – billing page renders payable amount without crash", async ({ pag
   const bodyText = await page.locator("body").textContent();
   expect(bodyText).not.toContain("TypeError");
   expect(bodyText).not.toContain("Cannot read properties");
+});
+
+// ── Fix: hostel rooms must have beds[] populated (normalizeHostel on API response) ──
+
+test("Fix – /api/owner-hostels returns PG rooms with beds array populated", async ({ page }) => {
+  await loginAsDemoOwner(page);
+
+  type HostelRoom = { bedCount: number; beds?: { id: string; label: string }[] };
+  type HostelFloor = { rooms: HostelRoom[] };
+  type Hostel = { type: string; floors: HostelFloor[] };
+
+  const hostels = await page.evaluate(async () => {
+    const res = await fetch("/api/owner-hostels");
+    const body = await res.json();
+    return (body as { hostels?: Hostel[] }).hostels ?? [];
+  });
+
+  expect(hostels.length).toBeGreaterThan(0);
+
+  for (const hostel of hostels.filter((h) => h.type === "PG")) {
+    for (const floor of hostel.floors) {
+      for (const room of floor.rooms) {
+        // Every PG room must have a beds array with length == bedCount
+        expect(Array.isArray(room.beds)).toBe(true);
+        expect(room.beds!.length).toBe(room.bedCount);
+        // Each bed must have id and label
+        for (const bed of room.beds!) {
+          expect(bed.id).toBeTruthy();
+          expect(bed.label).toBeTruthy();
+        }
+      }
+    }
+  }
+});
+
+// ── Fix: POST /api/tenants accepts JSON body (not FormData) ─────────────────
+
+test("Fix – tenant creation via JSON body succeeds and data is retrievable", async ({ page }) => {
+  await loginAsDemoOwner(page);
+  await page.goto("/owner/tenants");
+
+  const csrf = await getCsrf(page);
+
+  // Create with same payload shape as onboarding signup page
+  const createResult = await page.evaluate(
+    async ({ token }) => {
+      const res = await fetch("/api/tenants", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": decodeURIComponent(token),
+        },
+        body: JSON.stringify({
+          fullName: "Onboarding JSON Test",
+          phone: "9876543210",
+          email: "test@example.com",
+          monthlyRent: "5000",
+          rentPaid: "0",
+          paidOnDate: "2026-05-01",
+          hostelId: "owner-hostel-aurora",
+          floorNumber: "1",
+          roomNumber: "101",
+          moveInDate: "2026-05-01",
+          sharingType: "3 sharing",
+          propertyType: "PG",
+          bedId: "room-aurora-101-bed-1",
+          bedLabel: "Bed 1",
+        }),
+      });
+      return { ok: res.ok, status: res.status, body: await res.json() };
+    },
+    { token: csrf },
+  );
+
+  expect(createResult.ok).toBe(true);
+  const tenant = (createResult.body as { tenant?: { tenantId?: string; fullName?: string; monthlyRent?: number } }).tenant;
+  expect(tenant?.fullName).toBe("Onboarding JSON Test");
+  expect(tenant?.monthlyRent).toBe(5000);
+  expect(tenant?.tenantId).toBeTruthy();
+
+  // Verify retrievable from list
+  const tenants = await page.evaluate(async () => {
+    const res = await fetch("/api/tenants");
+    const body = await res.json();
+    return (body as { tenants?: { tenantId?: string; fullName?: string }[] }).tenants ?? [];
+  });
+
+  const found = tenants.find((t) => t.tenantId === tenant?.tenantId);
+  expect(found).toBeDefined();
+  expect(found?.fullName).toBe("Onboarding JSON Test");
+});
+
+// ── Fix: tenant form modal renders submit button visible on mobile viewport ──
+
+test("Fix – Add Tenant modal footer with submit button visible on mobile viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 }); // iPhone 14 Pro
+  await loginAsDemoOwner(page);
+  await page.goto("/owner/tenants");
+
+  // Open Add Tenant modal
+  await page.getByRole("button", { name: /add.*tenant|new tenant/i }).first().click();
+
+  // Modal must be visible
+  await expect(page.getByRole("dialog")).toBeVisible();
+
+  // Footer button (Continue to Payment) must be in viewport — not hidden below fold
+  const continueBtn = page.getByRole("button", { name: /continue to payment/i });
+  await expect(continueBtn).toBeVisible();
+
+  const box = await continueBtn.boundingBox();
+  expect(box).not.toBeNull();
+  // Button bottom must be within viewport height (844px)
+  expect(box!.y + box!.height).toBeLessThan(844);
 });

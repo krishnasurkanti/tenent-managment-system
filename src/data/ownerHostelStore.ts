@@ -106,6 +106,11 @@ export function getDemoOwnerHostels(): OwnerHostel[] {
   return demoOwnerHostels.map((hostel) => cloneHostel(hostel));
 }
 
+export function reloadOwnerHostels() {
+  ownerHostels = [...getDemoOwnerHostels(), ...loadPersistedHostels()];
+  return ownerHostels;
+}
+
 export function getOwnerHostels() {
   return ownerHostels.map((hostel) => cloneHostel(hostel));
 }

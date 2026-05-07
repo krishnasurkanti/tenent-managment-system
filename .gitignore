@@ -41,3 +41,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# data backups — generated at runtime, not for version control
+.data/backups/
+.data/*.tmp

@@ -107,6 +107,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Choose a hostel before creating the tenant." }, { status: 400 });
     }
 
+    const liveAnchor = hasAssignment ? moveInDate : paidOnDate;
+    const liveNextDueDate = calculateNextDueDate(paidOnDate, liveAnchor, billingCycle);
     const backendResponse = await backendFetch("/api/tenants", {
       method: "POST",
       body: JSON.stringify({
@@ -125,12 +127,24 @@ export async function POST(request: Request) {
         rentPaid,
         paidOnDate,
         billingCycle,
-        billingAnchorDate: hasAssignment ? moveInDate : paidOnDate,
-        nextDueDate: calculateNextDueDate(paidOnDate, hasAssignment ? moveInDate : paidOnDate, billingCycle),
+        billingAnchorDate: liveAnchor,
+        nextDueDate: liveNextDueDate,
         assignment: hasAssignment
           ? { hostelId, floorNumber, roomNumber, sharingType, moveInDate, propertyType, bedId, bedLabel }
           : undefined,
-        paymentHistory: [],
+        // record the initial payment so history is never empty
+        paymentHistory: [{
+          paymentId: `pay-init-${Date.now()}`,
+          amount: rentPaid,
+          paidOnDate,
+          nextDueDate: liveNextDueDate,
+          status: "active",
+          paymentMethod: "cash",
+          txnId: "",
+          proofImageName: "",
+          proofImageUrl: "",
+          proofMimeType: "",
+        }],
       }),
     });
     const payload = (await backendResponse.json()) as { tenant?: unknown; message?: string };
@@ -142,6 +156,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ tenant: payload.tenant }, { status: 201 });
   }
 
+  const demoAnchor = hasAssignment ? moveInDate : paidOnDate;
   const tenant = createTenantRecord({
     fullName,
     fatherName,
@@ -156,8 +171,8 @@ export async function POST(request: Request) {
     monthlyRent,
     rentPaid,
     paidOnDate,
-    billingAnchorDate: paidOnDate,
-    nextDueDate: calculateNextDueDate(paidOnDate, paidOnDate, billingCycle),
+    billingAnchorDate: demoAnchor,
+    nextDueDate: calculateNextDueDate(paidOnDate, demoAnchor, billingCycle),
     billingCycle,
   });
 

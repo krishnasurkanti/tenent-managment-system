@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, CreditCard, Plus, Search, UserCheck, UserRound, Wallet, X } from "lucide-react";
-import { TenantFormModal } from "@/features/tenants/components/TenantFormModal";
-import { TenantRoomAssignmentModal } from "@/features/tenants/components/TenantRoomAssignmentModal";
-import { PaymentCollectionModal } from "@/components/ui/payment-collection-modal";
+import { AlertTriangle, CreditCard, Download, Plus, Search, UserCheck, UserRound, Wallet, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
 import { SkeletonBlock, SkeletonStatCard, SkeletonTableRow } from "@/components/ui/skeleton";
@@ -24,6 +23,19 @@ import {
 } from "@/components/ui/owner-theme";
 import { formatPaymentDate, getDueStatus, fmtTenantId } from "@/utils/payment";
 import { PENDING_ID_NUMBER, type TenantRecord } from "@/types/tenant";
+
+const TenantFormModal = dynamic(
+  () => import("@/features/tenants/components/TenantFormModal").then((m) => ({ default: m.TenantFormModal })),
+  { ssr: false },
+);
+const TenantRoomAssignmentModal = dynamic(
+  () => import("@/features/tenants/components/TenantRoomAssignmentModal").then((m) => ({ default: m.TenantRoomAssignmentModal })),
+  { ssr: false },
+);
+const PaymentCollectionModal = dynamic(
+  () => import("@/components/ui/payment-collection-modal").then((m) => ({ default: m.PaymentCollectionModal })),
+  { ssr: false },
+);
 
 export default function OwnerTenantsPage() {
   return (
@@ -131,6 +143,14 @@ function OwnerTenantsPageContent() {
     setPaymentTenant(null);
   }, []);
 
+  const mobileListRef = useRef<HTMLDivElement>(null);
+  const mobileVirtualizer = useWindowVirtualizer({
+    count: filteredTenants.length,
+    estimateSize: () => 116,
+    overscan: 3,
+    scrollMargin: mobileListRef.current?.offsetTop ?? 0,
+  });
+
   if (hostelLoading || tenantLoading) return <LoadingState />;
 
   if (!currentHostel) {
@@ -154,8 +174,7 @@ function OwnerTenantsPageContent() {
         <Card className={`${ownerHeroCardClass} rounded-[10px] p-4`}>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Tenant hub</p>
-              <h1 className="mt-1 text-xl font-semibold text-white">Tenants</h1>
+              <h1 className="text-xl font-semibold text-white">Tenants</h1>
               <p className="mt-1 text-xs text-[color:var(--fg-secondary)]">{currentHostel.hostelName}</p>
             </div>
             <button
@@ -181,62 +200,95 @@ function OwnerTenantsPageContent() {
 
           <div className="mt-3 grid grid-cols-2 gap-2.5">
             <SummaryTile icon={UserRound} label="Total" value={String(filteredTenants.length)} />
-            <SummaryTile icon={Wallet} label="Due soon" value={String(dueSoonCount)} tone="warning" />
-            <SummaryTile icon={Wallet} label="Overdue" value={String(overdueCount)} tone="danger" />
+            <SummaryTile icon={Wallet} label="Due soon" value={String(dueSoonCount)} tone={dueSoonCount > 0 ? "warning" : "default"} />
+            <SummaryTile icon={Wallet} label="Overdue" value={String(overdueCount)} tone={overdueCount > 0 ? "danger" : "default"} />
             <SummaryTile icon={UserCheck} label="Assigned" value={String(assignedCount)} tone="success" />
           </div>
         </Card>
 
-        <div className="space-y-2.5">
-          {filteredTenants.length === 0 ? (
-            <Card className={`${ownerPanelClass} rounded-[10px] p-4 text-center text-sm text-[color:var(--fg-secondary)]`}>
-              {searchQuery ? "No tenants matched that search." : "No tenants yet for this hostel."}
-            </Card>
-          ) : (
-            filteredTenants.map((tenant) => {
+        {filteredTenants.length === 0 ? (
+          <Card className={`${ownerPanelClass} rounded-[10px] p-6 text-center`}>
+            {searchQuery ? (
+              <>
+                <Search className="mx-auto mb-3 h-8 w-8 text-white/20" />
+                <p className="text-sm font-semibold text-white/70">No tenants matched &ldquo;{searchQuery}&rdquo;</p>
+                <p className="mt-1 text-xs text-[color:var(--fg-secondary)]">Try a different name, phone number, or room.</p>
+              </>
+            ) : (
+              <>
+                <UserRound className="mx-auto mb-3 h-8 w-8 text-white/20" />
+                <p className="text-sm font-semibold text-white/70">No tenants yet</p>
+                <p className="mt-1 text-xs text-[color:var(--fg-secondary)]">Add your first tenant to start tracking rent and room assignments.</p>
+                <button
+                  onClick={() => setModalOpen(true)}
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--cta-strong)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add tenant
+                </button>
+              </>
+            )}
+          </Card>
+        ) : (
+          <div
+            ref={mobileListRef}
+            style={{
+              height: `${mobileVirtualizer.getTotalSize()}px`,
+              position: "relative",
+            }}
+          >
+            {mobileVirtualizer.getVirtualItems().map((virtualItem) => {
+              const tenant = filteredTenants[virtualItem.index];
               const status = getDueStatus(tenant.nextDueDate);
               const isPaid = status.tone !== "red" && status.tone !== "orange" && status.tone !== "yellow";
 
               return (
                 <div
-                  key={tenant.tenantId}
-                  className={`grid grid-cols-[1fr_auto] gap-3 rounded-[8px] px-3 py-3 ${ownerPanelClass}`}
+                  key={virtualItem.key}
+                  data-index={virtualItem.index}
+                  ref={mobileVirtualizer.measureElement}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualItem.start - mobileVirtualizer.options.scrollMargin}px)`,
+                    paddingBottom: "10px",
+                  }}
                 >
-                  <Link href={`/owner/tenants/${tenant.tenantId}`} className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-semibold text-white">{tenant.fullName}</p>
-                      <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--fg-secondary)]">
-                        #{fmtTenantId(tenant.tenantId)}
-                      </span>
-                      {hasMissingInfo(tenant) && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.preventDefault(); setCompletingTenant(tenant); }}
-                          className="inline-flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400 hover:bg-orange-500/20 transition"
-                        >
-                          <AlertTriangle className="h-2.5 w-2.5" />
-                          Missing info
-                        </button>
-                      )}
-                    </div>
-                    <p className="mt-1 truncate text-[11px] text-[color:var(--fg-secondary)]">
-                      {tenant.assignment ? `F${tenant.assignment.floorNumber} / R${tenant.assignment.roomNumber}` : "Pending assignment"} / {tenant.phone}
-                    </p>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      <MiniInfo label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} />
-                      <MiniInfo label="Next Due" value={formatPaymentDate(tenant.nextDueDate)} />
-                    </div>
-                  </Link>
-                  <ActionButton
-                    tone={status.tone}
-                    isPaid={isPaid}
-                    onClick={() => openPayment(tenant)}
-                  />
+                  <div className={`grid grid-cols-[1fr_auto] gap-3 rounded-[8px] px-3 py-3 ${ownerPanelClass}`}>
+                    <Link href={`/owner/tenants/${tenant.tenantId}`} className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-semibold text-white">{tenant.fullName}</p>
+                        <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--fg-secondary)]">
+                          #{fmtTenantId(tenant.tenantId)}
+                        </span>
+                        {hasMissingInfo(tenant) && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); setCompletingTenant(tenant); }}
+                            className="inline-flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400 hover:bg-orange-500/20 transition"
+                          >
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            Missing info
+                          </button>
+                        )}
+                      </div>
+                      <p className="mt-1 truncate text-[11px] text-[color:var(--fg-secondary)]">
+                        {tenant.assignment ? `F${tenant.assignment.floorNumber} / R${tenant.assignment.roomNumber}` : "Pending assignment"} / {tenant.phone}
+                      </p>
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        <MiniInfo label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} />
+                        <MiniInfo label="Next Due" value={formatPaymentDate(tenant.nextDueDate)} />
+                      </div>
+                    </Link>
+                    <ActionButton tone={status.tone} isPaid={isPaid} onClick={() => openPayment(tenant)} />
+                  </div>
                 </div>
               );
-            })
-          )}
-        </div>
+            })}
+          </div>
+        )}
       </section>
 
       {/* ── Desktop view ── */}
@@ -248,20 +300,30 @@ function OwnerTenantsPageContent() {
               <h1 className="mt-1 text-[1.35rem] font-semibold tracking-tight text-white sm:text-[1.55rem]">Tenant Directory</h1>
               <p className="mt-1 text-[12px] text-[color:var(--fg-secondary)]">Showing tenants for {currentHostel.hostelName} only.</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setModalOpen(true)}
-              className="inline-flex min-h-11 min-w-[164px] items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-5 py-2.5 text-[12px] font-semibold text-white shadow-[0_14px_32px_rgba(37,99,235,0.22)]"
-            >
-              Add New Tenant
-            </button>
+            <div className="flex items-center gap-2">
+              <a
+                href={`/api/tenants/export?hostelId=${encodeURIComponent(currentHostel.id)}`}
+                download
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-2xl border border-white/12 bg-white/[0.06] px-4 text-[12px] font-semibold text-white transition hover:bg-white/[0.1]"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export CSV
+              </a>
+              <button
+                type="button"
+                onClick={() => setModalOpen(true)}
+                className="inline-flex min-h-11 min-w-[164px] items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-5 py-2.5 text-[12px] font-semibold text-white shadow-[0_14px_32px_rgba(37,99,235,0.22)]"
+              >
+                Add New Tenant
+              </button>
+            </div>
           </div>
         </div>
 
         <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryTile icon={UserRound} label="Total Tenants" value={String(filteredTenants.length)} />
-          <SummaryTile icon={Wallet} label="Due Soon" value={String(dueSoonCount)} tone="warning" />
-          <SummaryTile icon={Wallet} label="Overdue" value={String(overdueCount)} tone="danger" />
+          <SummaryTile icon={Wallet} label="Due Soon" value={String(dueSoonCount)} tone={dueSoonCount > 0 ? "warning" : "default"} />
+          <SummaryTile icon={Wallet} label="Overdue" value={String(overdueCount)} tone={overdueCount > 0 ? "danger" : "default"} />
           <SummaryTile icon={UserCheck} label="Assigned" value={String(assignedCount)} tone="success" />
         </div>
 

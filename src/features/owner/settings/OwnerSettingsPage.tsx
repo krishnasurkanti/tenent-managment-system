@@ -1,10 +1,13 @@
-import { Building2, MapPin } from "lucide-react";
+import Link from "next/link";
+import { Building2, MapPin, PencilLine } from "lucide-react";
 import { getOwnerHostel } from "@/data/ownerHostelStore";
 import { Card } from "@/components/ui/card";
 import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
 import { ownerPanelClass } from "@/components/ui/owner-theme";
 import { getOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
+import { ProfileEditClient } from "./ProfileEditClient";
+import { NotificationPrefsClient } from "./NotificationPrefsClient";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +48,17 @@ export default async function OwnerSettingsPage() {
         <InfoTile icon={Building2} label="Hostel Name" value={hostel?.hostelName ?? "Not created yet"} />
         <InfoTile icon={MapPin} label="Address" value={hostel?.address ?? "Not created yet"} />
       </div>
+
+      <Link
+        href="/owner/create-hostel?mode=edit"
+        className="inline-flex min-h-10 items-center gap-2 rounded-2xl bg-[linear-gradient(90deg,#b86f18,#efaf2f,#ffd95f)] px-4 text-sm font-semibold text-[#1b1207] shadow-[0_10px_22px_rgba(240,175,47,0.2)] transition hover:brightness-105"
+      >
+        <PencilLine className="h-4 w-4" />
+        Edit hostel
+      </Link>
+
+      <ProfileEditClient isDemo={session.isDemo} />
+      <NotificationPrefsClient />
     </div>
   );
 }

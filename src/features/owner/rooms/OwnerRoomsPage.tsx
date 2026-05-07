@@ -69,7 +69,7 @@ function OwnerRoomsPageContent() {
                 All
               </FilterLink>
               <FilterLink href="/owner/rooms?view=available" active={showAvailableOnly}>
-                Free
+                Vacant
               </FilterLink>
             </div>
           </div>
@@ -174,7 +174,7 @@ function OwnerRoomsPageContent() {
                                 const isOverdue = assignedTenant ? getDueStatus(assignedTenant.nextDueDate).tone === "red" : false;
                                 const toneClass = !assignedTenant
                                   ? "border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white shadow-[0_10px_22px_rgba(34,197,94,0.24)]"
-                                  : "border border-[#ef4444] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] text-white shadow-[0_12px_24px_rgba(220,38,38,0.24)]";
+                                  : "border border-[#6366f1] bg-[linear-gradient(180deg,#6366f1_0%,#4f46e5_100%)] text-white shadow-[0_12px_24px_rgba(99,102,241,0.24)]";
 
                                 return (
                                   <div key={`${room.id}-bed-${index + 1}`} className={`rounded-2xl px-2.5 py-2 ${toneClass}`}>
@@ -200,7 +200,7 @@ function OwnerRoomsPageContent() {
                             <div className="mt-3">
                               <Link
                                 href={`/owner/tenants?action=add-tenant&hostelId=${currentHostel.id}&floor=${floor.floorNumber}&room=${room.roomNumber}&sharingType=${encodeURIComponent(room.sharingType ?? "")}`}
-                                className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.22)]"
+                                className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-[linear-gradient(90deg,#b86f18,#efaf2f,#ffd95f)] px-3 text-sm font-semibold text-[#1b1207] shadow-[0_12px_28px_rgba(240,175,47,0.22)]"
                               >
                                 {isResidence ? "Assign tenant" : "Add tenant"}
                               </Link>

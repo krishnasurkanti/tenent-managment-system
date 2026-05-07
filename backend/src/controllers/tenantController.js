@@ -318,7 +318,7 @@ async function getTenants(req, res) {
       `
         SELECT id, owner_id, hostel_id, data, created_at
         FROM tenants
-        WHERE owner_id = $1 AND hostel_id = $2
+        WHERE owner_id = $1 AND hostel_id = $2 AND deleted_at IS NULL
         ORDER BY created_at DESC, id DESC
       `,
       [ownerId, hostelId],
@@ -330,12 +330,11 @@ async function getTenants(req, res) {
     });
   }
 
-  // No hostel_id — return all tenants for this owner in one query
   const result = await query(
     `
       SELECT id, owner_id, hostel_id, data, created_at
       FROM tenants
-      WHERE owner_id = $1
+      WHERE owner_id = $1 AND deleted_at IS NULL
       ORDER BY created_at DESC, id DESC
     `,
     [ownerId],
@@ -351,7 +350,7 @@ async function getTenantById(req, res) {
     `
       SELECT id, owner_id, hostel_id, data, created_at
       FROM tenants
-      WHERE id = $1 AND owner_id = $2
+      WHERE id = $1 AND owner_id = $2 AND deleted_at IS NULL
       LIMIT 1
     `,
     [req.params.id, req.user.ownerId],
@@ -374,7 +373,7 @@ async function updateTenant(req, res) {
       `
         SELECT id, owner_id, hostel_id, data, created_at, updated_at
         FROM tenants
-        WHERE id = $1 AND owner_id = $2
+        WHERE id = $1 AND owner_id = $2 AND deleted_at IS NULL
         LIMIT 1
       `,
       [req.params.id, req.user.ownerId],
@@ -387,14 +386,12 @@ async function updateTenant(req, res) {
     const current = existing.rows[0];
     const patch = req.body && typeof req.body === "object" ? req.body : {};
     
-    // Check for version conflict if client provided expected updated_at
+    // Conflict check: reject if the record was updated since the client last read it.
+    // All timestamps originate server-side so no clock-skew tolerance is needed.
     if (patch.expectedUpdatedAt) {
-      const expectedTime = new Date(patch.expectedUpdatedAt);
-      const currentTime = new Date(current.updated_at);
-      
-      // Allow small clock skew (5 seconds)
-      const timeDiff = Math.abs(currentTime.getTime() - expectedTime.getTime());
-      if (timeDiff > 5000) {
+      const expectedTime = new Date(patch.expectedUpdatedAt).getTime();
+      const currentTime = new Date(current.updated_at).getTime();
+      if (Math.abs(currentTime - expectedTime) > 500) {
         throw createHttpError(409, "This record was updated by another session. Please refresh and try again.");
       }
     }
@@ -470,6 +467,7 @@ async function deleteTenant(req, res) {
   try {
     await client.query("BEGIN");
 
+    // End active allocations first
     await client.query(
       `
         UPDATE allocations
@@ -479,10 +477,12 @@ async function deleteTenant(req, res) {
       [req.user.ownerId, req.params.id],
     );
 
+    // Soft delete — preserve payment history in the JSONB data column
     const result = await client.query(
       `
-        DELETE FROM tenants
-        WHERE id = $1 AND owner_id = $2
+        UPDATE tenants
+        SET deleted_at = NOW()
+        WHERE id = $1 AND owner_id = $2 AND deleted_at IS NULL
         RETURNING id, owner_id, hostel_id, data, created_at
       `,
       [req.params.id, req.user.ownerId],

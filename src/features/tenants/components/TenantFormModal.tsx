@@ -252,18 +252,20 @@ export function TenantFormModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-none touch-pan-y px-3 py-3 animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tenant-form-modal-title"
+      className="fixed inset-0 z-50 flex items-end justify-center animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
       style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
     >
-      <div className="flex min-h-full w-full max-w-2xl items-start justify-center sm:items-center">
-        <Card className="flex max-h-[90dvh] w-[min(calc(100vw-2rem),42rem)] flex-col overflow-hidden border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-[float-up_var(--motion-medium)_var(--ease-enter)]">
+        <Card className="flex w-full min-h-[82svh] max-h-[92svh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),42rem)] sm:min-h-0 sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(90deg,rgba(99,102,241,0.14)_0%,rgba(245,158,11,0.06)_100%)]" />
 
             {/* Header */}
             <div className="relative flex items-start justify-between gap-4 px-4 pb-2 pt-4 sm:px-5 sm:pt-5">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-[13px] font-semibold text-white/70">
+                <div id="tenant-form-modal-title" className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-[13px] font-semibold text-white/70">
                   <span className="rounded-[8px] bg-[var(--accent-strong)] p-1 text-white">
                     <User className="h-3.5 w-3.5" />
                   </span>
@@ -667,7 +669,6 @@ export function TenantFormModal({
             </div>
           </div>
         </Card>
-      </div>
     </div>
   );
 }

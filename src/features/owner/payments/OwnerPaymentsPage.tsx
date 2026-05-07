@@ -70,7 +70,10 @@ export default function OwnerPaymentsPage() {
     .sort((left, right) => left.status.priority - right.status.priority);
   const overdueCount = dueItems.filter(({ status }) => status.tone === "red").length;
   const dueSoonCount = dueItems.filter(({ status }) => status.tone === "orange" || status.tone === "yellow").length;
-  const collectedTotal = tenants.reduce((sum, tenant) => sum + tenant.rentPaid, 0);
+  // only tenants whose nextDueDate is in the future have paid for the current cycle
+  const collectedTotal = dueItems
+    .filter(({ status }) => status.tone === "green")
+    .reduce((sum, { tenant }) => sum + tenant.rentPaid, 0);
   const expectedTotal = tenants.reduce((sum, tenant) => sum + tenant.monthlyRent, 0);
   const collectionRate = expectedTotal > 0 ? Math.round((collectedTotal / expectedTotal) * 100) : 0;
   const proofCoverage = tenants.filter((tenant) => {
@@ -82,9 +85,8 @@ export default function OwnerPaymentsPage() {
     <div className={`space-y-3 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
       <OwnerPageHero
         eyebrow="Payments"
-        title="Payment workspace"
-        description={`Track collections, verify proof, and catch upcoming dues for ${currentHostel.hostelName}.`}
-        badge={<span className="inline-flex rounded-full border border-[rgba(99,102,241,0.3)] bg-[rgba(99,102,241,0.14)] px-3 py-1 text-[11px] font-semibold text-[var(--accent)]">{collectionRate}% collected</span>}
+        title="Rent payments"
+        badge={<span className="inline-flex rounded-full border border-[#4ade80]/40 bg-[#22c55e]/10 px-3 py-1 text-[11px] font-semibold text-[#4ade80]">{collectionRate}% collected</span>}
         actions={
           <Link
             href="/owner/payments?action=pay-rent"

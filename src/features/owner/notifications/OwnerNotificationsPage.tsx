@@ -41,8 +41,7 @@ export default function OwnerNotificationsPage() {
     <div className={`space-y-3 text-white transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
       <OwnerPageHero
         eyebrow="Notifications"
-        title="Owner alert centre"
-        description={`Urgent payment follow-ups for ${currentHostel.hostelName}. Focus here when you need the fastest route to collections.`}
+        title="Alerts"
         badge={
           <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold ${alerts.length === 0 ? "border-[#4ade80]/40 bg-[#22c55e]/10 text-[#4ade80]" : "border-red-500/40 bg-red-500/10 text-red-400"}`}>
             <Bell className="h-3 w-3" />
@@ -51,11 +50,12 @@ export default function OwnerNotificationsPage() {
         }
       />
 
-      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-        <OwnerQuickStat label="Urgent alerts" value={String(alerts.filter(({ status }) => status.tone === "red").length)} helper="Overdue right now" />
-        <OwnerQuickStat label="Due soon" value={String(alerts.filter(({ status }) => status.tone === "orange").length)} helper="Collect before they slip" />
-        <OwnerQuickStat label="Alert state" value={alerts.length === 0 ? "Stable" : "Action needed"} helper={currentHostel.hostelName} />
-      </div>
+      {alerts.length > 0 && (
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          <OwnerQuickStat label="Overdue" value={String(alerts.filter(({ status }) => status.tone === "red").length)} helper="Act now" />
+          <OwnerQuickStat label="Due soon" value={String(alerts.filter(({ status }) => status.tone === "orange").length)} helper="Collect before due date" />
+        </div>
+      )}
 
       {alerts.length === 0 ? (
         <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] px-4 py-3 sm:py-4 text-center text-white">

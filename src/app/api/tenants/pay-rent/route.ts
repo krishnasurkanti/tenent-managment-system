@@ -76,6 +76,8 @@ export async function POST(request: Request) {
           rentPaid: amount,
           paidOnDate,
           nextDueDate,
+          // send the updatedAt the client last saw so the backend conflict check fires
+          expectedUpdatedAt: existingPayload.tenant?.updatedAt ?? existingPayload.tenant?.updated_at,
           paymentHistory: [
             {
               paymentId: `pay-${tenantId}-${Date.now()}`,
@@ -89,7 +91,8 @@ export async function POST(request: Request) {
               proofImageUrl,
               proofMimeType,
             },
-            ...paymentHistory,
+            // cap at 119 existing so total never exceeds 120
+            ...paymentHistory.slice(0, 119),
           ],
         }),
       });

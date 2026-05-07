@@ -1,15 +1,28 @@
 import type { Metadata, Viewport } from "next";
+import { DM_Sans, Syne } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/query-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { ServerWakeOverlay } from "@/components/ServerWakeOverlay";
 
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+  preload: true,
+});
+
+const syne = Syne({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+  preload: true,
+});
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
   themeColor: "#09090b",
 };
@@ -32,7 +45,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-sans antialiased">
+      <body className={`${dmSans.variable} ${syne.variable} font-sans antialiased`}>
         <ThemeProvider>
           <QueryProvider>
             <ToastProvider>{children}</ToastProvider>

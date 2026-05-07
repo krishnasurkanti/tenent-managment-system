@@ -116,6 +116,14 @@ async function initializeDatabase() {
     ON tenants(owner_id, hostel_id)
   `);
 
+  // Soft-delete support — idempotent
+  await query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`);
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_tenants_deleted_at
+    ON tenants(deleted_at)
+    WHERE deleted_at IS NULL
+  `);
+
   await query(`
     CREATE TABLE IF NOT EXISTS allocations (
       id BIGSERIAL PRIMARY KEY,
