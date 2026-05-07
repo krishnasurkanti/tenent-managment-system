@@ -11,7 +11,6 @@ import {
   EyeOff,
   Lock,
   Mail,
-  ShieldCheck,
 } from "lucide-react";
 import { loginDemoOwner, loginOwner } from "@/services/auth/auth.service";
 
@@ -105,13 +104,6 @@ export default function LoginPage() {
             <p className="mt-0.5 text-[11px] leading-none text-white/40">Tenant Management</p>
           </div>
         </div>
-        <Link
-          href="/super-admin/login"
-          className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#f2bb4d]/55 bg-[#1d1a19]/80 px-3.5 py-2 text-xs font-semibold text-[#ffd26a]"
-        >
-          <ShieldCheck className="h-4 w-4" />
-          Admin Login
-        </Link>
       </header>
 
       {/* Page content */}
@@ -224,6 +216,17 @@ export default function LoginPage() {
 
           </div>
         </div>
+      </div>
+
+      {/* Admin back-door — not linked anywhere, styled to blend into background */}
+      <div className="pb-4 text-center">
+        <Link
+          href="/super-admin/login"
+          className="text-[11px] text-white/10 hover:text-white/25 transition-colors"
+          tabIndex={-1}
+        >
+          Admin access
+        </Link>
       </div>
     </main>
   );
