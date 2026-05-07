@@ -3,10 +3,16 @@ import { getApiBaseUrl } from "@/lib/api-config";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  // Random 0–3 min delay so cron-job.org's fixed 10-min schedule lands unpredictably
-  const jitterMs = Math.random() * 3 * 60 * 1000;
-  await new Promise((r) => setTimeout(r, jitterMs));
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const isCron = searchParams.get("source") === "cron";
+
+  // Jitter only for cron pings (prevents predictable keep-alive detection).
+  // Never jitter user-facing wakeup polls — that caused 180s+ overlay waits.
+  if (isCron) {
+    const jitterMs = Math.random() * 2 * 60 * 1000; // 0–2 min for cron only
+    await new Promise((r) => setTimeout(r, jitterMs));
+  }
 
   try {
     const res = await fetch(`${getApiBaseUrl()}/api/health`, {

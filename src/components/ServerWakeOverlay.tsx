@@ -223,7 +223,7 @@ export function ServerWakeOverlay() {
             </div>
             <div className="mt-1.5 flex items-center justify-between text-[11px] text-white/30">
               <span>{elapsed}s elapsed</span>
-              <span>usually 30–60s</span>
+              <span>usually 30–90s</span>
             </div>
           </div>
         )}

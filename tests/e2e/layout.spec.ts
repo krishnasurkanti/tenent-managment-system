@@ -40,6 +40,18 @@ test.describe("Layout & responsiveness checks", () => {
               if (style.position === "fixed" || style.position === "sticky") return false;
               if (el.hasAttribute("data-ignore-offscreen")) return false;
               if (el.getAttribute("aria-hidden") === "true") return false;
+              // skip elements that are not visually present
+              if (style.visibility === "hidden" || style.opacity === "0" || style.display === "none") return false;
+              // skip elements visually clipped by an overflow-hidden/clip ancestor that is itself within viewport
+              let ancestor = el.parentElement;
+              while (ancestor && ancestor !== document.documentElement) {
+                const as = window.getComputedStyle(ancestor);
+                if (as.overflowX === "hidden" || as.overflowX === "clip" || as.overflow === "hidden" || as.overflow === "clip") {
+                  const ar = ancestor.getBoundingClientRect();
+                  if (ar.right <= window.innerWidth + 1) return false;
+                }
+                ancestor = ancestor.parentElement;
+              }
               return true;
             })
             .slice(0, 10)
