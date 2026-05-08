@@ -66,13 +66,16 @@ export function PricingCarousel({
 }: PricingCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [showSwipeHint, setShowSwipeHint] = useState(true);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     const onScroll = () => {
       const cardWidth = el.scrollWidth / PRICING_PLANS.length;
-      setActiveIdx(Math.round(el.scrollLeft / cardWidth));
+      const idx = Math.round(el.scrollLeft / cardWidth);
+      setActiveIdx(idx);
+      if (idx > 0) setShowSwipeHint(false);
     };
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
@@ -93,8 +96,30 @@ export function PricingCarousel({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPlanId]);
 
+  // Swipe peek animation: briefly reveal next card edge, then snap back
+  useEffect(() => {
+    if (!onboardingMode) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const t1 = setTimeout(() => {
+      el.scrollTo({ left: 52, behavior: "smooth" });
+      const t2 = setTimeout(() => {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      }, 520);
+      return () => clearTimeout(t2);
+    }, 900);
+    return () => clearTimeout(t1);
+  }, [onboardingMode]);
+
   return (
     <div className="w-full">
+      {/* Swipe hint — visible until user swipes once */}
+      {onboardingMode && showSwipeHint && (
+        <div className="mb-3 flex items-center justify-center gap-1.5 animate-pulse">
+          <span className="text-[11px] font-medium text-white/40">Swipe to compare plans</span>
+          <span className="text-white/40">→</span>
+        </div>
+      )}
       <div
         ref={scrollRef}
         className="flex snap-x snap-mandatory overflow-x-auto scrollbar-hide gap-3 pb-2 px-4 sm:px-0"
@@ -214,7 +239,20 @@ export function PricingCarousel({
                 )}
 
               {/* CTA */}
-              {isCurrentPlan ? (
+              {isCurrentPlan && onboardingMode && plan.id === "free" ? (
+                // Onboarding on free plan: don't show "Upgrade", show a select CTA
+                <button
+                  type="button"
+                  disabled={!!submittingPlanId}
+                  onClick={() => void onSelect(plan.id)}
+                  className={cn(
+                    "mt-auto inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl text-sm font-semibold transition disabled:opacity-50",
+                    BTN_COLOR[plan.id],
+                  )}
+                >
+                  {isSubmitting ? "Saving…" : "Start with Free"}
+                </button>
+              ) : isCurrentPlan ? (
                 nextPlan ? (
                   <button
                     type="button"
@@ -294,14 +332,14 @@ export function PricingCarousel({
       </div>
 
       {onSkip ? (
-        <div className="mt-4 text-center">
+        <div className="mt-4">
           <button
             type="button"
             onClick={onSkip}
             disabled={!!submittingPlanId}
-            className="text-sm text-white/40 transition hover:text-white/70 disabled:opacity-50"
+            className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-medium text-white/55 transition hover:bg-white/[0.08] hover:text-white/80 disabled:opacity-50"
           >
-            {onboardingMode ? "Skip for now — I'll decide later" : "Keep current plan"}
+            {onboardingMode ? "Skip — I'll decide later" : "Keep current plan"}
           </button>
         </div>
       ) : null}
