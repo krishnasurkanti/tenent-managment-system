@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -20,6 +20,8 @@ const featurePoints = [
   "Simple control",
 ];
 
+type ServerStatus = "unknown" | "ready" | "offline";
+
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -28,6 +30,78 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+
+  const [serverStatus, setServerStatus] = useState<ServerStatus>("unknown");
+  const [wakingUp, setWakingUp] = useState(false);
+  const pendingCredsRef = useRef<{ identifier: string; password: string } | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Ping server on mount — buys warm-up time while user types
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/keep-alive", { cache: "no-store" })
+      .then((r) => { if (!cancelled) setServerStatus(r.ok ? "ready" : "offline"); })
+      .catch(() => { if (!cancelled) setServerStatus("offline"); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const doLogin = useCallback(async (creds: { identifier: string; password: string }) => {
+    setLoading(true);
+    setError("");
+    try {
+      const { response, data } = await loginOwner({
+        phoneNumber: creds.identifier,
+        email: creds.identifier,
+        password: creds.password,
+      });
+      if (!response.ok) {
+        setWakingUp(false);
+        pendingCredsRef.current = null;
+        setError(data.message ?? "Unable to sign in.");
+        return;
+      }
+      router.replace("/owner/dashboard");
+      router.refresh();
+    } catch {
+      // Network error during wake-up poll — server not ready yet, keep polling
+      if (!wakingUp) {
+        setError("Unable to sign in right now. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [router, wakingUp]);
+
+  // Poll while waking up — auto-retries login once server responds
+  useEffect(() => {
+    if (!wakingUp) {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+      return;
+    }
+
+    pollTimerRef.current = setInterval(() => {
+      fetch("/api/keep-alive", { cache: "no-store" })
+        .then((r) => {
+          if (r.ok) {
+            setServerStatus("ready");
+            setWakingUp(false);
+            if (pendingCredsRef.current) {
+              const creds = pendingCredsRef.current;
+              pendingCredsRef.current = null;
+              void doLogin(creds);
+            }
+          }
+        })
+        .catch(() => { /* still offline, keep polling */ });
+    }, 3000);
+
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
+  }, [wakingUp, doLogin]);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -43,44 +117,26 @@ export default function LoginPage() {
       return;
     }
 
-    setLoading(true);
-    setError("");
-
-    try {
-      const { response, data } = await loginOwner({
-        phoneNumber: identifier,
-        email: identifier,
-        password,
-      });
-
-      if (!response.ok) {
-        setError(data.message ?? "Unable to sign in.");
-        return;
-      }
-
-      router.replace("/owner/dashboard");
-      router.refresh();
-    } catch {
-      setError("Unable to sign in right now. Please try again.");
-    } finally {
-      setLoading(false);
+    // Server still offline when user presses login — show waking overlay + auto-retry
+    if (serverStatus === "offline") {
+      pendingCredsRef.current = { identifier, password };
+      setWakingUp(true);
+      return;
     }
+
+    await doLogin({ identifier, password });
   };
 
   const handleDemoLogin = async () => {
     if (loading || demoLoading) return;
-
     setDemoLoading(true);
     setError("");
-
     try {
       const { response, data } = await loginDemoOwner();
-
       if (!response.ok) {
         setError(data.message ?? "Unable to open demo.");
         return;
       }
-
       router.replace("/owner/dashboard");
       router.refresh();
     } catch {
@@ -130,7 +186,10 @@ export default function LoginPage() {
 
         {/* Login card */}
         <div className="w-[min(calc(100vw-2rem),440px)] mx-auto lg:w-full lg:max-w-[440px] lg:mx-0">
-          <div className="rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-4">
+          <div className="relative rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-4">
+
+            {/* Waking up overlay */}
+            {wakingUp ? <WakingUpOverlay /> : null}
 
             {/* Mobile logo */}
             <div className="mb-5 flex items-center gap-3 lg:hidden">
@@ -199,7 +258,7 @@ export default function LoginPage() {
                   disabled={loading || demoLoading}
                   className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] px-5 text-base font-bold text-[#1b1207] shadow-[0_10px_24px_rgba(240,175,47,0.22)] transition hover:brightness-105 disabled:opacity-60"
                 >
-                  {loading ? "Checking..." : "Login"}
+                  {loading ? "Signing in..." : "Login"}
                   {!loading ? <ArrowRight className="h-4 w-4" /> : null}
                 </button>
 
@@ -229,5 +288,52 @@ export default function LoginPage() {
         </Link>
       </div>
     </main>
+  );
+}
+
+function WakingUpOverlay() {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 rounded-[18px] bg-[rgba(9,9,18,0.92)] backdrop-blur-sm px-6 text-center">
+      {/* Pulsing logo */}
+      <div className="relative flex h-16 w-16 items-center justify-center">
+        <span className="absolute inset-0 animate-ping rounded-full bg-[#ffd15a]/20" />
+        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#ffcc4d_0%,#d9941c_100%)] text-[#18120a]">
+          <Building2 className="h-7 w-7" />
+        </div>
+      </div>
+
+      <div>
+        <p className="text-base font-bold text-[#f7f0e8]">Server is waking up…</p>
+        <p className="mt-1 text-sm text-white/45">
+          {elapsed < 20
+            ? "Usually takes 15–20 seconds on first visit."
+            : "Taking a bit longer than usual, almost there…"}
+        </p>
+      </div>
+
+      {/* Animated dots */}
+      <div className="flex gap-1.5">
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className="h-2 w-2 rounded-full bg-[#ffd15a]/60 animate-bounce"
+            style={{ animationDelay: `${i * 0.15}s` }}
+          />
+        ))}
+      </div>
+
+      <p className="text-[11px] text-white/25">{elapsed}s</p>
+
+      <p className="text-[12px] text-white/35">
+        Logging in automatically once ready — no action needed.
+      </p>
+    </div>
   );
 }
