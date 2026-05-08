@@ -182,6 +182,16 @@
     -webkit-user-select: text;
   }
 
+  /* Prevent iOS Safari from auto-zooming on input focus (triggers when font-size < 16px).
+     touch-callout: none is an iOS-only property — safe to use as a feature gate. */
+  @supports (-webkit-touch-callout: none) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea {
+      font-size: max(16px, 1em);
+    }
+  }
+
   body {
     position: relative;
     min-height: 100dvh;
