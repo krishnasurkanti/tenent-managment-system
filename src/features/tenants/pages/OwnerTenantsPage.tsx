@@ -6,7 +6,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { useQueryClient } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, CreditCard, Download, Plus, Search, UserCheck, UserRound, Wallet, X } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronUp, CreditCard, Download, Plus, Search, UserCheck, UserRound, Wallet, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
 import { SkeletonBlock, SkeletonStatCard, SkeletonTableRow } from "@/components/ui/skeleton";
@@ -60,6 +60,7 @@ function OwnerTenantsPageContent() {
   const [paymentTenant, setPaymentTenant] = useState<TenantRecord | null>(null);
   const [completingTenant, setCompletingTenant] = useState<TenantRecord | null>(null);
   const [searchQuery, setSearchQuery] = useState(() => searchParams.get("q") ?? "");
+  const [statsCollapsed, setStatsCollapsed] = useState(false);
 
   const preferredAssignment = useMemo(
     () => ({
@@ -198,12 +199,22 @@ function OwnerTenantsPageContent() {
             />
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2.5">
-            <SummaryTile icon={UserRound} label="Total" value={String(filteredTenants.length)} />
-            <SummaryTile icon={Wallet} label="Due soon" value={String(dueSoonCount)} tone={dueSoonCount > 0 ? "warning" : "default"} />
-            <SummaryTile icon={Wallet} label="Overdue" value={String(overdueCount)} tone={overdueCount > 0 ? "danger" : "default"} />
-            <SummaryTile icon={UserCheck} label="Assigned" value={String(assignedCount)} tone="success" />
-          </div>
+          <button
+            type="button"
+            onClick={() => setStatsCollapsed((v) => !v)}
+            className="mt-3 flex w-full items-center justify-between rounded-xl px-1 py-0.5 text-[11px] font-semibold uppercase tracking-widest text-white/30 hover:text-white/50 transition"
+          >
+            <span>Stats</span>
+            {statsCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+          </button>
+          {!statsCollapsed && (
+            <div className="mt-2 grid grid-cols-2 gap-2.5">
+              <SummaryTile icon={UserRound} label="Total" value={String(filteredTenants.length)} />
+              <SummaryTile icon={Wallet} label="Due soon" value={String(dueSoonCount)} tone={dueSoonCount > 0 ? "warning" : "default"} />
+              <SummaryTile icon={Wallet} label="Overdue" value={String(overdueCount)} tone={overdueCount > 0 ? "danger" : "default"} />
+              <SummaryTile icon={UserCheck} label="Assigned" value={String(assignedCount)} tone="success" />
+            </div>
+          )}
         </Card>
 
         {filteredTenants.length === 0 ? (

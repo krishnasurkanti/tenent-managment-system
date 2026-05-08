@@ -159,25 +159,35 @@ async function requestUpgrade(req, res, next) {
   try {
     const ownerId = req.user.ownerId;
     const { requestedPlan, note } = req.body;
+
+    const VALID_PLANS = ["free", "starter", "growth", "pro"];
+    if (!requestedPlan || !VALID_PLANS.includes(requestedPlan)) {
+      return res.status(400).json({ message: "Invalid plan." });
+    }
+
     const owner = await getOwnerRow(ownerId);
     if (!owner) return res.status(404).json({ message: "Owner not found." });
 
-    const existing = await query(
-      `SELECT id FROM owner_upgrade_requests WHERE owner_id = $1 AND status = 'pending' LIMIT 1`,
+    const previousPlan = owner.plan ?? "free";
+
+    // Apply plan change immediately — no admin approval needed
+    await query(
+      `UPDATE owners SET plan = $1, plan_status = 'active' WHERE id = $2`,
+      [requestedPlan, ownerId],
+    );
+
+    // Cancel any stale pending requests, then log this change for audit
+    await query(
+      `UPDATE owner_upgrade_requests SET status = 'superseded' WHERE owner_id = $1 AND status = 'pending'`,
       [ownerId],
     );
-    if (existing.rowCount > 0) {
-      return res.status(400).json({ message: "Upgrade request already pending." });
-    }
-
-    const result = await query(
-      `INSERT INTO owner_upgrade_requests (owner_id, current_plan, requested_plan, note)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [ownerId, owner.plan ?? "starter", requestedPlan, note?.trim() ?? ""],
+    await query(
+      `INSERT INTO owner_upgrade_requests (owner_id, current_plan, requested_plan, note, status)
+       VALUES ($1, $2, $3, $4, 'approved')`,
+      [ownerId, previousPlan, requestedPlan, note?.trim() ?? ""],
     );
 
-    return res.status(201).json({ upgradeRequest: result.rows[0] });
+    return res.status(200).json({ ok: true, plan: requestedPlan });
   } catch (error) {
     return next(error);
   }

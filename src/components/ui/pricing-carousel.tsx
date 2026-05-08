@@ -67,6 +67,7 @@ export function PricingCarousel({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
   const [showSwipeHint, setShowSwipeHint] = useState(true);
+  const [confirmingPlanId, setConfirmingPlanId] = useState<PlanId | null>(null);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -240,7 +241,7 @@ export function PricingCarousel({
 
               {/* CTA */}
               {isCurrentPlan && onboardingMode && plan.id === "free" ? (
-                // Onboarding on free plan: don't show "Upgrade", show a select CTA
+                // Onboarding on free plan: direct select, no confirm
                 <button
                   type="button"
                   disabled={!!submittingPlanId}
@@ -254,29 +255,88 @@ export function PricingCarousel({
                 </button>
               ) : isCurrentPlan ? (
                 nextPlan ? (
-                  <button
-                    type="button"
-                    disabled={!!submittingPlanId}
-                    onClick={() => void onSelect(nextPlan.id)}
-                    className={cn(
-                      "mt-auto inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl text-sm font-semibold transition disabled:opacity-50",
-                      BTN_COLOR[nextPlan.id],
-                    )}
-                  >
-                    {submittingPlanId === nextPlan.id
-                      ? "Saving…"
-                      : `Upgrade to ${nextPlan.title}`}
-                  </button>
+                  confirmingPlanId === nextPlan.id ? (
+                    <div className="mt-auto flex flex-col gap-2">
+                      <p className="text-center text-[11px] text-white/55">
+                        Switch to <span className="font-semibold text-white">{nextPlan.title}</span>
+                        {nextPlan.monthlyPrice > 0 ? ` — ₹${nextPlan.monthlyPrice}/mo` : ""}?
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={!!submittingPlanId}
+                          onClick={() => { setConfirmingPlanId(null); void onSelect(nextPlan.id); }}
+                          className={cn(
+                            "flex-1 inline-flex min-h-[38px] items-center justify-center rounded-2xl text-sm font-semibold transition disabled:opacity-50",
+                            BTN_COLOR[nextPlan.id],
+                          )}
+                        >
+                          {submittingPlanId === nextPlan.id ? "Saving…" : "Confirm"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!!submittingPlanId}
+                          onClick={() => setConfirmingPlanId(null)}
+                          className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05] text-sm font-medium text-white/50 transition hover:bg-white/[0.10] disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={!!submittingPlanId}
+                      onClick={() => setConfirmingPlanId(nextPlan.id)}
+                      className={cn(
+                        "mt-auto inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl text-sm font-semibold transition disabled:opacity-50",
+                        BTN_COLOR[nextPlan.id],
+                      )}
+                    >
+                      {`Upgrade to ${nextPlan.title}`}
+                    </button>
+                  )
                 ) : (
                   <div className="mt-auto py-2 text-center text-[12px] text-white/35">
                     You&apos;re on the top plan
                   </div>
                 )
+              ) : confirmingPlanId === plan.id ? (
+                <div className="mt-auto flex flex-col gap-2">
+                  <p className="text-center text-[11px] text-white/55">
+                    Switch to <span className="font-semibold text-white">{plan.title}</span>
+                    {plan.monthlyPrice > 0 ? ` — ₹${plan.monthlyPrice}/mo` : ""}?
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={!!submittingPlanId}
+                      onClick={() => { setConfirmingPlanId(null); void onSelect(plan.id); }}
+                      className={cn(
+                        "flex-1 inline-flex min-h-[38px] items-center justify-center rounded-2xl text-sm font-semibold transition disabled:opacity-50",
+                        BTN_COLOR[plan.id],
+                      )}
+                    >
+                      {isSubmitting ? "Saving…" : "Confirm"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!!submittingPlanId}
+                      onClick={() => setConfirmingPlanId(null)}
+                      className="flex-1 inline-flex min-h-[38px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05] text-sm font-medium text-white/50 transition hover:bg-white/[0.10] disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <button
                   type="button"
                   disabled={!!submittingPlanId}
-                  onClick={() => void onSelect(plan.id)}
+                  onClick={() => {
+                    if (plan.id === "free") { void onSelect(plan.id); }
+                    else { setConfirmingPlanId(plan.id); }
+                  }}
                   className={cn(
                     "mt-auto inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl text-sm font-semibold transition disabled:opacity-50",
                     BTN_COLOR[plan.id],
