@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
   if (!(await isAdminAuthenticated(request))) {
     return NextResponse.json({ message: "Session expired. Please log out and log back in." }, { status: 401 });
   }
-  const body = (await request.json()) as { email?: string; pgName?: string };
+  let body: { email?: string; pgName?: string } = {};
+  try { body = (await request.json()) as typeof body; } catch { /* empty body ok */ }
   try {
     const res = await fetch(`${getApiBaseUrl()}/api/admin/invitations`, {
       method: "POST",
