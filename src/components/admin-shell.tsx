@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, Building2, LayoutDashboard, LogOut, Settings, Wallet } from "lucide-react";
+import { Archive, BarChart3, Building2, LayoutDashboard, LogOut, Settings, Wallet } from "lucide-react";
 import { logoutAdmin } from "@/services/auth/auth.service";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { cn } from "@/utils/cn";
@@ -12,6 +12,7 @@ const nav = [
   { name: "Hostels",   href: "/admin/hostels",   icon: Building2        },
   { name: "Billing",   href: "/admin/billing",   icon: Wallet           },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3        },
+  { name: "Backups",   href: "/admin/backups",   icon: Archive          },
   { name: "Settings",  href: "/admin/settings",  icon: Settings         },
 ];
 
@@ -94,7 +95,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Mobile tab nav — replaces sidebar on small screens */}
-        <nav className="grid grid-cols-5 gap-1 border-b border-[color:var(--border)] bg-[color:var(--surface-soft)] p-1 lg:hidden">
+        <nav className="grid grid-cols-6 gap-1 border-b border-[color:var(--border)] bg-[color:var(--surface-soft)] p-1 lg:hidden">
           {nav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (

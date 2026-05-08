@@ -249,6 +249,19 @@ async function initializeDatabase() {
   // Razorpay columns on owner_invoices (idempotent)
   await query(`ALTER TABLE owner_invoices ADD COLUMN IF NOT EXISTS razorpay_order_id TEXT`);
   await query(`ALTER TABLE owner_invoices ADD COLUMN IF NOT EXISTS razorpay_payment_id TEXT`);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS admin_backups (
+      id           BIGSERIAL PRIMARY KEY,
+      triggered_by TEXT NOT NULL DEFAULT 'auto',
+      snapshot     JSONB NOT NULL,
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_admin_backups_created_at ON admin_backups(created_at DESC)
+  `);
 }
 
 module.exports = { initializeDatabase };
