@@ -2,14 +2,31 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-session";
 import { backendFetch } from "@/services/core/backend-api";
+import { getBillingSummary, getBillingHistory } from "@/data/adminStore";
 
 export const dynamic = "force-dynamic";
 
 type PlanSlab = { id?: string; label?: string; price?: number; limit: number | null; base?: number; extra_per_tenant: number };
 
+function isLiveBackendConfigured() {
+  return Boolean(process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL);
+}
+
 export async function GET(request: NextRequest) {
   if (!(await isAdminAuthenticated(request))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!isLiveBackendConfigured()) {
+    const summary = getBillingSummary();
+    const history = getBillingHistory().map((inv) => ({
+      invoiceId: inv.invoiceId,
+      hostelId: inv.hostelId,
+      monthKey: inv.monthKey,
+      finalAmount: inv.finalAmount,
+      paymentStatus: inv.paymentStatus,
+    }));
+    return NextResponse.json({ summary, history });
   }
 
   const response = await backendFetch("/api/admin/billing/owners");

@@ -4,12 +4,16 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  approveAdminPaymentProof,
   decideAdminUpgradeRequest,
   fetchAdminBilling,
+  fetchAdminPendingProofs,
   fetchAdminUpgradeRequests,
   generateAdminInvoice,
+  rejectAdminPaymentProof,
   updateAdminBillingControl,
   updateAdminInvoiceStatus,
+  type PendingProofItem,
 } from "@/services/admin/admin.service";
 import type { AdminBillingRow, PaymentStatus, UpgradeRequest } from "@/types/admin";
 
@@ -27,12 +31,18 @@ export default function AdminBillingPage() {
   const [rows, setRows] = useState<AdminBillingRow[]>([]);
   const [history, setHistory] = useState<Invoice[]>([]);
   const [upgradeRequests, setUpgradeRequests] = useState<UpgradeRequest[]>([]);
+  const [pendingProofs, setPendingProofs] = useState<PendingProofItem[]>([]);
 
   const load = async () => {
-    const [{ data: billingData }, { data: upgradeData }] = await Promise.all([fetchAdminBilling(), fetchAdminUpgradeRequests()]);
+    const [{ data: billingData }, { data: upgradeData }, { data: proofData }] = await Promise.all([
+      fetchAdminBilling(),
+      fetchAdminUpgradeRequests(),
+      fetchAdminPendingProofs(),
+    ]);
     setRows(billingData.summary ?? []);
     setHistory(billingData.history ?? []);
     setUpgradeRequests(upgradeData.requests ?? []);
+    setPendingProofs(proofData.proofs ?? []);
   };
 
   useEffect(() => {
@@ -56,6 +66,16 @@ export default function AdminBillingPage() {
 
   const decideUpgrade = async (requestId: string, action: "approve" | "reject") => {
     await decideAdminUpgradeRequest(requestId, action);
+    await load();
+  };
+
+  const approveProof = async (invoiceId: string) => {
+    await approveAdminPaymentProof(invoiceId);
+    await load();
+  };
+
+  const rejectProof = async (invoiceId: string) => {
+    await rejectAdminPaymentProof(invoiceId);
     await load();
   };
 
@@ -139,6 +159,68 @@ export default function AdminBillingPage() {
           </Card>
         ))}
       </div>
+
+      {/* Pending Payment Proofs */}
+      {pendingProofs.length > 0 ? (
+        <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white border-[#f59e0b]/25">
+          <h2 className="text-lg font-semibold text-[#fbbf24]">
+            Pending Payment Proofs ({pendingProofs.length})
+          </h2>
+          <p className="mt-0.5 text-[12px] text-white/40">Review submitted proofs and approve or reject.</p>
+          <div className="mt-3 space-y-3">
+            {pendingProofs.map((item) => (
+              <div
+                key={item.invoiceId}
+                className="rounded-[10px] border border-[#f59e0b]/20 bg-[#f59e0b]/[0.05] p-3"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">{item.hostelName}</p>
+                    <p className="text-[12px] text-white/50">
+                      {item.monthKey} • Rs {item.finalAmount.toLocaleString("en-IN")}
+                    </p>
+                    {item.proof?.txnId ? (
+                      <p className="mt-1 text-[12px] text-white/60">
+                        Txn ID:{" "}
+                        <span className="font-mono text-white/80">{item.proof.txnId}</span>
+                      </p>
+                    ) : null}
+                    {item.proof?.submittedAt ? (
+                      <p className="mt-0.5 text-[11px] text-white/35">
+                        Submitted {new Date(item.proof.submittedAt).toLocaleString("en-IN")}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      className="min-h-9 border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white shadow-[0_12px_24px_rgba(34,197,94,0.22)]"
+                      onClick={() => approveProof(item.invoiceId)}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      className="min-h-9 border-[#ef4444] bg-[linear-gradient(180deg,rgba(220,38,38,0.26)_0%,rgba(127,29,29,0.38)_100%)] text-white shadow-[0_12px_24px_rgba(220,38,38,0.18)]"
+                      onClick={() => rejectProof(item.invoiceId)}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                </div>
+                {item.proof?.screenshotDataUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={item.proof.screenshotDataUrl}
+                    alt="Payment screenshot"
+                    className="mt-3 max-h-48 w-auto rounded-[8px] border border-white/10 object-contain"
+                  />
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
 
       <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
         <h2 className="text-lg font-semibold text-white">Upgrade Requests</h2>

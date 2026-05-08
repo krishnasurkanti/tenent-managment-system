@@ -7,9 +7,12 @@ export type OwnerBillingData = {
   dueDate: string;
   planId: "free" | "starter" | "growth" | "pro";
   autoPayEnabled: boolean;
-  paymentStatus: "paid" | "pending" | "failed";
+  paymentStatus: "paid" | "pending" | "pending_review" | "rejected" | "failed";
   accessActive: boolean;
   payableAmount: number;
+  invoiceId?: string;
+  upiString?: string | null;
+  proof?: { txnId: string; screenshotDataUrl?: string; submittedAt: string } | null;
   weeklyTenantCount: number;
   dailyTenantCount: number;
   monthlyTenantCount: number;
@@ -51,6 +54,19 @@ export async function payOwnerBilling(hostelId: string) {
     body: JSON.stringify({ hostelId, paymentMethod: "online" }),
   });
   const data = (await response.json()) as { message?: string };
+  return { response, data };
+}
+
+export async function submitOwnerPaymentProof(
+  hostelId: string,
+  payload: { txnId?: string; screenshotDataUrl?: string },
+) {
+  const response = await csrfFetch("/api/owner-billing/pay", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...payload, hostelId }),
+  });
+  const data = (await response.json()) as { invoice?: unknown; message?: string };
   return { response, data };
 }
 

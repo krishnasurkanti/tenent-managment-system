@@ -117,6 +117,42 @@ export async function decideAdminUpgradeRequest(requestId: string, action: "appr
   return { response, data };
 }
 
+export type PendingProofItem = {
+  invoiceId: string;
+  hostelId: string;
+  hostelName: string;
+  monthKey: string;
+  finalAmount: number;
+  paymentStatus: string;
+  proof: { txnId: string; screenshotDataUrl?: string; submittedAt: string } | null;
+};
+
+export async function fetchAdminPendingProofs() {
+  const response = await fetch("/api/admin/billing/pending-proofs", { cache: "no-store" });
+  const data = await parseJson<{ proofs: PendingProofItem[] }>(response);
+  return { response, data };
+}
+
+export async function approveAdminPaymentProof(invoiceId: string) {
+  const response = await csrfFetch("/api/admin/billing/invoice-status", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ invoiceId, action: "approve" }),
+  });
+  const data = await parseJson<{ message?: string }>(response);
+  return { response, data };
+}
+
+export async function rejectAdminPaymentProof(invoiceId: string) {
+  const response = await csrfFetch("/api/admin/billing/invoice-status", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ invoiceId, action: "reject" }),
+  });
+  const data = await parseJson<{ message?: string }>(response);
+  return { response, data };
+}
+
 export async function fetchAdminSettings() {
   const [featureRes, logsRes] = await Promise.all([
     fetch("/api/admin/settings/features", { cache: "no-store" }),

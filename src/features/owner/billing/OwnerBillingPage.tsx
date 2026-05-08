@@ -1,13 +1,15 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { SkeletonBlock } from "@/components/ui/skeleton";
 import { PricingCarousel } from "@/components/ui/pricing-carousel";
 import {
   fetchOwnerBilling,
   requestOwnerPlanUpgrade,
+  submitOwnerPaymentProof,
   type OwnerBillingData,
 } from "@/services/owner/owner-billing.service";
 import { useHostelContext } from "@/store/hostel-context";
@@ -20,6 +22,19 @@ export default function OwnerBillingPage() {
   const [error, setError] = useState("");
   const [requestingPlanId, setRequestingPlanId] = useState<PlanId | null>(null);
   const [billingClock] = useState(() => Date.now());
+
+  const reload = async (hostelId: string) => {
+    setLoading(true);
+    setError("");
+    const billingResponse = await fetchOwnerBilling(hostelId);
+    if (!billingResponse.response.ok) {
+      setError(billingResponse.data.message ?? "Unable to load billing.");
+      setLoading(false);
+      return;
+    }
+    setData(billingResponse.data);
+    setLoading(false);
+  };
 
   useEffect(() => {
     let active = true;
@@ -90,16 +105,7 @@ export default function OwnerBillingPage() {
     }
 
     setRequestingPlanId(null);
-    setLoading(true);
-    setError("");
-    const billingResponse = await fetchOwnerBilling(currentHostel.id);
-    if (!billingResponse.response.ok) {
-      setError(billingResponse.data.message ?? "Unable to load billing.");
-      setLoading(false);
-      return;
-    }
-    setData(billingResponse.data);
-    setLoading(false);
+    await reload(currentHostel.id);
   };
 
   const hasExtraCharges =
@@ -118,6 +124,14 @@ export default function OwnerBillingPage() {
         <span className="text-white/20">·</span>
         <span className="text-[12px] text-white/50">{trialDaysLeft}d to billing</span>
       </div>
+
+      {/* Invoice payment section */}
+      {data.payableAmount > 0 && (
+        <InvoicePaymentSection
+          data={data}
+          onProofSubmitted={() => currentHostel?.id && void reload(currentHostel.id)}
+        />
+      )}
 
       {/* Plan cards — front and center */}
       <PricingCarousel
@@ -172,6 +186,169 @@ export default function OwnerBillingPage() {
       {error ? (
         <div className="rounded-[14px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {error}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function InvoicePaymentSection({
+  data,
+  onProofSubmitted,
+}: {
+  data: OwnerBillingData;
+  onProofSubmitted: () => void;
+}) {
+  const [showForm, setShowForm] = useState(false);
+  const [txnId, setTxnId] = useState("");
+  const [screenshotDataUrl, setScreenshotDataUrl] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const status = data.paymentStatus;
+  const isPendingReview = status === "pending_review";
+  const isRejected = status === "rejected";
+  const isPaid = status === "paid";
+  const canPay = status === "pending" || status === "rejected";
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setScreenshotDataUrl(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = async () => {
+    if (!txnId.trim() && !screenshotDataUrl) {
+      setSubmitError("Provide transaction ID or payment screenshot.");
+      return;
+    }
+    setSubmitting(true);
+    setSubmitError("");
+    const { response } = await submitOwnerPaymentProof(data.hostelId, {
+      txnId: txnId.trim() || undefined,
+      screenshotDataUrl: screenshotDataUrl ?? undefined,
+    });
+    setSubmitting(false);
+    if (!response.ok) {
+      setSubmitError("Failed to submit. Please try again.");
+      return;
+    }
+    setShowForm(false);
+    setTxnId("");
+    setScreenshotDataUrl(null);
+    onProofSubmitted();
+  };
+
+  return (
+    <div className="rounded-[14px] border border-white/10 bg-white/[0.03] p-4 space-y-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
+        Invoice {data.monthKey}
+      </p>
+
+      {isPaid && (
+        <div className="rounded-[10px] border border-[#4ade80]/20 bg-[#16a34a]/15 px-4 py-3">
+          <p className="text-sm font-semibold text-[#4ade80]">Paid ✓</p>
+          <p className="mt-0.5 text-[12px] text-white/45">This month's invoice is settled.</p>
+        </div>
+      )}
+
+      {isPendingReview && (
+        <div className="rounded-[10px] border border-[#f59e0b]/20 bg-[#f59e0b]/10 px-4 py-3">
+          <p className="text-sm font-semibold text-[#fbbf24]">Under review — awaiting admin approval.</p>
+          {data.proof?.txnId ? (
+            <p className="mt-0.5 text-[12px] text-white/50">Txn ID: {data.proof.txnId}</p>
+          ) : null}
+          {data.proof?.submittedAt ? (
+            <p className="mt-0.5 text-[12px] text-white/40">
+              Submitted {new Date(data.proof.submittedAt).toLocaleDateString("en-IN")}
+            </p>
+          ) : null}
+        </div>
+      )}
+
+      {isRejected && (
+        <div className="rounded-[10px] border border-red-500/30 bg-red-500/10 px-4 py-3">
+          <p className="text-sm font-semibold text-red-300">Payment rejected — please resubmit proof.</p>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-white/60">Amount due</span>
+        <span className="text-lg font-semibold text-white">Rs {data.payableAmount.toLocaleString("en-IN")}</span>
+      </div>
+
+      {canPay && data.upiString ? (
+        <div className="flex flex-col items-center gap-2 py-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/api/owner-billing/qr?upi=${encodeURIComponent(data.upiString)}`}
+            alt="UPI QR code"
+            className="h-48 w-48 rounded-[12px] border border-white/10 bg-white p-2"
+            width={192}
+            height={192}
+          />
+          <p className="text-[12px] text-white/40">Scan with any UPI app to pay</p>
+        </div>
+      ) : null}
+
+      {canPay && !showForm ? (
+        <Button onClick={() => setShowForm(true)} className="w-full min-h-11">
+          I&apos;ve Paid — Submit Proof
+        </Button>
+      ) : null}
+
+      {showForm ? (
+        <div className="space-y-3 rounded-[10px] border border-white/8 bg-white/[0.04] p-3">
+          <label className="block text-xs text-white/50">
+            Transaction ID
+            <input
+              type="text"
+              value={txnId}
+              onChange={(e) => setTxnId(e.target.value)}
+              placeholder="e.g. 423456789012"
+              className="mt-1 w-full rounded-[8px] border border-white/10 bg-white/[0.06] px-3 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-white/25"
+            />
+          </label>
+
+          <label className="block text-xs text-white/50">
+            Payment Screenshot (optional)
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="mt-1 block w-full text-xs text-white/50 file:mr-3 file:rounded-[6px] file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-xs file:text-white/70 file:cursor-pointer"
+            />
+          </label>
+
+          {screenshotDataUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={screenshotDataUrl}
+              alt="Payment screenshot preview"
+              className="max-h-36 w-auto rounded-[8px] border border-white/10 object-contain"
+            />
+          ) : null}
+
+          {submitError ? (
+            <p className="text-xs text-red-400">{submitError}</p>
+          ) : null}
+
+          <div className="flex gap-2">
+            <Button onClick={handleSubmit} disabled={submitting} className="flex-1 min-h-10">
+              {submitting ? "Submitting…" : "Submit"}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => { setShowForm(false); setSubmitError(""); }}
+              className="min-h-10 px-4"
+            >
+              Cancel
+            </Button>
+          </div>
         </div>
       ) : null}
     </div>

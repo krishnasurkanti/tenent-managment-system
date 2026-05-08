@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import { getOwnerHostels } from "@/data/ownerHostelStore";
 import { getTenantRecords } from "@/data/tenantStore";
 import { getNextPricingPlan, getPricingPlan, PRICING_PLANS } from "@/config/pricing";
-import type { AdminHostelControl, AdminInvoice, AdminLog, AdminPlan, AdminPlanId, BillingBreakdown, PaymentStatus, UpgradeRequest } from "@/types/admin";
+import type { AdminHostelControl, AdminInvoice, AdminLog, AdminPlan, AdminPlanId, BillingBreakdown, PaymentProof, PaymentStatus, UpgradeRequest } from "@/types/admin";
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const ADMIN_FILE = path.join(DATA_DIR, "admin-control.json");
@@ -442,20 +442,28 @@ export function getOwnerBilling(hostelId: string, monthKey = monthKeyFromDate())
   }
 
   const billing = calculateBilling(hostelId, monthKey);
-  const accessActive = invoice.paymentStatus === "paid" || billing.finalAmount === 0;
+  // Active for all statuses EXCEPT rejected. Never block while pending_review.
+  const accessActive = invoice.paymentStatus !== "rejected" || billing.finalAmount === 0;
   const pendingRequest = adminState.upgradeRequests.find((item) => item.hostelId === hostelId && item.status === "pending") ?? null;
+
+  const upiId = process.env.UPI_PAYMENT_ID ?? "hostelhub@upi";
+  const upiString = billing.finalAmount > 0
+    ? `upi://pay?pa=${encodeURIComponent(upiId)}&pn=HostelHub&am=${billing.finalAmount}&cu=INR&tn=HH-${invoice.invoiceId}`
+    : null;
 
   return {
     hostelId,
     hostelName: hostel.hostelName,
     monthKey,
+    invoiceId: invoice.invoiceId,
     dueDate: getDueDateForMonth(monthKey),
     planId: control.planId,
     autoPayEnabled: control.autoPayEnabled,
     paymentStatus: invoice.paymentStatus,
     accessActive,
-    // use live calculation so mid-month tenant additions are reflected immediately
     payableAmount: billing.finalAmount,
+    upiString,
+    proof: invoice.proof ?? null,
     billing,
     upgradePending: Boolean(pendingRequest),
     upgradeRequest: pendingRequest,
@@ -567,6 +575,38 @@ export function updateInvoiceStatus(invoiceId: string, status: PaymentStatus) {
   addLog("invoice_status_changed", `${invoiceId} marked as ${status}`);
   persistState(adminState);
   return invoice;
+}
+
+export function submitPaymentProof(hostelId: string, proof: PaymentProof, monthKey = monthKeyFromDate()) {
+  let invoice = adminState.invoices.find((item) => item.hostelId === hostelId && item.monthKey === monthKey);
+  if (!invoice) invoice = generateInvoice(hostelId, monthKey);
+  invoice.proof = proof;
+  invoice.paymentStatus = "pending_review";
+  addLog("payment_proof_submitted", `Proof submitted for ${hostelId} (${monthKey})`);
+  persistState(adminState);
+  return invoice;
+}
+
+export function approvePaymentProof(invoiceId: string) {
+  const invoice = adminState.invoices.find((item) => item.invoiceId === invoiceId);
+  if (!invoice) throw new Error("Invoice not found.");
+  invoice.paymentStatus = "paid";
+  addLog("payment_proof_approved", `Proof approved for ${invoiceId}`);
+  persistState(adminState);
+  return invoice;
+}
+
+export function rejectPaymentProof(invoiceId: string) {
+  const invoice = adminState.invoices.find((item) => item.invoiceId === invoiceId);
+  if (!invoice) throw new Error("Invoice not found.");
+  invoice.paymentStatus = "rejected";
+  addLog("payment_proof_rejected", `Proof rejected for ${invoiceId}`);
+  persistState(adminState);
+  return invoice;
+}
+
+export function getPendingProofInvoices() {
+  return adminState.invoices.filter((item) => item.paymentStatus === "pending_review");
 }
 
 export function getBillingHistory() {

@@ -2,12 +2,24 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { backendFetch } from "@/services/core/backend-api";
 import { requireOwnerSession } from "@/lib/session-mode";
+import { getOwnerBilling } from "@/data/adminStore";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+
+  if (!session.isLive) {
+    const { searchParams } = new URL(request.url);
+    const hostelId = searchParams.get("hostelId") ?? session.ownerId ?? "";
+    try {
+      const billing = getOwnerBilling(hostelId);
+      return NextResponse.json(billing);
+    } catch {
+      return NextResponse.json({ message: "Billing not found." }, { status: 404 });
+    }
+  }
 
   const response = await backendFetch("/api/owner-billing");
   if (!response.ok) {

@@ -7,7 +7,13 @@ export type AdminPlan = {
   limit: number;
 };
 
-export type PaymentStatus = "paid" | "pending" | "failed";
+export type PaymentStatus = "paid" | "pending" | "pending_review" | "rejected" | "failed";
+
+export type PaymentProof = {
+  txnId: string;
+  screenshotDataUrl?: string;
+  submittedAt: string;
+};
 
 export type AdminHostelControl = {
   hostelId: string;
@@ -56,6 +62,7 @@ export type AdminInvoice = {
   finalAmount: number;
   paymentStatus: PaymentStatus;
   createdAt: string;
+  proof?: PaymentProof;
 };
 
 export type AdminLog = {
