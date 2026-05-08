@@ -32,8 +32,8 @@ async function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS owner_invitations (
       id BIGSERIAL PRIMARY KEY,
       token TEXT NOT NULL UNIQUE,
-      email TEXT NOT NULL,
-      pg_name TEXT NOT NULL DEFAULT '',
+      email TEXT,
+      pg_name TEXT,
       status TEXT NOT NULL DEFAULT 'pending',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       expires_at TIMESTAMPTZ NOT NULL,
@@ -41,12 +41,17 @@ async function initializeDatabase() {
     )
   `);
 
+  // Drop NOT NULL on email/pg_name for existing DBs created before invite-link flow
+  await query(`ALTER TABLE owner_invitations ALTER COLUMN email DROP NOT NULL`);
+  await query(`ALTER TABLE owner_invitations ALTER COLUMN pg_name DROP NOT NULL`);
+
   await query(`
     CREATE INDEX IF NOT EXISTS idx_owner_invitations_token ON owner_invitations (token)
   `);
 
   await query(`
     CREATE INDEX IF NOT EXISTS idx_owner_invitations_email ON owner_invitations (email)
+    WHERE email IS NOT NULL
   `);
 
   await query(`
