@@ -67,6 +67,7 @@ export function PricingCarousel({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
   const [showSwipeHint, setShowSwipeHint] = useState(true);
+  const [showArrowGlow, setShowArrowGlow] = useState(false);
   const [confirmingPlanId, setConfirmingPlanId] = useState<PlanId | null>(null);
 
   useEffect(() => {
@@ -96,6 +97,16 @@ export function PricingCarousel({
     if (idx > 0) requestAnimationFrame(() => scrollTo(idx));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPlanId]);
+
+  // Arrow glow — activates 2.5s after mount, clears when user swipes
+  useEffect(() => {
+    const t = setTimeout(() => setShowArrowGlow(true), 2500);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!showSwipeHint) setShowArrowGlow(false);
+  }, [showSwipeHint]);
 
   // Swipe peek animation: briefly reveal next card edge, then snap back
   useEffect(() => {
@@ -379,14 +390,27 @@ export function PricingCarousel({
           ))}
         </div>
 
-        <button
-          type="button"
-          onClick={() => scrollTo(Math.min(PRICING_PLANS.length - 1, activeIdx + 1))}
-          disabled={activeIdx === PRICING_PLANS.length - 1}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/8 text-white/50 disabled:opacity-25 hover:bg-white/15"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
+        <div className="relative">
+          {showArrowGlow && showSwipeHint && activeIdx < PRICING_PLANS.length - 1 && (
+            <>
+              <span className="absolute inset-0 rounded-full animate-ping bg-[#f7bf53]/35" style={{ animationDuration: "1.4s" }} />
+              <span className="absolute inset-[-3px] rounded-full bg-[#f7bf53]/15" />
+            </>
+          )}
+          <button
+            type="button"
+            onClick={() => scrollTo(Math.min(PRICING_PLANS.length - 1, activeIdx + 1))}
+            disabled={activeIdx === PRICING_PLANS.length - 1}
+            className={cn(
+              "relative inline-flex h-7 w-7 items-center justify-center rounded-full transition-all duration-300 disabled:opacity-25",
+              showArrowGlow && showSwipeHint && activeIdx < PRICING_PLANS.length - 1
+                ? "bg-[#f7bf53]/20 text-[#f7bf53] shadow-[0_0_14px_rgba(247,191,83,0.55)]"
+                : "bg-white/8 text-white/50 hover:bg-white/15",
+            )}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {onSkip ? (
