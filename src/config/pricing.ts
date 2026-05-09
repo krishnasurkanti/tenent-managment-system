@@ -21,7 +21,7 @@ export const PLAN_ORDER: PlanId[] = ["free", "starter", "growth", "pro"];
 export const PRICING_PLANS: PricingPlan[] = [
   {
     id: "free",
-    title: "Free Trial",
+    title: "Free Forever",
     monthlyPrice: 0,
     yearlyPrice: 0,
     tenantLimit: 25,
@@ -30,13 +30,13 @@ export const PRICING_PLANS: PricingPlan[] = [
     extraHostelPrice: 0,
     trialOnly: true,
     tone: "border-white/10 bg-[linear-gradient(180deg,#111827_0%,#0c1018_100%)]",
-    valueLine: "30 days free for new owners. No card needed. Weekly and daily guests always free.",
+    valueLine: "Always free. No card needed. Weekly and daily guests always free.",
     features: [
-      "25 monthly tenants included during trial",
+      "Up to 25 monthly tenants",
       "1 hostel",
       "Weekly & daily guests - free forever",
-      "Extra tenants not allowed on trial",
-      "Extra hostels not allowed on trial",
+      "No extra tenants on free plan",
+      "No extra hostels on free plan",
     ],
   },
   {
@@ -50,7 +50,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     extraHostelPrice: 199,
     trialOnly: false,
     tone: "border-white/20 bg-[linear-gradient(180deg,#141a27_0%,#0e1420_100%)]",
-    valueLine: "Single hostel, 50 monthly tenants. Rs 10 per tenant after that.",
+    valueLine: "First 30 days free. 50 monthly tenants, 1 hostel. Rs 10 per extra tenant.",
     features: [
       "50 monthly tenants included",
       "1 hostel",
@@ -72,7 +72,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     badge: "Best Value",
     tone:
       "border-[color:color-mix(in_srgb,var(--success)_40%,var(--brand)_60%)] bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.12),transparent_50%),linear-gradient(180deg,#0e1a2e_0%,#0b101c_100%)] shadow-[0_0_0_1px_rgba(56,189,248,0.15),0_32px_80px_rgba(37,99,235,0.2)]",
-    valueLine: "3 hostels, 150 monthly tenants. Rs 8 per tenant after that.",
+    valueLine: "First 30 days free. 3 hostels, 150 monthly tenants. Rs 8 per extra tenant.",
     features: [
       "150 monthly tenants included",
       "3 hostels",
@@ -94,7 +94,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     badge: "Most Popular",
     tone:
       "border-[#38bdf8]/30 bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.16),transparent_50%),linear-gradient(180deg,#0a1628_0%,#07101e_100%)] shadow-[0_0_0_1px_rgba(56,189,248,0.18),0_32px_80px_rgba(37,99,235,0.24)]",
-    valueLine: "5 hostels, 300 monthly tenants. Best for multi-hostel owners.",
+    valueLine: "First 30 days free. 5 hostels, 300 monthly tenants. Best for multi-hostel owners.",
     features: [
       "300 monthly tenants included",
       "5 hostels",

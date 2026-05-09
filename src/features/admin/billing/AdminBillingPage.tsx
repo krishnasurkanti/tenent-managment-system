@@ -11,6 +11,7 @@ import {
   fetchAdminUpgradeRequests,
   generateAdminInvoice,
   rejectAdminPaymentProof,
+  startOwnerBilling,
   updateAdminBillingControl,
   updateAdminInvoiceStatus,
   type PendingProofItem,
@@ -79,6 +80,11 @@ export default function AdminBillingPage() {
     await load();
   };
 
+  const activateBilling = async (hostelId: string) => {
+    await startOwnerBilling(hostelId);
+    await load();
+  };
+
   return (
     <div className="space-y-4 text-white">
       <Card className="bg-[radial-gradient(circle_at_top_right,rgba(249,193,42,0.14),transparent_28%),linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4">
@@ -89,11 +95,28 @@ export default function AdminBillingPage() {
       <div className="space-y-3">
         {rows.map((row) => (
           <Card key={row.hostelId} className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
+            {!row.billingCycleStart && (
+              <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2.5">
+                <div>
+                  <p className="text-[12px] font-semibold text-amber-300">Billing not started</p>
+                  <p className="text-[11px] text-amber-200/60">Owner is on free access until you start billing.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void activateBilling(row.hostelId)}
+                  className="shrink-0 rounded-xl border border-amber-400/40 bg-amber-500/20 px-3 py-1.5 text-[12px] font-semibold text-amber-300 transition hover:bg-amber-500/30"
+                >
+                  Start Billing
+                </button>
+              </div>
+            )}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-lg font-semibold text-white">{row.hostelName}</p>
                 <p className="text-sm text-[color:var(--fg-secondary)]">
-                  Billable Tenants: {row.billing.billableTenantCount} • Extra: {row.billing.extraTenants} • Final: Rs {row.billing.finalAmount.toLocaleString("en-IN")}
+                  {row.billingCycleStart
+                    ? `Cycle from ${new Date(row.billingCycleStart).toLocaleDateString("en-IN")} • Billable: ${row.billing.billableTenantCount} • Rs ${row.billing.finalAmount.toLocaleString("en-IN")}`
+                    : `${row.billing.tenantCount} tenants • Free access active`}
                 </p>
               </div>
               {row.billing.blockedAtNextPlan ? (

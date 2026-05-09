@@ -143,6 +143,16 @@ export async function approveAdminPaymentProof(invoiceId: string) {
   return { response, data };
 }
 
+export async function startOwnerBilling(ownerId: string) {
+  const response = await csrfFetch("/api/admin/billing/start-billing", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ owner_id: Number(ownerId) }),
+  });
+  const data = await parseJson<{ ok?: boolean; message?: string }>(response);
+  return { response, data };
+}
+
 export async function rejectAdminPaymentProof(invoiceId: string) {
   const response = await csrfFetch("/api/admin/billing/invoice-status", {
     method: "PATCH",

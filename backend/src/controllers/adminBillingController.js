@@ -253,6 +253,30 @@ async function decideUpgrade(req, res, next) {
   }
 }
 
+async function startBilling(req, res, next) {
+  try {
+    const ownerId = Number(req.body.owner_id);
+    if (!Number.isInteger(ownerId) || ownerId <= 0) {
+      return res.status(400).json({ message: "Invalid owner_id." });
+    }
+
+    const result = await query(
+      `UPDATE owners
+       SET billing_cycle_start = CURRENT_DATE,
+           billing_cycle_end   = (CURRENT_DATE + INTERVAL '1 month')::date
+       WHERE id = $1
+       RETURNING id, billing_cycle_start, billing_cycle_end`,
+      [ownerId],
+    );
+
+    if (result.rowCount === 0) return res.status(404).json({ message: "Owner not found." });
+
+    return res.json({ ok: true, owner: result.rows[0] });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   getAdminOwners,
   getOwnerBillingAdmin,
@@ -263,4 +287,5 @@ module.exports = {
   razorpayWebhook,
   getUpgradeRequests,
   decideUpgrade,
+  startBilling,
 };

@@ -158,7 +158,7 @@ export function PricingCarousel({
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
-                    {plan.id === "free" ? "Trial" : "Plan"}
+                    {plan.id === "free" ? "Free" : "Plan"}
                   </p>
                   <p className="mt-0.5 text-xl font-bold text-white">{plan.title}</p>
                 </div>
@@ -177,9 +177,7 @@ export function PricingCarousel({
               {/* Price */}
               <div>
                 {plan.monthlyPrice === 0 ? (
-                  <p className="text-2xl font-bold text-white">
-                    Free <span className="text-sm font-medium text-white/45">/ 30 days</span>
-                  </p>
+                  <p className="text-2xl font-bold text-white">Free</p>
                 ) : (
                   <p className="text-2xl font-bold text-white">
                     ₹{plan.monthlyPrice}

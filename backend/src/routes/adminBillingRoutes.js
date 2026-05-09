@@ -10,6 +10,7 @@ const {
   razorpayWebhook,
   getUpgradeRequests,
   decideUpgrade,
+  startBilling,
 } = require("../controllers/adminBillingController");
 const { protect } = require("../middleware/authMiddleware");
 const { requireRoles } = require("../middleware/roleMiddleware");
@@ -62,6 +63,12 @@ router.post(
   "/razorpay/create-order",
   validateBody(z.object({ invoice_id: z.coerce.number().int().positive() })),
   createRazorpayOrder,
+);
+
+router.post(
+  "/start-billing",
+  validateBody(z.object({ owner_id: z.coerce.number().int().positive() })),
+  startBilling,
 );
 
 router.get("/upgrade-requests", getUpgradeRequests);

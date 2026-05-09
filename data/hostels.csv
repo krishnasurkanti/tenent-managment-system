@@ -1,0 +1,11 @@
+id,ownerId,ownerName,hostelName,address,type,createdAt,floors
+owner-hostel-01,owner-01,Owner 01,Hostel 01 - Owner 01,Automation Lane 1,PG,2026-04-09,2
+owner-hostel-02,owner-02,Owner 02,Hostel 02 - Owner 02,Automation Lane 2,PG,2026-04-08,2
+owner-hostel-03,owner-03,Owner 03,Hostel 03 - Owner 03,Automation Lane 3,PG,2026-04-07,2
+owner-hostel-04,owner-04,Owner 04,Hostel 04 - Owner 04,Automation Lane 4,PG,2026-04-06,2
+owner-hostel-05,owner-05,Owner 05,Hostel 05 - Owner 05,Automation Lane 5,PG,2026-04-05,2
+owner-hostel-06,owner-01,Owner 01,Hostel 06 - Owner 01,Automation Lane 6,PG,2026-04-04,2
+owner-hostel-07,owner-02,Owner 02,Hostel 07 - Owner 02,Automation Lane 7,PG,2026-04-03,2
+owner-hostel-08,owner-03,Owner 03,Hostel 08 - Owner 03,Automation Lane 8,PG,2026-04-02,2
+owner-hostel-09,owner-04,Owner 04,Hostel 09 - Owner 04,Automation Lane 9,PG,2026-04-01,2
+owner-hostel-10,owner-05,Owner 05,Hostel 10 - Owner 05,Automation Lane 10,PG,2026-03-31,2

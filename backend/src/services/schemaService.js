@@ -184,13 +184,7 @@ async function initializeDatabase() {
   await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS billing_plan_override TEXT`);
   await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS billing_tenants_override INTEGER`);
 
-  // Set billing cycle for existing owners who have none
-  await query(`
-    UPDATE owners
-    SET billing_cycle_start = CURRENT_DATE,
-        billing_cycle_end   = (CURRENT_DATE + INTERVAL '1 month')::date
-    WHERE billing_cycle_start IS NULL
-  `);
+  // Billing cycle set manually by super admin — no auto-start
 
   await query(`
     CREATE TABLE IF NOT EXISTS owner_invoices (

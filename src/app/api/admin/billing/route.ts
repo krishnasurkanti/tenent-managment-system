@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
       latest_invoice_id: number | null;
       latest_invoice_status: string | null;
       latest_invoice_amount: string | null;
+      billing_cycle_start: string | null;
     }>;
     plans: PlanSlab[] | Record<string, PlanSlab>;
   };
@@ -68,6 +69,7 @@ export async function GET(request: NextRequest) {
     return {
       hostelId: String(owner.id),
       hostelName: owner.name,
+      billingCycleStart: owner.billing_cycle_start ?? null,
       plan: {
         id: planId,
         name: slab.label ?? planId,

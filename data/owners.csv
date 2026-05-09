@@ -1,0 +1,6 @@
+id,fullName,phone,email,createdAt
+owner-01,Owner 01,9000010001,owner1@example.test,2026-04-09
+owner-02,Owner 02,9000010002,owner2@example.test,2026-04-08
+owner-03,Owner 03,9000010003,owner3@example.test,2026-04-07
+owner-04,Owner 04,9000010004,owner4@example.test,2026-04-06
+owner-05,Owner 05,9000010005,owner5@example.test,2026-04-05

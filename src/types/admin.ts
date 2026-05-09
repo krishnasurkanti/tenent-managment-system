@@ -131,6 +131,7 @@ export type AdminHostelRow = {
 export type AdminBillingRow = {
   hostelId: string;
   hostelName: string;
+  billingCycleStart: string | null;
   plan: { id: string; name: string; basePrice: number; limit: number };
   control: {
     planId: string;
