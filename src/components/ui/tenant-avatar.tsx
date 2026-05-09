@@ -80,27 +80,41 @@ export function TenantAvatar({ tenantId, size = "sm", readOnly = false }: Props)
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => !readOnly && setPickerOpen(true)}
-        className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-        style={{ width: dim, height: dim }}
-        aria-label="Change avatar"
-      >
-        <div
-          className="flex h-full w-full items-center justify-center rounded-full shadow-md"
-          style={{ background: avatar.bg }}
-        >
-          <span
-            className={animClass}
-            style={{ fontSize, display: "block", lineHeight: 1, userSelect: "none" }}
+      {readOnly ? (
+        <div className="shrink-0 rounded-full" style={{ width: dim, height: dim }}>
+          <div
+            className="flex h-full w-full items-center justify-center rounded-full shadow-md"
+            style={{ background: avatar.bg }}
           >
-            {avatar.emoji}
-          </span>
+            <span className={animClass} style={{ fontSize, display: "block", lineHeight: 1, userSelect: "none" }}>
+              {avatar.emoji}
+            </span>
+          </div>
         </div>
-      </button>
+      ) : null}
+      {!readOnly && (
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+          style={{ width: dim, height: dim }}
+          aria-label="Change avatar"
+        >
+          <div
+            className="flex h-full w-full items-center justify-center rounded-full shadow-md"
+            style={{ background: avatar.bg }}
+          >
+            <span
+              className={animClass}
+              style={{ fontSize, display: "block", lineHeight: 1, userSelect: "none" }}
+            >
+              {avatar.emoji}
+            </span>
+          </div>
+        </button>
+      )}
 
-      {pickerOpen && typeof document !== "undefined" && createPortal(
+      {!readOnly && pickerOpen && typeof document !== "undefined" && createPortal(
         <div
           className="fixed inset-0 z-[9998] flex items-end justify-center sm:items-center"
           style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)" }}
