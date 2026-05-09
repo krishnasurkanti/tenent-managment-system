@@ -393,8 +393,8 @@ function CreateHostelPageContent() {
       <Card className={`rounded-[18px] p-3 ${ownerSubtlePanelClass}`}>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap gap-2">
-            <WizardPill label="1. Basics" active={step === 1} done={step > 1} />
-            <WizardPill label="2. Rooms & Tenants" active={step === 2} done={false} />
+            <WizardPill label="1. Basics" active={step === 1} done={step > 1} onClick={step === 2 ? () => setStep(1) : undefined} />
+            <WizardPill label="2. Rooms & Tenants" active={step === 2} done={false} onClick={step === 1 ? handleNextFromBasics : undefined} />
           </div>
           <p className="text-[11px] text-[color:var(--fg-secondary)]">
             {step === 1 ? "Start with the name and address." : "Add rooms and existing tenants."}
@@ -743,18 +743,20 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function WizardPill({ label, active, done }: { label: string; active: boolean; done: boolean }) {
-  return (
-    <div
-      className={`inline-flex items-center rounded-full px-3 py-2 text-[11px] font-semibold shadow-sm ${
-        active
-          ? "border border-[#f2bb4d]/50 bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] text-[#1b1207] shadow-[0_14px_32px_rgba(240,175,47,0.26)]"
-          : done
-            ? "border border-[#4ade80]/30 bg-[#22c55e]/10 text-[#4ade80]"
-            : "border border-[color:var(--border)] bg-[color:var(--surface-soft)] text-[color:var(--fg-secondary)]"
-      }`}
-    >
-      {label}
-    </div>
-  );
+function WizardPill({ label, active, done, onClick }: { label: string; active: boolean; done: boolean; onClick?: () => void }) {
+  const className = `inline-flex items-center rounded-full px-3 py-2 text-[11px] font-semibold shadow-sm ${
+    active
+      ? "border border-[#f2bb4d]/50 bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] text-[#1b1207] shadow-[0_14px_32px_rgba(240,175,47,0.26)]"
+      : done
+        ? "border border-[#4ade80]/30 bg-[#22c55e]/10 text-[#4ade80]"
+        : "border border-[color:var(--border)] bg-[color:var(--surface-soft)] text-[color:var(--fg-secondary)]"
+  }`;
+  if (onClick) {
+    return (
+      <button type="button" className={`${className} cursor-pointer`} onClick={onClick}>
+        {label}
+      </button>
+    );
+  }
+  return <div className={className}>{label}</div>;
 }
