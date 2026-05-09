@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Random jitter
-        run: sleep $((RANDOM % 540))
+        run: sleep $((RANDOM % 60))
 
       - name: Ping backend health
         run: |
