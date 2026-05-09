@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, CreditCard, Download, Plus, Search, UserCheck, UserRound, Wallet, X } from "lucide-react";
+import { TenantAvatar } from "@/components/ui/tenant-avatar";
 import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
 import { SkeletonBlock, SkeletonStatCard, SkeletonTableRow } from "@/components/ui/skeleton";
@@ -258,7 +259,8 @@ function OwnerTenantsPageContent() {
                     paddingBottom: "10px",
                   }}
                 >
-                  <div className={`grid grid-cols-[1fr_auto] gap-3 rounded-[8px] px-3 py-3 ${ownerPanelClass}`}>
+                  <div className={`grid grid-cols-[auto_1fr_auto] gap-3 rounded-[8px] px-3 py-3 ${ownerPanelClass}`}>
+                    <TenantAvatar tenantId={tenant.tenantId} size="sm" />
                     <Link href={`/owner/tenants/${tenant.tenantId}`} className="min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="truncate text-sm font-semibold text-white">{tenant.fullName}</p>
