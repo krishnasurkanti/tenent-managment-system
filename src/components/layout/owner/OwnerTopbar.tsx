@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Bell, ChevronDown, House, Menu, Plus, Search } from "lucide-react";
 import { HostelSwitcher } from "@/components/layout/owner/HostelSwitcher";
@@ -9,12 +9,10 @@ import { useHostelContext } from "@/store/hostel-context";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
 import { useOwnerProfile } from "@/hooks/use-owner-profile";
 import { getDueStatus } from "@/utils/payment";
-import { getPricingPlan } from "@/config/pricing";
 
 export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [addingHostel, setAddingHostel] = useState(false);
   const searchParams = useSearchParams();
   const { currentHostel, currentHostelId, hostels } = useHostelContext();
   const { tenants } = useOwnerTenants(currentHostelId);
@@ -45,26 +43,8 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
     router.push("/owner/dashboard");
   };
 
-  const handleAddHostelMobile = async () => {
-    if (addingHostel) return;
-    setAddingHostel(true);
-    try {
-      const res = await fetch("/api/owner-billing");
-      let hostelLimit = 1;
-      if (res.ok) {
-        const data = (await res.json()) as { planId?: string; billing?: { hostelLimit?: number } };
-        hostelLimit = data.billing?.hostelLimit ?? getPricingPlan(data.planId).includedHostels;
-      }
-      if (hostels.length < hostelLimit) {
-        router.push("/owner/create-hostel");
-      } else {
-        router.push("/owner/billing");
-      }
-    } catch {
-      router.push("/owner/create-hostel");
-    } finally {
-      setAddingHostel(false);
-    }
+  const handleAddHostelMobile = () => {
+    router.push("/owner/create-hostel");
   };
 
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -149,7 +129,6 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         <button
           type="button"
           onClick={handleAddHostelMobile}
-          disabled={addingHostel}
           aria-label="Add hostel"
           className="shrink-0 rounded-[var(--radius-pill)] border border-[color:color-mix(in_srgb,var(--warning)_40%,transparent)] bg-[color:var(--surface-soft)] p-2 text-[color:var(--accent)] transition hover:bg-[color:var(--surface-strong)] disabled:opacity-50 xl:hidden"
         >
