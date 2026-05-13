@@ -1,14 +1,18 @@
 const dotenv = require("dotenv");
 dotenv.config();
 
-// Sentry must be initialized before any other imports that might throw
-const Sentry = require("@sentry/node");
+// Sentry is optional — only loads if the package is resolvable and DSN is set
 if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV || "development",
-    tracesSampleRate: 0.1,
-  });
+  try {
+    const Sentry = require("@sentry/node");
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV || "development",
+      tracesSampleRate: 0.1,
+    });
+  } catch {
+    console.warn("@sentry/node not available — Sentry disabled.");
+  }
 }
 
 const app = require("./app");

@@ -1,7 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-const Sentry = require("@sentry/node");
+let Sentry = null;
+try { Sentry = require("@sentry/node"); } catch { /* optional dependency */ }
 const authRoutes = require("./routes/authRoutes");
 const hostelRoutes = require("./routes/hostelRoutes");
 const tenantRoutes = require("./routes/tenantRoutes");
@@ -71,7 +72,7 @@ app.use("/api/complaints", complaintRoutes);
 
 app.use(notFound);
 // Sentry error handler must come before our custom errorHandler
-if (process.env.SENTRY_DSN) {
+if (process.env.SENTRY_DSN && Sentry) {
   Sentry.setupExpressErrorHandler(app);
 }
 app.use(errorHandler);
