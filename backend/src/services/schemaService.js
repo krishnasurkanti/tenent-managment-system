@@ -18,6 +18,10 @@ async function initializeDatabase() {
   await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'starter'`);
   await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS plan_status TEXT NOT NULL DEFAULT 'trial'`);
   await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS trial_start_date TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS updated_by TEXT`);
+  await query(`ALTER TABLE owners ADD COLUMN IF NOT EXISTS created_by TEXT`);
 
   await query(`
     CREATE INDEX IF NOT EXISTS idx_owners_username ON owners (username)
@@ -44,6 +48,9 @@ async function initializeDatabase() {
   // Drop NOT NULL on email/pg_name for existing DBs created before invite-link flow
   await query(`ALTER TABLE owner_invitations ALTER COLUMN email DROP NOT NULL`);
   await query(`ALTER TABLE owner_invitations ALTER COLUMN pg_name DROP NOT NULL`);
+  await query(`ALTER TABLE owner_invitations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE owner_invitations ADD COLUMN IF NOT EXISTS created_by TEXT`);
+  await query(`ALTER TABLE owner_invitations ADD COLUMN IF NOT EXISTS updated_by TEXT`);
 
   await query(`
     CREATE INDEX IF NOT EXISTS idx_owner_invitations_token ON owner_invitations (token)
@@ -64,6 +71,10 @@ async function initializeDatabase() {
       used_by_owner_id BIGINT REFERENCES owners(id) ON DELETE SET NULL
     )
   `);
+
+  await query(`ALTER TABLE signup_keys ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE signup_keys ADD COLUMN IF NOT EXISTS created_by TEXT`);
+  await query(`ALTER TABLE signup_keys ADD COLUMN IF NOT EXISTS updated_by TEXT`);
 
   await query(`
     CREATE INDEX IF NOT EXISTS idx_signup_keys_key ON signup_keys (key)
@@ -94,6 +105,9 @@ async function initializeDatabase() {
     ALTER TABLE hostels
     ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'PG'
   `);
+  await query(`ALTER TABLE hostels ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE hostels ADD COLUMN IF NOT EXISTS created_by TEXT`);
+  await query(`ALTER TABLE hostels ADD COLUMN IF NOT EXISTS updated_by TEXT`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS tenants (
@@ -123,6 +137,8 @@ async function initializeDatabase() {
 
   // Soft-delete support — idempotent
   await query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS created_by TEXT`);
+  await query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS updated_by TEXT`);
   await query(`
     CREATE INDEX IF NOT EXISTS idx_tenants_deleted_at
     ON tenants(deleted_at)
@@ -143,6 +159,10 @@ async function initializeDatabase() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+
+  await query(`ALTER TABLE allocations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE allocations ADD COLUMN IF NOT EXISTS created_by TEXT`);
+  await query(`ALTER TABLE allocations ADD COLUMN IF NOT EXISTS updated_by TEXT`);
 
   await query(`
     CREATE INDEX IF NOT EXISTS idx_hostels_owner_id
@@ -232,7 +252,10 @@ async function initializeDatabase() {
       requested_plan TEXT NOT NULL,
       note           TEXT NOT NULL DEFAULT '',
       status         TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-      created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at     TIMESTAMPTZ,
+      created_by     TEXT,
+      updated_by     TEXT
     )
   `);
 
@@ -255,6 +278,62 @@ async function initializeDatabase() {
 
   await query(`
     CREATE INDEX IF NOT EXISTS idx_admin_backups_created_at ON admin_backups(created_at DESC)
+  `);
+
+  // Soft-delete support for owners
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_owners_deleted_at
+    ON owners(deleted_at)
+    WHERE deleted_at IS NULL
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS admin_audit_log (
+      id           BIGSERIAL PRIMARY KEY,
+      actor        TEXT NOT NULL,
+      action       TEXT NOT NULL,
+      target_type  TEXT,
+      target_id    TEXT,
+      details      JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_audit_log_actor ON admin_audit_log(actor)
+  `);
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON admin_audit_log(created_at DESC)
+  `);
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_audit_log_target ON admin_audit_log(target_type, target_id)
+  `);
+
+  // Complaints per hostel — complaints_enabled flag
+  await query(`ALTER TABLE hostels ADD COLUMN IF NOT EXISTS complaints_enabled BOOLEAN NOT NULL DEFAULT true`);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS complaints (
+      id          BIGSERIAL PRIMARY KEY,
+      hostel_id   BIGINT NOT NULL REFERENCES hostels(id) ON DELETE CASCADE,
+      owner_id    BIGINT NOT NULL REFERENCES owners(id)  ON DELETE CASCADE,
+      category    TEXT NOT NULL,
+      message     TEXT NOT NULL,
+      status      TEXT NOT NULL DEFAULT 'new',
+      notes       TEXT,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_complaints_owner_id ON complaints(owner_id)
+  `);
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_complaints_hostel_id ON complaints(hostel_id)
+  `);
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_complaints_status ON complaints(status)
   `);
 }
 

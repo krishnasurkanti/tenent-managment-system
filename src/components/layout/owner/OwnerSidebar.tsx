@@ -9,6 +9,7 @@ import {
   CreditCard,
   CircleDollarSign,
   HardDriveDownload,
+  MessageSquareWarning,
   PencilLine,
   LayoutDashboard,
   LogOut,
@@ -76,6 +77,7 @@ const workspaceNavigation = [
 ];
 
 const hostelNavigation = [
+  { name: "Complaints", href: "/owner/complaints", icon: MessageSquareWarning },
   { name: "Edit Hostel", href: "/owner/create-hostel?mode=edit", icon: PencilLine },
   { name: "Settings", href: "/owner/settings", icon: Settings },
   { name: "Backup", href: "/owner/backup", icon: HardDriveDownload },

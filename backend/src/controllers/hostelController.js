@@ -37,6 +37,7 @@ function mapHostel(row, hostelOccupancy = {}) {
         };
       }),
     })),
+    complaintsEnabled: row.complaints_enabled !== false,
     createdAt: row.created_at,
   };
 }
@@ -44,7 +45,7 @@ function mapHostel(row, hostelOccupancy = {}) {
 async function getHostels(req, res) {
   const [hostelResult, allocResult] = await Promise.all([
     query(
-      `SELECT id, owner_id, name, address, type, data, created_at
+      `SELECT id, owner_id, name, address, type, data, complaints_enabled, created_at
        FROM hostels WHERE owner_id = $1 ORDER BY created_at DESC, id DESC`,
       [req.user.ownerId],
     ),
@@ -64,7 +65,7 @@ async function getHostels(req, res) {
 async function getHostelById(req, res) {
   const [result, allocResult] = await Promise.all([
     query(
-      `SELECT id, owner_id, name, address, type, data, created_at
+      `SELECT id, owner_id, name, address, type, data, complaints_enabled, created_at
        FROM hostels WHERE id = $1 AND owner_id = $2 LIMIT 1`,
       [req.params.id, req.user.ownerId],
     ),
@@ -92,7 +93,7 @@ async function createHostel(req, res) {
     `
       INSERT INTO hostels (owner_id, name, address, type, data)
       VALUES ($1, $2, $3, $4, $5::jsonb)
-      RETURNING id, owner_id, name, address, type, data, created_at
+      RETURNING id, owner_id, name, address, type, data, complaints_enabled, created_at
     `,
     [req.user.ownerId, name, address, type, JSON.stringify({ floors })],
   );
@@ -113,7 +114,7 @@ async function updateHostel(req, res) {
       UPDATE hostels
       SET name = $3, address = $4, type = $5, data = $6::jsonb
       WHERE id = $1 AND owner_id = $2
-      RETURNING id, owner_id, name, address, type, data, created_at
+      RETURNING id, owner_id, name, address, type, data, complaints_enabled, created_at
     `,
     [req.params.id, req.user.ownerId, name, address, type, JSON.stringify({ floors })],
   );

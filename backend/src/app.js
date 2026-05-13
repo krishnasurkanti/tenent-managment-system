@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+const Sentry = require("@sentry/node");
 const authRoutes = require("./routes/authRoutes");
 const hostelRoutes = require("./routes/hostelRoutes");
 const tenantRoutes = require("./routes/tenantRoutes");
@@ -11,6 +12,7 @@ const ownerBillingRoutes = require("./routes/ownerBillingRoutes");
 const adminBillingRoutes = require("./routes/adminBillingRoutes");
 const adminBackupRoutes = require("./routes/adminBackupRoutes");
 const platformStatsRoutes = require("./routes/platformStatsRoutes");
+const complaintRoutes = require("./routes/complaintRoutes");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 const { query } = require("./config/db");
 
@@ -65,8 +67,13 @@ app.use("/api/owner-billing", ownerBillingRoutes);
 app.use("/api/admin/billing", adminBillingRoutes);
 app.use("/api/admin/backups", adminBackupRoutes);
 app.use("/api/platform-stats", platformStatsRoutes);
+app.use("/api/complaints", complaintRoutes);
 
 app.use(notFound);
+// Sentry error handler must come before our custom errorHandler
+if (process.env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
 app.use(errorHandler);
 
 module.exports = app;

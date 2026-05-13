@@ -22,7 +22,7 @@ async function createBackup(triggeredBy = "auto") {
     snapshot[table.name] = result.rows;
   }
 
-  await query(`DELETE FROM admin_backups WHERE created_at < NOW() - INTERVAL '7 days'`);
+  await query(`DELETE FROM admin_backups WHERE created_at < NOW() - INTERVAL '30 days'`);
 
   const result = await query(
     `INSERT INTO admin_backups (triggered_by, snapshot)

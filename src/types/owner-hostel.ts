@@ -28,5 +28,6 @@ export type OwnerHostel = {
   address: string;
   type: "PG" | "RESIDENCE";
   floors: OwnerFloor[];
+  complaintsEnabled?: boolean;
   createdAt: string;
 };

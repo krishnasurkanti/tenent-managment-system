@@ -1,10 +1,12 @@
 const express = require("express");
+const bcrypt = require("bcryptjs");
 const { register, login } = require("../controllers/authController");
 const { validateBody } = require("../middleware/validate");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { authRegisterSchema, authLoginSchema } = require("../utils/schemas");
 const { protect } = require("../middleware/authMiddleware");
 const { query } = require("../config/db");
+const { logAdminAction } = require("../services/auditService");
 
 const router = express.Router();
 
@@ -26,6 +28,37 @@ router.get("/me", protect, asyncHandler(async (req, res) => {
       trialStartDate: o.trial_start_date, createdAt: o.created_at,
     },
   });
+}));
+
+// DELETE /api/auth/me — owner self-deletion with password re-auth (GDPR right to erasure)
+router.delete("/me", protect, asyncHandler(async (req, res) => {
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ message: "Password is required to delete your account." });
+
+  const result = await query(
+    `SELECT id, password FROM owners WHERE id = $1 AND deleted_at IS NULL LIMIT 1`,
+    [req.user.ownerId],
+  );
+  if (result.rowCount === 0) return res.status(404).json({ message: "Account not found." });
+
+  const owner = result.rows[0];
+  const passwordMatches = await bcrypt.compare(password, owner.password);
+  if (!passwordMatches) return res.status(401).json({ message: "Incorrect password." });
+
+  await query(
+    `UPDATE owners SET deleted_at = NOW(), updated_at = NOW(), status = 'inactive' WHERE id = $1`,
+    [owner.id],
+  );
+
+  await logAdminAction({
+    actor: `owner:${owner.id}`,
+    action: "owner.self_delete",
+    targetType: "owner",
+    targetId: owner.id,
+    details: {},
+  });
+
+  return res.json({ ok: true, message: "Account deleted." });
 }));
 
 module.exports = router;

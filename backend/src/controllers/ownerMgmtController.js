@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const { query } = require("../config/db");
 const { createHttpError } = require("../utils/httpErrors");
+const { logAdminAction } = require("../services/auditService");
 
 const OWNER_SELECT = `
   id, email, name, phone_number, status, plan, plan_status, trial_start_date, created_at
@@ -66,7 +67,15 @@ async function createOwner(req, res) {
     ],
   );
 
-  return res.status(201).json({ ok: true, owner: mapOwner(result.rows[0]) });
+  const created = result.rows[0];
+  await logAdminAction({
+    actor: req.adminKey ? "admin-key" : "admin",
+    action: "owner.create",
+    targetType: "owner",
+    targetId: created.id,
+    details: { email: normalizedEmail, plan: plan || "starter" },
+  });
+  return res.status(201).json({ ok: true, owner: mapOwner(created) });
 }
 
 async function updateOwnerStatus(req, res) {
@@ -83,7 +92,15 @@ async function updateOwnerStatus(req, res) {
   );
 
   if (result.rowCount === 0) throw createHttpError(404, "Owner not found.");
-  return res.json({ ok: true, owner: mapOwner(result.rows[0]) });
+  const updated = result.rows[0];
+  await logAdminAction({
+    actor: "admin",
+    action: "owner.status_change",
+    targetType: "owner",
+    targetId: id,
+    details: { status },
+  });
+  return res.json({ ok: true, owner: mapOwner(updated) });
 }
 
 async function updateOwnerPlan(req, res) {
@@ -97,13 +114,31 @@ async function updateOwnerPlan(req, res) {
   );
 
   if (result.rowCount === 0) throw createHttpError(404, "Owner not found.");
+  await logAdminAction({
+    actor: "admin",
+    action: "owner.plan_change",
+    targetType: "owner",
+    targetId: id,
+    details: { plan: plan || null, planStatus: planStatus || null },
+  });
   return res.json({ ok: true, owner: mapOwner(result.rows[0]) });
 }
 
 async function deleteOwner(req, res) {
   const { id } = req.params;
-  const result = await query("DELETE FROM owners WHERE id = $1 RETURNING id", [id]);
+  // Soft-delete: preserve record for audit trail and data recovery
+  const result = await query(
+    "UPDATE owners SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL RETURNING id",
+    [id],
+  );
   if (result.rowCount === 0) throw createHttpError(404, "Owner not found.");
+  await logAdminAction({
+    actor: "admin",
+    action: "owner.delete",
+    targetType: "owner",
+    targetId: id,
+    details: {},
+  });
   return res.json({ ok: true });
 }
 

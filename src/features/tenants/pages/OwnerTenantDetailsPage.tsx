@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarDays, CreditCard, IdCard, Mail, Phone, User2, Users2 } from "lucide-react";
+import { ArrowLeft, Briefcase, CalendarDays, CreditCard, IdCard, Mail, Phone, User2, Users2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
+import { CompleteProfileButton } from "@/features/tenants/components/CompleteProfileButton";
 import { getOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
 import { getTenantRecords } from "@/data/tenantStore";
@@ -62,9 +63,42 @@ export default async function OwnerTenantDetailsPage({
           <OwnerQuickStat label="Next due" value={formatPaymentDate(tenant.nextDueDate)} helper={`Tenant ID ${fmtTenantId(tenant.tenantId)}`} />
         </div>
 
+        {(!tenant.phone || !tenant.idType || !tenant.idPhotoUrl) && (
+          <CompleteProfileButton tenant={tenant} />
+        )}
+
         <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
           <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
             <h2 className="text-base font-semibold text-white">Personal details</h2>
+
+            {/* Tenant photo + ID photo */}
+            {(tenant.tenantPhotoUrl || tenant.idPhotoUrl) && (
+              <div className="mt-3 flex flex-wrap gap-3">
+                {tenant.tenantPhotoUrl && (
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-white/35">Tenant Photo</p>
+                    <img
+                      src={tenant.tenantPhotoUrl}
+                      alt="Tenant"
+                      className="h-24 w-24 rounded-2xl object-cover border border-white/10"
+                    />
+                  </div>
+                )}
+                {tenant.idPhotoUrl && (
+                  <div className="space-y-1 flex-1 min-w-[10rem]">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-white/35">
+                      {tenant.idType ? tenant.idType.replace("_", " ").toUpperCase() : "Govt ID"}
+                    </p>
+                    <img
+                      src={tenant.idPhotoUrl}
+                      alt="ID"
+                      className="h-24 w-full max-w-[14rem] rounded-2xl object-cover border border-white/10"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <InfoCard icon={User2} label="Full Name" value={tenant.fullName} />
               <InfoCard icon={Phone} label="Phone" value={tenant.phone} />
@@ -73,6 +107,13 @@ export default async function OwnerTenantDetailsPage({
               {tenant.fatherName && <InfoCard icon={User2} label="Father / Mother Name" value={tenant.fatherName} />}
               {tenant.dateOfBirth && <InfoCard icon={CalendarDays} label="Date of Birth" value={tenant.dateOfBirth} />}
               {tenant.idType && <InfoCard icon={CreditCard} label="ID Type" value={tenant.idType.replace("_", " ").toUpperCase()} />}
+              {tenant.occupation && (
+                <InfoCard
+                  icon={Briefcase}
+                  label="Occupation"
+                  value={`${tenant.occupation.replace("_", "-")}${tenant.workplaceName ? ` · ${tenant.workplaceName}` : ""}`}
+                />
+              )}
               {tenant.emergencyContactName && <InfoCard icon={Phone} label="Emergency Contact" value={`${tenant.emergencyContactName}${tenant.emergencyContactRelation ? ` (${tenant.emergencyContactRelation})` : ""}${tenant.emergencyContactPhone ? ` · ${tenant.emergencyContactPhone}` : ""}`} />}
               <InfoCard icon={CalendarDays} label="Joined On" value={formatPaymentDate(tenant.createdAt.slice(0, 10))} />
             </div>

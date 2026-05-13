@@ -6,13 +6,12 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { useQueryClient } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, CreditCard, Download, Plus, Search, UserCheck, UserRound, Wallet, X } from "lucide-react";
+import { AlertTriangle, Download, Plus, Search, UserCheck, UserRound, Wallet, Zap } from "lucide-react";
 import { TenantAvatar } from "@/components/ui/tenant-avatar";
 import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
 import { SkeletonBlock, SkeletonStatCard, SkeletonTableRow } from "@/components/ui/skeleton";
 import { assignTenantRoom } from "@/services/tenants/tenants.service";
-import { csrfFetch } from "@/lib/csrf-client";
 import { useHostelContext } from "@/store/hostel-context";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
 import {
@@ -23,7 +22,7 @@ import {
   ownerTableHeadClass,
 } from "@/components/ui/owner-theme";
 import { formatPaymentDate, getDueStatus, fmtTenantId } from "@/utils/payment";
-import { PENDING_ID_NUMBER, type TenantRecord } from "@/types/tenant";
+import { type TenantRecord } from "@/types/tenant";
 
 const TenantFormModal = dynamic(
   () => import("@/features/tenants/components/TenantFormModal").then((m) => ({ default: m.TenantFormModal })),
@@ -35,6 +34,14 @@ const TenantRoomAssignmentModal = dynamic(
 );
 const PaymentCollectionModal = dynamic(
   () => import("@/components/ui/payment-collection-modal").then((m) => ({ default: m.PaymentCollectionModal })),
+  { ssr: false },
+);
+const QuickAddTenantModal = dynamic(
+  () => import("@/features/tenants/components/QuickAddTenantModal").then((m) => ({ default: m.QuickAddTenantModal })),
+  { ssr: false },
+);
+const CompleteProfileModal = dynamic(
+  () => import("@/features/tenants/components/CompleteProfileModal").then((m) => ({ default: m.CompleteProfileModal })),
   { ssr: false },
 );
 
@@ -56,6 +63,7 @@ function OwnerTenantsPageContent() {
   const [createdTenants, setCreatedTenants] = useState<TenantRecord[]>([]);
   const [tenantOverrides, setTenantOverrides] = useState<Record<string, TenantRecord>>({});
   const [modalOpen, setModalOpen] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [assignmentOpen, setAssignmentOpen] = useState(false);
   const [pendingTenant, setPendingTenant] = useState<TenantRecord | null>(null);
   const [paymentTenant, setPaymentTenant] = useState<TenantRecord | null>(null);
@@ -178,14 +186,24 @@ function OwnerTenantsPageContent() {
               <h1 className="text-xl font-semibold text-white">Tenants</h1>
               <p className="mt-1 text-xs text-[color:var(--fg-secondary)]">{currentHostel.hostelName}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setModalOpen(true)}
-              className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-3 text-sm font-semibold text-white shadow-[0_14px_32px_rgba(37,99,235,0.22)]"
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              Add
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setQuickAddOpen(true)}
+                className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-amber-500/40 bg-amber-500/10 px-3 text-[12px] font-semibold text-amber-300"
+              >
+                <Zap className="mr-1 h-3.5 w-3.5" />
+                Quick
+              </button>
+              <button
+                type="button"
+                onClick={() => setModalOpen(true)}
+                className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-3 text-sm font-semibold text-white shadow-[0_14px_32px_rgba(37,99,235,0.22)]"
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Add
+              </button>
+            </div>
           </div>
 
           {/* Mobile search */}
@@ -260,7 +278,7 @@ function OwnerTenantsPageContent() {
                   }}
                 >
                   <div className={`grid grid-cols-[auto_1fr_auto] gap-3 rounded-[8px] px-3 py-3 ${ownerPanelClass}`}>
-                    <TenantAvatar tenantId={tenant.tenantId} size="sm" />
+                    <TenantAvatar tenantId={tenant.tenantId} size="sm" readOnly />
                     <Link href={`/owner/tenants/${tenant.tenantId}`} className="min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="truncate text-sm font-semibold text-white">{tenant.fullName}</p>
@@ -313,6 +331,14 @@ function OwnerTenantsPageContent() {
                 <Download className="h-3.5 w-3.5" />
                 Export CSV
               </a>
+              <button
+                type="button"
+                onClick={() => setQuickAddOpen(true)}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 text-[12px] font-semibold text-amber-300 transition hover:bg-amber-500/15"
+              >
+                <Zap className="h-3.5 w-3.5" />
+                Quick Add
+              </button>
               <button
                 type="button"
                 onClick={() => setModalOpen(true)}
@@ -477,6 +503,16 @@ function OwnerTenantsPageContent() {
         onSuccess={handlePaymentSuccess}
       />
 
+      <QuickAddTenantModal
+        open={quickAddOpen}
+        hostelId={currentHostel.id}
+        onClose={() => setQuickAddOpen(false)}
+        onCreated={(tenant) => {
+          setCreatedTenants((prev) => [tenant, ...prev.filter((t) => t.tenantId !== tenant.tenantId)]);
+          setQuickAddOpen(false);
+        }}
+      />
+
       {completingTenant && (
         <CompleteProfileModal
           tenant={completingTenant}
@@ -527,114 +563,10 @@ function ActionButton({
   );
 }
 
-// ── Missing info helpers ───────────────────────────────────────────────────
+// ── Missing info helper ────────────────────────────────────────────────────
 
 function hasMissingInfo(tenant: TenantRecord) {
-  return tenant.idNumber === PENDING_ID_NUMBER;
-}
-
-function CompleteProfileModal({
-  tenant,
-  onClose,
-  onSaved,
-}: {
-  tenant: TenantRecord;
-  onClose: () => void;
-  onSaved: (updated: TenantRecord) => void;
-}) {
-  const [idNumber, setIdNumber] = useState(tenant.idNumber === PENDING_ID_NUMBER ? "" : tenant.idNumber);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSubmit = async () => {
-    setError("");
-    if (!idNumber.trim()) { setError("Enter the ID number."); return; }
-    setSubmitting(true);
-    try {
-      const res = await csrfFetch(`/api/tenants/${encodeURIComponent(tenant.tenantId)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          idNumber: idNumber.trim().toUpperCase(),
-          expectedUpdatedAt: tenant.updatedAt // Include for concurrency control
-        }),
-      });
-      const data = (await res.json()) as { ok?: boolean; tenant?: TenantRecord; message?: string };
-      if (!res.ok) { 
-        // Handle concurrency conflict
-        if (res.status === 409) {
-          setError("This tenant was updated by another session. Please refresh the page and try again.");
-          return;
-        }
-        setError(data.message ?? "Update failed."); 
-        return; 
-      }
-
-      onSaved(data.tenant ?? { ...tenant, idNumber: idNumber.trim().toUpperCase() });
-    } catch {
-      setError("Network error. Try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
-      <div className="max-h-[90dvh] w-[min(calc(100vw-2rem),28rem)] overflow-y-auto rounded-[20px] border border-white/10 bg-[#0d1117] p-3 sm:p-4 shadow-2xl">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-white">Complete Profile</h2>
-            <p className="mt-0.5 text-[11px] text-[color:var(--fg-secondary)]">{tenant.fullName}</p>
-          </div>
-          <button type="button" onClick={onClose} disabled={submitting} className="rounded-xl p-1.5 text-white/40 hover:bg-white/8 hover:text-white/80 transition">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="space-y-3">
-          <label className="block">
-            <span className="mb-1.5 block text-[11px] font-medium text-[color:var(--fg-secondary)]">ID Number <span className="text-orange-400">*</span></span>
-            <div className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.04] px-3 py-2.5">
-              <CreditCard className="h-4 w-4 shrink-0 text-white/30" />
-              <input
-                type="text"
-                value={idNumber}
-                onChange={(e) => setIdNumber(e.target.value.toUpperCase())}
-                placeholder="Aadhar / PAN / Driving Licence…"
-                disabled={submitting}
-                className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-              />
-            </div>
-          </label>
-
-          {error && (
-            <p className="rounded-xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-3 py-2 text-[12px] text-[color:var(--error)]">
-              {error}
-            </p>
-          )}
-        </div>
-
-        <div className="mt-4 flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={submitting}
-            className="flex-1 rounded-2xl border border-white/12 bg-white/[0.04] py-2.5 text-[13px] font-medium text-white/60 hover:bg-white/[0.07] transition disabled:opacity-40"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleSubmit()}
-            disabled={submitting}
-            className="flex-1 rounded-2xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] py-2.5 text-[13px] font-semibold text-[#1b1207] shadow-[0_10px_22px_rgba(240,175,47,0.2)] hover:brightness-105 transition disabled:opacity-60"
-          >
-            {submitting ? "Saving…" : "Save"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  return !tenant.phone || !tenant.idType || !tenant.idPhotoUrl;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────

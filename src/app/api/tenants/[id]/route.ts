@@ -50,6 +50,10 @@ export async function PATCH(
     const v = String(body.billingCycle ?? "").trim();
     patch.billingCycle = (v === "daily" || v === "weekly") ? v : "monthly";
   }
+  if (body.occupation !== undefined) patch.occupation = str("occupation") as TenantRecord["occupation"];
+  if (body.workplaceName !== undefined) patch.workplaceName = str("workplaceName");
+  if (body.tenantPhotoUrl !== undefined) patch.tenantPhotoUrl = str("tenantPhotoUrl");
+  if (body.idPhotoUrl !== undefined) patch.idPhotoUrl = str("idPhotoUrl");
 
   if (session.isLive) {
     // Include expectedUpdatedAt for concurrency control

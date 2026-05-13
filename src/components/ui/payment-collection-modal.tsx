@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, CreditCard, IndianRupee, WalletCards, X } from "lucide-react";
+import { Check, CreditCard, IndianRupee, Receipt, Upload, WalletCards, X } from "lucide-react";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { useToast } from "@/components/ui/toast";
 import { recordTenantPayment } from "@/services/tenants/tenants.service";
@@ -32,9 +32,12 @@ export function PaymentCollectionModal({
   const [paidOnDate, setPaidOnDate] = useState(new Date().toISOString().slice(0, 10));
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("cash");
   const [txnId, setTxnId] = useState("");
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
   useLockBodyScroll(open);
@@ -52,6 +55,8 @@ export function PaymentCollectionModal({
     setTxnId("");
     setPaymentMode("cash");
     setPaidOnDate(new Date().toISOString().slice(0, 10));
+    setReceiptFile(null);
+    setReceiptPreview("");
     setSubmitting(false);
   }, [tenant]);
 
@@ -85,6 +90,7 @@ export function PaymentCollectionModal({
     payload.append("paidOnDate", paidOnDate);
     payload.append("paymentMethod", paymentMode === "cash" ? "cash" : "online");
     payload.append("txnId", txnId);
+    if (receiptFile) payload.append("proofImage", receiptFile);
 
     const { response, data } = await recordTenantPayment(payload);
 
@@ -221,6 +227,63 @@ export function PaymentCollectionModal({
                 />
               </DarkField>
             ) : null}
+
+            {/* Receipt / screenshot upload */}
+            <div>
+              <p className="mb-1.5 text-[12px] font-semibold text-white/60">
+                <Receipt className="inline h-3.5 w-3.5 mr-1 -mt-0.5 text-emerald-400" />
+                Receipt / Screenshot <span className="font-normal text-white/35">(optional)</span>
+              </p>
+              <input
+                ref={receiptInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > 5 * 1024 * 1024) { setError("File too large. Max 5 MB."); return; }
+                  setError("");
+                  setReceiptFile(file);
+                  if (file.type !== "application/pdf") {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setReceiptPreview(ev.target?.result as string);
+                    reader.readAsDataURL(file);
+                  } else {
+                    setReceiptPreview("pdf");
+                  }
+                }}
+              />
+              {receiptPreview ? (
+                <div className="relative inline-block">
+                  {receiptPreview === "pdf" ? (
+                    <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3">
+                      <Receipt className="h-5 w-5 text-emerald-400" />
+                      <span className="text-[13px] text-white/70 truncate max-w-[180px]">{receiptFile?.name}</span>
+                    </div>
+                  ) : (
+                    <img src={receiptPreview} alt="Receipt" className="h-28 w-full max-w-xs rounded-2xl object-cover border border-white/12" />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setReceiptFile(null); setReceiptPreview(""); }}
+                    className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white shadow-md"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => receiptInputRef.current?.click()}
+                  disabled={submitting}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.03] py-3.5 text-white/35 transition hover:border-white/25 hover:bg-white/[0.05] hover:text-white/55"
+                >
+                  <Upload className="h-4 w-4" />
+                  <span className="text-[12px] font-medium">Upload receipt or screenshot</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {error ? (

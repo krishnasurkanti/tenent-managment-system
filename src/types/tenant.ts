@@ -6,6 +6,8 @@ export type IdType = "aadhar" | "pan" | "driving_licence" | "other";
 
 export type EmergencyRelation = "father" | "mother" | "brother" | "sister" | "spouse" | "friend" | "other";
 
+export type OccupationType = "employed" | "student" | "self_employed" | "other";
+
 export type TenantRecord = {
   tenantId: string;
   fullName: string;
@@ -13,6 +15,10 @@ export type TenantRecord = {
   dateOfBirth?: string;
   phone: string;
   email: string;
+  occupation?: OccupationType;
+  workplaceName?: string;
+  tenantPhotoUrl?: string;
+  idPhotoUrl?: string;
   monthlyRent: number;
   rentPaid: number;
   paidOnDate: string;
