@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { backendFetch } from "@/services/core/backend-api";
 import { requireOwnerSession } from "@/lib/session-mode";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,8 @@ export async function PATCH(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  const body = (await request.json()) as { enabled?: boolean };
+  const { body, error: jsonError } = await parseJsonBody<{ enabled?: boolean }>(request);
+  if (jsonError) return jsonError;
 
   const response = await backendFetch("/api/owner-billing/autopay", {
     method: "PATCH",

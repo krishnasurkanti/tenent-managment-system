@@ -13,6 +13,12 @@ export async function GET(request: NextRequest) {
   const upiString = searchParams.get("upi");
   if (!upiString) return NextResponse.json({ message: "upi param required." }, { status: 400 });
 
+  // Basic UPI ID format: localpart@provider — reject anything that doesn't look like a UPI string
+  const upiPattern = /^[a-zA-Z0-9.\-_+]{2,64}@[a-zA-Z]{2,32}$/;
+  if (!upiPattern.test(upiString)) {
+    return NextResponse.json({ message: "Invalid UPI ID format." }, { status: 400 });
+  }
+
   const png = await QRCode.toBuffer(upiString, {
     type: "png",
     width: 256,

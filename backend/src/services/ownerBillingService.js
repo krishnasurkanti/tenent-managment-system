@@ -46,7 +46,12 @@ function calculateBill(tenantCount, planId, hostelCount = 0) {
 
 function addOneMonth(dateStr) {
   const d = new Date(dateStr + "T00:00:00Z");
+  const originalDay = d.getUTCDate();
   d.setUTCMonth(d.getUTCMonth() + 1);
+  // If month overflow (e.g. Jan 31 → Mar 3), clamp to last day of target month
+  if (d.getUTCDate() !== originalDay) {
+    d.setUTCDate(0); // last day of previous month
+  }
   return d.toISOString().split("T")[0];
 }
 
@@ -80,11 +85,12 @@ function calculateActiveDays(moveInDate, moveOutDate, cycleStart, cycleEnd) {
 async function getBillableTenants(ownerId, cycleStart, cycleEnd) {
   const result = await query(
     `SELECT
-       data->>'id'                       AS "tenantId",
+       id::text                          AS "tenantId",
        data->'assignment'->>'moveInDate' AS "moveInDate",
        data->>'moveOutDate'              AS "moveOutDate"
      FROM tenants
      WHERE owner_id = $1
+       AND deleted_at IS NULL
        AND (data->>'billingCycle' IS NULL OR data->>'billingCycle' = 'monthly')`,
     [ownerId],
   );
@@ -94,7 +100,7 @@ async function getBillableTenants(ownerId, cycleStart, cycleEnd) {
       return { tenantId, activeDays: 0, billable: false };
     }
     const activeDays = calculateActiveDays(moveInDate, moveOutDate ?? null, cycleStart, cycleEnd);
-    return { tenantId, activeDays, billable: activeDays > 10 };
+    return { tenantId, activeDays, billable: activeDays >= 10 };
   });
 }
 
@@ -114,6 +120,7 @@ async function getLiveTenantCount(ownerId) {
   const result = await query(
     `SELECT COUNT(*)::int AS count FROM tenants
      WHERE owner_id = $1
+       AND deleted_at IS NULL
        AND (data->>'billingCycle' IS NULL OR data->>'billingCycle' = 'monthly')`,
     [ownerId],
   );
@@ -125,7 +132,7 @@ async function getOwnerRow(ownerId) {
     `SELECT id, name, plan, plan_status, billing_cycle_start, billing_cycle_end,
             auto_pay_enabled, free_months_remaining,
             billing_plan_override, billing_tenants_override
-     FROM owners WHERE id = $1 LIMIT 1`,
+     FROM owners WHERE id = $1 AND deleted_at IS NULL LIMIT 1`,
     [ownerId],
   );
   return result.rows[0] ?? null;
@@ -160,7 +167,13 @@ async function getOrCreateCurrentInvoice(ownerId, owner) {
     `INSERT INTO owner_invoices
        (owner_id, cycle_start, cycle_end, effective_tenants, plan_applied, extra_tenants, total_amount, status)
      VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
-     ON CONFLICT (owner_id, cycle_start) DO UPDATE SET updated_at = NOW()
+     ON CONFLICT (owner_id, cycle_start) DO UPDATE SET
+       cycle_end         = EXCLUDED.cycle_end,
+       effective_tenants = EXCLUDED.effective_tenants,
+       plan_applied      = EXCLUDED.plan_applied,
+       extra_tenants     = EXCLUDED.extra_tenants,
+       total_amount      = EXCLUDED.total_amount,
+       updated_at        = NOW()
      RETURNING *`,
     [ownerId, cycleStart, cycleEnd, tenantCount, bill.plan_applied, bill.extra_tenants, totalAmount],
   );
@@ -169,7 +182,7 @@ async function getOrCreateCurrentInvoice(ownerId, owner) {
 
 async function trackDailyTenantCounts() {
   const today = new Date().toISOString().split("T")[0];
-  const owners = await query(`SELECT id FROM owners WHERE status = 'active'`);
+  const owners = await query(`SELECT id FROM owners WHERE status = 'active' AND deleted_at IS NULL`);
 
   for (const row of owners.rows) {
     // Raw count for the log — not filtered by 10-day rule
@@ -236,7 +249,8 @@ async function runInvoiceCycleJob() {
            plan                  = $2,
            billing_cycle_start   = $3,
            billing_cycle_end     = $4,
-           free_months_remaining = $5
+           free_months_remaining = $5,
+           billing_plan_override = NULL
          WHERE id = $1`,
         [owner.id, bill.plan_applied, newCycleStart, newCycleEnd, newFreeMonths],
       );

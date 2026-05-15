@@ -1,4 +1,5 @@
 import path from "node:path";
+import { UPLOAD_MAX_FILE_SIZE, PROOF_ALLOWED_MIME_TYPES } from "@/lib/document-upload";
 
 function sanitizeFileName(fileName: string) {
   const extension = path.extname(fileName) || ".png";
@@ -6,25 +7,31 @@ function sanitizeFileName(fileName: string) {
   return `${baseName}${extension.toLowerCase()}`;
 }
 
+// Files stored outside public/ — served only via /api/uploads (authenticated)
+const UPLOAD_BASE_DIR = path.join(process.cwd(), ".data", "uploads");
+
 export async function savePaymentProofImage(file: File, tenantId: string) {
+  if (file.size > UPLOAD_MAX_FILE_SIZE) throw new Error("Proof file too large. Maximum 5 MB.");
+  if (!PROOF_ALLOWED_MIME_TYPES.includes(file.type)) throw new Error("Invalid proof file type.");
+
   const buffer = Buffer.from(await file.arrayBuffer());
 
   try {
     const { mkdir, writeFile } = await import("node:fs/promises");
-    const uploadsDirectory = path.join(process.cwd(), "public", "uploads", "payment-proofs");
+    const uploadsDirectory = path.join(UPLOAD_BASE_DIR, "payment-proofs");
     await mkdir(uploadsDirectory, { recursive: true });
 
     const uniqueFileName = `${tenantId}-${Date.now()}-${sanitizeFileName(file.name)}`;
-    const absoluteFilePath = path.join(uploadsDirectory, uniqueFileName);
-    await writeFile(absoluteFilePath, buffer);
+    await writeFile(path.join(uploadsDirectory, uniqueFileName), buffer);
 
     return {
       proofImageName: file.name,
-      proofImageUrl: `/uploads/payment-proofs/${uniqueFileName}`,
+      proofImageUrl: `/api/uploads/payment-proofs/${uniqueFileName}`,
       proofMimeType: file.type || "",
     };
-  } catch {
-    // read-only filesystem (Vercel) — store as base64 data URL
+  } catch (err) {
+    if (err instanceof Error && (err.message.includes("too large") || err.message.includes("Invalid"))) throw err;
+    // Read-only filesystem (Vercel) — store as base64 data URL
     const base64 = buffer.toString("base64");
     const mimeType = file.type || "image/png";
     return {

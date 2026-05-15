@@ -1,29 +1,32 @@
 import { NextResponse } from "next/server";
 import { getApiBaseUrl } from "@/lib/api-config";
 import { setAuthCookies } from "@/services/core/backend-api";
-import { authRateLimit } from "@/lib/rate-limit";
+import { parseJsonBody } from "@/lib/safe-json";
+import { authRateLimit, getTrustedClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = getTrustedClientIp(request);
   if (authRateLimit(ip)) {
     return NextResponse.json({ message: "Too many login attempts. Try again later." }, { status: 429 });
   }
 
-  const body = (await request.json()) as { username?: string; password?: string };
-  const username = body.username?.trim() ?? "";
-  const password = body.password?.trim() ?? "";
+  const { body, error: jsonError } = await parseJsonBody<{ email?: string; phoneNumber?: string; password?: string }>(request);
+  if (jsonError) return jsonError;
+  const email = body.email?.trim() ?? "";
+  const phoneNumber = body.phoneNumber?.trim() ?? "";
+  const password = body.password ?? "";
 
-  if (!username || !password) {
-    return NextResponse.json({ message: "Username and password are required." }, { status: 400 });
+  if ((!email && !phoneNumber) || !password) {
+    return NextResponse.json({ message: "Email/phone and password are required." }, { status: 400 });
   }
 
   try {
     const backendResponse = await fetch(`${getApiBaseUrl()}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ email: email || undefined, phoneNumber: phoneNumber || undefined, password }),
       cache: "no-store",
     });
 

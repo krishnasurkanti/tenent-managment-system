@@ -174,7 +174,7 @@ function DashboardContent({
           <div className="grid grid-cols-3 gap-2 px-3 pt-2.5">
             <CompactMetric icon={BedDouble} label={isResidence ? "Units" : "Beds"} value={String(isResidence ? totalRooms : totalBeds)} />
             <CompactMetric icon={Sofa} label="Free" value={String(availableBeds)} />
-            <CompactMetric icon={DoorOpen} label="Rooms" value={String(isResidence ? hostel.floors.length : totalRooms)} />
+            <CompactMetric icon={DoorOpen} label="Rooms" value={String(totalRooms)} />
           </div>
 
           {/* need action — only shown when > 0 */}

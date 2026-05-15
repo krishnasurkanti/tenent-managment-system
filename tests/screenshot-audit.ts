@@ -5,7 +5,7 @@ import fs from "fs";
 const BASE = "http://localhost:3000";
 const OUT = path.join(process.cwd(), "tests", "screenshots");
 
-async function shot(page: any, name: string) {
+async function shot(page: { waitForTimeout(ms: number): Promise<void>; screenshot(opts: { path: string; fullPage: boolean }): Promise<void> }, name: string) {
   await page.waitForTimeout(1200);
   await page.screenshot({ path: path.join(OUT, `${name}.png`), fullPage: true });
   console.log(`✓ ${name}`);

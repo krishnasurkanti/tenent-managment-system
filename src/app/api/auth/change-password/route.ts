@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,8 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const body = (await request.json()) as Record<string, unknown>;
+  const { body, error: jsonError } = await parseJsonBody(request);
+  if (jsonError) return jsonError;
   const currentPassword = String(body.currentPassword ?? "").trim();
   const newPassword = String(body.newPassword ?? "").trim();
 

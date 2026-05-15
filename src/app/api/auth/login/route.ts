@@ -3,21 +3,19 @@ import { getApiBaseUrl } from "@/lib/api-config";
 import { setAuthCookies } from "@/services/core/backend-api";
 import { matchesDemoCredentials, getDemoOwnerProfile } from "@/lib/demo-auth";
 import { signDemoToken } from "@/lib/sign-token";
-import { authRateLimit } from "@/lib/rate-limit";
+import { parseJsonBody } from "@/lib/safe-json";
+import { authRateLimit, getTrustedClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = getTrustedClientIp(request);
   if (authRateLimit(ip)) {
     return NextResponse.json({ message: "Too many login attempts. Try again later." }, { status: 429 });
   }
 
-  const body = (await request.json()) as {
-    phoneNumber?: string;
-    email?: string;
-    password?: string;
-  };
+  const { body, error: jsonError } = await parseJsonBody<{ phoneNumber?: string; email?: string; password?: string }>(request);
+  if (jsonError) return jsonError;
 
   const identifier = body.phoneNumber?.trim() || body.email?.trim() || "";
   const password = body.password?.trim() ?? "";

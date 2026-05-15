@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireOwnerSession } from "@/lib/session-mode";
-import { saveTenantDocument, validateDocumentFile } from "@/lib/document-upload";
+import { saveTenantDocument, validateDocumentFileWithMagicBytes } from "@/lib/document-upload";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "docType must be tenant_photo, id_photo, or receipt." }, { status: 400 });
   }
 
-  const validationError = validateDocumentFile(file);
+  const validationError = await validateDocumentFileWithMagicBytes(file);
   if (validationError) return NextResponse.json({ message: validationError }, { status: 400 });
 
   try {

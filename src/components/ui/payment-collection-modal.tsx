@@ -42,15 +42,13 @@ export function PaymentCollectionModal({
   const { toast } = useToast();
   useLockBodyScroll(open);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setMounted(true); }, []); // SSR hydration guard for createPortal
 
-  // Pre-fill amount when tenant changes
+  // Pre-fill amount when tenant changes — intentional derived-state sync
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (tenant) {
-      setAmount(String(tenant.monthlyRent));
-    }
+    if (tenant) setAmount(String(tenant.monthlyRent));
     setError("");
     setTxnId("");
     setPaymentMode("cash");
@@ -59,6 +57,7 @@ export function PaymentCollectionModal({
     setReceiptPreview("");
     setSubmitting(false);
   }, [tenant]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSubmit = async () => {
     if (!tenant || submitting) return;
@@ -156,7 +155,7 @@ export function PaymentCollectionModal({
                   label="Room"
                   value={
                     tenant.assignment
-                      ? `F${tenant.assignment.floorNumber} / R${tenant.assignment.roomNumber}`
+                      ? `Room ${tenant.assignment.roomNumber}`
                       : "Pending"
                   }
                 />

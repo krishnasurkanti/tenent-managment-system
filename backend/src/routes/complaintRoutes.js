@@ -8,12 +8,13 @@ const {
 } = require("../controllers/complaintController");
 const { protect } = require("../middleware/authMiddleware");
 const { asyncHandler } = require("../utils/asyncHandler");
+const { publicRateLimit } = require("../middleware/rateLimitMiddleware");
 
 const router = express.Router();
 
 // ── Public (no auth) ──────────────────────────────────────────────
 router.get("/public/hostels/:hostelId/info", asyncHandler(getPublicHostelInfo));
-router.post("/public/hostels/:hostelId/complaints", asyncHandler(submitComplaint));
+router.post("/public/hostels/:hostelId/complaints", publicRateLimit, asyncHandler(submitComplaint));
 
 // ── Owner (protected) ─────────────────────────────────────────────
 router.use(protect);

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getApiBaseUrl } from "@/lib/api-config";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,8 @@ export async function POST(
   { params }: { params: Promise<{ hostelId: string }> },
 ) {
   const { hostelId } = await params;
-  const body = await request.json();
+  const { body, error: jsonError } = await parseJsonBody(request);
+  if (jsonError) return jsonError;
   const res = await fetch(
     `${getApiBaseUrl()}/api/complaints/public/hostels/${encodeURIComponent(hostelId)}/complaints`,
     {

@@ -206,7 +206,7 @@ export default function OwnerPaymentsPage() {
                             <p className="mt-1 text-[10px] text-[color:var(--fg-secondary)]">{fmtTenantId(tenant.tenantId)} / {tenant.phone}</p>
                           </td>
                           <td className="px-3 py-3 text-[color:var(--fg-secondary)]">
-                            {tenant.assignment ? `R-${tenant.assignment.roomNumber} / F-${tenant.assignment.floorNumber}` : "-"}
+                            {tenant.assignment ? `Room ${tenant.assignment.roomNumber}` : "-"}
                           </td>
                           <td className="px-3 py-3">
                             <span className={statusClass(status.tone)}>{status.label}</span>
@@ -255,7 +255,7 @@ export default function OwnerPaymentsPage() {
                         <div>
                           <p className="text-[11px] font-semibold text-white">{tenant.fullName}</p>
                           <p className="mt-0.5 text-[9px] text-[color:var(--fg-secondary)]">
-                            {fmtTenantId(tenant.tenantId)} / Room {tenant.assignment?.roomNumber} / Floor {tenant.assignment?.floorNumber}
+                            {fmtTenantId(tenant.tenantId)} / Room {tenant.assignment?.roomNumber}
                           </p>
                           <p className="mt-0.5 text-[9px] text-[color:var(--fg-secondary)]">Next due {formatPaymentDate(tenant.nextDueDate)}</p>
                         </div>

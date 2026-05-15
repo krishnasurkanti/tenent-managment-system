@@ -1,12 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getApiBaseUrl } from "@/lib/api-config";
 import { setAuthCookies } from "@/services/core/backend-api";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  const { key, ...body } = (await request.json()) as {
-    key: string;
+  const { body: rawBody, error: jsonError } = await parseJsonBody<{
+    key?: string;
     name?: string;
     email?: string;
     phoneNumber?: string;
@@ -14,7 +15,9 @@ export async function POST(request: NextRequest) {
     hostelName?: string;
     hostelAddress?: string;
     hostelType?: string;
-  };
+  }>(request);
+  if (jsonError) return jsonError;
+  const { key, ...body } = rawBody;
 
   if (!key) {
     return NextResponse.json({ message: "Signup key is required." }, { status: 400 });

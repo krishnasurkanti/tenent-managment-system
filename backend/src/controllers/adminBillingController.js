@@ -8,6 +8,7 @@ const {
   runInvoiceCycleJob,
 } = require("../services/ownerBillingService");
 const { createRazorpayOrderForInvoice, processRazorpayWebhook } = require("../services/adminRazorpayService");
+const { logAdminAction } = require("../services/auditService");
 
 async function getAdminOwners(req, res, next) {
   try {
@@ -127,8 +128,11 @@ async function overrideBilling(req, res, next) {
       updates.push(`billing_tenants_override = $${params.length}`);
     }
     if (plan !== undefined) {
+      // billing_plan_override — temporary cycle-level override
       params.push(plan);
       updates.push(`billing_plan_override = $${params.length}`);
+      // plan — base plan so reverting the override doesn't fall back to a stale value
+      params.push(plan);
       updates.push(`plan = $${params.length}`);
     }
     if (free_months !== undefined) {
@@ -146,6 +150,14 @@ async function overrideBilling(req, res, next) {
     );
 
     if (result.rowCount === 0) return res.status(404).json({ message: "Owner not found." });
+
+    await logAdminAction({
+      actor: `super_admin:${req.user.ownerId ?? "unknown"}`,
+      action: "billing.override",
+      targetType: "owner",
+      targetId: ownerId,
+      details: { effective_tenants, plan, free_months, note },
+    });
 
     return res.json({ message: "Billing override updated.", owner: result.rows[0] });
   } catch (error) {
@@ -168,6 +180,15 @@ async function markInvoicePaid(req, res, next) {
     );
 
     if (result.rowCount === 0) return res.status(404).json({ message: "Invoice not found." });
+
+    await logAdminAction({
+      actor: `super_admin:${req.user.ownerId ?? "unknown"}`,
+      action: "billing.invoice_status_change",
+      targetType: "invoice",
+      targetId: invoiceId,
+      details: { status, invoice_id: invoiceId },
+    });
+
     return res.json({ invoice: result.rows[0] });
   } catch (error) {
     return next(error);

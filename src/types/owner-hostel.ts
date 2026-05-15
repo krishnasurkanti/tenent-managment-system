@@ -15,19 +15,13 @@ export type OwnerBed = {
   occupied?: boolean;
 };
 
-export type OwnerFloor = {
-  id: string;
-  floorLabel: string;
-  rooms: OwnerRoom[];
-};
-
 export type OwnerHostel = {
   id: string;
   ownerId?: string;
   hostelName: string;
   address: string;
   type: "PG" | "RESIDENCE";
-  floors: OwnerFloor[];
+  rooms: OwnerRoom[];
   complaintsEnabled?: boolean;
   createdAt: string;
 };

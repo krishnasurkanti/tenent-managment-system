@@ -1,14 +1,23 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { getDemoAdminProfile, matchesSuperAdminCredentials } from "@/lib/demo-auth";
 import { setAuthCookies } from "@/services/core/backend-api";
 import { signDemoToken } from "@/lib/sign-token";
+import { parseJsonBody } from "@/lib/safe-json";
+import { authRateLimit, getTrustedClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
-  const body = (await request.json()) as { username?: string; password?: string };
+export async function POST(request: NextRequest) {
+  const ip = getTrustedClientIp(request);
+  if (authRateLimit(ip)) {
+    return NextResponse.json({ message: "Too many login attempts. Try again later." }, { status: 429 });
+  }
+
+  const { body, error: jsonError } = await parseJsonBody<{ username?: string; password?: string }>(request);
+  if (jsonError) return jsonError;
   const identifier = body.username?.trim() ?? "";
-  const password = body.password?.trim() ?? "";
+  const password = body.password ?? "";
 
   if (!identifier || !password) {
     return NextResponse.json({ message: "Username and password are required." }, { status: 400 });

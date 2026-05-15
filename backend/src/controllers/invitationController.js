@@ -1,22 +1,14 @@
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const { query } = require("../config/db");
 const { createHttpError } = require("../utils/httpErrors");
+const { signToken } = require("../utils/jwt");
 
 // DB migration required (run once):
 //   ALTER TABLE owner_invitations ALTER COLUMN email DROP NOT NULL;
 //   ALTER TABLE owner_invitations ALTER COLUMN pg_name DROP NOT NULL;
 
 const INVITE_TTL_MS = 48 * 60 * 60 * 1000; // 48 hours
-
-function signToken(owner) {
-  return jwt.sign(
-    { ownerId: owner.id, email: owner.email, role: "owner" },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" },
-  );
-}
 
 function isExpired(createdAt) {
   return Date.now() - new Date(createdAt).getTime() > INVITE_TTL_MS;
@@ -63,11 +55,7 @@ async function getInvitation(req, res) {
 
 async function acceptInvitation(req, res) {
   const { token } = req.params;
-  const { email, name, phoneNumber, password } = req.body;
-
-  if (!email || !email.includes("@")) throw createHttpError(400, "Valid email is required.");
-  if (!name || !name.trim()) throw createHttpError(400, "Name is required.");
-  if (!password || password.length < 6) throw createHttpError(400, "Password must be at least 6 characters.");
+  const { email, name, phoneNumber, password } = req.validatedBody;
 
   const result = await query(
     `SELECT id, status, created_at FROM owner_invitations WHERE token = $1 LIMIT 1`,
@@ -93,8 +81,13 @@ async function acceptInvitation(req, res) {
     throw createHttpError(409, "An account with this email already exists.");
   }
 
-  const hashedPassword = await bcrypt.hash(password, 12);
   const normalizedPhone = phoneNumber?.trim() || null;
+  if (normalizedPhone) {
+    const existingPhone = await query("SELECT id FROM owners WHERE phone_number = $1 LIMIT 1", [normalizedPhone]);
+    if (existingPhone.rowCount > 0) throw createHttpError(409, "Phone number already registered.");
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 12);
 
   const ownerResult = await query(
     `INSERT INTO owners (email, password, name, phone_number, status, plan, plan_status, trial_start_date)

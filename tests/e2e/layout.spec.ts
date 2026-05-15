@@ -61,9 +61,9 @@ test.describe("Layout & responsiveness checks", () => {
 
         // accessibility — fail on serious/critical violations
         const axe = await runAxe(page);
-        const critical = axe.violations.filter((v: any) => v.impact === "critical");
+        const critical = axe.violations.filter((v: { impact?: string }) => v.impact === "critical");
         // log serious issues but only fail for critical by default
-        const serious = axe.violations.filter((v: any) => v.impact === "serious");
+        const serious = axe.violations.filter((v: { impact?: string }) => v.impact === "serious");
         if (serious.length) {
           console.warn(`axe found serious issues (logged, not failing): ${JSON.stringify(serious, null, 2)}`);
         }

@@ -128,14 +128,12 @@ function CreateHostelPageContent() {
     }
 
     setEditingHostelId(currentHostel.id);
-    const allRooms: RoomForm[] = currentHostel.floors.flatMap((floor) =>
-      floor.rooms.map((room) => ({
-        id: room.id,
-        roomNumber: room.roomNumber,
-        bedCount: String(room.bedCount),
-        beds: syncBeds([], room.bedCount),
-      }))
-    );
+    const allRooms: RoomForm[] = currentHostel.rooms.map((room) => ({
+      id: room.id,
+      roomNumber: room.roomNumber,
+      bedCount: String(room.bedCount),
+      beds: syncBeds([], room.bedCount),
+    }));
     setHostelName(currentHostel.hostelName);
     setAddress(currentHostel.address);
     setRooms(allRooms.length > 0 ? allRooms : [createRoom()]);
@@ -213,18 +211,12 @@ function CreateHostelPageContent() {
       hostelName,
       address,
       type: hostelType,
-      floors: [
-        {
-          id: "floor-1",
-          floorLabel: "Floor 1",
-          rooms: cleanedRooms.map((room) => ({
-            id: room.id,
-            roomNumber: room.roomNumber,
-            bedCount: hostelType === "RESIDENCE" ? 1 : Number(room.bedCount),
-            sharingType: hostelType === "RESIDENCE" ? "Private unit" : getSharingLabel(room.bedCount),
-          })),
-        },
-      ],
+      rooms: cleanedRooms.map((room) => ({
+        id: room.id,
+        roomNumber: room.roomNumber,
+        bedCount: hostelType === "RESIDENCE" ? 1 : Number(room.bedCount),
+        sharingType: hostelType === "RESIDENCE" ? "Private unit" : getSharingLabel(room.bedCount),
+      })),
     });
 
     if (!response.ok) {
@@ -234,7 +226,7 @@ function CreateHostelPageContent() {
     }
 
     const hostelId = data.hostel?.id ?? editingHostelId ?? "";
-    const savedRooms = data.hostel?.floors.flatMap((floor) => floor.rooms) ?? [];
+    const savedRooms = data.hostel?.rooms ?? [];
     if (typeof window !== "undefined" && hostelId) {
       window.localStorage.setItem("currentHostelId", hostelId);
       window.localStorage.removeItem(HOSTEL_DRAFT_KEY);
@@ -260,7 +252,6 @@ function CreateHostelPageContent() {
             fullName: bed.name.trim(),
             phone: bed.phone.trim() || undefined,
             hostelId,
-            floorNumber: 1,
             roomNumber: room.roomNumber,
             moveInDate,
             monthlyRent: Number(bed.rent.trim()) || 0,

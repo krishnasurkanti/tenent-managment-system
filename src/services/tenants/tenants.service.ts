@@ -34,7 +34,7 @@ export async function createTenant(payload: Record<string, unknown>) {
 export async function assignTenantRoom(payload: {
   tenantId: string;
   hostelId: string;
-  floorNumber: number;
+  unitId?: string;
   roomNumber: string;
   sharingType: string;
   moveInDate: string;

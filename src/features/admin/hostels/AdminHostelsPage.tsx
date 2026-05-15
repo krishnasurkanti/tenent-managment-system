@@ -24,10 +24,12 @@ export default function AdminHostelsPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCredentials((current) => {
       const next = { ...current };
       for (const row of rows) {

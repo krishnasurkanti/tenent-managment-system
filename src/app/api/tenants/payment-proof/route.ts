@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { addPaymentProof } from "@/data/tenantStore";
 import { savePaymentProofImage } from "@/lib/payment-proof-upload";
+import { validatePaymentProofWithMagicBytes } from "@/lib/document-upload";
 import { requireOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
 
@@ -27,15 +28,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Add a transaction id or payment proof image." }, { status: 400 });
   }
 
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-  const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
-
   if (hasProofImage && proofImage instanceof File) {
-    if (proofImage.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ message: "Proof file is too large. Maximum size is 5 MB." }, { status: 400 });
-    }
-    if (!ALLOWED_MIME_TYPES.includes(proofImage.type)) {
-      return NextResponse.json({ message: "Invalid file type. Allowed: JPEG, PNG, WebP, GIF, PDF." }, { status: 400 });
+    const proofError = await validatePaymentProofWithMagicBytes(proofImage);
+    if (proofError) {
+      return NextResponse.json({ message: proofError }, { status: 400 });
     }
   }
 
@@ -77,6 +73,7 @@ export async function POST(request: Request) {
         method: "PUT",
         body: JSON.stringify({
           paymentHistory: nextPaymentHistory,
+          expectedUpdatedAt: existingPayload.tenant?.updatedAt ?? existingPayload.tenant?.updated_at,
         }),
       });
       const updatePayload = (await updateResponse.json()) as { tenant?: unknown; message?: string };

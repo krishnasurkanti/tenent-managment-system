@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server";
 import { getApiBaseUrl } from "@/lib/api-config";
 import { setAuthCookies } from "@/services/core/backend-api";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as {
-    email?: string;
-    password?: string;
-  };
+  const { body, error: jsonError } = await parseJsonBody<{ email?: string; password?: string }>(request);
+  if (jsonError) return jsonError;
 
   const email = body.email?.trim() ?? "";
-  const password = body.password?.trim() ?? "";
+  const password = body.password ?? "";
 
   let backendResponse: Response;
   let payload: {
@@ -21,7 +20,7 @@ export async function POST(request: Request) {
   } = {};
 
   try {
-    backendResponse = await fetch(`${getApiBaseUrl()}/auth/register`, {
+    backendResponse = await fetch(`${getApiBaseUrl()}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),

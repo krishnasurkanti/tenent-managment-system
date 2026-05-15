@@ -50,7 +50,15 @@ const apiRateLimit = createLimiter({
   message: "Too many requests. Slow down and retry.",
 });
 
+// Separate limiter for anonymous public endpoints (complaint submission)
+const publicRateLimit = createLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: "Too many submissions. Please try again later.",
+});
+
 module.exports = {
   authRateLimit,
   apiRateLimit,
+  publicRateLimit,
 };

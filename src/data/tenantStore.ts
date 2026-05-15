@@ -25,7 +25,7 @@ function getDemoTenantRecords(): TenantRecord[] {
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
         hostelName: "Aurora Residency",
-        floorNumber: 1,
+        // (floor removed)
         roomNumber: "101",
         sharingType: "3 sharing",
         moveInDate: d(-20),
@@ -44,7 +44,7 @@ function getDemoTenantRecords(): TenantRecord[] {
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
         hostelName: "Aurora Residency",
-        floorNumber: 1,
+        // (floor removed)
         roomNumber: "101",
         sharingType: "3 sharing",
         moveInDate: d(-25),
@@ -63,7 +63,7 @@ function getDemoTenantRecords(): TenantRecord[] {
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
         hostelName: "Aurora Residency",
-        floorNumber: 2,
+// (floor removed)
         roomNumber: "202",
         sharingType: "2 sharing",
         moveInDate: d(-28),
@@ -82,7 +82,7 @@ function getDemoTenantRecords(): TenantRecord[] {
       assignment: {
         hostelId: DEMO_OWNER_HOSTEL_ID,
         hostelName: "Aurora Residency",
-        floorNumber: 4,
+// (floor removed)
         roomNumber: "401",
         sharingType: "3 sharing",
         moveInDate: d(-34),
@@ -101,7 +101,7 @@ function getDemoTenantRecords(): TenantRecord[] {
       assignment: {
         hostelId: "owner-hostel-lotus",
         hostelName: "Lotus Elite Stay",
-        floorNumber: 1,
+        // (floor removed)
         roomNumber: "101",
         sharingType: "3 sharing",
         moveInDate: d(-17),
@@ -120,7 +120,7 @@ function getDemoTenantRecords(): TenantRecord[] {
       assignment: {
         hostelId: "owner-hostel-lotus",
         hostelName: "Lotus Elite Stay",
-        floorNumber: 2,
+// (floor removed)
         roomNumber: "201",
         sharingType: "3 sharing",
         moveInDate: d(-23),
@@ -139,7 +139,7 @@ function getDemoTenantRecords(): TenantRecord[] {
       assignment: {
         hostelId: "owner-hostel-lotus",
         hostelName: "Lotus Elite Stay",
-        floorNumber: 4,
+// (floor removed)
         roomNumber: "402",
         sharingType: "2 sharing",
         moveInDate: d(-26),
@@ -158,7 +158,7 @@ function getDemoTenantRecords(): TenantRecord[] {
       assignment: {
         hostelId: "owner-hostel-skyline",
         hostelName: "Skyline Comforts",
-        floorNumber: 1,
+        // (floor removed)
         roomNumber: "102",
         sharingType: "2 sharing",
         moveInDate: d(-31),
@@ -177,7 +177,7 @@ function getDemoTenantRecords(): TenantRecord[] {
       assignment: {
         hostelId: "owner-hostel-skyline",
         hostelName: "Skyline Comforts",
-        floorNumber: 2,
+// (floor removed)
         roomNumber: "201",
         sharingType: "3 sharing",
         moveInDate: d(-15),
@@ -196,7 +196,7 @@ function getDemoTenantRecords(): TenantRecord[] {
       assignment: {
         hostelId: "owner-hostel-skyline",
         hostelName: "Skyline Comforts",
-        floorNumber: 3,
+// (floor removed)
         roomNumber: "302",
         sharingType: "2 sharing",
         moveInDate: d(-21),
@@ -231,7 +231,7 @@ function buildDemoTenant(input: {
     monthlyRent: input.monthlyRent,
     rentPaid: input.rentPaid,
     paidOnDate: input.paidOnDate,
-    billingAnchorDate: input.assignment.moveInDate,
+    billingAnchorDate: input.assignment?.moveInDate ?? input.paidOnDate,
     nextDueDate: input.nextDueDate,
     idNumber: `TEST-ID-${input.tenantId}`,
     createdAt: input.createdAt,
@@ -337,23 +337,21 @@ export function getTenantRecordById(tenantId: string) {
   return tenantRecords.find((tenant) => tenant.tenantId === tenantId);
 }
 
-export function getAssignedTenantCount(hostelId: string, floorNumber: number, roomNumber: string) {
+export function getAssignedTenantCount(hostelId: string, roomNumber: string) {
   return tenantRecords.filter(
     (tenant) =>
       tenant.assignment?.hostelId === hostelId &&
-      tenant.assignment.floorNumber === floorNumber &&
       tenant.assignment.roomNumber === roomNumber,
   ).length;
 }
 
-function getOccupiedBedIds(hostelId: string, floorNumber: number, roomNumber: string, exceptTenantId?: string) {
+function getOccupiedBedIds(hostelId: string, roomNumber: string, exceptTenantId?: string) {
   return new Set(
     tenantRecords
       .filter(
         (tenant) =>
           tenant.tenantId !== exceptTenantId &&
           tenant.assignment?.hostelId === hostelId &&
-          tenant.assignment.floorNumber === floorNumber &&
           tenant.assignment.roomNumber === roomNumber &&
           tenant.assignment.bedId,
       )
@@ -371,7 +369,7 @@ export function createTenantRecord(input: Omit<TenantRecord, "tenantId" | "creat
     updatedAt: now,
     paymentHistory: [
       {
-        paymentId: `pay-${Date.now()}`,
+        paymentId: `pay-${crypto.randomUUID()}`,
         amount: input.rentPaid,
         paidOnDate: input.paidOnDate,
         nextDueDate: input.nextDueDate,
@@ -404,13 +402,10 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
     throw new Error("Hostel room inventory not found.");
   }
 
-  const floor = hostel.floors.find((item) => item.floorNumber === assignment.floorNumber);
-
-  if (!floor) {
-    throw new Error("Selected floor was not found.");
-  }
-
-  const room = floor.rooms.find((item) => item.roomNumber === assignment.roomNumber);
+  const room = hostel.rooms.find((item) =>
+    (assignment.unitId && item.unitId && item.unitId === assignment.unitId) ||
+    item.roomNumber === assignment.roomNumber,
+  );
 
   if (!room) {
     throw new Error("Selected room was not found.");
@@ -422,7 +417,6 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
   if (
     currentActiveAssignment &&
     (currentActiveAssignment.hostelId !== assignment.hostelId ||
-      currentActiveAssignment.floorNumber !== assignment.floorNumber ||
       currentActiveAssignment.roomNumber !== assignment.roomNumber ||
       currentActiveAssignment.bedId !== assignment.bedId)
   ) {
@@ -430,7 +424,7 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
   }
 
   if (propertyType === "RESIDENCE") {
-    const assignedCount = getAssignedTenantCount(assignment.hostelId, assignment.floorNumber, assignment.roomNumber);
+    const assignedCount = getAssignedTenantCount(assignment.hostelId, assignment.roomNumber ?? "");
     const adjustedCount = currentActiveAssignment ? Math.max(assignedCount - 1, 0) : assignedCount;
 
     if (adjustedCount >= 1) {
@@ -438,7 +432,7 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
     }
   } else {
     const roomBeds = room.beds ?? [];
-    const occupiedBedIds = getOccupiedBedIds(assignment.hostelId, assignment.floorNumber, assignment.roomNumber, tenantId);
+    const occupiedBedIds = getOccupiedBedIds(assignment.hostelId, assignment.roomNumber ?? "", tenantId);
     const availableBed = assignment.bedId
       ? roomBeds.find((bed) => bed.id === assignment.bedId && !occupiedBedIds.has(bed.id))
       : roomBeds.find((bed) => !occupiedBedIds.has(bed.id));
@@ -457,7 +451,7 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
     propertyType,
   };
 
-  tenant.billingAnchorDate = assignment.moveInDate;
+  tenant.billingAnchorDate = assignment.moveInDate ?? tenant.paidOnDate;
   tenant.nextDueDate = calculateNextDueDate(
     tenant.paidOnDate,
     tenant.billingAnchorDate,
@@ -504,7 +498,7 @@ export function recordTenantPayment(
   tenant.nextDueDate = nextDueDate;
 
   tenant.paymentHistory.unshift({
-    paymentId: `pay-${tenantId}-${Date.now()}`,
+    paymentId: `pay-${tenantId}-${crypto.randomUUID()}`,
     amount,
     paidOnDate,
     nextDueDate,
@@ -615,17 +609,15 @@ export function seedDemoTenantsForHostel(hostelId: string) {
     return [];
   }
 
-  const availableSlots = hostel.floors.flatMap((floor) =>
-    floor.rooms.flatMap((room) =>
-      Array.from({ length: room.capacity }, (_, bedIndex) => ({
-        floorNumber: floor.floorNumber,
-        roomNumber: room.roomNumber,
-        sharingType: room.sharingType ?? `${room.capacity} sharing`,
-        propertyType: hostel.type,
-        bedId: hostel.type === "PG" ? room.beds?.[bedIndex]?.id : undefined,
-        bedLabel: hostel.type === "PG" ? room.beds?.[bedIndex]?.label : undefined,
-      })),
-    ),
+  const availableSlots = hostel.rooms.flatMap((room) =>
+    Array.from({ length: room.capacity }, (_, bedIndex) => ({
+      unitId: room.unitId,
+      roomNumber: room.roomNumber,
+      sharingType: room.sharingType ?? `${room.capacity} sharing`,
+      propertyType: hostel.type,
+      bedId: hostel.type === "PG" ? room.beds?.[bedIndex]?.id : undefined,
+      bedLabel: hostel.type === "PG" ? room.beds?.[bedIndex]?.label : undefined,
+    })),
   );
 
   const demoProfiles = [
@@ -687,7 +679,7 @@ export function seedDemoTenantsForHostel(hostelId: string) {
 
     assignTenantRoom(tenant.tenantId, {
       hostelId,
-      floorNumber: slot.floorNumber,
+      unitId: slot.unitId,
       roomNumber: slot.roomNumber,
       sharingType: slot.sharingType,
       moveInDate,

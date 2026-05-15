@@ -17,26 +17,26 @@ function buildOccupancy(allocs) {
 
 function mapHostel(row, hostelOccupancy = {}) {
   const floors = Array.isArray(row.data?.floors) ? row.data.floors : [];
+  const allRooms = floors.flatMap((floor) =>
+    (floor.rooms ?? []).map((room) => {
+      const unitId = room.unitId ?? room.id;
+      const unitData = hostelOccupancy[unitId] ?? { totalAllocs: 0, beds: new Set() };
+      return {
+        ...room,
+        occupied: unitData.totalAllocs,
+        beds: (room.beds ?? []).map((bed) => ({
+          ...bed,
+          occupied: unitData.beds.has(bed.id),
+        })),
+      };
+    })
+  );
   return {
     id: String(row.id),
     hostelName: row.name,
     address: row.address || "",
     type: VALID_HOSTEL_TYPES.includes(row.type) ? row.type : "PG",
-    floors: floors.map((floor) => ({
-      ...floor,
-      rooms: (floor.rooms ?? []).map((room) => {
-        const unitId = room.unitId ?? room.id;
-        const unitData = hostelOccupancy[unitId] ?? { totalAllocs: 0, beds: new Set() };
-        return {
-          ...room,
-          occupied: unitData.totalAllocs,
-          beds: (room.beds ?? []).map((bed) => ({
-            ...bed,
-            occupied: unitData.beds.has(bed.id),
-          })),
-        };
-      }),
-    })),
+    rooms: allRooms,
     complaintsEnabled: row.complaints_enabled !== false,
     createdAt: row.created_at,
   };
@@ -85,9 +85,8 @@ async function getHostelById(req, res) {
 }
 
 async function createHostel(req, res) {
-  const { name, address, floors } = req.validatedBody;
-  const rawType = req.body?.type;
-  const type = VALID_HOSTEL_TYPES.includes(rawType) ? rawType : "PG";
+  const { name, address, floors, type: validatedType } = req.validatedBody;
+  const type = VALID_HOSTEL_TYPES.includes(validatedType) ? validatedType : "PG";
 
   const result = await query(
     `
@@ -105,9 +104,8 @@ async function createHostel(req, res) {
 }
 
 async function updateHostel(req, res) {
-  const { name, address, floors } = req.validatedBody;
-  const rawType = req.body?.type;
-  const type = VALID_HOSTEL_TYPES.includes(rawType) ? rawType : "PG";
+  const { name, address, floors, type: validatedType } = req.validatedBody;
+  const type = VALID_HOSTEL_TYPES.includes(validatedType) ? validatedType : "PG";
 
   const result = await query(
     `

@@ -1,7 +1,9 @@
 const express = require("express");
 const { requireAdminKey } = require("../middleware/adminKeyMiddleware");
 const { asyncHandler } = require("../utils/asyncHandler");
+const { validateBody } = require("../middleware/validate");
 const { validateSignupKey, registerWithKey, getCurrentKey, generateNewKey } = require("../controllers/signupController");
+const { registerWithKeySchema } = require("../utils/schemas");
 
 const router = express.Router();
 
@@ -13,6 +15,6 @@ router.post("/key/generate", requireAdminKey, asyncHandler(generateNewKey));
 router.get("/validate/:key", asyncHandler(validateSignupKey));
 
 // Public: register + create hostel
-router.post("/:key", asyncHandler(registerWithKey));
+router.post("/:key", validateBody(registerWithKeySchema), asyncHandler(registerWithKey));
 
 module.exports = router;

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-session";
 import { getApiBaseUrl } from "@/lib/api-config";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,8 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const body = (await request.json()) as { status?: string; plan?: string; planStatus?: string };
+  const { body, error: jsonError } = await parseJsonBody<{ status?: string; plan?: string; planStatus?: string }>(request);
+  if (jsonError) return jsonError;
 
   // Route to the correct backend endpoint depending on what's being updated
   const endpoint = body.status !== undefined ? "status" : "plan";

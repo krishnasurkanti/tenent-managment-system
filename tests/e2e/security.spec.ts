@@ -169,7 +169,7 @@ test.describe("CSRF protection", () => {
       },
       { token: csrf },
     );
-    expect(result).toBe(200);
+    expect([200, 201]).toContain(result);
   });
 
   test("CSRF cookie is not HttpOnly (required for double-submit pattern)", async ({ page }) => {
@@ -228,9 +228,9 @@ test.describe("Input validation and injection safety", () => {
       },
       { token: csrf },
     );
-    // Must be 200 (demo mode stores safely) or 400 (validation rejection) — never 500
+    // Must be 200/201 (demo mode stores safely) or 400 (validation rejection) — never 500
     expect(result.status).not.toBe(500);
-    expect([200, 400, 422]).toContain(result.status);
+    expect([200, 201, 400, 422]).toContain(result.status);
   });
 
   test("XSS string in fullName is stored safely (no 500)", async ({ page }) => {
@@ -255,7 +255,7 @@ test.describe("Input validation and injection safety", () => {
       { token: csrf },
     );
     expect(result.status).not.toBe(500);
-    expect([200, 400, 422]).toContain(result.status);
+    expect([200, 201, 400, 422]).toContain(result.status);
   });
 
   test("XSS name stored does not execute in tenant list page", async ({ page }) => {

@@ -21,14 +21,14 @@ export default async function OwnerSettingsPage() {
       id: string;
       hostelName: string;
       address: string;
-      floors: Array<{ rooms: unknown[] }>;
+      rooms: unknown[];
     }> };
     hostel = Array.isArray(payload.hostels) ? payload.hostels[0] ?? null : null;
   } else {
     hostel = getOwnerHostel();
   }
 
-  const totalRooms = hostel?.floors.reduce((sum, floor) => sum + floor.rooms.length, 0) ?? 0;
+  const totalRooms = hostel?.rooms.length ?? 0;
 
   return (
     <div className="space-y-3">

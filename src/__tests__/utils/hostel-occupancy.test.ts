@@ -27,21 +27,15 @@ function makeHostel(overrides: Partial<OwnerHostel> = {}): OwnerHostel {
     address: "123 Test St",
     type: "PG",
     createdAt: "2026-01-01T00:00:00Z",
-    floors: [
-      {
-        id: "floor-1",
-        floorLabel: "Floor 1",
-        rooms: [
-          makeRoom({ id: "r1", roomNumber: "101", bedCount: 2 }),
-          makeRoom({ id: "r2", roomNumber: "102", bedCount: 3 }),
-        ],
-      },
+    rooms: [
+      makeRoom({ id: "r1", roomNumber: "101", bedCount: 2 }),
+      makeRoom({ id: "r2", roomNumber: "102", bedCount: 3 }),
     ],
     ...overrides,
   };
 }
 
-function makeTenant(hostelId: string, floorNumber: number, roomNumber: string, bedId?: string): TenantRecord {
+function makeTenant(hostelId: string, roomNumber: string, bedId?: string): TenantRecord {
   return {
     tenantId: `t-${Math.random().toString(36).slice(2)}`,
     fullName: "Test Tenant",
@@ -54,10 +48,10 @@ function makeTenant(hostelId: string, floorNumber: number, roomNumber: string, b
     nextDueDate: "2026-04-01",
     idNumber: "ID-001",
     createdAt: "2026-03-01T00:00:00Z",
+    updatedAt: "2026-03-01T00:00:00Z",
     assignment: {
       hostelId,
       hostelName: "Test Hostel",
-      floorNumber,
       roomNumber,
       sharingType: "3 sharing",
       moveInDate: "2026-03-01",
@@ -129,22 +123,19 @@ describe("buildHostelInventory (PG)", () => {
   it("empty tenants → all rooms vacant", () => {
     const hostel = makeHostel();
     const inventory = buildHostelInventory(hostel, []);
-    const floor = inventory.floors[0];
-    expect(floor.rooms[0].occupied).toBe(0);
-    expect(floor.rooms[1].occupied).toBe(0);
+    expect(inventory.rooms[0].occupied).toBe(0);
+    expect(inventory.rooms[1].occupied).toBe(0);
   });
 
   it("counts occupied beds from tenants", () => {
     const hostel = makeHostel();
-    // Normalize first to get actual bed IDs
     const inventory = buildHostelInventory(hostel, []);
-    const floor = inventory.floors[0];
-    const room = floor.rooms[0]; // 101
+    const room = inventory.rooms[0]; // 101
     const bedId = room.beds?.[0]?.id ?? "";
 
-    const tenant = makeTenant("hostel-1", 1, "101", bedId);
+    const tenant = makeTenant("hostel-1", "101", bedId);
     const inventoryWithTenant = buildHostelInventory(hostel, [tenant]);
-    expect(inventoryWithTenant.floors[0].rooms[0].occupied).toBe(1);
+    expect(inventoryWithTenant.rooms[0].occupied).toBe(1);
   });
 
   it("hostel metadata preserved", () => {
@@ -155,17 +146,11 @@ describe("buildHostelInventory (PG)", () => {
     expect(inventory.type).toBe("PG");
   });
 
-  it("floor numbers are 1-indexed", () => {
-    const hostel = makeHostel();
-    const inventory = buildHostelInventory(hostel, []);
-    expect(inventory.floors[0].floorNumber).toBe(1);
-  });
-
   it("beds array populated for PG rooms", () => {
     const hostel = makeHostel();
     const inventory = buildHostelInventory(hostel, []);
-    expect(inventory.floors[0].rooms[0].beds?.length).toBe(2); // bedCount=2
-    expect(inventory.floors[0].rooms[1].beds?.length).toBe(3); // bedCount=3
+    expect(inventory.rooms[0].beds?.length).toBe(2); // bedCount=2
+    expect(inventory.rooms[1].beds?.length).toBe(3); // bedCount=3
   });
 });
 
@@ -173,22 +158,22 @@ describe("buildHostelInventory (RESIDENCE)", () => {
   it("beds array empty for RESIDENCE rooms", () => {
     const hostel = makeHostel({ type: "RESIDENCE" });
     const inventory = buildHostelInventory(hostel, []);
-    expect(inventory.floors[0].rooms[0].beds).toHaveLength(0);
+    expect(inventory.rooms[0].beds).toHaveLength(0);
   });
 
   it("occupied is 1 when a tenant is assigned to the unit", () => {
     const hostel = makeHostel({ type: "RESIDENCE" });
-    const tenant = makeTenant("hostel-1", 1, "101");
+    const tenant = makeTenant("hostel-1", "101");
     const inventory = buildHostelInventory(hostel, [tenant]);
-    expect(inventory.floors[0].rooms[0].occupied).toBe(1);
+    expect(inventory.rooms[0].occupied).toBe(1);
   });
 
   it("occupied max 1 even if multiple tenants recorded for same unit", () => {
     const hostel = makeHostel({ type: "RESIDENCE" });
-    const tenant1 = makeTenant("hostel-1", 1, "101");
-    const tenant2 = makeTenant("hostel-1", 1, "101");
+    const tenant1 = makeTenant("hostel-1", "101");
+    const tenant2 = makeTenant("hostel-1", "101");
     const inventory = buildHostelInventory(hostel, [tenant1, tenant2]);
-    expect(inventory.floors[0].rooms[0].occupied).toBe(1);
+    expect(inventory.rooms[0].occupied).toBe(1);
   });
 });
 
@@ -208,8 +193,8 @@ describe("getHostelOccupancySummary (PG)", () => {
   it("1 occupied bed: occupiedBeds=1, vacantBeds=4", () => {
     const hostel = makeHostel();
     const inventory = buildHostelInventory(hostel, []);
-    const bedId = inventory.floors[0].rooms[0].beds?.[0]?.id ?? "";
-    const tenant = makeTenant("hostel-1", 1, "101", bedId);
+    const bedId = inventory.rooms[0].beds?.[0]?.id ?? "";
+    const tenant = makeTenant("hostel-1", "101", bedId);
     const summary = getHostelOccupancySummary(hostel, [tenant]);
     expect(summary.occupiedBeds).toBe(1);
     expect(summary.vacantBeds).toBe(4);
@@ -227,7 +212,7 @@ describe("getHostelOccupancySummary (RESIDENCE)", () => {
 
   it("1 tenant → occupiedUnits=1", () => {
     const hostel = makeHostel({ type: "RESIDENCE" });
-    const tenant = makeTenant("hostel-1", 1, "101");
+    const tenant = makeTenant("hostel-1", "101");
     const summary = getHostelOccupancySummary(hostel, [tenant]);
     expect(summary.occupiedUnits).toBe(1);
     expect(summary.vacantUnits).toBe(1);

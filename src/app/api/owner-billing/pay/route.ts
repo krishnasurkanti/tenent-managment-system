@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { backendFetch } from "@/services/core/backend-api";
 import { requireOwnerSession } from "@/lib/session-mode";
 import { submitPaymentProof } from "@/data/adminStore";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
@@ -9,12 +10,8 @@ export async function POST(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  const body = (await request.json()) as {
-    paymentMethod?: "online" | "manual";
-    txnId?: string;
-    screenshotDataUrl?: string;
-    hostelId?: string;
-  };
+  const { body, error: jsonError } = await parseJsonBody<{ paymentMethod?: "online" | "manual"; txnId?: string; screenshotDataUrl?: string; hostelId?: string }>(request);
+  if (jsonError) return jsonError;
 
   if (!session.isLive) {
     const hostelId = body.hostelId ?? session.ownerId ?? "";

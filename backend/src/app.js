@@ -15,6 +15,7 @@ const adminBackupRoutes = require("./routes/adminBackupRoutes");
 const platformStatsRoutes = require("./routes/platformStatsRoutes");
 const complaintRoutes = require("./routes/complaintRoutes");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
+const { authRateLimit, apiRateLimit } = require("./middleware/rateLimitMiddleware");
 const { query } = require("./config/db");
 
 const app = express();
@@ -26,12 +27,17 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "")
 
 app.disable("x-powered-by");
 app.use(helmet());
+const devLocalhostOrigins = process.env.NODE_ENV !== "production"
+  ? ["http://localhost:3000", "http://127.0.0.1:3000"]
+  : [];
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // No origin = same-origin or non-browser (curl, server-to-server) — always allow
       if (!origin) return callback(null, true);
-      // If env var is missing, default deny to fail closed
+      // Dev fallback — allow localhost when CORS_ORIGIN not configured
+      if (devLocalhostOrigins.includes(origin)) return callback(null, true);
       if (allowedOrigins.length === 0) return callback(new Error("CORS not configured."));
       if (allowedOrigins.includes(origin)) return callback(null, true);
       return callback(new Error("CORS origin denied."));
@@ -57,6 +63,11 @@ app.get("/api/health", async (_req, res) => {
     res.status(503).json({ ok: false });
   }
 });
+
+app.use("/api/auth/login", authRateLimit);
+app.use("/api/auth/register", authRateLimit);
+app.use("/api/signup", authRateLimit);
+app.use("/api", apiRateLimit);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/hostels", hostelRoutes);

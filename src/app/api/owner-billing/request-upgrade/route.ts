@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { backendFetch } from "@/services/core/backend-api";
 import { requireOwnerSession } from "@/lib/session-mode";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
@@ -8,10 +9,8 @@ export async function POST(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  const body = (await request.json()) as {
-    requestedPlanId?: string;
-    note?: string;
-  };
+  const { body, error: jsonError } = await parseJsonBody<{ requestedPlanId?: string; note?: string }>(request);
+  if (jsonError) return jsonError;
 
   if (!body.requestedPlanId) {
     return NextResponse.json({ message: "requestedPlanId is required." }, { status: 400 });

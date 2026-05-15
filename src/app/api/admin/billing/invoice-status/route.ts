@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-session";
 import { backendFetch } from "@/services/core/backend-api";
 import { approvePaymentProof, rejectPaymentProof, updateInvoiceStatus } from "@/data/adminStore";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,8 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await request.json()) as { invoiceId?: string; status?: string; action?: "approve" | "reject" };
+  const { body, error: jsonError } = await parseJsonBody<{ invoiceId?: string; status?: string; action?: "approve" | "reject" }>(request);
+  if (jsonError) return jsonError;
 
   if (!body.invoiceId) {
     return NextResponse.json({ message: "invoiceId required." }, { status: 400 });

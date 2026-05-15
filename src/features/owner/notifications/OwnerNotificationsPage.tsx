@@ -78,7 +78,7 @@ export default function OwnerNotificationsPage() {
                     <div className="min-w-0">
                       <p className="truncate text-[13px] font-semibold text-white">{tenant.fullName}</p>
                       <p className="truncate text-[11px] text-[color:var(--fg-secondary)]">
-                        Room {tenant.assignment?.roomNumber} · Floor {tenant.assignment?.floorNumber} · {tenant.phone}
+                        Room {tenant.assignment?.roomNumber} · {tenant.phone}
                       </p>
                     </div>
                     <span className={ownerStatusClass(status.tone)}>{status.label}</span>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { removeTenantRecord } from "@/data/tenantStore";
 import { requireOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
@@ -9,9 +10,8 @@ export async function POST(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  const body = (await request.json()) as {
-    tenantId?: string;
-  };
+  const { body, error: jsonError } = await parseJsonBody<{ tenantId?: string }>(request);
+  if (jsonError) return jsonError;
 
   if (!body.tenantId) {
     return NextResponse.json({ message: "Tenant ID is required." }, { status: 400 });

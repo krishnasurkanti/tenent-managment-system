@@ -1,5 +1,5 @@
 import { csrfFetch } from "@/lib/csrf-client";
-import type { OwnerFloor, OwnerHostel } from "@/types/owner-hostel";
+import type { OwnerHostel, OwnerRoom } from "@/types/owner-hostel";
 
 type OwnerHostelsResponse = { hostels?: OwnerHostel[] };
 type OwnerHostelResponse = { hostel?: OwnerHostel | null };
@@ -25,7 +25,7 @@ export async function saveOwnerHostel(params: {
   hostelName: string;
   address: string;
   type?: "PG" | "RESIDENCE";
-  floors: OwnerFloor[];
+  rooms: OwnerRoom[];
 }) {
   const { hostelId, isEditMode, ...payload } = params;
   const response = await csrfFetch(

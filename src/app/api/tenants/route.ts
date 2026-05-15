@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { NextResponse } from "next/server";
 import { getOwnerHostelInventory } from "@/data/ownerHostelStore";
 import { assignTenantRoom, createTenantRecord, getTenantRecords, removeTenantRecord } from "@/data/tenantStore";
@@ -66,11 +67,57 @@ export async function GET(request: Request) {
   return NextResponse.json({ tenants, hostels: getOwnerHostelInventory(allTenants) });
 }
 
+// In-memory idempotency cache for demo mode (TTL: 60s, max 500 keys)
+// payloadHash is stored to detect same-key+different-payload conflict → 409
+const _idempotencyCache = new Map<string, { status: number; body: unknown; payloadHash: string; expiresAt: number }>();
+const _IDEMPOTENCY_MAX = 500;
+
+function _hashPayload(payload: unknown): string {
+  const str = JSON.stringify(payload, Object.keys(payload as object).sort());
+  return createHash("sha256").update(str).digest("hex");
+}
+
+function _getIdempotentResponse(key: string, payloadHash: string) {
+  const now = Date.now();
+  for (const [k, v] of _idempotencyCache) if (v.expiresAt < now) _idempotencyCache.delete(k);
+  const cached = _idempotencyCache.get(key);
+  if (!cached) return null;
+  if (cached.payloadHash !== payloadHash) return "conflict" as const;
+  return cached;
+}
+
+function _setIdempotentResponse(key: string, payloadHash: string, status: number, body: unknown) {
+  if (_idempotencyCache.size >= _IDEMPOTENCY_MAX) {
+    const firstKey = _idempotencyCache.keys().next().value;
+    if (firstKey !== undefined) _idempotencyCache.delete(firstKey);
+  }
+  _idempotencyCache.set(key, { status, body, payloadHash, expiresAt: Date.now() + 60_000 });
+}
+
 export async function POST(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  const body = (await request.json()) as Record<string, unknown>;
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ message: "Invalid request body." }, { status: 400 });
+  }
+
+  // Idempotency: demo mode only. Key is owner-scoped to prevent cross-owner collisions.
+  // Demo path has no awaits between cache-check and cache-set so no race condition is possible.
+  const rawKey = request.headers.get("X-Idempotency-Key");
+  const idempotencyKey = rawKey && rawKey.length <= 128 ? rawKey : null;
+  const scopedKey = idempotencyKey ? `${session.ownerId ?? "anon"}:${idempotencyKey}` : null;
+  const payloadHash = scopedKey ? _hashPayload(body) : "";
+  if (scopedKey && !session.isLive) {
+    const cached = _getIdempotentResponse(scopedKey, payloadHash);
+    if (cached === "conflict") {
+      return NextResponse.json({ message: "Idempotency key reused with different payload." }, { status: 409 });
+    }
+    if (cached) return NextResponse.json(cached.body, { status: cached.status });
+  }
 
   const fullName = String(body.fullName ?? "").trim();
   const fatherName = String(body.fatherName ?? "").trim() || undefined;
@@ -88,7 +135,7 @@ export async function POST(request: Request) {
   const billingCycleRaw = String(body.billingCycle ?? "monthly").trim();
   const billingCycle = (billingCycleRaw === "daily" || billingCycleRaw === "weekly") ? billingCycleRaw : "monthly" as const;
   const hostelId = String(body.hostelId ?? "").trim();
-  const floorNumber = Number(body.floorNumber ?? 0);
+  const unitId = String(body.unitId ?? "").trim() || undefined;
   const roomNumber = String(body.roomNumber ?? "").trim();
   const sharingType = String(body.sharingType ?? "").trim();
   const moveInDate = String(body.moveInDate ?? "").trim();
@@ -96,9 +143,9 @@ export async function POST(request: Request) {
   const bedLabel = String(body.bedLabel ?? "").trim() || undefined;
   const propertyTypeRaw = String(body.propertyType ?? "").trim();
   const propertyType = propertyTypeRaw === "RESIDENCE" ? "RESIDENCE" : propertyTypeRaw === "PG" ? "PG" : undefined;
-  const hasAssignment = Boolean(hostelId && floorNumber && roomNumber && moveInDate);
+  const hasAssignment = Boolean(hostelId && roomNumber && moveInDate);
 
-  if (!fullName || Number.isNaN(monthlyRent) || monthlyRent < 0 || Number.isNaN(rentPaid) || rentPaid < 0 || !paidOnDate) {
+  if (!fullName || !Number.isFinite(monthlyRent) || monthlyRent < 0 || !Number.isFinite(rentPaid) || rentPaid < 0 || !paidOnDate) {
     return NextResponse.json({ message: "Name and payment details are required." }, { status: 400 });
   }
 
@@ -130,11 +177,11 @@ export async function POST(request: Request) {
         billingAnchorDate: liveAnchor,
         nextDueDate: liveNextDueDate,
         assignment: hasAssignment
-          ? { hostelId, floorNumber, roomNumber, sharingType, moveInDate, propertyType, bedId, bedLabel }
+          ? { hostelId, unitId, roomNumber, sharingType, moveInDate, propertyType, bedId, bedLabel }
           : undefined,
         // record the initial payment so history is never empty
         paymentHistory: [{
-          paymentId: `pay-init-${Date.now()}`,
+          paymentId: `pay-init-${crypto.randomUUID()}`,
           amount: rentPaid,
           paidOnDate,
           nextDueDate: liveNextDueDate,
@@ -180,7 +227,7 @@ export async function POST(request: Request) {
     try {
       const assignedTenant = assignTenantRoom(tenant.tenantId, {
         hostelId,
-        floorNumber,
+        unitId,
         roomNumber,
         sharingType,
         moveInDate,
@@ -188,7 +235,9 @@ export async function POST(request: Request) {
         bedId,
         bedLabel,
       });
-      return NextResponse.json({ tenant: assignedTenant }, { status: 201 });
+      const assignedBody = { tenant: assignedTenant };
+      if (scopedKey) _setIdempotentResponse(scopedKey, payloadHash, 201, assignedBody);
+      return NextResponse.json(assignedBody, { status: 201 });
     } catch (error) {
       removeTenantRecord(tenant.tenantId);
       return NextResponse.json(
@@ -198,5 +247,7 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ tenant }, { status: 201 });
+  const createdBody = { tenant };
+  if (scopedKey) _setIdempotentResponse(scopedKey, payloadHash, 201, createdBody);
+  return NextResponse.json(createdBody, { status: 201 });
 }

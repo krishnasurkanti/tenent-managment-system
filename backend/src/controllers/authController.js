@@ -1,19 +1,7 @@
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const { query } = require("../config/db");
 const { createHttpError } = require("../utils/httpErrors");
-
-function signToken(owner) {
-  return jwt.sign(
-    {
-      ownerId: owner.id,
-      email: owner.email,
-      role: "owner",
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" },
-  );
-}
+const { signToken } = require("../utils/jwt");
 
 async function register(req, res) {
   const { email, password, name, phoneNumber } = req.validatedBody;

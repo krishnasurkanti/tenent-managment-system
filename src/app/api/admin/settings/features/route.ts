@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getAdminFeatures, setAdminFeature } from "@/data/adminStore";
 import { isAdminAuthenticated } from "@/lib/admin-session";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +18,8 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await request.json()) as {
-    name?: string;
-    enabled?: boolean;
-  };
+  const { body, error: jsonError } = await parseJsonBody<{ name?: string; enabled?: boolean }>(request);
+  if (jsonError) return jsonError;
 
   if (!body.name || typeof body.enabled !== "boolean") {
     return NextResponse.json({ message: "name and enabled are required." }, { status: 400 });

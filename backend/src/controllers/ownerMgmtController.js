@@ -22,10 +22,13 @@ function mapOwner(row) {
 }
 
 async function listOwners(req, res) {
+  const limit = Math.min(Math.max(1, Number(req.query.limit ?? 100)), 500);
+  const offset = Math.max(0, Number(req.query.offset ?? 0));
   const result = await query(
-    `SELECT ${OWNER_SELECT} FROM owners ORDER BY created_at DESC`,
+    `SELECT ${OWNER_SELECT} FROM owners WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+    [limit, offset],
   );
-  return res.json({ owners: result.rows.map(mapOwner) });
+  return res.json({ owners: result.rows.map(mapOwner), pagination: { limit, offset, count: result.rows.length } });
 }
 
 async function createOwner(req, res) {
@@ -34,8 +37,8 @@ async function createOwner(req, res) {
   if (!email || !password) {
     throw createHttpError(400, "Email and password are required.");
   }
-  if (password.length < 6) {
-    throw createHttpError(400, "Password must be at least 6 characters.");
+  if (password.length < 8 || password.length > 128) {
+    throw createHttpError(400, "Password must be 8–128 characters.");
   }
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -87,7 +90,7 @@ async function updateOwnerStatus(req, res) {
   }
 
   const result = await query(
-    `UPDATE owners SET status = $1 WHERE id = $2 RETURNING ${OWNER_SELECT}`,
+    `UPDATE owners SET status = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING ${OWNER_SELECT}`,
     [status, id],
   );
 
@@ -109,7 +112,7 @@ async function updateOwnerPlan(req, res) {
 
   const result = await query(
     `UPDATE owners SET plan = COALESCE($1, plan), plan_status = COALESCE($2, plan_status)
-     WHERE id = $3 RETURNING ${OWNER_SELECT}`,
+     WHERE id = $3 AND deleted_at IS NULL RETURNING ${OWNER_SELECT}`,
     [plan || null, planStatus || null, id],
   );
 

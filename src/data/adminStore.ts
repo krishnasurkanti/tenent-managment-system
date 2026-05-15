@@ -63,7 +63,9 @@ function loadState(): AdminState {
 function persistState(state: AdminState) {
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(ADMIN_FILE, JSON.stringify(state, null, 2), "utf8");
+    const tmp = ADMIN_FILE + ".tmp";
+    fs.writeFileSync(tmp, JSON.stringify(state, null, 2), "utf8");
+    fs.renameSync(tmp, ADMIN_FILE);
   } catch {
     // read-only filesystem (Vercel) — in-memory only
   }
@@ -320,8 +322,8 @@ export function setOwnerCredentials(hostelId: string, username: string, password
   if (!control) throw new Error("Hostel not found.");
 
   const normalized = username.trim().toLowerCase();
-  if (!normalized || password.trim().length < 6) {
-    throw new Error("Valid username and password (min 6 chars) are required.");
+  if (!normalized || password.length < 8) {
+    throw new Error("Valid username and password (min 8 chars) are required.");
   }
 
   const usernameTaken = Object.values(adminState.controls).some(
@@ -330,7 +332,7 @@ export function setOwnerCredentials(hostelId: string, username: string, password
   if (usernameTaken) throw new Error("Username already assigned to another owner.");
 
   control.ownerUsername = normalized;
-  control.ownerPasswordHash = hashPassword(password.trim());
+  control.ownerPasswordHash = hashPassword(password);
   control.failedLoginAttempts = 0;
   control.lockedUntil = null;
   addLog("owner_credentials_updated", `Owner credentials updated for ${control.ownerEmail}`);

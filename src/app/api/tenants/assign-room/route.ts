@@ -10,21 +10,25 @@ export async function POST(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  const body = (await request.json()) as {
+  let body: {
     tenantId?: string;
     hostelId?: string;
-    floorNumber?: number;
+    unitId?: string;
     roomNumber?: string;
     sharingType?: string;
     moveInDate?: string;
     propertyType?: "PG" | "RESIDENCE";
     bedId?: string;
     bedLabel?: string;
-    tenantRecord?: Record<string, unknown>;
   };
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return NextResponse.json({ message: "Invalid request body." }, { status: 400 });
+  }
 
-  if (!body.tenantId || !body.hostelId || !body.floorNumber || !body.roomNumber || !body.sharingType || !body.moveInDate) {
-    return NextResponse.json({ message: "Please choose hostel, floor, room, sharing type, and move-in date." }, { status: 400 });
+  if (!body.tenantId || !body.hostelId || !body.roomNumber || !body.sharingType || !body.moveInDate) {
+    return NextResponse.json({ message: "Please choose hostel, room, sharing type, and move-in date." }, { status: 400 });
   }
 
   try {
@@ -47,7 +51,7 @@ export async function POST(request: Request) {
           nextDueDate: calculateNextDueDate(paidOnDate, body.moveInDate),
           assignment: {
             hostelId: body.hostelId,
-            floorNumber: body.floorNumber,
+            unitId: body.unitId,
             roomNumber: body.roomNumber,
             sharingType: body.sharingType,
             moveInDate: body.moveInDate,
@@ -66,37 +70,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ tenant: updatePayload.tenant });
     }
 
-    let tenant: unknown;
-    try {
-      tenant = assignTenantRoom(body.tenantId, {
-        hostelId: body.hostelId,
-        floorNumber: body.floorNumber,
-        roomNumber: body.roomNumber,
-        sharingType: body.sharingType,
-        moveInDate: body.moveInDate,
-        propertyType: body.propertyType,
-        bedId: body.bedId,
-        bedLabel: body.bedLabel,
-      });
-    } catch {
-      // in-memory store empty (Vercel cold start) — apply assignment to client snapshot
-      if (!body.tenantRecord) {
-        return NextResponse.json({ message: "Tenant not found." }, { status: 404 });
-      }
-      tenant = {
-        ...body.tenantRecord,
-        assignment: {
-          hostelId: body.hostelId,
-          floorNumber: body.floorNumber,
-          roomNumber: body.roomNumber,
-          sharingType: body.sharingType ?? "",
-          moveInDate: body.moveInDate,
-          propertyType: body.propertyType,
-          bedId: body.bedId,
-          bedLabel: body.bedLabel,
-        },
-      };
-    }
+    const tenant = assignTenantRoom(body.tenantId, {
+      hostelId: body.hostelId,
+      unitId: body.unitId,
+      roomNumber: body.roomNumber,
+      sharingType: body.sharingType,
+      moveInDate: body.moveInDate,
+      propertyType: body.propertyType,
+      bedId: body.bedId,
+      bedLabel: body.bedLabel,
+    });
 
     return NextResponse.json({ tenant });
   } catch (error) {

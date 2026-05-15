@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getApiBaseUrl } from "@/lib/api-config";
 import { setAuthCookies } from "@/services/core/backend-api";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,8 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
-  const body = (await request.json()) as { email?: string; name?: string; phoneNumber?: string; password?: string };
+  const { body, error: jsonError } = await parseJsonBody<{ email?: string; name?: string; phoneNumber?: string; password?: string }>(request);
+  if (jsonError) return jsonError;
   try {
     const res = await fetch(
       `${getApiBaseUrl()}/api/admin/invitations/${encodeURIComponent(token)}/accept`,

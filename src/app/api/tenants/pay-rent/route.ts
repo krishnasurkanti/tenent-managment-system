@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { recordTenantPayment } from "@/data/tenantStore";
 import { savePaymentProofImage } from "@/lib/payment-proof-upload";
+import { validatePaymentProofWithMagicBytes } from "@/lib/document-upload";
 import { requireOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
 import { calculateNextDueDate, getDueStatus } from "@/utils/payment";
@@ -25,19 +26,14 @@ export async function POST(request: Request) {
   const txnId = String(formData.get("txnId") ?? "").trim();
   const proofImage = formData.get("proofImage");
 
-  if (!tenantId || !paidOnDate || Number.isNaN(amount) || amount < 0 || !paymentMethod) {
+  if (!tenantId || !paidOnDate || !Number.isFinite(amount) || amount < 0 || !paymentMethod) {
     return NextResponse.json({ message: "Tenant, payment amount, payment mode, and paid date are required." }, { status: 400 });
   }
 
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-  const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
-
   if (proofImage instanceof File && proofImage.name) {
-    if (proofImage.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ message: "Proof file is too large. Maximum size is 5 MB." }, { status: 400 });
-    }
-    if (!ALLOWED_MIME_TYPES.includes(proofImage.type)) {
-      return NextResponse.json({ message: "Invalid file type. Allowed: JPEG, PNG, WebP, GIF, PDF." }, { status: 400 });
+    const proofError = await validatePaymentProofWithMagicBytes(proofImage);
+    if (proofError) {
+      return NextResponse.json({ message: proofError }, { status: 400 });
     }
   }
 
@@ -80,7 +76,7 @@ export async function POST(request: Request) {
           expectedUpdatedAt: existingPayload.tenant?.updatedAt ?? existingPayload.tenant?.updated_at,
           paymentHistory: [
             {
-              paymentId: `pay-${tenantId}-${Date.now()}`,
+              paymentId: `pay-${tenantId}-${crypto.randomUUID()}`,
               amount,
               paidOnDate,
               nextDueDate,

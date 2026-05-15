@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -74,7 +74,6 @@ function OwnerTenantsPageContent() {
     () => ({
       action: searchParams.get("action") ?? undefined,
       hostelId: searchParams.get("hostelId") ?? undefined,
-      floorNumber: searchParams.get("floor") ? Number(searchParams.get("floor")) : undefined,
       roomNumber: searchParams.get("room") ?? undefined,
       sharingType: searchParams.get("sharingType") ?? undefined,
     }),
@@ -84,15 +83,16 @@ function OwnerTenantsPageContent() {
   const shouldAutoAssign =
     preferredAssignment.action === "add-tenant" &&
     !!preferredAssignment.hostelId &&
-    !!preferredAssignment.floorNumber &&
     !!preferredAssignment.roomNumber &&
     !!preferredAssignment.sharingType;
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setModalOpen(searchParams.get("action") === "add-tenant");
     const q = searchParams.get("q");
     if (q !== null) setSearchQuery(q);
   }, [searchParams]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const closeModal = useCallback(() => {
     setModalOpen(false);
@@ -123,14 +123,12 @@ function OwnerTenantsPageContent() {
     if (!query) return tenants;
 
     return tenants.filter((t) => {
-      const floor = t.assignment?.floorNumber ? String(t.assignment.floorNumber) : "";
       const room = t.assignment?.roomNumber?.toLowerCase() ?? "";
       return (
         t.tenantId.toLowerCase().includes(query) ||
         t.fullName.toLowerCase().includes(query) ||
         t.phone.toLowerCase().includes(query) ||
         t.email.toLowerCase().includes(query) ||
-        floor.includes(query) ||
         room.includes(query)
       );
     });
@@ -153,11 +151,15 @@ function OwnerTenantsPageContent() {
   }, []);
 
   const mobileListRef = useRef<HTMLDivElement>(null);
+  const [mobileScrollMargin, setMobileScrollMargin] = useState(0);
+  useLayoutEffect(() => {
+    if (mobileListRef.current) setMobileScrollMargin(mobileListRef.current.offsetTop);
+  }, []);
   const mobileVirtualizer = useWindowVirtualizer({
     count: filteredTenants.length,
     estimateSize: () => 116,
     overscan: 3,
-    scrollMargin: mobileListRef.current?.offsetTop ?? 0,
+    scrollMargin: mobileScrollMargin,
   });
 
   if (hostelLoading || tenantLoading) return <LoadingState />;
@@ -297,7 +299,7 @@ function OwnerTenantsPageContent() {
                         )}
                       </div>
                       <p className="mt-1 truncate text-[11px] text-[color:var(--fg-secondary)]">
-                        {tenant.assignment ? `F${tenant.assignment.floorNumber} / R${tenant.assignment.roomNumber}` : "Pending assignment"} / {tenant.phone}
+                        {tenant.assignment ? `Room ${tenant.assignment.roomNumber}` : "Pending assignment"} / {tenant.phone}
                       </p>
                       <div className="mt-2 grid grid-cols-2 gap-2">
                         <MiniInfo label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} />
@@ -422,7 +424,7 @@ function OwnerTenantsPageContent() {
                           <p className="mt-0.5 text-[11px] text-[color:var(--fg-secondary)]">{tenant.email}</p>
                         </td>
                         <td className="px-3 py-3 text-[color:var(--fg-primary)]">
-                          {tenant.assignment ? `Floor ${tenant.assignment.floorNumber} / Room ${tenant.assignment.roomNumber}` : "Pending"}
+                          {tenant.assignment ? `Room ${tenant.assignment.roomNumber}` : "Pending"}
                         </td>
                         <td className="px-3 py-3 text-[color:var(--fg-primary)]">Rs {tenant.monthlyRent.toLocaleString("en-IN")}</td>
                         <td className="px-3 py-3 text-[color:var(--fg-primary)]">{formatPaymentDate(tenant.nextDueDate)}</td>
@@ -452,14 +454,13 @@ function OwnerTenantsPageContent() {
         onCreated={async (tenant) => {
           void queryClient.invalidateQueries({ queryKey: ["owner-tenants", currentHostelId ?? null] });
           if (shouldAutoAssign) {
-            const { hostelId, floorNumber, roomNumber, sharingType } = preferredAssignment as {
-              hostelId: string; floorNumber: number; roomNumber: string; sharingType: string;
+            const { hostelId, roomNumber, sharingType } = preferredAssignment as {
+              hostelId: string; roomNumber: string; sharingType: string;
             };
 
             const { response, data } = await assignTenantRoom({
               tenantId: tenant.tenantId,
               hostelId,
-              floorNumber,
               roomNumber,
               sharingType,
               moveInDate: tenant.paidOnDate,

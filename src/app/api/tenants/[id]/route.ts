@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireOwnerSession } from "@/lib/session-mode";
 import { updateTenantProfile } from "@/data/tenantStore";
 import { backendFetch } from "@/services/core/backend-api";
+import { parseJsonBody } from "@/lib/safe-json";
 import type { TenantRecord } from "@/types/tenant";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,8 @@ export async function PATCH(
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  const body = (await request.json()) as Record<string, unknown>;
+  const { body, error: jsonError } = await parseJsonBody(request);
+  if (jsonError) return jsonError;
 
   const patch: Partial<TenantRecord> = {};
 
@@ -44,7 +46,7 @@ export async function PATCH(
   if (body.emergencyContactPhone !== undefined) patch.emergencyContactPhone = str("emergencyContactPhone");
   if (body.monthlyRent !== undefined) {
     const v = Number(body.monthlyRent);
-    if (!Number.isNaN(v) && v >= 0) patch.monthlyRent = v;
+    if (Number.isFinite(v) && v >= 0) patch.monthlyRent = v;
   }
   if (body.billingCycle !== undefined) {
     const v = String(body.billingCycle ?? "").trim();

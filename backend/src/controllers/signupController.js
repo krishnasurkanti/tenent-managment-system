@@ -1,16 +1,8 @@
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const { getClient, query } = require("../config/db");
 const { createHttpError } = require("../utils/httpErrors");
-
-function signToken(owner) {
-  return jwt.sign(
-    { ownerId: owner.id, email: owner.email, role: "owner" },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" },
-  );
-}
+const { signToken } = require("../utils/jwt");
 
 async function validateSignupKey(req, res) {
   const { key } = req.params;
@@ -32,13 +24,7 @@ async function validateSignupKey(req, res) {
 
 async function registerWithKey(req, res) {
   const { key } = req.params;
-  const { name, email, phoneNumber, password, hostelName, hostelAddress, hostelType, floors } = req.body;
-
-  if (!name?.trim()) throw createHttpError(400, "Name is required.");
-  if (!email?.includes("@")) throw createHttpError(400, "Valid email is required.");
-  if (!password || password.length < 6) throw createHttpError(400, "Password must be at least 6 characters.");
-  if (!hostelName?.trim()) throw createHttpError(400, "Hostel name is required.");
-  if (!hostelAddress?.trim()) throw createHttpError(400, "Hostel address is required.");
+  const { name, email, phoneNumber, password, hostelName, hostelAddress, hostelType, floors } = req.validatedBody;
 
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedPhone = phoneNumber?.trim() || null;
@@ -61,6 +47,11 @@ async function registerWithKey(req, res) {
 
     const existing = await client.query("SELECT id FROM owners WHERE email = $1 LIMIT 1", [normalizedEmail]);
     if (existing.rowCount > 0) throw createHttpError(409, "An account with this email already exists.");
+
+    if (normalizedPhone) {
+      const existingPhone = await client.query("SELECT id FROM owners WHERE phone_number = $1 LIMIT 1", [normalizedPhone]);
+      if (existingPhone.rowCount > 0) throw createHttpError(409, "Phone number already registered.");
+    }
 
     const ownerResult = await client.query(
       `INSERT INTO owners (email, password, name, phone_number, status, plan, plan_status, trial_start_date)

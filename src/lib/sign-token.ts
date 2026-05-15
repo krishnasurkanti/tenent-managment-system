@@ -1,14 +1,11 @@
 import { SignJWT } from "jose";
 
 function getSecret(): Uint8Array {
-  const raw = process.env.JWT_SECRET ?? "";
+  const raw = (process.env.JWT_SECRET ?? "").trim();
   if (!raw) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("JWT_SECRET env var is required in production.");
-    }
-    console.warn("[sign-token] JWT_SECRET not set — using insecure dev default.");
+    throw new Error("JWT_SECRET env var is required.");
   }
-  return new TextEncoder().encode(raw || "dev-only-secret-DO-NOT-USE-IN-PRODUCTION");
+  return new TextEncoder().encode(raw);
 }
 
 export async function signOwnerToken(ownerId: string, username: string): Promise<string> {

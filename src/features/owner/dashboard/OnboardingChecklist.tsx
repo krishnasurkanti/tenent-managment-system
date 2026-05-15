@@ -44,10 +44,12 @@ export function OnboardingChecklist({
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setState(loadState());
     setMounted(true);
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!mounted || state.dismissed) return null;
 

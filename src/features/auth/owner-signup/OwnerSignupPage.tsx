@@ -1,33 +1,26 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, Lock, Mail, MapPin, Phone, Plus, ShieldCheck, Trash2, User } from "lucide-react";
 import { csrfFetch } from "@/lib/csrf-client";
 import { getSharingLabel } from "@/utils/hostel-occupancy";
 
-// ─── Floor / Room types (mirrors OwnerCreateHostelPage) ─────────────────────
-
 type RoomForm = { id: string; roomNumber: string; bedCount: string };
-type FloorForm = { id: string; floorLabel: string; rooms: RoomForm[] };
 
 function uid() { return `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`; }
 function createRoom(): RoomForm { return { id: `room-${uid()}`, roomNumber: "", bedCount: "" }; }
-function createFloor(index: number): FloorForm {
-  return { id: `floor-${uid()}`, floorLabel: `Floor ${index}`, rooms: [createRoom()] };
-}
 function isRoomComplete(r: RoomForm) { return r.roomNumber.trim() && Number(r.bedCount) > 0; }
 function getSignupBedId(room: RoomForm, bedIndex: number) {
   return `${room.id}-bed-${bedIndex + 1}`;
 }
-// ─── Page steps ─────────────────────────────────────────────────────────────
 
-type Step = "loading" | "invalid" | "account" | "hostel" | "floors" | "tenants" | "submitting" | "done";
+type Step = "loading" | "invalid" | "account" | "hostel" | "rooms" | "tenants" | "submitting" | "done";
 
 const STEPS: { key: Step; label: string }[] = [
   { key: "account", label: "Account" },
   { key: "hostel",  label: "Hostel" },
-  { key: "floors",  label: "Floors" },
+  { key: "rooms",   label: "Rooms" },
   { key: "tenants", label: "Tenants" },
 ];
 
@@ -53,9 +46,8 @@ export default function OwnerSignupPage() {
   const [hostelAddress, setHostelAddress] = useState("");
   const [hostelType, setHostelType] = useState<"PG" | "RESIDENCE">("PG");
 
-  // Floors
-  const [floors, setFloors] = useState<FloorForm[]>(() => [createFloor(1)]);
-  const [activeFloorId, setActiveFloorId] = useState<string>(() => "");
+  // Rooms
+  const [rooms, setRooms] = useState<RoomForm[]>([createRoom()]);
   const [activeRoomId, setActiveRoomId] = useState<string>(() => "");
 
   // Tenants step
@@ -66,7 +58,6 @@ export default function OwnerSignupPage() {
   const [tEmail, setTEmail] = useState("");
   const [tRent, setTRent] = useState("");
   const [tMoveIn, setTMoveIn] = useState("");
-  const [tFloorIdx, setTFloorIdx] = useState(0);
   const [tRoomIdx, setTRoomIdx] = useState(0);
   const [tBedIdx, setTBedIdx] = useState(0);
   const [tError, setTError] = useState("");
@@ -74,16 +65,16 @@ export default function OwnerSignupPage() {
 
   const [error, setError] = useState("");
 
-  // Set initial active ids after first render
   useEffect(() => {
-    if (!activeFloorId && floors.length > 0) {
-      setActiveFloorId(floors[0].id);
-      setActiveRoomId(floors[0].rooms[0]?.id ?? "");
+    if (!activeRoomId && rooms.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveRoomId(rooms[0].id);
     }
-  }, [floors, activeFloorId]);
+  }, [rooms, activeRoomId]);
 
   // Validate key on mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!key) { setInvalidReason("No signup key in link. Contact admin."); setStep("invalid"); return; }
     void (async () => {
       try {
@@ -95,53 +86,26 @@ export default function OwnerSignupPage() {
     })();
   }, [key]);
 
-  // Keep activeFloor/Room consistent
-  const activeFloor = useMemo(() => floors.find(f => f.id === activeFloorId) ?? floors[0] ?? null, [floors, activeFloorId]);
-  const activeRoom = activeFloor?.rooms.find(r => r.id === activeRoomId) ?? activeFloor?.rooms[0] ?? null;
-  const completedFloors = floors.filter(f => f.rooms.length > 0 && f.rooms.every(isRoomComplete));
+  const activeRoom = rooms.find(r => r.id === activeRoomId) ?? rooms[0] ?? null;
+  const completedRooms = rooms.filter(isRoomComplete);
 
-  // ── Floor / Room helpers ──────────────────────────────────────────────────
-
-  const updateFloor = (floorId: string, updater: (f: FloorForm) => FloorForm) =>
-    setFloors(cur => cur.map(f => f.id === floorId ? updater(f) : f));
-
-  const updateRoom = (floorId: string, roomId: string, field: keyof RoomForm, val: string) =>
-    updateFloor(floorId, f => ({ ...f, rooms: f.rooms.map(r => r.id === roomId ? { ...r, [field]: val } : r) }));
+  const updateRoom = (roomId: string, field: keyof RoomForm, val: string) =>
+    setRooms(cur => cur.map(r => r.id === roomId ? { ...r, [field]: val } : r));
 
   const addRoom = () => {
-    if (!activeFloor || !activeRoom) return;
+    if (!activeRoom) return;
     if (!isRoomComplete(activeRoom)) { setError("Fill current room before adding next."); return; }
     const next = createRoom();
-    updateFloor(activeFloor.id, f => ({ ...f, rooms: [...f.rooms, next] }));
+    setRooms(cur => [...cur, next]);
     setActiveRoomId(next.id);
     setError("");
   };
 
   const removeRoom = (roomId: string) => {
-    if (!activeFloor || activeFloor.rooms.length <= 1) { setError("Each floor needs at least one room."); return; }
-    const remaining = activeFloor.rooms.filter(r => r.id !== roomId);
-    updateFloor(activeFloor.id, f => ({ ...f, rooms: remaining }));
+    if (rooms.length <= 1) { setError("Need at least one room."); return; }
+    const remaining = rooms.filter(r => r.id !== roomId);
+    setRooms(remaining);
     setActiveRoomId(remaining[remaining.length - 1]?.id ?? "");
-    setError("");
-  };
-
-  const addFloor = () => {
-    if (!activeFloor || activeFloor.rooms.length === 0 || !activeFloor.rooms.every(isRoomComplete)) {
-      setError("Complete all rooms on current floor before adding another floor."); return;
-    }
-    const next = createFloor(floors.length + 1);
-    setFloors(cur => [...cur, next]);
-    setActiveFloorId(next.id);
-    setActiveRoomId(next.rooms[0].id);
-    setError("");
-  };
-
-  const removeFloor = (floorId: string) => {
-    if (floors.length <= 1) { setError("Need at least one floor."); return; }
-    const remaining = floors.filter(f => f.id !== floorId).map((f, i) => ({ ...f, floorLabel: `Floor ${i + 1}` }));
-    setFloors(remaining);
-    setActiveFloorId(remaining[0].id);
-    setActiveRoomId(remaining[0].rooms[0]?.id ?? "");
     setError("");
   };
 
@@ -160,13 +124,13 @@ export default function OwnerSignupPage() {
     e.preventDefault(); setError("");
     if (!hostelName.trim()) { setError("Enter hostel name."); return; }
     if (!hostelAddress.trim()) { setError("Enter hostel address."); return; }
-    setStep("floors");
+    setStep("rooms");
   };
 
   const handleSubmit = async () => {
     setError("");
-    if (floors.length === 0) { setError("Add at least one floor."); return; }
-    const hasIncomplete = floors.some(f => f.rooms.length === 0 || !f.rooms.every(isRoomComplete));
+    if (rooms.length === 0) { setError("Add at least one room."); return; }
+    const hasIncomplete = rooms.some(r => !isRoomComplete(r));
     if (hasIncomplete) { setError("Complete all room details (room number + beds) before saving."); return; }
 
     setStep("submitting");
@@ -180,15 +144,11 @@ export default function OwnerSignupPage() {
       hostelName: hostelName.trim(),
       hostelAddress: hostelAddress.trim(),
       hostelType,
-      floors: floors.map(f => ({
-        id: f.id,
-        floorLabel: f.floorLabel,
-        rooms: f.rooms.map(r => ({
-          id: r.id,
-          roomNumber: r.roomNumber,
-          bedCount: Number(r.bedCount),
-          sharingType: getSharingLabel(r.bedCount),
-        })),
+      rooms: rooms.map(r => ({
+        id: r.id,
+        roomNumber: r.roomNumber,
+        bedCount: Number(r.bedCount),
+        sharingType: getSharingLabel(r.bedCount),
       })),
     };
 
@@ -199,10 +159,10 @@ export default function OwnerSignupPage() {
         body: JSON.stringify(payload),
       });
       const data = (await res.json()) as { ok?: boolean; message?: string; hostel?: { id?: string } };
-      if (!res.ok) { setError(data.message ?? "Registration failed."); setStep("floors"); return; }
+      if (!res.ok) { setError(data.message ?? "Registration failed."); setStep("rooms"); return; }
       setCreatedHostelId(data.hostel?.id ?? "");
       setStep("tenants");
-    } catch { setError("Unable to register. Try again."); setStep("floors"); }
+    } catch { setError("Unable to register. Try again."); setStep("rooms"); }
   };
 
   // ── Tenant helpers ────────────────────────────────────────────────────────
@@ -216,9 +176,8 @@ export default function OwnerSignupPage() {
     if (!tRent || Number(tRent) <= 0) { setTError("Enter monthly rent."); return; }
     if (!tMoveIn) { setTError("Move-in date required."); return; }
 
-    const selectedFloor = floors[tFloorIdx];
-    const selectedRoom = selectedFloor?.rooms[tRoomIdx];
-    if (!selectedFloor || !selectedRoom) { setTError("Select a valid floor and room."); return; }
+    const selectedRoom = rooms[tRoomIdx];
+    if (!selectedRoom) { setTError("Select a valid room."); return; }
 
     const payload: Record<string, unknown> = {
       fullName: tName.trim(),
@@ -228,7 +187,6 @@ export default function OwnerSignupPage() {
       rentPaid: "0",
       paidOnDate: tMoveIn,
       hostelId: createdHostelId,
-      floorNumber: String(tFloorIdx + 1),
       roomNumber: selectedRoom.roomNumber,
       moveInDate: tMoveIn,
       sharingType: getSharingLabel(selectedRoom.bedCount) || "1 sharing",
@@ -250,10 +208,10 @@ export default function OwnerSignupPage() {
       if (!res.ok) { setTError(data.message ?? "Failed to add tenant."); setTSaving(false); return; }
       setAddedTenants(prev => [...prev, {
         name: tName.trim(),
-        room: `${selectedFloor.floorLabel} · ${selectedRoom.roomNumber}`,
+        room: `Room ${selectedRoom.roomNumber}`,
       }]);
       setTName(""); setTPhone(""); setTEmail(""); setTRent(""); setTMoveIn("");
-      setTFloorIdx(0); setTRoomIdx(0); setTBedIdx(0); setTError("");
+      setTRoomIdx(0); setTBedIdx(0); setTError("");
     } catch { setTError("Network error. Try again."); }
     setTSaving(false);
   };
@@ -359,7 +317,7 @@ export default function OwnerSignupPage() {
           {step === "hostel" && (
             <>
               <h1 className="text-xl font-semibold tracking-[-0.03em] text-[#f7f0e8]">Your hostel details</h1>
-              <p className="mt-1 text-sm text-white/45">Name and address. Floors and rooms in the next step.</p>
+              <p className="mt-1 text-sm text-white/45">Name and address. Rooms in the next step.</p>
               <form onSubmit={handleHostelNext} className="mt-4 space-y-3">
                 <InputField label="Hostel / PG Name" icon={<Building2 className="h-4 w-4 text-white/30" />}>
                   <input type="text" value={hostelName} onChange={e => setHostelName(e.target.value)} placeholder="e.g. Sai Krishna PG" autoComplete="off"
@@ -384,64 +342,46 @@ export default function OwnerSignupPage() {
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <button type="button" onClick={() => { setStep("account"); setError(""); }}
                     className="rounded-xl border border-white/12 px-4 py-2.5 text-sm font-medium text-white/60 hover:text-white">Back</button>
-                  <SubmitBtn className="flex-1">Next: Floors &amp; Rooms <ArrowRight className="h-4 w-4" /></SubmitBtn>
+                  <SubmitBtn className="flex-1">Next: Rooms <ArrowRight className="h-4 w-4" /></SubmitBtn>
                 </div>
               </form>
             </>
           )}
 
-          {/* ── STEP 3: FLOORS & ROOMS ───────────────────────────────────── */}
-          {step === "floors" && (
+          {/* ── STEP 3: ROOMS ───────────────────────────────────────────── */}
+          {step === "rooms" && (
             <>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <h1 className="text-xl font-semibold tracking-[-0.03em] text-[#f7f0e8]">Floors &amp; Rooms</h1>
-                  <p className="mt-0.5 text-sm text-white/45">{hostelName} · {completedFloors.length}/{floors.length} floors done</p>
+                  <h1 className="text-xl font-semibold tracking-[-0.03em] text-[#f7f0e8]">Rooms</h1>
+                  <p className="mt-0.5 text-sm text-white/45">{hostelName} · {completedRooms.length}/{rooms.length} rooms done</p>
                 </div>
-                <button type="button" onClick={addFloor}
+                <button type="button" onClick={addRoom}
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/60 hover:text-white">
-                  <Plus className="h-3.5 w-3.5" /> Add Floor
+                  <Plus className="h-3.5 w-3.5" /> Add Room
                 </button>
               </div>
 
-              {/* Floor tabs */}
+              {/* Room tabs */}
               <div className="mt-4 flex flex-wrap gap-2">
-                {floors.map((f, i) => {
-                  const done = f.rooms.length > 0 && f.rooms.every(isRoomComplete);
-                  const active = f.id === activeFloor?.id;
+                {rooms.map((room, i) => {
+                  const done = isRoomComplete(room);
+                  const active = room.id === activeRoom?.id;
                   return (
-                    <button key={f.id} type="button"
-                      onClick={() => { setActiveFloorId(f.id); setActiveRoomId(f.rooms[0]?.id ?? ""); setError(""); }}
+                    <button key={room.id} type="button"
+                      onClick={() => { setActiveRoomId(room.id); setError(""); }}
                       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${active ? "border-[#f2bb4d]/40 bg-[#f7bf53]/12 text-[#fcd34d]" : done ? "border-[#4ade80]/30 bg-[#22c55e]/10 text-[#4ade80]" : "border-white/12 bg-white/[0.04] text-white/50"}`}>
-                      {f.floorLabel || `Floor ${i + 1}`}
+                      {room.roomNumber || `Room ${i + 1}`}
                       {done && <CheckCircle2 className="h-3 w-3" />}
                     </button>
                   );
                 })}
               </div>
 
-              {activeFloor && (
+              {activeRoom && (
                 <div className="mt-4 space-y-3">
-                  {/* Floor header */}
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex-1">
-                      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">Floor label</span>
-                      <input value={activeFloor.floorLabel}
-                        onChange={e => updateFloor(activeFloor.id, f => ({ ...f, floorLabel: e.target.value }))}
-                        placeholder="e.g. Ground Floor"
-                        className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50" />
-                    </div>
-                    {floors.length > 1 && (
-                      <button type="button" onClick={() => removeFloor(activeFloor.id)}
-                        className="mt-5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white/30 hover:bg-red-500/15 hover:text-red-400">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Rooms */}
                   <div className="space-y-2">
-                    {activeFloor.rooms.map((room, idx) => {
+                    {rooms.map((room, idx) => {
                       const isActive = room.id === activeRoom?.id;
                       const done = isRoomComplete(room);
                       return (
@@ -454,7 +394,7 @@ export default function OwnerSignupPage() {
                               {done && <CheckCircle2 className="h-3.5 w-3.5 text-[#4ade80]" />}
                               {room.roomNumber && <span className="text-xs text-white/40">· {room.roomNumber} · {room.bedCount} beds</span>}
                             </button>
-                            {activeFloor.rooms.length > 1 && (
+                            {rooms.length > 1 && (
                               <button type="button" onClick={() => removeRoom(room.id)}
                                 className="inline-flex h-6 w-6 items-center justify-center rounded-lg text-white/25 hover:bg-red-500/15 hover:text-red-400">
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -466,14 +406,14 @@ export default function OwnerSignupPage() {
                               <div>
                                 <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40">Room Number</span>
                                 <input value={room.roomNumber}
-                                  onChange={e => updateRoom(activeFloor.id, room.id, "roomNumber", e.target.value)}
+                                  onChange={e => updateRoom(room.id, "roomNumber", e.target.value)}
                                   placeholder="e.g. 101"
                                   className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#f2bb4d]/50" />
                               </div>
                               <div>
                                 <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40">Beds in Room</span>
                                 <input type="number" min="1" value={room.bedCount}
-                                  onChange={e => updateRoom(activeFloor.id, room.id, "bedCount", e.target.value)}
+                                  onChange={e => updateRoom(room.id, "bedCount", e.target.value)}
                                   placeholder="e.g. 3"
                                   className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#f2bb4d]/50" />
                                 {room.bedCount && Number(room.bedCount) > 0 &&
@@ -485,12 +425,6 @@ export default function OwnerSignupPage() {
                       );
                     })}
                   </div>
-
-                  {/* Add room */}
-                  <button type="button" onClick={addRoom}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-2 text-xs font-semibold text-white/45 hover:border-white/25 hover:text-white/70 transition">
-                    <Plus className="h-3.5 w-3.5" /> Add Room to {activeFloor.floorLabel}
-                  </button>
                 </div>
               )}
 
@@ -562,19 +496,13 @@ export default function OwnerSignupPage() {
                 {/* Room assignment */}
                 <div>
                   <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Room Assignment</span>
-                  <div className={`grid gap-2 ${hostelType === "PG" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
-                    <select value={tFloorIdx} onChange={e => { setTFloorIdx(Number(e.target.value)); setTRoomIdx(0); setTBedIdx(0); }}
-                      className="w-full rounded-xl border border-white/12 bg-[#0f1220] px-3 py-2.5 text-sm text-white outline-none focus:border-[#f2bb4d]/50">
-                      {floors.map((f, i) => <option key={f.id} value={i}>{f.floorLabel || `Floor ${i + 1}`}</option>)}
-                    </select>
+                  <div className={`grid gap-2 ${hostelType === "PG" ? "sm:grid-cols-2" : ""}`}>
                     <select value={tRoomIdx} onChange={e => { setTRoomIdx(Number(e.target.value)); setTBedIdx(0); }}
                       className="w-full rounded-xl border border-white/12 bg-[#0f1220] px-3 py-2.5 text-sm text-white outline-none focus:border-[#f2bb4d]/50">
-                      {(floors[tFloorIdx]?.rooms ?? []).map((r, i) => (
-                        <option key={r.id} value={i}>Room {r.roomNumber || i + 1}</option>
-                      ))}
+                      {rooms.map((r, i) => <option key={r.id} value={i}>Room {r.roomNumber || i + 1}</option>)}
                     </select>
                     {hostelType === "PG" && (() => {
-                      const bedCount = Number(floors[tFloorIdx]?.rooms[tRoomIdx]?.bedCount ?? 1);
+                      const bedCount = Number(rooms[tRoomIdx]?.bedCount ?? 1);
                       return (
                         <select value={tBedIdx} onChange={e => setTBedIdx(Number(e.target.value))}
                           className="w-full rounded-xl border border-white/12 bg-[#0f1220] px-3 py-2.5 text-sm text-white outline-none focus:border-[#f2bb4d]/50">

@@ -9,20 +9,10 @@ const HOSTELS_FILE = path.join(DATA_DIR, "hostels.json");
 
 export const DEMO_OWNER_HOSTEL_ID = "owner-hostel-aurora";
 
-function createRooms(prefix: string, floorNumber: number) {
+function makeRooms(prefix: string, suffix: string, beds: number) {
   return [
-    {
-      id: `room-${prefix}-${floorNumber}01`,
-      roomNumber: `${floorNumber}01`,
-      bedCount: 3,
-      sharingType: "3 sharing",
-    },
-    {
-      id: `room-${prefix}-${floorNumber}02`,
-      roomNumber: `${floorNumber}02`,
-      bedCount: 2,
-      sharingType: "2 sharing",
-    },
+    { id: `room-${prefix}-${suffix}01`, roomNumber: `${suffix}01`, bedCount: 3, sharingType: "3 sharing" },
+    { id: `room-${prefix}-${suffix}02`, roomNumber: `${suffix}02`, bedCount: beds, sharingType: `${beds} sharing` },
   ];
 }
 
@@ -34,11 +24,12 @@ const demoOwnerHostels: OwnerHostel[] = [
     address: "Madhapur Main Road, Hyderabad",
     type: "PG",
     createdAt: "2026-04-01T10:00:00.000Z",
-    floors: [1, 2, 3, 4].map((floorNumber) => ({
-      id: `floor-aurora-${floorNumber}`,
-      floorLabel: `Floor ${floorNumber}`,
-      rooms: createRooms("aurora", floorNumber),
-    })),
+    rooms: [
+      ...makeRooms("aurora", "1", 2),
+      ...makeRooms("aurora", "2", 2),
+      ...makeRooms("aurora", "3", 2),
+      ...makeRooms("aurora", "4", 2),
+    ],
   },
   {
     id: "owner-hostel-lotus",
@@ -47,11 +38,12 @@ const demoOwnerHostels: OwnerHostel[] = [
     address: "Kukatpally Housing Board, Hyderabad",
     type: "PG",
     createdAt: "2026-04-03T10:00:00.000Z",
-    floors: [1, 2, 3, 4].map((floorNumber) => ({
-      id: `floor-lotus-${floorNumber}`,
-      floorLabel: `Floor ${floorNumber}`,
-      rooms: createRooms("lotus", floorNumber),
-    })),
+    rooms: [
+      ...makeRooms("lotus", "1", 2),
+      ...makeRooms("lotus", "2", 2),
+      ...makeRooms("lotus", "3", 2),
+      ...makeRooms("lotus", "4", 2),
+    ],
   },
   {
     id: "owner-hostel-skyline",
@@ -60,11 +52,12 @@ const demoOwnerHostels: OwnerHostel[] = [
     address: "Gachibowli Financial District, Hyderabad",
     type: "PG",
     createdAt: "2026-04-05T10:00:00.000Z",
-    floors: [1, 2, 3, 4].map((floorNumber) => ({
-      id: `floor-skyline-${floorNumber}`,
-      floorLabel: `Floor ${floorNumber}`,
-      rooms: createRooms("skyline", floorNumber),
-    })),
+    rooms: [
+      ...makeRooms("skyline", "1", 2),
+      ...makeRooms("skyline", "2", 2),
+      ...makeRooms("skyline", "3", 2),
+      ...makeRooms("skyline", "4", 2),
+    ],
   },
 ];
 
@@ -83,7 +76,9 @@ function loadPersistedHostels(): OwnerHostel[] {
 function persistHostels(hostels: OwnerHostel[]) {
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(HOSTELS_FILE, JSON.stringify(hostels, null, 2), "utf8");
+    const tmp = HOSTELS_FILE + ".tmp";
+    fs.writeFileSync(tmp, JSON.stringify(hostels, null, 2), "utf8");
+    fs.renameSync(tmp, HOSTELS_FILE);
   } catch {
     // read-only filesystem (Vercel) — in-memory only
   }
@@ -92,12 +87,9 @@ function persistHostels(hostels: OwnerHostel[]) {
 function cloneHostel(hostel: OwnerHostel): OwnerHostel {
   return normalizeHostel({
     ...hostel,
-    floors: hostel.floors.map((floor) => ({
-      ...floor,
-      rooms: floor.rooms.map((room) => ({
-        ...room,
-        beds: room.beds?.map((bed) => ({ ...bed })),
-      })),
+    rooms: (hostel.rooms ?? []).map((room) => ({
+      ...room,
+      beds: room.beds?.map((bed) => ({ ...bed })),
     })),
   });
 }
@@ -146,7 +138,6 @@ export function saveOwnerHostel(hostel: Omit<OwnerHostel, "id" | "createdAt"> & 
 
   ownerHostels = [nextHostel, ...ownerHostels];
 
-  // Persist non-demo real owner hostels to disk
   if (hostel.ownerId) {
     const persisted = loadPersistedHostels();
     persisted.unshift(nextHostel);
@@ -166,19 +157,11 @@ export function updateOwnerHostel(hostel: Omit<OwnerHostel, "id" | "createdAt"> 
   let updatedHostel: OwnerHostel | null = null;
 
   ownerHostels = ownerHostels.map((item) => {
-    if (item.id !== targetId) {
-      return item;
-    }
-
-    updatedHostel = {
-      ...item,
-      ...hostel,
-    };
-
+    if (item.id !== targetId) return item;
+    updatedHostel = { ...item, ...hostel };
     return updatedHostel;
   });
 
-  // Update persisted hostels too
   if (updatedHostel) {
     const persisted = loadPersistedHostels();
     const persistedIndex = persisted.findIndex((h) => h.id === targetId);

@@ -320,7 +320,7 @@ async function getTenants(req, res) {
 
     const result = await query(
       `
-        SELECT id, owner_id, hostel_id, data, created_at
+        SELECT id, owner_id, hostel_id, data, created_at, updated_at
         FROM tenants
         WHERE owner_id = $1 AND hostel_id = $2 AND deleted_at IS NULL
         ORDER BY created_at DESC, id DESC
@@ -336,7 +336,7 @@ async function getTenants(req, res) {
 
   const result = await query(
     `
-      SELECT id, owner_id, hostel_id, data, created_at
+      SELECT id, owner_id, hostel_id, data, created_at, updated_at
       FROM tenants
       WHERE owner_id = $1 AND deleted_at IS NULL
       ORDER BY created_at DESC, id DESC
@@ -352,7 +352,7 @@ async function getTenants(req, res) {
 async function getTenantById(req, res) {
   const result = await query(
     `
-      SELECT id, owner_id, hostel_id, data, created_at
+      SELECT id, owner_id, hostel_id, data, created_at, updated_at
       FROM tenants
       WHERE id = $1 AND owner_id = $2 AND deleted_at IS NULL
       LIMIT 1
@@ -388,14 +388,13 @@ async function updateTenant(req, res) {
     }
 
     const current = existing.rows[0];
-    const patch = req.body && typeof req.body === "object" ? req.body : {};
+    const patch = req.validatedBody && typeof req.validatedBody === "object" ? req.validatedBody : {};
     
-    // Conflict check: reject if the record was updated since the client last read it.
-    // All timestamps originate server-side so no clock-skew tolerance is needed.
+    // Conflict check: timestamps are server-generated — strict equality, no tolerance.
     if (patch.expectedUpdatedAt) {
       const expectedTime = new Date(patch.expectedUpdatedAt).getTime();
       const currentTime = new Date(current.updated_at).getTime();
-      if (Math.abs(currentTime - expectedTime) > 500) {
+      if (currentTime !== expectedTime) {
         throw createHttpError(409, "This record was updated by another session. Please refresh and try again.");
       }
     }

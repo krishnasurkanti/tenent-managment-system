@@ -14,6 +14,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Restore is not available in live mode." }, { status: 400 });
   }
 
+  const contentLength = Number(request.headers.get("content-length") ?? 0);
+  const MAX_RESTORE_BYTES = 10 * 1024 * 1024; // 10 MB
+  if (contentLength > MAX_RESTORE_BYTES) {
+    return NextResponse.json({ message: "Backup file too large (max 10 MB)." }, { status: 413 });
+  }
+
   let snapshot: BackupSnapshot;
   try {
     snapshot = (await request.json()) as BackupSnapshot;

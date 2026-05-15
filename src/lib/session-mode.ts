@@ -14,8 +14,8 @@ export async function getOwnerSession() {
         ? payload.sub
         : null;
 
-  // "demo" if the token explicitly carries source:demo OR the ownerId is the sentinel demo value
-  const isDemo = payload?.source === "demo" || ownerId === "demo-owner";
+  // "demo" only when the token explicitly carries source:demo (set by signDemoToken)
+  const isDemo = payload?.source === "demo";
 
   const mode: OwnerSessionMode =
     role !== "owner" && role !== "staff"

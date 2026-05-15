@@ -1,24 +1,26 @@
-const CSRF_COOKIE = "csrf_token";
 const CSRF_HEADER = "x-csrf-token";
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-function readCsrfCookie(): string {
-  if (typeof document === "undefined") return "";
-  for (const part of document.cookie.split(";")) {
-    const [rawKey, ...rest] = part.trim().split("=");
-    if (rawKey?.trim() === CSRF_COOKIE) return decodeURIComponent(rest.join("="));
-  }
-  return "";
-}
+// Token stored in JS memory — never touches document.cookie.
+// The HttpOnly csrf_token cookie is the server-side comparison target.
+let cachedToken: string | null = null;
 
 async function ensureCsrfToken(): Promise<string> {
-  let token = readCsrfCookie();
-  if (!token) {
-    // Cold start: hit the csrf endpoint so middleware sets the cookie
-    await fetch("/api/csrf").catch(() => null);
-    token = readCsrfCookie();
+  if (cachedToken) return cachedToken;
+  try {
+    const res = await fetch("/api/csrf");
+    if (res.ok) {
+      const data = (await res.json()) as { token?: string };
+      cachedToken = data.token ?? "";
+    }
+  } catch {
+    cachedToken = "";
   }
-  return token;
+  return cachedToken ?? "";
+}
+
+export function clearCsrfCache() {
+  cachedToken = null;
 }
 
 /**

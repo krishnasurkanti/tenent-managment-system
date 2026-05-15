@@ -10,8 +10,10 @@ export const dynamic = "force-dynamic";
 function csvCell(value: string | number | undefined | null): string {
   if (value === undefined || value === null) return "";
   const str = String(value);
-  if (/[,"\n\r]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
-  return str;
+  // Neutralize CSV formula injection: prefix =, +, -, @, tab, CR with single quote
+  const safe = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
+  if (/[,"\n\r]/.test(safe)) return `"${safe.replace(/"/g, '""')}"`;
+  return safe;
 }
 
 function buildCSV(tenants: TenantRecord[]): string {
@@ -20,7 +22,6 @@ function buildCSV(tenants: TenantRecord[]): string {
     "Full Name",
     "Phone",
     "Email",
-    "Floor",
     "Room",
     "Monthly Rent (Rs)",
     "Rent Paid (Rs)",
@@ -39,7 +40,6 @@ function buildCSV(tenants: TenantRecord[]): string {
       t.fullName,
       t.phone,
       t.email,
-      t.assignment?.floorNumber ?? "",
       t.assignment?.roomNumber ?? "",
       t.monthlyRent,
       t.rentPaid,

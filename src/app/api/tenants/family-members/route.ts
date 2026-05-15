@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getTenantRecordById, updateTenantFamilyMembersRecord } from "@/data/tenantStore";
 import { requireOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
+import { parseJsonBody } from "@/lib/safe-json";
 import type { TenantFamilyMember } from "@/types/tenant";
 
 export const dynamic = "force-dynamic";
@@ -10,10 +11,8 @@ export async function POST(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  const body = (await request.json()) as {
-    tenantId?: string;
-    familyMembers?: TenantFamilyMember[];
-  };
+  const { body, error: jsonError } = await parseJsonBody<{ tenantId?: string; familyMembers?: TenantFamilyMember[] }>(request);
+  if (jsonError) return jsonError;
 
   const tenantId = String(body.tenantId ?? "").trim();
   const familyMembers = sanitizeFamilyMembers(body.familyMembers);
@@ -24,6 +23,10 @@ export async function POST(request: Request) {
 
   if (familyMembers.length === 0) {
     return NextResponse.json({ message: "Add at least one valid family member." }, { status: 400 });
+  }
+
+  if (familyMembers.length > 20) {
+    return NextResponse.json({ message: "Maximum 20 family members allowed." }, { status: 400 });
   }
 
   if (session.isLive) {

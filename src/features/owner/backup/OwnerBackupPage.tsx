@@ -205,7 +205,7 @@ export default function OwnerBackupPage() {
             Use the JSON export above to keep a local copy of all your data.
           </p>
           <p className="mt-2 text-[12px] text-[color:var(--fg-secondary)]">
-            To restore from a JSON backup in live mode, contact support or use your database's built-in recovery tools.
+            To restore from a JSON backup in live mode, contact support or use your database&apos;s built-in recovery tools.
           </p>
         </Card>
       ) : (
@@ -285,7 +285,7 @@ export default function OwnerBackupPage() {
               <div className="px-4 py-6 text-center text-sm text-[color:var(--fg-secondary)]">Loading…</div>
             ) : backups.length === 0 ? (
               <div className="px-4 py-6 text-center text-sm text-[color:var(--fg-secondary)]">
-                No backups yet. Click "Backup Now" to create one.
+                No backups yet. Click &ldquo;Backup Now&rdquo; to create one.
               </div>
             ) : (
               <div className="divide-y divide-[color:var(--border)]">

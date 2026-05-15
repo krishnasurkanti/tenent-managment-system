@@ -36,6 +36,7 @@ export default function OwnerBillingPage() {
     setLoading(false);
   };
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     let active = true;
 
@@ -65,6 +66,7 @@ export default function OwnerBillingPage() {
 
     return () => { active = false; };
   }, [currentHostel]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (hostelLoading || loading) {
     return <LoadingState />;
@@ -251,7 +253,7 @@ function InvoicePaymentSection({
       {isPaid && (
         <div className="rounded-[10px] border border-[#4ade80]/20 bg-[#16a34a]/15 px-4 py-3">
           <p className="text-sm font-semibold text-[#4ade80]">Paid ✓</p>
-          <p className="mt-0.5 text-[12px] text-white/45">This month's invoice is settled.</p>
+          <p className="mt-0.5 text-[12px] text-white/45">This month&apos;s invoice is settled.</p>
         </div>
       )}
 

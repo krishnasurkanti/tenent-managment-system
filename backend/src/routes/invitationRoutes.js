@@ -1,7 +1,9 @@
 const express = require("express");
 const { requireAdminKey } = require("../middleware/adminKeyMiddleware");
 const { asyncHandler } = require("../utils/asyncHandler");
+const { validateBody } = require("../middleware/validate");
 const { createInvitation, getInvitation, acceptInvitation, listInvitations } = require("../controllers/invitationController");
+const { acceptInvitationSchema } = require("../utils/schemas");
 
 const router = express.Router();
 
@@ -13,6 +15,6 @@ router.get("/", requireAdminKey, asyncHandler(listInvitations));
 router.get("/:token", asyncHandler(getInvitation));
 
 // Public: owner submits registration form
-router.post("/:token/accept", asyncHandler(acceptInvitation));
+router.post("/:token/accept", validateBody(acceptInvitationSchema), asyncHandler(acceptInvitation));
 
 module.exports = router;

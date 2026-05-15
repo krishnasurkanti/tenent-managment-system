@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { applyHostelAdminAction } from "@/data/adminStore";
 import { isAdminAuthenticated } from "@/lib/admin-session";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +14,8 @@ export async function POST(
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await request.json()) as {
-    action?: "activate" | "deactivate" | "suspend_owner" | "unsuspend_owner" | "delete_hostel" | "reset_owner_password";
-  };
+  const { body, error: jsonError } = await parseJsonBody<{ action?: "activate" | "deactivate" | "suspend_owner" | "unsuspend_owner" | "delete_hostel" | "reset_owner_password" }>(request);
+  if (jsonError) return jsonError;
   if (!body.action) {
     return NextResponse.json({ message: "Action is required." }, { status: 400 });
   }

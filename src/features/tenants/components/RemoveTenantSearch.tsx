@@ -120,7 +120,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                 </div>
                 <h2 id="remove-tenant-modal-title" className="mt-3 text-xl font-semibold sm:text-2xl">Remove Tenant</h2>
                 <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                  Search by tenant ID or name, confirm room and floor details, then remove the tenant from the hostel.
+                  Search by tenant ID or name, confirm room details, then remove the tenant from the hostel.
                 </p>
               </div>
               <Button variant="ghost" disabled={submitting} aria-label="Close" className="rounded-2xl px-3" onClick={closeModal}>
@@ -184,7 +184,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                           Tenant ID {fmtTenantId(tenant.tenantId)} • {tenant.phone}
                         </p>
                         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                          Floor {tenant.assignment?.floorNumber ?? "-"} • Room {tenant.assignment?.roomNumber ?? "-"}
+                          Room {tenant.assignment?.roomNumber ?? "-"}
                         </p>
                       </button>
                     );
@@ -198,7 +198,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                     <p className="font-semibold text-[#991b1b]">{selectedTenant.fullName}</p>
                     <p className="mt-1">Tenant ID: {fmtTenantId(selectedTenant.tenantId)}</p>
                     <p className="mt-1">
-                      Floor {selectedTenant.assignment?.floorNumber ?? "-"} / Room {selectedTenant.assignment?.roomNumber ?? "-"}
+                      Room {selectedTenant.assignment?.roomNumber ?? "-"}
                     </p>
                     <p className="mt-1">Removing this tenant will free the assigned room/bed for reuse. Payment history is preserved.</p>
                   </div>

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { backendFetch } from "@/services/core/backend-api";
+import { parseJsonBody } from "@/lib/safe-json";
+import { isAdminAuthenticated } from "@/lib/admin-session";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +17,10 @@ type BackendRequest = {
   created_at: string;
 };
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!(await isAdminAuthenticated(request))) {
+    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+  }
   const response = await backendFetch("/api/admin/billing/upgrade-requests");
   if (!response.ok) {
     const payload = (await response.json()) as unknown;
@@ -37,11 +43,12 @@ export async function GET() {
   return NextResponse.json({ requests: transformed });
 }
 
-export async function PATCH(request: Request) {
-  const body = (await request.json()) as {
-    requestId?: string;
-    action?: "approve" | "reject";
-  };
+export async function PATCH(request: NextRequest) {
+  if (!(await isAdminAuthenticated(request))) {
+    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+  }
+  const { body, error: jsonError } = await parseJsonBody<{ requestId?: string; action?: "approve" | "reject" }>(request);
+  if (jsonError) return jsonError;
 
   const response = await backendFetch("/api/admin/billing/upgrade-requests", {
     method: "PATCH",

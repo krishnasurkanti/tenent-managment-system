@@ -66,6 +66,8 @@ async function submitComplaint(req, res) {
 async function getComplaints(req, res) {
   const ownerId = req.user.ownerId;
   const hostelId = req.query.hostelId;
+  const limit = Math.min(Math.max(1, Number(req.query.limit ?? 50)), 200);
+  const offset = Math.max(0, Number(req.query.offset ?? 0));
 
   const params = [ownerId];
   let hostelFilter = "";
@@ -74,6 +76,8 @@ async function getComplaints(req, res) {
     hostelFilter = `AND c.hostel_id = $${params.length}`;
   }
 
+  params.push(limit, offset);
+
   const result = await query(
     `SELECT c.id, c.hostel_id, h.name AS hostel_name, c.category,
             c.message, c.status, c.notes, c.created_at, c.updated_at
@@ -81,11 +85,14 @@ async function getComplaints(req, res) {
      JOIN hostels h ON h.id = c.hostel_id
      WHERE c.owner_id = $1 ${hostelFilter}
      ORDER BY c.created_at DESC
-     LIMIT 500`,
+     LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params,
   );
 
-  return res.json({ complaints: result.rows.map(mapComplaint) });
+  return res.json({
+    complaints: result.rows.map(mapComplaint),
+    pagination: { limit, offset, count: result.rows.length },
+  });
 }
 
 async function updateComplaint(req, res) {
@@ -105,7 +112,8 @@ async function updateComplaint(req, res) {
     setParts.push(`status = $${params.length}`);
   }
   if (notes !== undefined) {
-    params.push(String(notes).trim() || null);
+    const notesStr = String(notes).trim().slice(0, 2000) || null;
+    params.push(notesStr);
     setParts.push(`notes = $${params.length}`);
   }
 

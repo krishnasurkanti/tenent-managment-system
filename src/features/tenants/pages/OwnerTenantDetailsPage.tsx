@@ -123,7 +123,6 @@ export default async function OwnerTenantDetailsPage({
             <h2 className="text-base font-semibold text-white">Stay details</h2>
             <div className="mt-4 space-y-3">
               <DetailRow label="Hostel" value={tenant.assignment?.hostelName ?? "Not assigned"} />
-              <DetailRow label="Floor" value={tenant.assignment ? `Floor ${tenant.assignment.floorNumber}` : "Not assigned"} />
               <DetailRow label="Room" value={tenant.assignment?.roomNumber ?? "Not assigned"} />
               <DetailRow label="Sharing Type" value={tenant.assignment?.sharingType ?? "Not assigned"} />
               <DetailRow label="Move In Date" value={tenant.assignment?.moveInDate ? formatPaymentDate(tenant.assignment.moveInDate) : "Not assigned"} />

@@ -59,7 +59,7 @@ export async function mockDate(page: Page, isoString: string): Promise<void> {
       get(target, prop) {
         if (prop === "now") return () => fakeMs;
         const val = Reflect.get(target, prop) as unknown;
-        return typeof val === "function" ? (val as Function).bind(target) : val;
+        return typeof val === "function" ? (val as (...args: unknown[]) => unknown).bind(target) : val;
       },
     }) as typeof Date;
   }, isoString);

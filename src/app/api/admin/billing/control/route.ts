@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-session";
 import { backendFetch } from "@/services/core/backend-api";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
@@ -10,12 +11,8 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await request.json()) as {
-    hostelId?: string;
-    planId?: string;
-    freeMonthsRemaining?: number;
-    // pricingOverride and discountPercent not supported in new billing system
-  };
+  const { body, error: jsonError } = await parseJsonBody<{ hostelId?: string; planId?: string; freeMonthsRemaining?: number }>(request);
+  if (jsonError) return jsonError;
 
   if (!body.hostelId) {
     return NextResponse.json({ message: "hostelId is required." }, { status: 400 });

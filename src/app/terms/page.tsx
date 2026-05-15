@@ -94,7 +94,7 @@ export default function TermsPage() {
         <div>
           <h2 className="text-lg font-semibold mb-2">9. Limitation of liability</h2>
           <p>
-            To the maximum extent permitted by law, StayManager is provided "as is" without
+            To the maximum extent permitted by law, StayManager is provided &ldquo;as is&rdquo; without
             warranties. We are not liable for indirect, incidental, or consequential damages
             arising from your use of the service.
           </p>

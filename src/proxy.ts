@@ -16,6 +16,9 @@ const CSRF_EXEMPT = new Set([
   "/api/super-admin/login",
   "/api/auth/register",
 ]);
+
+// Public complaint submissions are anonymous — no CSRF cookie exists yet
+const CSRF_EXEMPT_PREFIXES = ["/api/public/"];
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 export async function proxy(request: NextRequest) {
@@ -28,7 +31,7 @@ export async function proxy(request: NextRequest) {
   const existingCsrf = request.cookies.get(CSRF_COOKIE)?.value;
 
   if (pathname.startsWith("/api/")) {
-    if (MUTATION_METHODS.has(request.method) && !CSRF_EXEMPT.has(pathname)) {
+    if (MUTATION_METHODS.has(request.method) && !CSRF_EXEMPT.has(pathname) && !CSRF_EXEMPT_PREFIXES.some(p => pathname.startsWith(p))) {
       const headerToken = request.headers.get(CSRF_HEADER) ?? "";
       const cookieToken = existingCsrf ?? "";
 
@@ -46,7 +49,7 @@ export async function proxy(request: NextRequest) {
       response.cookies.set({
         name: CSRF_COOKIE,
         value: token,
-        httpOnly: false,
+        httpOnly: true,
         sameSite: "strict",
         secure: isSecure,
         path: "/",

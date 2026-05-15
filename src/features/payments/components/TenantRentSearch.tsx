@@ -271,7 +271,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
                               <p className="font-semibold text-white">{tenant.fullName}</p>
                               <p className="mt-1 text-sm text-white/50">Tenant ID {fmtTenantId(tenant.tenantId)} • {tenant.phone}</p>
                               <p className="mt-1 text-sm text-white/50">
-                                Floor {tenant.assignment?.floorNumber ?? "-"} • Room {tenant.assignment?.roomNumber ?? "-"}
+                                Room {tenant.assignment?.roomNumber ?? "-"}
                               </p>
                             </button>
                           );
@@ -285,7 +285,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-white/50">
                     <p className="font-semibold text-white">{selectedTenant.fullName}</p>
                     <p className="mt-1">Tenant ID: {fmtTenantId(selectedTenant.tenantId)}</p>
-                    <p className="mt-1">Floor {selectedTenant.assignment?.floorNumber ?? "-"} / Room {selectedTenant.assignment?.roomNumber ?? "-"}</p>
+                    <p className="mt-1">Room {selectedTenant.assignment?.roomNumber ?? "-"}</p>
                     <p className="mt-1">Next due: {formatPaymentDate(selectedTenant.nextDueDate)}</p>
                   </div>
                 ) : null}

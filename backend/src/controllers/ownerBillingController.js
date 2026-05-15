@@ -20,7 +20,7 @@ async function getOwnerBilling(req, res, next) {
          COUNT(*) FILTER (WHERE data->>'billingCycle' = 'weekly')::int  AS weekly_count,
          COUNT(*) FILTER (WHERE data->>'billingCycle' = 'daily')::int   AS daily_count,
          COUNT(*) FILTER (WHERE data->>'billingCycle' IS NULL OR data->>'billingCycle' = 'monthly')::int AS monthly_count
-       FROM tenants WHERE owner_id = $1`,
+       FROM tenants WHERE owner_id = $1 AND deleted_at IS NULL`,
       [ownerId],
     );
     const { weekly_count, daily_count, monthly_count } = cycleCountResult.rows[0] ?? {};
@@ -111,7 +111,6 @@ async function getOwnerBilling(req, res, next) {
       autoPayEnabled: owner.auto_pay_enabled,
       upgradePending: Boolean(pendingUpgrade),
       upgradeRequest: pendingUpgrade,
-      billableTenants: billableList,
     });
   } catch (error) {
     return next(error);
@@ -132,24 +131,18 @@ async function setOwnerAutopay(req, res, next) {
 async function payOwnerInvoice(req, res, next) {
   try {
     const ownerId = req.user.ownerId;
-    const { paymentMethod } = req.body;
     const owner = await getOwnerRow(ownerId);
     if (!owner) return res.status(404).json({ message: "Owner not found." });
 
     const invoice = await getOrCreateCurrentInvoice(ownerId, owner);
 
-    const result = await query(
-      `UPDATE owner_invoices
-       SET status = 'paid',
-           payment_provider = $3,
-           payment_note = 'Marked paid by owner.',
-           updated_at = NOW()
-       WHERE id = $2 AND owner_id = $1
-       RETURNING *`,
-      [ownerId, invoice.id, paymentMethod === "online" ? "razorpay" : "manual"],
-    );
-
-    return res.json({ invoice: result.rows[0] });
+    // Owners cannot self-mark invoices as paid — payment is confirmed only via
+    // Razorpay webhook (payment.captured) or admin action.
+    // Return the current invoice state so the frontend can initiate a Razorpay flow.
+    return res.json({
+      invoice,
+      message: "Use the Razorpay payment flow to pay this invoice.",
+    });
   } catch (error) {
     return next(error);
   }
@@ -168,26 +161,31 @@ async function requestUpgrade(req, res, next) {
     const owner = await getOwnerRow(ownerId);
     if (!owner) return res.status(404).json({ message: "Owner not found." });
 
-    const previousPlan = owner.plan ?? "free";
+    const currentPlan = owner.plan ?? "free";
 
-    // Apply plan change immediately — no admin approval needed
-    await query(
-      `UPDATE owners SET plan = $1, plan_status = 'active' WHERE id = $2`,
-      [requestedPlan, ownerId],
-    );
+    if (currentPlan === requestedPlan) {
+      return res.status(400).json({ message: "Already on this plan." });
+    }
 
-    // Cancel any stale pending requests, then log this change for audit
+    // Cancel any stale pending requests for this owner
     await query(
       `UPDATE owner_upgrade_requests SET status = 'superseded' WHERE owner_id = $1 AND status = 'pending'`,
       [ownerId],
     );
-    await query(
+
+    // Create a pending request — admin must approve via /api/admin/billing/upgrade-requests
+    const result = await query(
       `INSERT INTO owner_upgrade_requests (owner_id, current_plan, requested_plan, note, status)
-       VALUES ($1, $2, $3, $4, 'approved')`,
-      [ownerId, previousPlan, requestedPlan, note?.trim() ?? ""],
+       VALUES ($1, $2, $3, $4, 'pending')
+       RETURNING id`,
+      [ownerId, currentPlan, requestedPlan, note?.trim() ?? ""],
     );
 
-    return res.status(200).json({ ok: true, plan: requestedPlan });
+    return res.status(202).json({
+      ok: true,
+      message: "Upgrade request submitted. An admin will review and activate your plan.",
+      requestId: result.rows[0].id,
+    });
   } catch (error) {
     return next(error);
   }

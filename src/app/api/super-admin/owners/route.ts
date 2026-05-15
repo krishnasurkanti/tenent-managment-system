@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin-session";
 import { getApiBaseUrl } from "@/lib/api-config";
+import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
@@ -33,14 +34,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
   }
 
-  const body = (await request.json()) as {
-    name?: string;
-    email?: string;
-    phoneNumber?: string;
-    password?: string;
-    plan?: string;
-    planStatus?: string;
-  };
+  const { body, error: jsonError } = await parseJsonBody<{ name?: string; email?: string; phoneNumber?: string; password?: string; plan?: string; planStatus?: string }>(request);
+  if (jsonError) return jsonError;
 
   try {
     const res = await fetch(`${getApiBaseUrl()}/api/admin/owners`, {

@@ -166,7 +166,7 @@ test.describe("Create tenant (UI)", () => {
     await page.locator('input[type="date"]').first().fill(tenant.dateOfBirth);
     await page.getByPlaceholder("98765 43210").first().fill(tenant.phone);
     await page.getByPlaceholder("email@example.com").fill(tenant.email);
-    await page.locator("select").first().selectOption("pan");
+    await page.locator("select").nth(1).selectOption("pan"); // nth(0)=Occupation, nth(1)=ID Type
     await page.getByPlaceholder("e.g. ABCDE1234F").fill(tenant.pan);
     await page.getByPlaceholder(/emergency contact/i).fill(tenant.emergencyName);
     await page.getByPlaceholder("98765 43210").last().fill(tenant.emergencyPhone);

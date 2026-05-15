@@ -26,7 +26,6 @@ export function TenantRoomAssignmentModal({
   onAssigned: (tenant: TenantRecord) => void;
   preferredAssignment?: {
     hostelId?: string;
-    floorNumber?: number;
     roomNumber?: string;
     sharingType?: string;
   };
@@ -34,7 +33,6 @@ export function TenantRoomAssignmentModal({
   const [step, setStep] = useState<1 | 2>(1);
   const [hostels, setHostels] = useState<HostelRoomInventory[]>([]);
   const [hostelId, setHostelId] = useState("");
-  const [floorNumber, setFloorNumber] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
   const [sharingType, setSharingType] = useState("");
   const [bedId, setBedId] = useState("");
@@ -46,22 +44,15 @@ export function TenantRoomAssignmentModal({
   useLockBodyScroll(open);
 
   useEffect(() => {
-    if (!open) {
-      return;
-    }
+    if (!open) return;
 
     const load = async () => {
       setLoading(true);
       const { data } = await fetchOwnerHostels();
       const nextHostels = (data.hostels ?? []).map(mapHostelInventory);
-      const firstHostel = nextHostels[0];
-      const preferredHostel = nextHostels.find((item) => item.hostelId === preferredAssignment?.hostelId) ?? firstHostel;
-      const preferredFloor =
-        preferredHostel?.floors.find((item) => item.floorNumber === preferredAssignment?.floorNumber) ??
-        preferredHostel?.floors[0];
+      const preferredHostel = nextHostels.find((item) => item.hostelId === preferredAssignment?.hostelId) ?? nextHostels[0];
       setHostels(nextHostels);
       setHostelId(preferredHostel?.hostelId ?? "");
-      setFloorNumber(preferredFloor ? String(preferredFloor.floorNumber) : "");
       setRoomNumber("");
       setSharingType("");
       setBedId("");
@@ -71,45 +62,33 @@ export function TenantRoomAssignmentModal({
     };
 
     void load();
-  }, [open, preferredAssignment?.floorNumber, preferredAssignment?.hostelId, preferredAssignment?.roomNumber]);
+  }, [open, preferredAssignment?.hostelId, preferredAssignment?.roomNumber]);
 
   const selectedHostel = useMemo(() => hostels.find((item) => item.hostelId === hostelId), [hostelId, hostels]);
   const isResidence = selectedHostel?.type === "RESIDENCE";
-  const selectedFloor = useMemo(
-    () => selectedHostel?.floors.find((item) => item.floorNumber === Number(floorNumber)),
-    [floorNumber, selectedHostel],
-  );
   const selectedRoom = useMemo(
-    () => selectedFloor?.rooms.find((item) => item.roomNumber === roomNumber),
-    [roomNumber, selectedFloor],
+    () => selectedHostel?.rooms.find((item) => item.roomNumber === roomNumber),
+    [roomNumber, selectedHostel],
   );
   const availableBeds = selectedRoom ? selectedRoom.capacity - selectedRoom.occupied : 0;
-  const availableRooms = selectedFloor?.rooms.filter((room) => room.occupied < room.capacity) ?? [];
-  const filteredRooms = availableRooms.filter((room) => room.roomNumber.toLowerCase().includes(roomNumber.toLowerCase()));
+  const availableRooms = selectedHostel?.rooms.filter((room) => room.occupied < room.capacity) ?? [];
 
-  if (!open || !tenant) {
-    return null;
-  }
+  if (!open || !tenant) return null;
 
   const handleAssign = async () => {
-    if (!hostelId || !floorNumber || !roomNumber || !selectedRoom) {
-      setError("Choose a hostel, floor, and valid room before assigning.");
+    if (!hostelId || !roomNumber || !selectedRoom) {
+      setError("Choose a hostel and valid room before assigning.");
       return;
     }
-
     if (!moveInDate) {
       setError("Choose the move-in date before assigning the room.");
       return;
     }
-
     if (!isResidence && !bedId) {
       setError("Choose the bed before assigning the room.");
       return;
     }
-
-    if (saving) {
-      return;
-    }
+    if (saving) return;
 
     setSaving(true);
     setError("");
@@ -117,7 +96,7 @@ export function TenantRoomAssignmentModal({
     const { response, data } = await assignTenantRoom({
       tenantId: tenant.tenantId,
       hostelId,
-      floorNumber: Number(floorNumber),
+      unitId: selectedRoom?.unitId,
       roomNumber,
       sharingType,
       moveInDate,
@@ -136,7 +115,6 @@ export function TenantRoomAssignmentModal({
     onAssigned(data.tenant as TenantRecord);
     setSaving(false);
     setHostelId("");
-    setFloorNumber("");
     setRoomNumber("");
     setSharingType("");
     setBedId("");
@@ -146,21 +124,18 @@ export function TenantRoomAssignmentModal({
   };
 
   const handleNext = () => {
-    if (!hostelId || !floorNumber || !roomNumber) {
-      setError("Please select hostel, floor, and room first.");
+    if (!hostelId || !roomNumber) {
+      setError("Please select hostel and room first.");
       return;
     }
-
     if (!selectedRoom) {
       setError("Please choose a valid available room from the list.");
       return;
     }
-
     if (!isResidence && !bedId) {
       setError("Please choose an available bed before continuing.");
       return;
     }
-
     setError("");
     setStep(2);
   };
@@ -170,188 +145,165 @@ export function TenantRoomAssignmentModal({
       className="fixed inset-0 z-50 flex items-end justify-center animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
       style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
     >
-        <Card className="w-full min-h-[70svh] max-h-[92svh] overflow-y-auto rounded-t-3xl rounded-b-none border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-3 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),56rem)] sm:min-h-0 sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)] sm:p-4">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/50">Room Assignment</span>
-              <div className="flex gap-2">
-                <StepPill label="1. Location" active={step === 1} done={step > 1} />
-                <StepPill label="2. Review" active={step === 2} done={false} />
+      <Card className="w-full min-h-[70svh] max-h-[92svh] overflow-y-auto rounded-t-3xl rounded-b-none border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-3 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),56rem)] sm:min-h-0 sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)] sm:p-4">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/50">Room Assignment</span>
+            <div className="flex gap-2">
+              <StepPill label="1. Location" active={step === 1} done={step > 1} />
+              <StepPill label="2. Review" active={step === 2} done={false} />
+            </div>
+          </div>
+          <Button variant="ghost" disabled={saving} className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div>
+          {loading ? (
+            <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-5">
+              <ProcessingPill label="Loading room inventory" />
+              <SkeletonBlock className="h-16" />
+              <div className="grid gap-3 lg:grid-cols-3">
+                <SkeletonBlock className="h-24" />
+                <SkeletonBlock className="h-24" />
+                <SkeletonBlock className="h-24" />
               </div>
             </div>
-            <Button variant="ghost" disabled={saving} className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          ) : (
+            <div className="space-y-3 sm:space-y-4">
+              {step === 1 ? (
+                <div className="space-y-3 sm:space-y-4">
+                  <PillGroup label="Hostel">
+                    {hostels.map((hostel) => (
+                      <PillButton
+                        key={hostel.hostelId}
+                        selected={hostel.hostelId === hostelId}
+                        disabled={saving}
+                        onClick={() => {
+                          setHostelId(hostel.hostelId);
+                          setRoomNumber("");
+                          setSharingType("");
+                          setBedId("");
+                        }}
+                      >
+                        {hostel.hostelName}
+                      </PillButton>
+                    ))}
+                  </PillGroup>
 
-          <div>
-            {loading ? (
-              <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-5">
-                <ProcessingPill label="Loading room inventory" />
-                <SkeletonBlock className="h-16" />
-                <div className="grid gap-3 lg:grid-cols-3">
-                  <SkeletonBlock className="h-24" />
-                  <SkeletonBlock className="h-24" />
-                  <SkeletonBlock className="h-24" />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3 sm:space-y-4">
-                {step === 1 ? (
-                  <div className="space-y-3 sm:space-y-4">
-                    <PillGroup label="Hostel">
-                      {hostels.map((hostel) => (
-                        <PillButton
-                          key={hostel.hostelId}
-                          selected={hostel.hostelId === hostelId}
-                          disabled={saving}
-                          onClick={() => {
-                            const nextFloor = hostel.floors[0];
-                            setHostelId(hostel.hostelId);
-                            setFloorNumber(nextFloor ? String(nextFloor.floorNumber) : "");
-                            setRoomNumber("");
-                            setSharingType("");
-                            setBedId("");
-                          }}
-                        >
-                          {hostel.hostelName}
-                        </PillButton>
-                      ))}
-                    </PillGroup>
-
-                    {selectedHostel ? (
-                      <PillGroup label="Floor">
-                        {selectedHostel.floors.map((floor) => (
+                  {selectedHostel ? (
+                    <PillGroup label={isResidence ? "Unit" : "Room"}>
+                      {availableRooms.length === 0 ? (
+                        <span className="text-sm text-white/40">No available {isResidence ? "units" : "rooms"}</span>
+                      ) : (
+                        availableRooms.map((room) => (
                           <PillButton
-                            key={floor.floorNumber}
-                            selected={String(floor.floorNumber) === floorNumber}
+                            key={room.roomNumber}
+                            selected={room.roomNumber === roomNumber}
                             disabled={saving}
                             onClick={() => {
-                              setFloorNumber(String(floor.floorNumber));
-                              setRoomNumber("");
-                              setSharingType("");
+                              setRoomNumber(room.roomNumber);
+                              setSharingType(room.sharingType ?? "");
                               setBedId("");
                             }}
                           >
-                            Floor {floor.floorNumber}
+                            {room.roomNumber}
                           </PillButton>
-                        ))}
-                      </PillGroup>
-                    ) : null}
+                        ))
+                      )}
+                    </PillGroup>
+                  ) : null}
 
-                    {selectedFloor ? (
-                      <PillGroup label={isResidence ? "Unit" : "Room"}>
-                        {availableRooms.length === 0 ? (
-                          <span className="text-sm text-white/40">No available {isResidence ? "units" : "rooms"}</span>
-                        ) : (
-                          availableRooms.map((room) => (
-                            <PillButton
-                              key={room.roomNumber}
-                              selected={room.roomNumber === roomNumber}
-                              disabled={saving}
-                              onClick={() => {
-                                setRoomNumber(room.roomNumber);
-                                setSharingType(room.sharingType ?? "");
-                                setBedId("");
-                              }}
-                            >
-                              {room.roomNumber}
-                            </PillButton>
-                          ))
-                        )}
-                      </PillGroup>
-                    ) : null}
+                  {!isResidence && selectedRoom ? (
+                    <PillGroup label="Bed">
+                      {(selectedRoom.beds ?? []).length === 0 ? (
+                        <span className="text-sm text-white/40">No beds configured</span>
+                      ) : (
+                        (selectedRoom.beds ?? []).map((bed) => (
+                          <BedPillButton
+                            key={bed.id}
+                            selected={bed.id === bedId}
+                            occupied={bed.occupied ?? false}
+                            disabled={saving || (bed.occupied ?? false)}
+                            onClick={() => setBedId(bed.id)}
+                          >
+                            {bed.label}
+                          </BedPillButton>
+                        ))
+                      )}
+                    </PillGroup>
+                  ) : null}
+                </div>
+              ) : null}
 
-                    {!isResidence && selectedRoom ? (
-                      <PillGroup label="Bed">
-                        {(selectedRoom.beds ?? []).length === 0 ? (
-                          <span className="text-sm text-white/40">No beds configured</span>
-                        ) : (
-                          (selectedRoom.beds ?? []).map((bed) => (
-                            <BedPillButton
-                              key={bed.id}
-                              selected={bed.id === bedId}
-                              occupied={bed.occupied ?? false}
-                              disabled={saving || (bed.occupied ?? false)}
-                              onClick={() => setBedId(bed.id)}
-                            >
-                              {bed.label}
-                            </BedPillButton>
-                          ))
-                        )}
-                      </PillGroup>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                {step === 2 ? (
-                  <>
-                    <div className="grid gap-4 lg:grid-cols-2">
-                      {!isResidence ? (
-                        <Field label="Sharing Type" icon={Users2} helper="Auto-filled from the selected room">
-                          <input
-                            value={sharingType}
-                            onChange={(event) => setSharingType(event.target.value)}
-                            disabled={saving}
-                            className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none transition focus:border-[#38bdf8]/40 placeholder:text-white/25"
-                            placeholder="Ex: Double Sharing"
-                          />
-                        </Field>
-                      ) : null}
-
-                      <Field label="Move-in Date" icon={CalendarDays} helper={isResidence ? "The date the tenant moves into this unit" : "The date the tenant starts staying in this room"}>
+              {step === 2 ? (
+                <>
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    {!isResidence ? (
+                      <Field label="Sharing Type" icon={Users2} helper="Auto-filled from the selected room">
                         <input
-                          type="date"
-                          value={moveInDate}
-                          onChange={(event) => setMoveInDate(event.target.value)}
+                          value={sharingType}
+                          onChange={(event) => setSharingType(event.target.value)}
                           disabled={saving}
-                          className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none transition focus:border-[#38bdf8]/40 [color-scheme:dark] [&::-webkit-datetime-edit]:text-white [&::-webkit-datetime-edit-fields-wrapper]:text-white"
+                          className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none transition focus:border-[#38bdf8]/40 placeholder:text-white/25"
+                          placeholder="Ex: Double Sharing"
                         />
                       </Field>
-                    </div>
-
-                    {selectedRoom ? (
-                      <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4 md:grid-cols-3">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">{isResidence ? "Selected Unit" : "Selected Room"}</p>
-                          <p className="mt-2 text-lg font-semibold text-white">{isResidence ? "Unit" : "Room"} {selectedRoom.roomNumber}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">Availability</p>
-                          <p className="mt-2 text-lg font-semibold text-white">
-                            {isResidence
-                              ? availableBeds > 0 ? "Vacant" : "Occupied"
-                              : `${availableBeds} of ${selectedRoom.capacity} bed${selectedRoom.capacity === 1 ? "" : "s"} available`
-                            }
-                          </p>
-                        </div>
-                        {!isResidence ? (
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">Sharing</p>
-                            <p className="mt-2 text-lg font-semibold text-white">{selectedRoom.sharingType || sharingType || "Not set"}</p>
-                          </div>
-                        ) : null}
-                      </div>
                     ) : null}
-                  </>
-                ) : null}
-              </div>
-            )}
-          </div>
 
-          {error ? <p className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</p> : null}
+                    <Field label="Move-in Date" icon={CalendarDays} helper={isResidence ? "The date the tenant moves into this unit" : "The date the tenant starts staying in this room"}>
+                      <input
+                        type="date"
+                        value={moveInDate}
+                        onChange={(event) => setMoveInDate(event.target.value)}
+                        disabled={saving}
+                        className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none transition focus:border-[#38bdf8]/40 [color-scheme:dark] [&::-webkit-datetime-edit]:text-white [&::-webkit-datetime-edit-fields-wrapper]:text-white"
+                      />
+                    </Field>
+                  </div>
 
-          {saving ? <ProcessingPill label="Assigning room and updating tenant record" className="mt-4" /> : null}
+                  {selectedRoom ? (
+                    <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4 md:grid-cols-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">{isResidence ? "Selected Unit" : "Selected Room"}</p>
+                        <p className="mt-2 text-lg font-semibold text-white">{isResidence ? "Unit" : "Room"} {selectedRoom.roomNumber}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">Availability</p>
+                        <p className="mt-2 text-lg font-semibold text-white">
+                          {isResidence
+                            ? availableBeds > 0 ? "Vacant" : "Occupied"
+                            : `${availableBeds} of ${selectedRoom.capacity} bed${selectedRoom.capacity === 1 ? "" : "s"} available`
+                          }
+                        </p>
+                      </div>
+                      {!isResidence ? (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">Sharing</p>
+                          <p className="mt-2 text-lg font-semibold text-white">{selectedRoom.sharingType || sharingType || "Not set"}</p>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+            </div>
+          )}
+        </div>
 
-          <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <Button variant="secondary" disabled={saving} onClick={step === 1 ? onClose : () => { setStep(1); setError(""); }} className="rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white">
-              {step === 1 ? "Later" : "Back"}
-            </Button>
-            <Button disabled={saving} loading={saving && step === 2} onClick={step === 1 ? handleNext : handleAssign} className="rounded-2xl bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] text-white hover:text-white hover:brightness-110">
-              {step === 1 ? "Next: Review" : saving ? "Assigning..." : isResidence ? "Assign Unit" : "Assign Room"}
-            </Button>
-          </div>
-        </Card>
+        {error ? <p className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</p> : null}
+        {saving ? <ProcessingPill label="Assigning room and updating tenant record" className="mt-4" /> : null}
+
+        <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button variant="secondary" disabled={saving} onClick={step === 1 ? onClose : () => { setStep(1); setError(""); }} className="rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white">
+            {step === 1 ? "Later" : "Back"}
+          </Button>
+          <Button disabled={saving} loading={saving && step === 2} onClick={step === 1 ? handleNext : handleAssign} className="rounded-2xl bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] text-white hover:text-white hover:brightness-110">
+            {step === 1 ? "Next: Review" : saving ? "Assigning..." : isResidence ? "Assign Unit" : "Assign Room"}
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }
@@ -361,63 +313,38 @@ function mapHostelInventory(hostel: OwnerHostel): HostelRoomInventory {
     hostelId: hostel.id,
     hostelName: hostel.hostelName,
     type: hostel.type ?? "PG",
-    floors: hostel.floors.map((floor, floorIndex) => ({
-      id: floor.id,
-      floorNumber: floorIndex + 1,
-      rooms: floor.rooms.map((room) => ({
-        id: room.id,
-        unitId: room.unitId,
-        roomNumber: room.roomNumber,
-        capacity: hostel.type === "RESIDENCE" ? 1 : room.bedCount,
-        occupied: room.occupied ?? 0,
-        sharingType: room.sharingType,
-        propertyType: hostel.type ?? "PG",
-        beds: room.beds?.map((bed) => ({
-          id: bed.id,
-          label: bed.label,
-          occupied: bed.occupied ?? false,
-        })),
+    rooms: (hostel.rooms ?? []).map((room) => ({
+      id: room.id,
+      unitId: room.unitId,
+      roomNumber: room.roomNumber,
+      capacity: hostel.type === "RESIDENCE" ? 1 : room.bedCount,
+      occupied: room.occupied ?? 0,
+      sharingType: room.sharingType,
+      propertyType: hostel.type ?? "PG",
+      beds: room.beds?.map((bed) => ({
+        id: bed.id,
+        label: bed.label,
+        occupied: bed.occupied ?? false,
       })),
     })),
   };
 }
 
-
-function StepPill({
-  label,
-  active,
-  done,
-}: {
-  label: string;
-  active: boolean;
-  done: boolean;
-}) {
+function StepPill({ label, active, done }: { label: string; active: boolean; done: boolean }) {
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-semibold ${
-        active
-          ? "border border-blue-500/60 bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)]"
-          : done
-            ? "border border-emerald-500/40 bg-emerald-500/15 text-emerald-400"
-            : "border border-white/12 bg-white/[0.05] text-white/40"
-      }`}
-    >
+    <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-semibold ${
+      active
+        ? "border border-blue-500/60 bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)]"
+        : done
+          ? "border border-emerald-500/40 bg-emerald-500/15 text-emerald-400"
+          : "border border-white/12 bg-white/[0.05] text-white/40"
+    }`}>
       {label}
     </span>
   );
 }
 
-function Field({
-  label,
-  icon: Icon,
-  children,
-  helper,
-}: {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  children: React.ReactNode;
-  helper?: string;
-}) {
+function Field({ label, icon: Icon, children, helper }: { label: string; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode; helper?: string }) {
   return (
     <label className="block">
       <span className="mb-1 block text-sm font-medium text-white/70">{label}</span>
@@ -439,17 +366,7 @@ function PillGroup({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
-function PillButton({
-  selected,
-  disabled,
-  onClick,
-  children,
-}: {
-  selected: boolean;
-  disabled: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function PillButton({ selected, disabled, onClick, children }: { selected: boolean; disabled: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       type="button"
@@ -467,19 +384,7 @@ function PillButton({
   );
 }
 
-function BedPillButton({
-  selected,
-  occupied,
-  disabled,
-  onClick,
-  children,
-}: {
-  selected: boolean;
-  occupied: boolean;
-  disabled: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function BedPillButton({ selected, occupied, disabled, onClick, children }: { selected: boolean; occupied: boolean; disabled: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       type="button"
