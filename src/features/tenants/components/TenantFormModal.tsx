@@ -144,8 +144,10 @@ export function TenantFormModal({
   // Document uploads — not persisted to draft (files can't be serialised)
   const [tenantPhotoFile, setTenantPhotoFile] = useState<File | null>(null);
   const [tenantPhotoPreview, setTenantPhotoPreview] = useState<string>("");
+  const [tenantPhotoUploadedUrl, setTenantPhotoUploadedUrl] = useState<string>("");
   const [idPhotoFile, setIdPhotoFile] = useState<File | null>(null);
   const [idPhotoPreview, setIdPhotoPreview] = useState<string>("");
+  const [idPhotoUploadedUrl, setIdPhotoUploadedUrl] = useState<string>("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string>("");
   const [uploadingDocs, setUploadingDocs] = useState(false);
@@ -188,8 +190,10 @@ export function TenantFormModal({
     setError("");
     setTenantPhotoFile(null);
     setTenantPhotoPreview("");
+    setTenantPhotoUploadedUrl("");
     setIdPhotoFile(null);
     setIdPhotoPreview("");
+    setIdPhotoUploadedUrl("");
     setReceiptFile(null);
     setReceiptPreview("");
     if (typeof window !== "undefined") window.localStorage.removeItem(DRAFT_KEY);
@@ -225,13 +229,13 @@ export function TenantFormModal({
     setStep(2);
   };
 
-  // Step 2 → 3: upload photos, then proceed
+  // Step 2 → 3: upload photos, cache URLs, then proceed
   const handleNextFromDocuments = async () => {
     setError("");
     setUploadingDocs(true);
     try {
-      if (tenantPhotoFile) await uploadDocument(tenantPhotoFile, "tenant_photo");
-      if (idPhotoFile) await uploadDocument(idPhotoFile, "id_photo");
+      if (tenantPhotoFile) setTenantPhotoUploadedUrl(await uploadDocument(tenantPhotoFile, "tenant_photo"));
+      if (idPhotoFile) setIdPhotoUploadedUrl(await uploadDocument(idPhotoFile, "id_photo"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
       setUploadingDocs(false);
@@ -258,14 +262,14 @@ export function TenantFormModal({
     setSubmitting(true);
     setError("");
 
-    // Upload photos if not yet uploaded (user may have skipped Step 2)
-    let tenantPhotoUrl: string | undefined;
-    let idPhotoUrl: string | undefined;
+    // Upload photos only if not already uploaded in Step 2
+    let tenantPhotoUrl: string | undefined = tenantPhotoUploadedUrl || undefined;
+    let idPhotoUrl: string | undefined = idPhotoUploadedUrl || undefined;
     let receiptUrl: string | undefined;
 
     try {
-      if (tenantPhotoFile) tenantPhotoUrl = await uploadDocument(tenantPhotoFile, "tenant_photo");
-      if (idPhotoFile) idPhotoUrl = await uploadDocument(idPhotoFile, "id_photo");
+      if (tenantPhotoFile && !tenantPhotoUrl) tenantPhotoUrl = await uploadDocument(tenantPhotoFile, "tenant_photo");
+      if (idPhotoFile && !idPhotoUrl) idPhotoUrl = await uploadDocument(idPhotoFile, "id_photo");
       if (receiptFile) receiptUrl = await uploadDocument(receiptFile, "receipt");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Photo upload failed.");
@@ -337,10 +341,10 @@ export function TenantFormModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="tenant-form-modal-title"
-      className="fixed inset-0 z-50 flex items-end justify-center animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
+      className="fixed inset-x-0 top-0 z-50 flex h-screen items-end justify-center animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
       style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
     >
-      <Card className="flex w-full min-h-[82svh] max-h-[92svh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),42rem)] sm:min-h-0 sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
+      <Card className="flex w-full min-h-[82vh] max-h-[92vh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),42rem)] sm:min-h-0 sm:max-h-[88vh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(90deg,rgba(99,102,241,0.14)_0%,rgba(245,158,11,0.06)_100%)]" />
 

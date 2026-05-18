@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { backendFetch } from "@/services/core/backend-api";
 import { requireOwnerSession } from "@/lib/session-mode";
 import { getOwnerBilling } from "@/data/adminStore";
+import { DEMO_OWNER_HOSTEL_ID } from "@/data/ownerHostelStore";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   if (!session.isLive) {
     const { searchParams } = new URL(request.url);
-    const hostelId = searchParams.get("hostelId") ?? session.ownerId ?? "";
+    const hostelId = searchParams.get("hostelId") ?? (session.isDemo ? DEMO_OWNER_HOSTEL_ID : session.ownerId) ?? "";
     try {
       const billing = getOwnerBilling(hostelId);
       return NextResponse.json(billing);

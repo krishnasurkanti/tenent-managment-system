@@ -30,6 +30,7 @@ async function loginAsDemoOwner(page: Page) {
   await page.goto("/owner/login");
   await page.getByRole("button", { name: /try demo workspace/i }).click();
   await expect(page).toHaveURL(/\/owner\/dashboard/);
+  await page.waitForLoadState("networkidle");
 }
 
 async function fetchTenants(page: Page): Promise<Tenant[]> {
@@ -42,14 +43,11 @@ async function fetchTenants(page: Page): Promise<Tenant[]> {
 }
 
 async function getCsrf(page: Page): Promise<string> {
-  await page.evaluate(() => fetch("/api/csrf"));
-  return page.evaluate(() =>
-    document.cookie
-      .split(";")
-      .map((p) => p.trim())
-      .find((p) => p.startsWith("csrf_token="))
-      ?.split("=")[1] ?? ""
-  );
+  return page.evaluate(async () => {
+    const res = await fetch("/api/csrf");
+    const data = await res.json() as { token?: string };
+    return data.token ?? "";
+  });
 }
 
 function getDaysUntilDue(nextDueDate: string): number {
@@ -483,8 +481,7 @@ test("Fix – /api/owner-hostels returns PG rooms with beds array populated", as
   await loginAsDemoOwner(page);
 
   type HostelRoom = { bedCount: number; beds?: { id: string; label: string }[] };
-  type HostelFloor = { rooms: HostelRoom[] };
-  type Hostel = { type: string; floors: HostelFloor[] };
+  type Hostel = { type: string; rooms: HostelRoom[] };
 
   const hostels = await page.evaluate(async () => {
     const res = await fetch("/api/owner-hostels");
@@ -495,16 +492,14 @@ test("Fix – /api/owner-hostels returns PG rooms with beds array populated", as
   expect(hostels.length).toBeGreaterThan(0);
 
   for (const hostel of hostels.filter((h) => h.type === "PG")) {
-    for (const floor of hostel.floors) {
-      for (const room of floor.rooms) {
-        // Every PG room must have a beds array with length == bedCount
-        expect(Array.isArray(room.beds)).toBe(true);
-        expect(room.beds!.length).toBe(room.bedCount);
-        // Each bed must have id and label
-        for (const bed of room.beds!) {
-          expect(bed.id).toBeTruthy();
-          expect(bed.label).toBeTruthy();
-        }
+    for (const room of hostel.rooms) {
+      // Every PG room must have a beds array with length == bedCount
+      expect(Array.isArray(room.beds)).toBe(true);
+      expect(room.beds!.length).toBe(room.bedCount);
+      // Each bed must have id and label
+      for (const bed of room.beds!) {
+        expect(bed.id).toBeTruthy();
+        expect(bed.label).toBeTruthy();
       }
     }
   }
@@ -571,17 +566,19 @@ test("Fix – tenant creation via JSON body succeeds and data is retrievable", a
 
 test("Fix – Add Tenant modal footer with submit button visible on mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 }); // iPhone 14 Pro
+  await page.emulateMedia({ reducedMotion: "reduce" }); // skip float-up animation so bounding box is at final position
   await loginAsDemoOwner(page);
   await page.goto("/owner/tenants");
+  await page.waitForLoadState("networkidle");
 
   // Open Add Tenant modal
-  await page.getByRole("button", { name: /add.*tenant|new tenant/i }).first().click();
+  await page.getByRole("button", { name: /add new tenant|add.*tenant|^add$/i }).filter({ visible: true }).first().click();
 
   // Modal must be visible
   await expect(page.getByRole("dialog")).toBeVisible();
 
-  // Footer button (Continue to Payment) must be in viewport — not hidden below fold
-  const continueBtn = page.getByRole("button", { name: /continue to payment/i });
+  // Footer button (Continue) on step 1 must be in viewport — not hidden below fold
+  const continueBtn = page.getByRole("button", { name: "Continue", exact: true });
   await expect(continueBtn).toBeVisible();
 
   const box = await continueBtn.boundingBox();

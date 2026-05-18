@@ -18,6 +18,7 @@ async function loginAsDemoOwner(page: Page) {
   await page.goto("/owner/login");
   await page.getByRole("button", { name: /try demo workspace/i }).click();
   await expect(page).toHaveURL(/\/owner\/dashboard/);
+  await page.waitForLoadState("networkidle");
 }
 
 async function getHistoryLength(page: Page, tenantId: string): Promise<number> {
@@ -69,6 +70,7 @@ test.describe("Cash payment", () => {
     const beforeCount = await getHistoryLength(page, "51204");
 
     await page.goto("/owner/payments?action=pay-rent&tenantId=51204");
+    await page.waitForLoadState("networkidle");
     await expect(page.getByRole("heading", { name: "Collect Rent" }).filter({ visible: true }).first()).toBeVisible();
     await page.locator('input[type="number"]').first().fill(payment.amount);
     await page.locator('input[type="date"]').first().fill(payment.paidOnDate);
@@ -87,6 +89,7 @@ test.describe("Cash payment", () => {
     const beforeDue = await getTenantNextDue(page, "51203");
 
     await page.goto("/owner/payments?action=pay-rent&tenantId=51203");
+    await page.waitForLoadState("networkidle");
     await expect(page.getByRole("heading", { name: "Collect Rent" }).filter({ visible: true }).first()).toBeVisible();
     await page.locator('input[type="number"]').first().fill(payment.amount);
     await page.locator('input[type="date"]').first().fill(payment.paidOnDate);
@@ -106,6 +109,7 @@ test.describe("Online payment", () => {
     const payment = uniquePaymentData();
     await loginAsDemoOwner(page);
     await page.goto("/owner/payments?action=pay-rent&tenantId=51201");
+    await page.waitForLoadState("networkidle");
 
     await expect(visibleText(page, "Aarav Sharma")).toBeVisible();
 
@@ -124,6 +128,7 @@ test.describe("Online payment", () => {
 
     // Use 51202 (Diya Patel) — Aurora Residency, not touched by earlier tests
     await page.goto("/owner/payments?action=pay-rent&tenantId=51202");
+    await page.waitForLoadState("networkidle");
     await expect(page.getByRole("heading", { name: "Collect Rent" }).filter({ visible: true }).first()).toBeVisible();
     await page.locator('input[type="number"]').first().fill(payment.amount);
     await page.locator('input[type="date"]').first().fill(payment.paidOnDate);
@@ -165,9 +170,11 @@ test.describe("Payments page metrics", () => {
   test("payment table shows Paid On and Next Due columns", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/payments");
+    await page.waitForLoadState("networkidle");
 
-    await expect(visibleText(page, /paid on/i)).toBeVisible();
-    await expect(visibleText(page, /next due/i)).toBeVisible();
+    // Desktop table shows "Paid On"/"Next Due"; mobile cards show "Paid"/"Next"
+    await expect(visibleText(page, /paid on|^paid$/i)).toBeVisible();
+    await expect(visibleText(page, /next due|^next$/i)).toBeVisible();
   });
 
   test("payment mode column shows cash or online", async ({ page }) => {
@@ -193,6 +200,7 @@ test.describe("Pay rent modal validation", () => {
   test("modal pre-fills monthly rent as default amount", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/payments?action=pay-rent&tenantId=51201");
+    await page.waitForLoadState("networkidle");
 
     // Amount input should be pre-filled with 8500 (Aarav's rent)
     const amountInput = page.locator('input[type="number"]').first();
@@ -203,6 +211,7 @@ test.describe("Pay rent modal validation", () => {
   test("submit button is disabled when amount is 0", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/payments?action=pay-rent&tenantId=51201");
+    await page.waitForLoadState("networkidle");
 
     const amountInput = page.locator('input[type="number"]').first();
     await amountInput.fill("0");
