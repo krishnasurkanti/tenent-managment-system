@@ -176,6 +176,7 @@ export function updateOwnerHostel(hostel: Omit<OwnerHostel, "id" | "createdAt"> 
 
 export function resetOwnerHostel() {
   ownerHostels = getDemoOwnerHostels();
+  persistHostels([]);
   return getOwnerHostels();
 }
 

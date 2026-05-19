@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 type PlanSlab = { id?: string; label?: string; price?: number; limit: number | null; base?: number; extra_per_tenant: number };
 
 function isLiveBackendConfigured() {
-  return Boolean(process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL);
+  return Boolean(process.env.BACKEND_URL);
 }
 
 export async function GET(request: NextRequest) {

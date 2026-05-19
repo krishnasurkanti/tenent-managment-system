@@ -28,6 +28,7 @@ export function Button({
   disabled = false,
   loading = false,
   type = "button",
+  ...props
 }: {
   children: React.ReactNode;
   className?: string;
@@ -37,9 +38,10 @@ export function Button({
   disabled?: boolean;
   loading?: boolean;
   type?: "button" | "submit" | "reset";
-}) {
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "type" | "onClick" | "disabled" | "className">) {
   return (
     <button
+      {...props}
       type={type}
       onClick={onClick}
       disabled={disabled || loading}

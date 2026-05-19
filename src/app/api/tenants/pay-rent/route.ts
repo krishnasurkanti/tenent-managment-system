@@ -3,6 +3,7 @@ import { recordTenantPayment } from "@/data/tenantStore";
 import { savePaymentProofImage } from "@/lib/payment-proof-upload";
 import { validatePaymentProofWithMagicBytes } from "@/lib/document-upload";
 import { requireOwnerSession } from "@/lib/session-mode";
+import { apiRateLimit, getTrustedClientIp } from "@/lib/rate-limit";
 import { backendFetch } from "@/services/core/backend-api";
 import { calculateNextDueDate, getDueStatus } from "@/utils/payment";
 
@@ -12,22 +13,44 @@ export async function POST(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
+  if (process.env.PLAYWRIGHT_TEST !== "true" && apiRateLimit(getTrustedClientIp(request))) {
+    return NextResponse.json({ message: "Too many requests. Try again later." }, { status: 429 });
+  }
+
   // In demo mode only the demo-owner may record payments (local owners must upgrade to live)
   if (session.isDemo && session.ownerId !== "demo-owner") {
     return NextResponse.json({ message: "Forbidden." }, { status: 403 });
   }
 
-  const formData = await request.formData();
+  const contentType = request.headers.get("content-type") ?? "";
+  let tenantId: string, amount: number, paidOnDate: string, paymentMethod: string, txnId: string;
+  let proofImage: FormDataEntryValue | null = null;
 
-  const tenantId = String(formData.get("tenantId") ?? "").trim();
-  const amount = Number(formData.get("amount") ?? 0);
-  const paidOnDate = String(formData.get("paidOnDate") ?? "").trim();
-  const paymentMethod = String(formData.get("paymentMethod") ?? "").trim().toLowerCase();
-  const txnId = String(formData.get("txnId") ?? "").trim();
-  const proofImage = formData.get("proofImage");
+  if (contentType.includes("application/json")) {
+    const json = await request.json() as Record<string, unknown>;
+    tenantId = String(json.tenantId ?? "").trim();
+    amount = Number(json.amount ?? 0);
+    paidOnDate = String(json.paidOnDate ?? "").trim();
+    paymentMethod = String(json.paymentMethod ?? "").trim().toLowerCase();
+    txnId = String(json.txnId ?? "").trim();
+  } else {
+    const formData = await request.formData();
+    tenantId = String(formData.get("tenantId") ?? "").trim();
+    amount = Number(formData.get("amount") ?? 0);
+    paidOnDate = String(formData.get("paidOnDate") ?? "").trim();
+    paymentMethod = String(formData.get("paymentMethod") ?? "").trim().toLowerCase();
+    txnId = String(formData.get("txnId") ?? "").trim();
+    proofImage = formData.get("proofImage");
+  }
 
   if (!tenantId || !paidOnDate || !Number.isFinite(amount) || amount < 0 || !paymentMethod) {
     return NextResponse.json({ message: "Tenant, payment amount, payment mode, and paid date are required." }, { status: 400 });
+  }
+  if (amount > 10_000_000) {
+    return NextResponse.json({ message: "Payment amount cannot exceed 10,000,000." }, { status: 400 });
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(paidOnDate)) {
+    return NextResponse.json({ message: "Payment date must be YYYY-MM-DD." }, { status: 400 });
   }
 
   if (proofImage instanceof File && proofImage.name) {

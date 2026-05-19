@@ -10,6 +10,7 @@ export type OccupationType = "employed" | "student" | "self_employed" | "other";
 
 export type TenantRecord = {
   tenantId: string;
+  hostelId?: string;
   fullName: string;
   fatherName?: string;
   dateOfBirth?: string;

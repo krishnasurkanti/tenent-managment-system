@@ -25,14 +25,11 @@ async function loginDemoOwner(page: Page) {
 }
 
 async function getCsrf(page: Page): Promise<string> {
-  await page.evaluate(() => fetch("/api/csrf"));
-  return page.evaluate(() =>
-    document.cookie
-      .split(";")
-      .map((p) => p.trim())
-      .find((p) => p.startsWith("csrf_token="))
-      ?.split("=")[1] ?? ""
-  );
+  return page.evaluate(async () => {
+    const res = await fetch("/api/csrf");
+    const data = await res.json() as { token?: string };
+    return data.token ?? "";
+  });
 }
 
 async function apiPost(page: Page, url: string, body: unknown, extraHeaders: Record<string, string> = {}) {

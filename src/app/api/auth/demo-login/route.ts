@@ -8,9 +8,12 @@ import { authRateLimit, getTrustedClientIp } from "@/lib/rate-limit";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  const ip = getTrustedClientIp(request);
-  if (authRateLimit(ip)) {
-    return NextResponse.json({ message: "Too many login attempts. Try again later." }, { status: 429 });
+  // Skip rate limiting in Playwright test environment so test setup isn't throttled
+  if (process.env.PLAYWRIGHT_TEST !== "true") {
+    const ip = getTrustedClientIp(request);
+    if (authRateLimit(ip)) {
+      return NextResponse.json({ message: "Too many login attempts. Try again later." }, { status: 429 });
+    }
   }
   const token = await signDemoToken("owner");
   const response = NextResponse.json({ ok: true, owner: getDemoOwnerProfile() });

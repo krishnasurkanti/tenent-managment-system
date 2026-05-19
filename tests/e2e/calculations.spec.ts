@@ -28,6 +28,7 @@ async function loginAsDemoOwner(page: Page) {
   await page.goto("/owner/login");
   await page.getByRole("button", { name: /try demo workspace/i }).click();
   await expect(page).toHaveURL(/\/owner\/dashboard/);
+  await page.waitForLoadState("networkidle");
 }
 
 async function fetchTenants(page: Page): Promise<Tenant[]> {
@@ -75,8 +76,9 @@ test.describe("calculateNextDueDate", () => {
     await page.goto("/owner/tenants");
 
     const csrf = await page.evaluate(async () => {
-      await fetch("/api/csrf");
-      return document.cookie.split(";").map((p) => p.trim()).find((p) => p.startsWith("csrf_token="))?.split("=")[1] ?? "";
+      const res = await fetch("/api/csrf");
+      const data = await res.json() as { token?: string };
+      return data.token ?? "";
     });
 
     // Create tenants with each billing cycle and verify nextDueDate is AFTER paidOnDate
@@ -266,8 +268,9 @@ test.describe("nextDueDate consistency", () => {
     await page.goto("/owner/tenants");
 
     const csrf = await page.evaluate(async () => {
-      await fetch("/api/csrf");
-      return document.cookie.split(";").map((p) => p.trim()).find((p) => p.startsWith("csrf_token="))?.split("=")[1] ?? "";
+      const res = await fetch("/api/csrf");
+      const data = await res.json() as { token?: string };
+      return data.token ?? "";
     });
 
     const result = await page.evaluate(

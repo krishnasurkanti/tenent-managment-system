@@ -64,6 +64,7 @@ test.describe("Hostel owner automation", () => {
     await page.getByPlaceholder("Name of emergency contact").fill(tenant.emergencyName);
     await page.getByPlaceholder("98765 43210").last().fill(tenant.emergencyPhone);
 
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
     await page.getByRole("button", { name: /continue to payment/i }).click();
     await page.getByPlaceholder("Enter amount").fill(tenant.monthlyRent);
     await page.getByPlaceholder("0 if not collected yet").fill(tenant.rentPaid);

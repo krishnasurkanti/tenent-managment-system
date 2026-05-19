@@ -8,6 +8,11 @@
 import { expect, test, type Page } from "@playwright/test";
 import { gotoAndWaitForHydration } from "./helpers";
 
+// Reset demo data before visual tests to ensure clean baseline state
+test.beforeAll(async ({ request }) => {
+  await request.post("/api/test/reset");
+});
+
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 async function loginAsDemoOwner(page: Page) {
@@ -153,6 +158,7 @@ test.describe("Visual snapshots – modals", () => {
 
     await page.getByRole("button", { name: /add new tenant|^add$/i }).filter({ visible: true }).first().click();
     await page.getByPlaceholder("Enter full name").fill("Visual Test Tenant");
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
     await page.getByRole("button", { name: /continue to payment/i }).click();
 
     await page.waitForTimeout(300);

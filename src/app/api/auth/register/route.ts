@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { getApiBaseUrl } from "@/lib/api-config";
+import { authRateLimit, getTrustedClientIp } from "@/lib/rate-limit";
 import { setAuthCookies } from "@/services/core/backend-api";
 import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  if (authRateLimit(getTrustedClientIp(request))) {
+    return NextResponse.json({ message: "Too many requests. Try again later." }, { status: 429 });
+  }
   const { body, error: jsonError } = await parseJsonBody<{ email?: string; password?: string }>(request);
   if (jsonError) return jsonError;
 

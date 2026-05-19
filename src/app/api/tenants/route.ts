@@ -4,6 +4,7 @@ import { getOwnerHostelInventory } from "@/data/ownerHostelStore";
 import { assignTenantRoom, createTenantRecord, getTenantRecords, removeTenantRecord } from "@/data/tenantStore";
 import { calculateNextDueDate } from "@/utils/payment";
 import { requireOwnerSession } from "@/lib/session-mode";
+import { apiRateLimit, getTrustedClientIp } from "@/lib/rate-limit";
 import { PENDING_ID_NUMBER, type TenantRecord } from "@/types/tenant";
 import { backendFetch } from "@/services/core/backend-api";
 
@@ -54,7 +55,7 @@ export async function GET(request: Request) {
 
   const matched = allTenants.filter((tenant) => {
     if (tenantId && tenant.tenantId !== tenantId) return false;
-    if (hostelId && tenant.assignment?.hostelId !== hostelId) return false;
+    if (hostelId && tenant.hostelId !== hostelId && tenant.assignment?.hostelId !== hostelId) return false;
     return true;
   });
 
@@ -98,6 +99,10 @@ export async function POST(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
+  if (process.env.PLAYWRIGHT_TEST !== "true" && apiRateLimit(getTrustedClientIp(request))) {
+    return NextResponse.json({ message: "Too many requests. Try again later." }, { status: 429 });
+  }
+
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
@@ -126,6 +131,8 @@ export async function POST(request: Request) {
   const email = String(body.email ?? "").trim() || undefined;
   const idType = String(body.idType ?? "").trim() || undefined;
   const idNumber = String(body.idNumber ?? "").trim().toUpperCase() || undefined;
+  const tenantPhotoUrl = String(body.tenantPhotoUrl ?? "").trim() || undefined;
+  const idPhotoUrl = String(body.idPhotoUrl ?? "").trim() || undefined;
   const emergencyContactName = String(body.emergencyContactName ?? "").trim() || undefined;
   const emergencyContactRelation = String(body.emergencyContactRelation ?? "").trim() || undefined;
   const emergencyContactPhone = String(body.emergencyContactPhone ?? "").trim() || undefined;
@@ -148,6 +155,18 @@ export async function POST(request: Request) {
   if (!fullName || !Number.isFinite(monthlyRent) || monthlyRent < 0 || !Number.isFinite(rentPaid) || rentPaid < 0 || !paidOnDate) {
     return NextResponse.json({ message: "Name and payment details are required." }, { status: 400 });
   }
+  if (monthlyRent > 10_000_000 || rentPaid > 10_000_000) {
+    return NextResponse.json({ message: "Rent amount cannot exceed 10,000,000." }, { status: 400 });
+  }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ message: "Invalid email address." }, { status: 400 });
+  }
+  if (dateOfBirth && !/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)) {
+    return NextResponse.json({ message: "Date of birth must be YYYY-MM-DD." }, { status: 400 });
+  }
+  if (paidOnDate && !/^\d{4}-\d{2}-\d{2}$/.test(paidOnDate)) {
+    return NextResponse.json({ message: "Payment date must be YYYY-MM-DD." }, { status: 400 });
+  }
 
   if (session.isLive) {
     if (!hostelId) {
@@ -167,6 +186,8 @@ export async function POST(request: Request) {
         email,
         idType,
         idNumber: idNumber || PENDING_ID_NUMBER,
+        tenantPhotoUrl,
+        idPhotoUrl,
         emergencyContactName,
         emergencyContactRelation,
         emergencyContactPhone,
@@ -212,6 +233,8 @@ export async function POST(request: Request) {
     email: email ?? "",
     idType: idType as TenantRecord["idType"],
     idNumber: idNumber || PENDING_ID_NUMBER,
+    tenantPhotoUrl,
+    idPhotoUrl,
     emergencyContactName,
     emergencyContactRelation: emergencyContactRelation as TenantRecord["emergencyContactRelation"],
     emergencyContactPhone,

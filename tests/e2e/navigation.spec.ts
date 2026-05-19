@@ -16,6 +16,7 @@ async function loginAsDemoOwner(page: Page) {
   await page.goto("/owner/login");
   await page.getByRole("button", { name: /try demo workspace/i }).click();
   await expect(page).toHaveURL(/\/owner\/dashboard/);
+  await page.waitForLoadState("networkidle");
 }
 
 // ── auth redirects ────────────────────────────────────────────────────────────

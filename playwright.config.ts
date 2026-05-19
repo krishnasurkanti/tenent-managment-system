@@ -5,6 +5,7 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  globalSetup: "./tests/e2e/global-setup.ts",
   timeout: 60_000,
   expect: {
     timeout: 10_000,
@@ -25,15 +26,22 @@ export default defineConfig({
     video: "retain-on-failure",
     locale: 'en-US',
   },
-  webServer: {
+  webServer: process.env.PLAYWRIGHT_BASE_URL ? undefined : {
     command: `npm run dev:web -- --hostname localhost --port ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    env: { PLAYWRIGHT_TEST: "true" },
   },
   projects: [
+    // Reset in-memory demo data before any test runs (handles reuseExistingServer case)
+    {
+      name: "setup",
+      testMatch: /data-reset\.setup\.ts/,
+    },
     {
       name: "desktop-chrome",
+      dependencies: ["setup"],
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
@@ -41,6 +49,7 @@ export default defineConfig({
     },
     {
       name: "mobile-chrome",
+      dependencies: ["setup"],
       use: {
         ...devices["Pixel 7"],
       },

@@ -66,6 +66,7 @@ async function loginAsDemoOwner(page: Page) {
   await page.goto("/owner/login");
   await page.getByRole("button", { name: /try demo workspace/i }).click();
   await expect(page).toHaveURL(/\/owner\/dashboard/);
+  await page.waitForLoadState("networkidle");
 }
 
 async function getTenantPayload(page: Page, query = "") {
@@ -81,12 +82,9 @@ async function getTenantPayload(page: Page, query = "") {
 
 async function patchTenant(page: Page, tenantId: string, body: Record<string, unknown>) {
   return page.evaluate(async ({ id, payload }) => {
-    await fetch("/api/csrf");
-    const csrf = document.cookie
-      .split(";")
-      .map((part) => part.trim())
-      .find((part) => part.startsWith("csrf_token="))
-      ?.split("=")[1] ?? "";
+    const csrfRes = await fetch("/api/csrf");
+    const csrfData = await csrfRes.json() as { token?: string };
+    const csrf = csrfData.token ?? "";
     const response = await fetch(`/api/tenants/${encodeURIComponent(id)}`, {
       method: "PATCH",
       headers: {

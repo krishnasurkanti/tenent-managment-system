@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getOwnerHostel, updateOwnerHostel } from "@/data/ownerHostelStore";
 import type { OwnerRoom } from "@/types/owner-hostel";
 import { requireOwnerSession } from "@/lib/session-mode";
+import { apiRateLimit, getTrustedClientIp } from "@/lib/rate-limit";
 import { backendFetch } from "@/services/core/backend-api";
 import { normalizeRoom } from "@/utils/hostel-occupancy";
 import { parseJsonBody } from "@/lib/safe-json";
@@ -53,6 +54,10 @@ export async function PUT(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+
+  if (process.env.PLAYWRIGHT_TEST !== "true" && apiRateLimit(getTrustedClientIp(request))) {
+    return NextResponse.json({ message: "Too many requests. Try again later." }, { status: 429 });
+  }
 
   const { body, error: jsonError } = await parseJsonBody<{ hostelName?: string; address?: string; type?: string; rooms?: OwnerRoom[] }>(request);
   if (jsonError) return jsonError;

@@ -202,6 +202,27 @@ function getDemoTenantRecords(): TenantRecord[] {
         moveInDate: d(-21),
       },
     }),
+    {
+      ...buildDemoTenant({
+        tenantId: "51211",
+        fullName: "Ravi Kumar",
+        phone: "9876501211",
+        email: "ravi.test@example.com",
+        monthlyRent: 300,
+        rentPaid: 300,
+        paidOnDate: d(-2),   // daily billing — paid 2 days ago, overdue today
+        nextDueDate: calculateNextDueDate(d(-2), d(-2), "daily"),
+        createdAt: `${d(-2)}T12:00:00.000Z`,
+        assignment: {
+          hostelId: "owner-hostel-skyline",
+          hostelName: "Skyline Comforts",
+          roomNumber: "401",
+          sharingType: "single",
+          moveInDate: d(-2),
+        },
+      }),
+      billingCycle: "daily" as const,
+    },
   ];
 
   return demoTenantRecords.map((tenant) => ({
@@ -360,11 +381,12 @@ function getOccupiedBedIds(hostelId: string, roomNumber: string, exceptTenantId?
   );
 }
 
-export function createTenantRecord(input: Omit<TenantRecord, "tenantId" | "createdAt" | "updatedAt" | "paymentHistory">) {
+export function createTenantRecord(input: Omit<TenantRecord, "tenantId" | "hostelId" | "createdAt" | "updatedAt" | "paymentHistory">) {
   const now = new Date().toISOString();
   const status = getDueStatus(input.nextDueDate);
   const tenant: TenantRecord = {
     tenantId: generateTenantIdFromPhone(input.phone),
+    hostelId: DEMO_OWNER_HOSTEL_ID,
     createdAt: now,
     updatedAt: now,
     paymentHistory: [

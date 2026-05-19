@@ -3,6 +3,7 @@ import { addPaymentProof } from "@/data/tenantStore";
 import { savePaymentProofImage } from "@/lib/payment-proof-upload";
 import { validatePaymentProofWithMagicBytes } from "@/lib/document-upload";
 import { requireOwnerSession } from "@/lib/session-mode";
+import { apiRateLimit, getTrustedClientIp } from "@/lib/rate-limit";
 import { backendFetch } from "@/services/core/backend-api";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,10 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+
+  if (process.env.PLAYWRIGHT_TEST !== "true" && apiRateLimit(getTrustedClientIp(request))) {
+    return NextResponse.json({ message: "Too many requests. Try again later." }, { status: 429 });
+  }
 
   const formData = await request.formData();
 

@@ -2,12 +2,17 @@ import { NextResponse } from "next/server";
 import { requireOwnerSession } from "@/lib/session-mode";
 import { backendFetch } from "@/services/core/backend-api";
 import { parseJsonBody } from "@/lib/safe-json";
+import { authRateLimit, getTrustedClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function PATCH(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+
+  if (authRateLimit(getTrustedClientIp(request))) {
+    return NextResponse.json({ message: "Too many requests. Try again later." }, { status: 429 });
+  }
 
   if (session.isDemo) {
     return NextResponse.json(

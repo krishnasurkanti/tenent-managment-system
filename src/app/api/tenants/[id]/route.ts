@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireOwnerSession } from "@/lib/session-mode";
+import { apiRateLimit, getTrustedClientIp } from "@/lib/rate-limit";
 import { updateTenantProfile } from "@/data/tenantStore";
 import { backendFetch } from "@/services/core/backend-api";
 import { parseJsonBody } from "@/lib/safe-json";
@@ -14,6 +15,10 @@ export async function PATCH(
   const { id } = await params;
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+
+  if (process.env.PLAYWRIGHT_TEST !== "true" && apiRateLimit(getTrustedClientIp(request))) {
+    return NextResponse.json({ message: "Too many requests. Try again later." }, { status: 429 });
+  }
 
   const { body, error: jsonError } = await parseJsonBody(request);
   if (jsonError) return jsonError;
@@ -31,9 +36,17 @@ export async function PATCH(
     patch.fullName = name;
   }
   if (body.fatherName !== undefined) patch.fatherName = str("fatherName");
-  if (body.dateOfBirth !== undefined) patch.dateOfBirth = str("dateOfBirth");
+  if (body.dateOfBirth !== undefined) {
+    const dob = str("dateOfBirth");
+    if (dob && !/^\d{4}-\d{2}-\d{2}$/.test(dob)) return NextResponse.json({ message: "Date of birth must be YYYY-MM-DD." }, { status: 400 });
+    patch.dateOfBirth = dob;
+  }
   if (body.phone !== undefined) patch.phone = String(body.phone ?? "").trim();
-  if (body.email !== undefined) patch.email = String(body.email ?? "").trim();
+  if (body.email !== undefined) {
+    const emailVal = String(body.email ?? "").trim();
+    if (emailVal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) return NextResponse.json({ message: "Invalid email address." }, { status: 400 });
+    patch.email = emailVal;
+  }
   if (body.idType !== undefined) {
     const v = str("idType") as TenantRecord["idType"];
     patch.idType = v;
@@ -46,7 +59,9 @@ export async function PATCH(
   if (body.emergencyContactPhone !== undefined) patch.emergencyContactPhone = str("emergencyContactPhone");
   if (body.monthlyRent !== undefined) {
     const v = Number(body.monthlyRent);
-    if (Number.isFinite(v) && v >= 0) patch.monthlyRent = v;
+    if (!Number.isFinite(v) || v < 0) return NextResponse.json({ message: "Invalid rent amount." }, { status: 400 });
+    if (v > 10_000_000) return NextResponse.json({ message: "Rent amount cannot exceed 10,000,000." }, { status: 400 });
+    patch.monthlyRent = v;
   }
   if (body.billingCycle !== undefined) {
     const v = String(body.billingCycle ?? "").trim();

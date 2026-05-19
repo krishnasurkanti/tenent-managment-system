@@ -55,6 +55,7 @@ function mapTenantRow(row) {
 
   return {
     tenantId: String(row.id),
+    hostelId: String(row.hostel_id),
     fullName: data.fullName || "",
     fatherName: data.fatherName || undefined,
     dateOfBirth: data.dateOfBirth || undefined,

@@ -10,11 +10,14 @@ const CSRF_HEADER = "x-csrf-token";
 const CSRF_EXEMPT = new Set([
   "/api/csrf",
   "/api/auth/login",
+  "/api/auth/logout",
   "/api/auth/owner/login",
   "/api/auth/admin/login",
+  "/api/auth/admin/logout",
   "/api/auth/demo-login",
   "/api/super-admin/login",
   "/api/auth/register",
+  "/api/test/reset",
 ]);
 
 // Public complaint submissions are anonymous — no CSRF cookie exists yet
@@ -29,6 +32,22 @@ export async function proxy(request: NextRequest) {
   const adminAuthenticated = role === "super_admin";
   const isSecure = process.env.NODE_ENV === "production";
   const existingCsrf = request.cookies.get(CSRF_COOKIE)?.value;
+
+  // Auth checks run BEFORE CSRF so unauthenticated requests get 401, not 403
+  const OWNER_PROTECTED_API_PREFIXES = ["/api/owner-hostel", "/api/owner-hostels", "/api/tenants", "/api/owner-billing"];
+  if (OWNER_PROTECTED_API_PREFIXES.some(p => pathname.startsWith(p))) {
+    if (!ownerAuthenticated) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+  }
+
+  if (pathname.startsWith("/api/super-admin") && pathname !== "/api/super-admin/login" && role !== "super_admin") {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  if (pathname.startsWith("/api/admin") && !adminAuthenticated) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
 
   if (pathname.startsWith("/api/")) {
     if (MUTATION_METHODS.has(request.method) && !CSRF_EXEMPT.has(pathname) && !CSRF_EXEMPT_PREFIXES.some(p => pathname.startsWith(p))) {
@@ -49,7 +68,7 @@ export async function proxy(request: NextRequest) {
       response.cookies.set({
         name: CSRF_COOKIE,
         value: token,
-        httpOnly: true,
+        httpOnly: false,
         sameSite: "strict",
         secure: isSecure,
         path: "/",
@@ -60,12 +79,8 @@ export async function proxy(request: NextRequest) {
   }
 
   const OWNER_PUBLIC_PATHS = ["/owner/login", "/owner/signup", "/owner/accept-invite"];
-  if ((pathname.startsWith("/owner") && !OWNER_PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/"))) || pathname.startsWith("/api/owner-hostel") || pathname.startsWith("/api/owner-hostels") || pathname.startsWith("/api/tenants") || pathname.startsWith("/api/owner-billing")) {
+  if (pathname.startsWith("/owner") && !OWNER_PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/"))) {
     if (!ownerAuthenticated) {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-      }
-
       const url = new URL("/owner/login", request.url);
       if (pathname !== "/owner/login") url.searchParams.set("next", pathname);
       return NextResponse.redirect(url);
@@ -79,18 +94,10 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  if (pathname.startsWith("/api/super-admin") && pathname !== "/api/super-admin/login" && role !== "super_admin") {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-
   if (pathname.startsWith("/admin")) {
     if (!adminAuthenticated && pathname !== "/admin/login") {
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }
-  }
-
-  if (pathname.startsWith("/api/admin") && !adminAuthenticated) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   if ((pathname === "/login" || pathname === "/owner/login") && ownerAuthenticated) {
