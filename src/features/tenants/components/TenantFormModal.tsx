@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle, Briefcase, Building2, CalendarDays, Camera, CreditCard,
   FileText, FileBadge2, IdCard, IndianRupee, Mail, Phone, Plus,
-  Receipt, ShieldAlert, Trash2, Upload, User, UserCheck, Users, X,
+  Receipt, Search, ShieldAlert, Trash2, Upload, User, UserCheck, Users, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -125,12 +125,14 @@ export function TenantFormModal({
   onCreated,
   hostelId,
   propertyType,
+  allTenants,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: (tenant: TenantRecord) => void;
   hostelId?: string;
   propertyType?: "PG" | "RESIDENCE";
+  allTenants?: TenantRecord[];
 }) {
   const isResidence = propertyType === "RESIDENCE";
   const savedDraft = getSavedDraft();
@@ -163,6 +165,19 @@ export function TenantFormModal({
   const receiptInputRef = useRef<HTMLInputElement>(null);
   const agreementInputRef = useRef<HTMLInputElement>(null);
 
+  const [ecSearch, setEcSearch] = useState("");
+  const ecSearchResults = useMemo(() => {
+    const q = ecSearch.trim().toLowerCase();
+    if (!q || !allTenants?.length) return [];
+    return allTenants
+      .filter((t) =>
+        t.fullName.toLowerCase().includes(q) ||
+        t.phone.includes(q) ||
+        (t.assignment?.roomNumber?.toLowerCase().includes(q) ?? false),
+      )
+      .slice(0, 3);
+  }, [ecSearch, allTenants]);
+
   const duePreview = useMemo(() => getNextDuePreview(form.paidOnDate, billingCycle), [billingCycle, form.paidOnDate]);
   const paymentCoverage = Number(form.monthlyRent) > 0
     ? Math.min(100, Math.round((Number(form.rentPaid || 0) / Number(form.monthlyRent)) * 100))
@@ -178,6 +193,7 @@ export function TenantFormModal({
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    setEcSearch("");
   }, [step, open]);
 
   if (!open) return null;
@@ -294,8 +310,7 @@ export function TenantFormModal({
   };
 
   const handleNextFromPayment = () => {
-    if (!form.monthlyRent || Number(form.monthlyRent) <= 0) { setError("Enter monthly rent amount."); return; }
-    if (!form.paidOnDate) { setError("Enter joining date."); return; }
+    if (!form.paidOnDate) { setError("Enter joining / start date."); return; }
     setError("");
     if (isResidence) { setStep(5); return; }
     handleSubmit();
@@ -303,8 +318,7 @@ export function TenantFormModal({
 
   const handleSubmit = async () => {
     if (!form.fullName.trim()) { setError("Tenant name is required."); return; }
-    if (!form.monthlyRent || Number(form.monthlyRent) <= 0) { setError("Enter monthly rent."); return; }
-    if (!form.paidOnDate) { setError("Enter joining date."); return; }
+    if (!form.paidOnDate) { setError("Enter joining / start date."); return; }
     if (submitting) return;
 
     setSubmitting(true);
@@ -546,7 +560,51 @@ export function TenantFormModal({
               {/* ── Step 2: Emergency Contact ── */}
               {step === 2 ? (
                 <>
-                  <SectionHead title="Emergency Contact" subtitle="Who to call in an emergency. Fully optional — skip if not available." />
+                  <SectionHead title="Emergency Contact" subtitle="Fully optional — skip now, add later via Edit Tenant." />
+
+                  {/* Quick-fill from existing tenant */}
+                  {(allTenants?.length ?? 0) > 0 && (
+                    <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-3 space-y-2">
+                      <p className="text-[11px] text-white/40">Find existing tenant to auto-fill</p>
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
+                        <input
+                          value={ecSearch}
+                          onChange={(e) => setEcSearch(e.target.value)}
+                          disabled={submitting}
+                          placeholder="Name, phone, or room number…"
+                          className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-2.5 pl-9 pr-3 text-[12px] text-white outline-none placeholder:text-white/25"
+                        />
+                      </div>
+                      {ecSearchResults.length > 0 && (
+                        <div className="space-y-1">
+                          {ecSearchResults.map((t) => (
+                            <button
+                              key={t.tenantId}
+                              type="button"
+                              disabled={submitting}
+                              onClick={() => {
+                                setField("emergencyContactName", t.fullName);
+                                setField("emergencyContactPhone", t.phone);
+                                setEcSearch("");
+                              }}
+                              className="flex w-full items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-left transition hover:bg-white/[0.09]"
+                            >
+                              <User className="h-3.5 w-3.5 shrink-0 text-white/35" />
+                              <span className="flex-1 truncate text-[12px] font-medium text-white">{t.fullName}</span>
+                              {t.phone ? <span className="shrink-0 text-[11px] text-white/40">{t.phone}</span> : null}
+                              {t.assignment?.roomNumber ? (
+                                <span className="shrink-0 rounded-full bg-white/[0.08] px-2 py-0.5 text-[10px] text-white/40">
+                                  Rm {t.assignment.roomNumber}
+                                </span>
+                              ) : null}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
                     <Field label="Contact Name">
                       <InputShell icon={<ShieldAlert className="h-4 w-4 text-amber-400" />}>

@@ -10,6 +10,7 @@ import {
   IdCard,
   Mail,
   Phone,
+  Search,
   Upload,
   User,
   UserCircle,
@@ -68,10 +69,12 @@ export function CompleteProfileModal({
   tenant,
   onClose,
   onSaved,
+  allTenants,
 }: {
   tenant: TenantRecord;
   onClose: () => void;
   onSaved: (updated: TenantRecord) => void;
+  allTenants?: TenantRecord[];
 }) {
   const [phone, setPhone] = useState(tenant.phone ?? "");
   const [email, setEmail] = useState(tenant.email ?? "");
@@ -91,6 +94,19 @@ export function CompleteProfileModal({
   const [existingAgreementUrls, setExistingAgreementUrls] = useState<string[]>(tenant.agreementUrls ?? []);
   const [agreementFiles, setAgreementFiles] = useState<File[]>([]);
   const [agreementFilePreviews, setAgreementFilePreviews] = useState<string[]>([]);
+
+  const [ecSearch, setEcSearch] = useState("");
+  const ecSearchResults = (() => {
+    const q = ecSearch.trim().toLowerCase();
+    if (!q || !allTenants?.length) return [];
+    return allTenants
+      .filter((t) => t.tenantId !== tenant.tenantId && (
+        t.fullName.toLowerCase().includes(q) ||
+        t.phone.includes(q) ||
+        (t.assignment?.roomNumber?.toLowerCase().includes(q) ?? false)
+      ))
+      .slice(0, 3);
+  })();
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -591,6 +607,50 @@ export function CompleteProfileModal({
             <section>
               <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">Emergency Contact</p>
               <div className="space-y-2.5">
+
+                {/* Quick-fill from existing tenant */}
+                {(allTenants?.length ?? 0) > 0 && (
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-2.5 space-y-2">
+                    <p className="text-[11px] text-white/40">Find existing tenant to auto-fill</p>
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
+                      <input
+                        value={ecSearch}
+                        onChange={(e) => setEcSearch(e.target.value)}
+                        disabled={submitting}
+                        placeholder="Name, phone, or room…"
+                        className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-2 pl-9 pr-3 text-[12px] text-white outline-none placeholder:text-white/25"
+                      />
+                    </div>
+                    {ecSearchResults.length > 0 && (
+                      <div className="space-y-1">
+                        {ecSearchResults.map((t) => (
+                          <button
+                            key={t.tenantId}
+                            type="button"
+                            disabled={submitting}
+                            onClick={() => {
+                              setEmergencyName(t.fullName);
+                              setEmergencyPhone(t.phone);
+                              setEcSearch("");
+                            }}
+                            className="flex w-full items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-left transition hover:bg-white/[0.09]"
+                          >
+                            <User className="h-3.5 w-3.5 shrink-0 text-white/35" />
+                            <span className="flex-1 truncate text-[12px] font-medium text-white">{t.fullName}</span>
+                            {t.phone ? <span className="shrink-0 text-[11px] text-white/40">{t.phone}</span> : null}
+                            {t.assignment?.roomNumber ? (
+                              <span className="shrink-0 rounded-full bg-white/[0.08] px-2 py-0.5 text-[10px] text-white/40">
+                                Rm {t.assignment.roomNumber}
+                              </span>
+                            ) : null}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   <label className="block">
                     <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Name</span>

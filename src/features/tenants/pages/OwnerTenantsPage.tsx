@@ -452,6 +452,7 @@ function OwnerTenantsPageContent() {
         onClose={closeModal}
         hostelId={currentHostel.id}
         propertyType={currentHostel.type}
+        allTenants={allTenants}
         onCreated={async (tenant) => {
           void queryClient.invalidateQueries({ queryKey: ["owner-tenants", currentHostelId ?? null] });
           if (shouldAutoAssign) {
@@ -518,6 +519,7 @@ function OwnerTenantsPageContent() {
       {completingTenant && (
         <CompleteProfileModal
           tenant={completingTenant}
+          allTenants={allTenants}
           onClose={() => setCompletingTenant(null)}
           onSaved={(updated) => {
             setTenantOverrides((prev) => ({ ...prev, [updated.tenantId]: updated }));
