@@ -133,7 +133,9 @@ export async function POST(request: Request) {
   const idNumber = String(body.idNumber ?? "").trim().toUpperCase() || undefined;
   const tenantPhotoUrl = String(body.tenantPhotoUrl ?? "").trim() || undefined;
   const idPhotoUrl = String(body.idPhotoUrl ?? "").trim() || undefined;
-  const agreementUrl = String(body.agreementUrl ?? "").trim() || undefined;
+  const agreementUrlsRaw = Array.isArray(body.agreementUrls) ? body.agreementUrls : [];
+  const agreementUrls = agreementUrlsRaw.slice(0, 4).map((u: unknown) => String(u ?? "").trim()).filter(Boolean) as string[];
+  const agreementUrlsVal = agreementUrls.length > 0 ? agreementUrls : undefined;
   const emergencyContactName = String(body.emergencyContactName ?? "").trim() || undefined;
   const emergencyContactRelation = String(body.emergencyContactRelation ?? "").trim() || undefined;
   const emergencyContactPhone = String(body.emergencyContactPhone ?? "").trim() || undefined;
@@ -189,7 +191,7 @@ export async function POST(request: Request) {
         idNumber: idNumber || PENDING_ID_NUMBER,
         tenantPhotoUrl,
         idPhotoUrl,
-        agreementUrl,
+        agreementUrls: agreementUrlsVal,
         emergencyContactName,
         emergencyContactRelation,
         emergencyContactPhone,
@@ -237,7 +239,7 @@ export async function POST(request: Request) {
     idNumber: idNumber || PENDING_ID_NUMBER,
     tenantPhotoUrl,
     idPhotoUrl,
-    agreementUrl,
+    agreementUrls: agreementUrlsVal,
     emergencyContactName,
     emergencyContactRelation: emergencyContactRelation as TenantRecord["emergencyContactRelation"],
     emergencyContactPhone,

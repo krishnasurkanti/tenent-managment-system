@@ -1,7 +1,9 @@
 import path from "node:path";
 
-export const UPLOAD_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+export const UPLOAD_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB (photos/ID)
+export const AGREEMENT_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB (agreement docs)
 export const UPLOAD_ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+export const AGREEMENT_ALLOWED_MIME_TYPES = [...UPLOAD_ALLOWED_MIME_TYPES, "application/pdf"];
 // Payment proofs: images or PDF receipts — GIF excluded (polyglot risk)
 export const PROOF_ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
@@ -44,6 +46,24 @@ export async function validateDocumentFileWithMagicBytes(file: File): Promise<st
   if (!detectedMime) return "File content does not match an allowed image format.";
   if (detectedMime !== file.type) return "File extension does not match actual file content.";
 
+  return null;
+}
+
+export async function validateAgreementFileWithMagicBytes(file: File): Promise<string | null> {
+  if (file.size > AGREEMENT_MAX_FILE_SIZE) return "File too large. Maximum 10 MB.";
+  if (!AGREEMENT_ALLOWED_MIME_TYPES.includes(file.type)) return "Invalid file type. Use JPEG, PNG, WebP, or PDF.";
+  if (file.type === "application/pdf") {
+    const headerBytes = Buffer.from(await file.slice(0, 4).arrayBuffer());
+    if (headerBytes[0] !== 0x25 || headerBytes[1] !== 0x50 || headerBytes[2] !== 0x44 || headerBytes[3] !== 0x46) {
+      return "File does not appear to be a valid PDF.";
+    }
+    return null;
+  }
+  if (file.type === "image/heic" || file.type === "image/heif") return null;
+  const headerBytes = Buffer.from(await file.slice(0, 12).arrayBuffer());
+  const detectedMime = detectMimeFromBytes(headerBytes);
+  if (!detectedMime) return "File content does not match an allowed image format.";
+  if (detectedMime !== file.type) return "File extension does not match actual file content.";
   return null;
 }
 

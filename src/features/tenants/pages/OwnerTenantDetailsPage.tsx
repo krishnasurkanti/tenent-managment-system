@@ -100,12 +100,12 @@ export default async function OwnerTenantDetailsPage({
             )}
 
             {/* Agreement */}
-            {tenant.agreementUrl && (
+            {(tenant.agreementUrls?.length ?? 0) > 0 && (
               <div className="mt-3">
-                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-white/35">Signed Agreement</p>
-                {tenant.agreementUrl.match(/\.(pdf)$/i) ? (
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-white/35">Signed Agreement</p>
+                {tenant.agreementUrls![0].match(/\.(pdf)$/i) ? (
                   <a
-                    href={tenant.agreementUrl}
+                    href={tenant.agreementUrls![0]}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 rounded-2xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-[13px] font-medium text-blue-300 transition hover:bg-blue-500/15"
@@ -114,13 +114,17 @@ export default async function OwnerTenantDetailsPage({
                     View Agreement PDF
                   </a>
                 ) : (
-                  <a href={tenant.agreementUrl} target="_blank" rel="noopener noreferrer">
-                    <img
-                      src={tenant.agreementUrl}
-                      alt="Signed Agreement"
-                      className="h-32 w-full max-w-[20rem] rounded-2xl object-cover border border-white/10 transition hover:opacity-80"
-                    />
-                  </a>
+                  <div className="flex flex-wrap gap-2">
+                    {tenant.agreementUrls!.map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={url}
+                          alt={`Agreement page ${i + 1}`}
+                          className="h-28 w-28 rounded-2xl object-cover border border-white/10 transition hover:opacity-80"
+                        />
+                      </a>
+                    ))}
+                  </div>
                 )}
               </div>
             )}

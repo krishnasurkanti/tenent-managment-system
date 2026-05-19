@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireOwnerSession } from "@/lib/session-mode";
 import { apiRateLimit, getTrustedClientIp } from "@/lib/rate-limit";
-import { saveTenantDocument, validateDocumentFileWithMagicBytes } from "@/lib/document-upload";
+import { saveTenantDocument, validateDocumentFileWithMagicBytes, validateAgreementFileWithMagicBytes } from "@/lib/document-upload";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "docType must be tenant_photo, id_photo, receipt, or agreement." }, { status: 400 });
   }
 
-  const validationError = await validateDocumentFileWithMagicBytes(file);
+  const validationError = docType === "agreement"
+    ? await validateAgreementFileWithMagicBytes(file)
+    : await validateDocumentFileWithMagicBytes(file);
   if (validationError) return NextResponse.json({ message: validationError }, { status: 400 });
 
   try {

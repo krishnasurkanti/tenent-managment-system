@@ -71,7 +71,10 @@ export async function PATCH(
   if (body.workplaceName !== undefined) patch.workplaceName = str("workplaceName");
   if (body.tenantPhotoUrl !== undefined) patch.tenantPhotoUrl = str("tenantPhotoUrl");
   if (body.idPhotoUrl !== undefined) patch.idPhotoUrl = str("idPhotoUrl");
-  if (body.agreementUrl !== undefined) patch.agreementUrl = str("agreementUrl");
+  if (body.agreementUrls !== undefined) {
+    const urls = Array.isArray(body.agreementUrls) ? body.agreementUrls : [];
+    patch.agreementUrls = urls.slice(0, 4).map((u: unknown) => String(u ?? "").trim()).filter(Boolean);
+  }
 
   if (session.isLive) {
     // Include expectedUpdatedAt for concurrency control

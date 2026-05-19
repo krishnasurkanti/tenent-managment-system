@@ -88,8 +88,9 @@ export function CompleteProfileModal({
   const [tenantPhotoPreview, setTenantPhotoPreview] = useState<string>(tenant.tenantPhotoUrl ?? "");
   const [idPhotoFile, setIdPhotoFile] = useState<File | null>(null);
   const [idPhotoPreview, setIdPhotoPreview] = useState<string>(tenant.idPhotoUrl ?? "");
-  const [agreementFile, setAgreementFile] = useState<File | null>(null);
-  const [agreementPreview, setAgreementPreview] = useState<string>(tenant.agreementUrl ?? "");
+  const [existingAgreementUrls, setExistingAgreementUrls] = useState<string[]>(tenant.agreementUrls ?? []);
+  const [agreementFiles, setAgreementFiles] = useState<File[]>([]);
+  const [agreementFilePreviews, setAgreementFilePreviews] = useState<string[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -97,6 +98,38 @@ export function CompleteProfileModal({
   const tenantPhotoRef = useRef<HTMLInputElement>(null);
   const idPhotoRef = useRef<HTMLInputElement>(null);
   const agreementRef = useRef<HTMLInputElement>(null);
+
+  const totalAgreementCount = existingAgreementUrls.length + agreementFiles.length;
+  const hasAgreementPdf = (existingAgreementUrls.length === 1 && existingAgreementUrls[0].match(/\.pdf$/i)) ||
+    (agreementFiles.length === 1 && agreementFiles[0].type === "application/pdf");
+
+  function pickAgreementFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!picked.length) return;
+    const pdf = picked.find((f) => f.type === "application/pdf");
+    if (pdf) {
+      if (pdf.size > 10 * 1024 * 1024) { setError("Agreement too large. Max 10 MB."); return; }
+      setError("");
+      setExistingAgreementUrls([]);
+      setAgreementFiles([pdf]);
+      setAgreementFilePreviews(["__pdf__"]);
+      return;
+    }
+    const images = picked.filter((f) => f.type.startsWith("image/"));
+    const canAdd = 4 - totalAgreementCount;
+    if (canAdd <= 0) { setError("Maximum 4 agreement images."); return; }
+    const oversized = images.find((f) => f.size > 10 * 1024 * 1024);
+    if (oversized) { setError("File too large. Max 10 MB each."); return; }
+    setError("");
+    const toAdd = images.slice(0, canAdd);
+    setAgreementFiles((prev) => [...prev, ...toAdd]);
+    toAdd.forEach((f) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => setAgreementFilePreviews((p) => [...p, ev.target?.result as string]);
+      reader.readAsDataURL(f);
+    });
+  }
 
   useLockBodyScroll(true);
 
@@ -123,11 +156,16 @@ export function CompleteProfileModal({
     try {
       let tenantPhotoUrl = tenant.tenantPhotoUrl;
       let idPhotoUrl = tenant.idPhotoUrl;
-      let agreementUrl = tenant.agreementUrl;
 
       if (tenantPhotoFile) tenantPhotoUrl = await uploadDoc(tenantPhotoFile, "tenant_photo");
       if (idPhotoFile) idPhotoUrl = await uploadDoc(idPhotoFile, "id_photo");
-      if (agreementFile) agreementUrl = await uploadDoc(agreementFile, "agreement");
+
+      // Agreement: keep existing (minus removed) + new uploads
+      let newAgreementUploads: string[] = [];
+      if (agreementFiles.length > 0) {
+        newAgreementUploads = await Promise.all(agreementFiles.map((f) => uploadDoc(f, "agreement")));
+      }
+      const finalAgreementUrls = [...existingAgreementUrls, ...newAgreementUploads];
 
       const payload: Record<string, unknown> = {
         expectedUpdatedAt: tenant.updatedAt,
@@ -144,7 +182,8 @@ export function CompleteProfileModal({
       };
       if (tenantPhotoUrl !== tenant.tenantPhotoUrl) payload.tenantPhotoUrl = tenantPhotoUrl;
       if (idPhotoUrl !== tenant.idPhotoUrl) payload.idPhotoUrl = idPhotoUrl;
-      if (agreementUrl !== tenant.agreementUrl) payload.agreementUrl = agreementUrl;
+      const prevUrls = JSON.stringify(tenant.agreementUrls ?? []);
+      if (JSON.stringify(finalAgreementUrls) !== prevUrls) payload.agreementUrls = finalAgreementUrls;
 
       const res = await csrfFetch(`/api/tenants/${encodeURIComponent(tenant.tenantId)}`, {
         method: "PATCH",
@@ -162,7 +201,7 @@ export function CompleteProfileModal({
         return;
       }
 
-      onSaved(data.tenant ?? { ...tenant, ...payload, tenantPhotoUrl, idPhotoUrl, agreementUrl } as TenantRecord);
+      onSaved(data.tenant ?? { ...tenant, ...payload, tenantPhotoUrl, idPhotoUrl, agreementUrls: finalAgreementUrls } as TenantRecord);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error. Try again.");
     } finally {
@@ -441,62 +480,108 @@ export function CompleteProfileModal({
                   </div>
                 </div>
 
-                {/* Signed agreement */}
-                <div className="mt-2.5">
-                  <p className="mb-1.5 text-[12px] font-semibold text-white/70">
-                    Signed Agreement <span className="font-normal text-white/35">(optional)</span>
-                  </p>
-                  <input
-                    ref={agreementRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
-                    className="hidden"
-                    onChange={(e) => pickPhoto(e, setAgreementFile, setAgreementPreview)}
-                  />
-                  {agreementPreview ? (
-                    <div className="relative">
-                      {agreementFile?.type === "application/pdf" || (!agreementFile && tenant.agreementUrl?.endsWith(".pdf")) ? (
-                        <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3">
-                          <FileText className="h-5 w-5 text-blue-400" />
-                          <span className="text-[13px] text-white/70 truncate max-w-[220px]">
-                            {agreementFile?.name ?? "Agreement uploaded"}
-                          </span>
-                        </div>
-                      ) : (
-                        <img
-                          src={agreementPreview}
-                          alt="Agreement"
-                          className="h-24 w-full rounded-2xl border border-white/10 object-cover"
-                        />
-                      )}
-                      <button
-                        type="button"
-                        disabled={submitting}
-                        onClick={() => { setAgreementFile(null); setAgreementPreview(""); }}
-                        className="absolute -right-2 -top-2 rounded-full border border-white/20 bg-[#1a1a1f] p-1 text-white/60 hover:text-white"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                {/* Signed agreement — multi-file */}
+                <div className="mt-2.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[12px] font-semibold text-white/70">
+                      Signed Agreement <span className="font-normal text-white/35">(optional)</span>
+                    </p>
+                    {totalAgreementCount > 0 && !hasAgreementPdf && totalAgreementCount < 4 && (
                       <button
                         type="button"
                         disabled={submitting}
                         onClick={() => agreementRef.current?.click()}
-                        className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.04] py-1.5 text-[11px] font-medium text-white/50 hover:bg-white/[0.07] transition"
+                        className="text-[11px] font-medium text-blue-400 hover:text-blue-300 disabled:opacity-40"
                       >
-                        <Upload className="h-3 w-3" />
-                        Change
+                        + Add
                       </button>
-                    </div>
-                  ) : (
+                    )}
+                  </div>
+                  <input
+                    ref={agreementRef}
+                    type="file"
+                    multiple
+                    accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                    className="hidden"
+                    onChange={pickAgreementFiles}
+                  />
+                  {totalAgreementCount === 0 ? (
                     <button
                       type="button"
                       disabled={submitting}
                       onClick={() => agreementRef.current?.click()}
-                      className="flex h-16 w-full flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-blue-500/25 bg-blue-500/[0.03] text-blue-400/50 transition hover:border-blue-500/40 hover:bg-blue-500/[0.07] hover:text-blue-400"
+                      className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-500/25 bg-blue-500/[0.03] text-blue-400/50 transition hover:border-blue-500/40 hover:bg-blue-500/[0.07] hover:text-blue-400 disabled:opacity-40"
                     >
-                      <FileText className="h-5 w-5" />
+                      <FileText className="h-4 w-4" />
                       <span className="text-[11px] font-medium">Upload signed agreement</span>
                     </button>
+                  ) : hasAgreementPdf ? (
+                    <div className="flex items-center justify-between rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="h-4 w-4 shrink-0 text-blue-400" />
+                        <a
+                          href={existingAgreementUrls[0] ?? "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[12px] text-white/70 truncate hover:text-blue-300"
+                        >
+                          {agreementFiles[0]?.name ?? "Agreement (PDF)"}
+                        </a>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={() => { setExistingAgreementUrls([]); setAgreementFiles([]); setAgreementFilePreviews([]); }}
+                        className="ml-2 shrink-0 rounded-full p-1 text-white/40 hover:text-red-400"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Existing server images */}
+                      {existingAgreementUrls.map((url, i) => (
+                        <div key={`ex-${i}`} className="relative">
+                          <img src={url} alt={`Agreement ${i + 1}`} className="h-20 w-full rounded-xl object-cover border border-white/12" />
+                          <button
+                            type="button"
+                            disabled={submitting}
+                            onClick={() => setExistingAgreementUrls((prev) => prev.filter((_, idx) => idx !== i))}
+                            className="absolute -right-1.5 -top-1.5 rounded-full bg-red-500 p-0.5 text-white shadow-md disabled:opacity-40"
+                          >
+                            <X className="h-2.5 w-2.5" />
+                          </button>
+                        </div>
+                      ))}
+                      {/* New file previews */}
+                      {agreementFilePreviews.map((preview, i) => (
+                        <div key={`new-${i}`} className="relative">
+                          <img src={preview} alt={`New ${i + 1}`} className="h-20 w-full rounded-xl object-cover border border-white/12" />
+                          <button
+                            type="button"
+                            disabled={submitting}
+                            onClick={() => {
+                              setAgreementFiles((prev) => prev.filter((_, idx) => idx !== i));
+                              setAgreementFilePreviews((prev) => prev.filter((_, idx) => idx !== i));
+                            }}
+                            className="absolute -right-1.5 -top-1.5 rounded-full bg-red-500 p-0.5 text-white shadow-md disabled:opacity-40"
+                          >
+                            <X className="h-2.5 w-2.5" />
+                          </button>
+                        </div>
+                      ))}
+                      {totalAgreementCount < 4 && (
+                        <button
+                          type="button"
+                          disabled={submitting}
+                          onClick={() => agreementRef.current?.click()}
+                          className="flex h-20 w-full flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-white/15 bg-white/[0.02] text-white/30 transition hover:border-blue-500/30 hover:text-blue-400 disabled:opacity-40"
+                        >
+                          <Upload className="h-4 w-4" />
+                          <span className="text-[10px]">Add</span>
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

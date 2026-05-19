@@ -150,9 +150,9 @@ export function TenantFormModal({
   const [idPhotoUploadedUrl, setIdPhotoUploadedUrl] = useState<string>("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string>("");
-  const [agreementFile, setAgreementFile] = useState<File | null>(null);
-  const [agreementPreview, setAgreementPreview] = useState<string>("");
-  const [agreementUploadedUrl, setAgreementUploadedUrl] = useState<string>("");
+  const [agreementFiles, setAgreementFiles] = useState<File[]>([]);
+  const [agreementPreviews, setAgreementPreviews] = useState<string[]>([]);
+  const [agreementUploadedUrls, setAgreementUploadedUrls] = useState<string[]>([]);
   const [uploadingDocs, setUploadingDocs] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -200,9 +200,9 @@ export function TenantFormModal({
     setIdPhotoUploadedUrl("");
     setReceiptFile(null);
     setReceiptPreview("");
-    setAgreementFile(null);
-    setAgreementPreview("");
-    setAgreementUploadedUrl("");
+    setAgreementFiles([]);
+    setAgreementPreviews([]);
+    setAgreementUploadedUrls([]);
     if (typeof window !== "undefined") window.localStorage.removeItem(DRAFT_KEY);
   };
 
@@ -230,6 +230,41 @@ export function TenantFormModal({
     reader.readAsDataURL(file);
   }
 
+  function pickAgreementFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!picked.length) return;
+
+    const pdf = picked.find((f) => f.type === "application/pdf");
+    if (pdf) {
+      if (pdf.size > 10 * 1024 * 1024) { setError("Agreement too large. Max 10 MB."); return; }
+      setError("");
+      setAgreementFiles([pdf]);
+      setAgreementPreviews(["__pdf__"]);
+      setAgreementUploadedUrls([]);
+      return;
+    }
+
+    const images = picked.filter((f) => f.type.startsWith("image/"));
+    const existingImages = agreementFiles.filter((f) => f.type.startsWith("image/"));
+    const canAdd = 4 - existingImages.length;
+    if (canAdd <= 0) { setError("Maximum 4 agreement images."); return; }
+    const oversized = images.find((f) => f.size > 10 * 1024 * 1024);
+    if (oversized) { setError("File too large. Max 10 MB each."); return; }
+    setError("");
+    const toAdd = images.slice(0, canAdd);
+    setAgreementFiles([...existingImages, ...toAdd]);
+    toAdd.forEach((f) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => setAgreementPreviews((prev) => [
+        ...prev.filter((p) => p !== "__pdf__"),
+        ev.target?.result as string,
+      ]);
+      reader.readAsDataURL(f);
+    });
+    setAgreementUploadedUrls([]);
+  }
+
   const handleNextFromDetails = () => {
     if (!form.fullName.trim()) { setError("Enter tenant name to continue."); return; }
     setError("");
@@ -248,7 +283,7 @@ export function TenantFormModal({
     try {
       if (tenantPhotoFile) setTenantPhotoUploadedUrl(await uploadDocument(tenantPhotoFile, "tenant_photo"));
       if (idPhotoFile) setIdPhotoUploadedUrl(await uploadDocument(idPhotoFile, "id_photo"));
-      if (agreementFile) setAgreementUploadedUrl(await uploadDocument(agreementFile, "agreement"));
+      if (agreementFiles.length > 0) setAgreementUploadedUrls(await Promise.all(agreementFiles.map((f) => uploadDocument(f, "agreement"))));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
       setUploadingDocs(false);
@@ -278,13 +313,15 @@ export function TenantFormModal({
     // Upload photos + agreement only if not already uploaded in Step 3
     let tenantPhotoUrl: string | undefined = tenantPhotoUploadedUrl || undefined;
     let idPhotoUrl: string | undefined = idPhotoUploadedUrl || undefined;
-    let agreementUrl: string | undefined = agreementUploadedUrl || undefined;
+    let finalAgreementUrls: string[] = agreementUploadedUrls.length > 0 ? agreementUploadedUrls : [];
     let receiptUrl: string | undefined;
 
     try {
       if (tenantPhotoFile && !tenantPhotoUrl) tenantPhotoUrl = await uploadDocument(tenantPhotoFile, "tenant_photo");
       if (idPhotoFile && !idPhotoUrl) idPhotoUrl = await uploadDocument(idPhotoFile, "id_photo");
-      if (agreementFile && !agreementUrl) agreementUrl = await uploadDocument(agreementFile, "agreement");
+      if (agreementFiles.length > 0 && finalAgreementUrls.length === 0) {
+        finalAgreementUrls = await Promise.all(agreementFiles.map((f) => uploadDocument(f, "agreement")));
+      }
       if (receiptFile) receiptUrl = await uploadDocument(receiptFile, "receipt");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Photo upload failed.");
@@ -303,7 +340,7 @@ export function TenantFormModal({
       idType: form.idType || undefined,
       tenantPhotoUrl,
       idPhotoUrl,
-      agreementUrl,
+      agreementUrls: finalAgreementUrls.length > 0 ? finalAgreementUrls : undefined,
       emergencyContactName: form.emergencyContactName.trim() || undefined,
       emergencyContactRelation: form.emergencyContactRelation || undefined,
       emergencyContactPhone: form.emergencyContactPhone || undefined,
@@ -666,50 +703,89 @@ export function TenantFormModal({
                     )}
                   </div>
 
-                  {/* Signed Agreement */}
+                  {/* Signed Agreement — up to 4 images or 1 PDF */}
                   <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                    <p className="text-[12px] font-semibold text-white/60">
-                      Signed Agreement <span className="font-normal text-white/35">(optional)</span>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[12px] font-semibold text-white/60">
+                        Signed Agreement <span className="font-normal text-white/35">(optional)</span>
+                      </p>
+                      {agreementFiles.length > 0 && agreementFiles[0].type !== "application/pdf" && agreementFiles.length < 4 && (
+                        <button
+                          type="button"
+                          onClick={() => agreementInputRef.current?.click()}
+                          className="text-[11px] font-medium text-blue-400 hover:text-blue-300"
+                        >
+                          + Add more
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-white/30">
+                      Up to 4 photos of signed pages, or 1 PDF · Max 10 MB each · Can add later
                     </p>
-                    <p className="text-[11px] text-white/30">Photo or scan of the signed paper agreement. Can be added later.</p>
                     <input
                       ref={agreementInputRef}
                       type="file"
+                      multiple
                       accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
                       className="hidden"
-                      onChange={(e) => pickFile(e, setAgreementFile, setAgreementPreview)}
+                      onChange={pickAgreementFiles}
                     />
-                    {agreementPreview ? (
-                      <div className="relative inline-block">
-                        {agreementFile?.type === "application/pdf" ? (
-                          <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3">
-                            <FileText className="h-5 w-5 text-blue-400" />
-                            <span className="text-[13px] text-white/70 truncate max-w-[200px]">{agreementFile.name}</span>
-                          </div>
-                        ) : (
-                          <img
-                            src={agreementPreview}
-                            alt="Agreement preview"
-                            className="h-32 w-full max-w-xs rounded-2xl object-cover border border-white/12"
-                          />
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => { setAgreementFile(null); setAgreementPreview(""); }}
-                          className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white shadow-md"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ) : (
+                    {agreementFiles.length === 0 ? (
                       <button
                         type="button"
                         onClick={() => agreementInputRef.current?.click()}
-                        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-500/25 bg-blue-500/[0.03] py-4 text-blue-400/50 transition hover:border-blue-500/40 hover:bg-blue-500/[0.07] hover:text-blue-400"
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-500/25 bg-blue-500/[0.03] py-5 text-blue-400/50 transition hover:border-blue-500/40 hover:bg-blue-500/[0.07] hover:text-blue-400"
                       >
                         <FileText className="h-4 w-4" />
                         <span className="text-[12px] font-medium">Upload signed agreement</span>
                       </button>
+                    ) : agreementFiles[0].type === "application/pdf" ? (
+                      <div className="flex items-center justify-between rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="h-5 w-5 shrink-0 text-blue-400" />
+                          <span className="text-[13px] text-white/70 truncate">{agreementFiles[0].name}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setAgreementFiles([]); setAgreementPreviews([]); setAgreementUploadedUrls([]); }}
+                          className="ml-2 shrink-0 rounded-full p-1 text-white/40 hover:text-red-400"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {agreementPreviews.map((preview, i) => (
+                          <div key={i} className="relative">
+                            <img
+                              src={preview}
+                              alt={`Agreement page ${i + 1}`}
+                              className="h-28 w-full rounded-xl object-cover border border-white/12"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAgreementFiles((prev) => prev.filter((_, idx) => idx !== i));
+                                setAgreementPreviews((prev) => prev.filter((_, idx) => idx !== i));
+                                setAgreementUploadedUrls([]);
+                              }}
+                              className="absolute -right-1.5 -top-1.5 rounded-full bg-red-500 p-1 text-white shadow-md"
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </button>
+                          </div>
+                        ))}
+                        {agreementFiles.length < 4 && (
+                          <button
+                            type="button"
+                            onClick={() => agreementInputRef.current?.click()}
+                            className="flex h-28 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/15 bg-white/[0.02] text-white/30 transition hover:border-blue-500/30 hover:bg-blue-500/[0.04] hover:text-blue-400"
+                          >
+                            <Plus className="h-5 w-5" />
+                            <span className="text-[10px] font-medium">Add page</span>
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </>
