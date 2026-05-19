@@ -20,6 +20,7 @@ export type TenantRecord = {
   workplaceName?: string;
   tenantPhotoUrl?: string;
   idPhotoUrl?: string;
+  agreementUrl?: string;
   monthlyRent: number;
   rentPaid: number;
   paidOnDate: string;

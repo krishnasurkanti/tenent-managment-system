@@ -71,6 +71,7 @@ export async function PATCH(
   if (body.workplaceName !== undefined) patch.workplaceName = str("workplaceName");
   if (body.tenantPhotoUrl !== undefined) patch.tenantPhotoUrl = str("tenantPhotoUrl");
   if (body.idPhotoUrl !== undefined) patch.idPhotoUrl = str("idPhotoUrl");
+  if (body.agreementUrl !== undefined) patch.agreementUrl = str("agreementUrl");
 
   if (session.isLive) {
     // Include expectedUpdatedAt for concurrency control

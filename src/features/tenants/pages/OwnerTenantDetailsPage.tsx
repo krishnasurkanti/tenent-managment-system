@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Briefcase, CalendarDays, CreditCard, IdCard, Mail, Phone, User2, Users2 } from "lucide-react";
+import { ArrowLeft, Briefcase, CalendarDays, CreditCard, FileText, IdCard, Mail, Phone, User2, Users2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
 import { CompleteProfileButton } from "@/features/tenants/components/CompleteProfileButton";
@@ -95,6 +95,32 @@ export default async function OwnerTenantDetailsPage({
                       className="h-24 w-full max-w-[14rem] rounded-2xl object-cover border border-white/10"
                     />
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Agreement */}
+            {tenant.agreementUrl && (
+              <div className="mt-3">
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-white/35">Signed Agreement</p>
+                {tenant.agreementUrl.match(/\.(pdf)$/i) ? (
+                  <a
+                    href={tenant.agreementUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-[13px] font-medium text-blue-300 transition hover:bg-blue-500/15"
+                  >
+                    <FileText className="h-4 w-4" />
+                    View Agreement PDF
+                  </a>
+                ) : (
+                  <a href={tenant.agreementUrl} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={tenant.agreementUrl}
+                      alt="Signed Agreement"
+                      className="h-32 w-full max-w-[20rem] rounded-2xl object-cover border border-white/10 transition hover:opacity-80"
+                    />
+                  </a>
                 )}
               </div>
             )}

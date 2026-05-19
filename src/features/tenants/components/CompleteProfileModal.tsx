@@ -6,6 +6,7 @@ import {
   Briefcase,
   CalendarDays,
   CreditCard,
+  FileText,
   IdCard,
   Mail,
   Phone,
@@ -53,7 +54,7 @@ function fmtPhone(v: string) {
   return d.length <= 5 ? d : `${d.slice(0, 5)} ${d.slice(5)}`;
 }
 
-async function uploadDoc(file: File, docType: "tenant_photo" | "id_photo"): Promise<string> {
+async function uploadDoc(file: File, docType: "tenant_photo" | "id_photo" | "agreement"): Promise<string> {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("docType", docType);
@@ -87,12 +88,15 @@ export function CompleteProfileModal({
   const [tenantPhotoPreview, setTenantPhotoPreview] = useState<string>(tenant.tenantPhotoUrl ?? "");
   const [idPhotoFile, setIdPhotoFile] = useState<File | null>(null);
   const [idPhotoPreview, setIdPhotoPreview] = useState<string>(tenant.idPhotoUrl ?? "");
+  const [agreementFile, setAgreementFile] = useState<File | null>(null);
+  const [agreementPreview, setAgreementPreview] = useState<string>(tenant.agreementUrl ?? "");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const tenantPhotoRef = useRef<HTMLInputElement>(null);
   const idPhotoRef = useRef<HTMLInputElement>(null);
+  const agreementRef = useRef<HTMLInputElement>(null);
 
   useLockBodyScroll(true);
 
@@ -119,9 +123,11 @@ export function CompleteProfileModal({
     try {
       let tenantPhotoUrl = tenant.tenantPhotoUrl;
       let idPhotoUrl = tenant.idPhotoUrl;
+      let agreementUrl = tenant.agreementUrl;
 
       if (tenantPhotoFile) tenantPhotoUrl = await uploadDoc(tenantPhotoFile, "tenant_photo");
       if (idPhotoFile) idPhotoUrl = await uploadDoc(idPhotoFile, "id_photo");
+      if (agreementFile) agreementUrl = await uploadDoc(agreementFile, "agreement");
 
       const payload: Record<string, unknown> = {
         expectedUpdatedAt: tenant.updatedAt,
@@ -138,6 +144,7 @@ export function CompleteProfileModal({
       };
       if (tenantPhotoUrl !== tenant.tenantPhotoUrl) payload.tenantPhotoUrl = tenantPhotoUrl;
       if (idPhotoUrl !== tenant.idPhotoUrl) payload.idPhotoUrl = idPhotoUrl;
+      if (agreementUrl !== tenant.agreementUrl) payload.agreementUrl = agreementUrl;
 
       const res = await csrfFetch(`/api/tenants/${encodeURIComponent(tenant.tenantId)}`, {
         method: "PATCH",
@@ -155,7 +162,7 @@ export function CompleteProfileModal({
         return;
       }
 
-      onSaved(data.tenant ?? { ...tenant, ...payload, tenantPhotoUrl, idPhotoUrl } as TenantRecord);
+      onSaved(data.tenant ?? { ...tenant, ...payload, tenantPhotoUrl, idPhotoUrl, agreementUrl } as TenantRecord);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error. Try again.");
     } finally {
@@ -432,6 +439,65 @@ export function CompleteProfileModal({
                       </button>
                     )}
                   </div>
+                </div>
+
+                {/* Signed agreement */}
+                <div className="mt-2.5">
+                  <p className="mb-1.5 text-[12px] font-semibold text-white/70">
+                    Signed Agreement <span className="font-normal text-white/35">(optional)</span>
+                  </p>
+                  <input
+                    ref={agreementRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                    className="hidden"
+                    onChange={(e) => pickPhoto(e, setAgreementFile, setAgreementPreview)}
+                  />
+                  {agreementPreview ? (
+                    <div className="relative">
+                      {agreementFile?.type === "application/pdf" || (!agreementFile && tenant.agreementUrl?.endsWith(".pdf")) ? (
+                        <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3">
+                          <FileText className="h-5 w-5 text-blue-400" />
+                          <span className="text-[13px] text-white/70 truncate max-w-[220px]">
+                            {agreementFile?.name ?? "Agreement uploaded"}
+                          </span>
+                        </div>
+                      ) : (
+                        <img
+                          src={agreementPreview}
+                          alt="Agreement"
+                          className="h-24 w-full rounded-2xl border border-white/10 object-cover"
+                        />
+                      )}
+                      <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={() => { setAgreementFile(null); setAgreementPreview(""); }}
+                        className="absolute -right-2 -top-2 rounded-full border border-white/20 bg-[#1a1a1f] p-1 text-white/60 hover:text-white"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={() => agreementRef.current?.click()}
+                        className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.04] py-1.5 text-[11px] font-medium text-white/50 hover:bg-white/[0.07] transition"
+                      >
+                        <Upload className="h-3 w-3" />
+                        Change
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => agreementRef.current?.click()}
+                      className="flex h-16 w-full flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-blue-500/25 bg-blue-500/[0.03] text-blue-400/50 transition hover:border-blue-500/40 hover:bg-blue-500/[0.07] hover:text-blue-400"
+                    >
+                      <FileText className="h-5 w-5" />
+                      <span className="text-[11px] font-medium">Upload signed agreement</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </section>

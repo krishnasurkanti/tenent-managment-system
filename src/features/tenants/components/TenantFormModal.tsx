@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle, Briefcase, Building2, CalendarDays, Camera, CreditCard,
-  FileBadge2, IdCard, IndianRupee, Mail, Phone, Plus,
+  FileText, FileBadge2, IdCard, IndianRupee, Mail, Phone, Plus,
   Receipt, ShieldAlert, Trash2, Upload, User, UserCheck, Users, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -109,7 +109,7 @@ function getSavedDraft() {
   }
 }
 
-async function uploadDocument(file: File, docType: "tenant_photo" | "id_photo" | "receipt"): Promise<string> {
+async function uploadDocument(file: File, docType: "tenant_photo" | "id_photo" | "receipt" | "agreement"): Promise<string> {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("docType", docType);
@@ -150,6 +150,9 @@ export function TenantFormModal({
   const [idPhotoUploadedUrl, setIdPhotoUploadedUrl] = useState<string>("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string>("");
+  const [agreementFile, setAgreementFile] = useState<File | null>(null);
+  const [agreementPreview, setAgreementPreview] = useState<string>("");
+  const [agreementUploadedUrl, setAgreementUploadedUrl] = useState<string>("");
   const [uploadingDocs, setUploadingDocs] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -158,6 +161,7 @@ export function TenantFormModal({
   const tenantPhotoInputRef = useRef<HTMLInputElement>(null);
   const idPhotoInputRef = useRef<HTMLInputElement>(null);
   const receiptInputRef = useRef<HTMLInputElement>(null);
+  const agreementInputRef = useRef<HTMLInputElement>(null);
 
   const duePreview = useMemo(() => getNextDuePreview(form.paidOnDate, billingCycle), [billingCycle, form.paidOnDate]);
   const paymentCoverage = Number(form.monthlyRent) > 0
@@ -196,6 +200,9 @@ export function TenantFormModal({
     setIdPhotoUploadedUrl("");
     setReceiptFile(null);
     setReceiptPreview("");
+    setAgreementFile(null);
+    setAgreementPreview("");
+    setAgreementUploadedUrl("");
     if (typeof window !== "undefined") window.localStorage.removeItem(DRAFT_KEY);
   };
 
@@ -234,13 +241,14 @@ export function TenantFormModal({
     setStep(3);
   };
 
-  // Step 3 → 4: upload photos, cache URLs, then proceed
+  // Step 3 → 4: upload photos + agreement, cache URLs, then proceed
   const handleNextFromDocuments = async () => {
     setError("");
     setUploadingDocs(true);
     try {
       if (tenantPhotoFile) setTenantPhotoUploadedUrl(await uploadDocument(tenantPhotoFile, "tenant_photo"));
       if (idPhotoFile) setIdPhotoUploadedUrl(await uploadDocument(idPhotoFile, "id_photo"));
+      if (agreementFile) setAgreementUploadedUrl(await uploadDocument(agreementFile, "agreement"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
       setUploadingDocs(false);
@@ -267,14 +275,16 @@ export function TenantFormModal({
     setSubmitting(true);
     setError("");
 
-    // Upload photos only if not already uploaded in Step 2
+    // Upload photos + agreement only if not already uploaded in Step 3
     let tenantPhotoUrl: string | undefined = tenantPhotoUploadedUrl || undefined;
     let idPhotoUrl: string | undefined = idPhotoUploadedUrl || undefined;
+    let agreementUrl: string | undefined = agreementUploadedUrl || undefined;
     let receiptUrl: string | undefined;
 
     try {
       if (tenantPhotoFile && !tenantPhotoUrl) tenantPhotoUrl = await uploadDocument(tenantPhotoFile, "tenant_photo");
       if (idPhotoFile && !idPhotoUrl) idPhotoUrl = await uploadDocument(idPhotoFile, "id_photo");
+      if (agreementFile && !agreementUrl) agreementUrl = await uploadDocument(agreementFile, "agreement");
       if (receiptFile) receiptUrl = await uploadDocument(receiptFile, "receipt");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Photo upload failed.");
@@ -293,6 +303,7 @@ export function TenantFormModal({
       idType: form.idType || undefined,
       tenantPhotoUrl,
       idPhotoUrl,
+      agreementUrl,
       emergencyContactName: form.emergencyContactName.trim() || undefined,
       emergencyContactRelation: form.emergencyContactRelation || undefined,
       emergencyContactPhone: form.emergencyContactPhone || undefined,
@@ -651,6 +662,53 @@ export function TenantFormModal({
                         <IdCard className="h-7 w-7" />
                         <span className="text-[12px] font-medium">Tap to upload ID photo</span>
                         <span className="text-[11px] text-white/25">JPEG, PNG, WebP · Max 5 MB</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Signed Agreement */}
+                  <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                    <p className="text-[12px] font-semibold text-white/60">
+                      Signed Agreement <span className="font-normal text-white/35">(optional)</span>
+                    </p>
+                    <p className="text-[11px] text-white/30">Photo or scan of the signed paper agreement. Can be added later.</p>
+                    <input
+                      ref={agreementInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                      className="hidden"
+                      onChange={(e) => pickFile(e, setAgreementFile, setAgreementPreview)}
+                    />
+                    {agreementPreview ? (
+                      <div className="relative inline-block">
+                        {agreementFile?.type === "application/pdf" ? (
+                          <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3">
+                            <FileText className="h-5 w-5 text-blue-400" />
+                            <span className="text-[13px] text-white/70 truncate max-w-[200px]">{agreementFile.name}</span>
+                          </div>
+                        ) : (
+                          <img
+                            src={agreementPreview}
+                            alt="Agreement preview"
+                            className="h-32 w-full max-w-xs rounded-2xl object-cover border border-white/12"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => { setAgreementFile(null); setAgreementPreview(""); }}
+                          className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white shadow-md"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => agreementInputRef.current?.click()}
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-500/25 bg-blue-500/[0.03] py-4 text-blue-400/50 transition hover:border-blue-500/40 hover:bg-blue-500/[0.07] hover:text-blue-400"
+                      >
+                        <FileText className="h-4 w-4" />
+                        <span className="text-[12px] font-medium">Upload signed agreement</span>
                       </button>
                     )}
                   </div>

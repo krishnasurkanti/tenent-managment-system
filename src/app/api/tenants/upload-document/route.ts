@@ -15,13 +15,13 @@ export async function POST(request: Request) {
 
   const formData = await request.formData();
   const file = formData.get("file");
-  const docType = String(formData.get("docType") ?? "").trim(); // "tenant_photo" | "id_photo"
+  const docType = String(formData.get("docType") ?? "").trim(); // "tenant_photo" | "id_photo" | "receipt" | "agreement"
 
   if (!file || !(file instanceof File) || !file.name) {
     return NextResponse.json({ message: "No file provided." }, { status: 400 });
   }
-  if (docType !== "tenant_photo" && docType !== "id_photo" && docType !== "receipt") {
-    return NextResponse.json({ message: "docType must be tenant_photo, id_photo, or receipt." }, { status: 400 });
+  if (docType !== "tenant_photo" && docType !== "id_photo" && docType !== "receipt" && docType !== "agreement") {
+    return NextResponse.json({ message: "docType must be tenant_photo, id_photo, receipt, or agreement." }, { status: 400 });
   }
 
   const validationError = await validateDocumentFileWithMagicBytes(file);
