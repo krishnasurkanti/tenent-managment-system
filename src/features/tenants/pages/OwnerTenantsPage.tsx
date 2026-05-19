@@ -104,7 +104,7 @@ function OwnerTenantsPageContent() {
 
     const visibleTenantIds = new Set<string>();
     const scopedExisting = allTenants
-      .filter((t) => t.assignment?.hostelId === currentHostel.id)
+      .filter((t) => t.hostelId === currentHostel.id || t.assignment?.hostelId === currentHostel.id)
       .map((t) => {
         visibleTenantIds.add(t.tenantId);
         return tenantOverrides[t.tenantId] ?? t;
@@ -126,6 +126,7 @@ function OwnerTenantsPageContent() {
       const room = t.assignment?.roomNumber?.toLowerCase() ?? "";
       return (
         t.tenantId.toLowerCase().includes(query) ||
+        fmtTenantId(t.tenantId).includes(query) ||
         t.fullName.toLowerCase().includes(query) ||
         t.phone.toLowerCase().includes(query) ||
         t.email.toLowerCase().includes(query) ||
@@ -221,7 +222,7 @@ function OwnerTenantsPageContent() {
 
           {!searchQuery && (
             <div className="mt-3 grid grid-cols-2 gap-2.5">
-              <SummaryTile icon={UserRound} label="Total" value={String(filteredTenants.length)} />
+              <SummaryTile icon={UserRound} label="Total Tenants" value={String(filteredTenants.length)} />
               <SummaryTile icon={Wallet} label="Due soon" value={String(dueSoonCount)} tone={dueSoonCount > 0 ? "warning" : "default"} />
               <SummaryTile icon={Wallet} label="Overdue" value={String(overdueCount)} tone={overdueCount > 0 ? "danger" : "default"} />
               <SummaryTile icon={UserCheck} label="Assigned" value={String(assignedCount)} tone="success" />
