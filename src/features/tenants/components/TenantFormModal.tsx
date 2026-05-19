@@ -16,7 +16,7 @@ import type { BillingCycle, TenantRecord } from "@/types/tenant";
 type IdType = "aadhar" | "pan" | "driving_licence" | "other" | "";
 type OccupationType = "employed" | "student" | "self_employed" | "other" | "";
 type EmergencyRelation = "father" | "mother" | "brother" | "sister" | "spouse" | "friend" | "other" | "";
-type TenantStep = 1 | 2 | 3 | 4;
+type TenantStep = 1 | 2 | 3 | 4 | 5;
 type FamilyMemberForm = { id: string; name: string; relation: string; age: string };
 
 const initialState = {
@@ -36,7 +36,7 @@ const initialState = {
   paidOnDate: new Date().toISOString().slice(0, 10),
 };
 
-const DRAFT_KEY = "tenant-form-draft-v4";
+const DRAFT_KEY = "tenant-form-draft-v5";
 
 const ID_TYPE_LABELS: Record<Exclude<IdType, "">, string> = {
   aadhar: "Aadhar Card",
@@ -178,7 +178,7 @@ export function TenantFormModal({
 
   if (!open) return null;
 
-  const totalSteps: TenantStep = isResidence ? 4 : 3;
+  const totalSteps: TenantStep = isResidence ? 5 : 4;
 
   const resetFormState = () => {
     setStep(1);
@@ -229,7 +229,12 @@ export function TenantFormModal({
     setStep(2);
   };
 
-  // Step 2 → 3: upload photos, cache URLs, then proceed
+  const handleNextFromEmergency = () => {
+    setError("");
+    setStep(3);
+  };
+
+  // Step 3 → 4: upload photos, cache URLs, then proceed
   const handleNextFromDocuments = async () => {
     setError("");
     setUploadingDocs(true);
@@ -242,14 +247,14 @@ export function TenantFormModal({
       return;
     }
     setUploadingDocs(false);
-    setStep(3);
+    setStep(4);
   };
 
   const handleNextFromPayment = () => {
     if (!form.monthlyRent || Number(form.monthlyRent) <= 0) { setError("Enter monthly rent amount."); return; }
     if (!form.paidOnDate) { setError("Enter joining date."); return; }
     setError("");
-    if (isResidence) { setStep(4); return; }
+    if (isResidence) { setStep(5); return; }
     handleSubmit();
   };
 
@@ -370,10 +375,11 @@ export function TenantFormModal({
 
               {/* Step indicators */}
               <div className="flex flex-wrap gap-2">
-                <StepPill label="1. Details" active={step === 1} done={step > 1} />
-                <StepPill label="2. Documents" active={step === 2} done={step > 2} />
-                <StepPill label="3. Payment" active={step === 3} done={isResidence ? step > 3 : false} />
-                {isResidence ? <StepPill label="4. Family" active={step === 4} done={false} /> : null}
+                <StepPill label="1. Personal" active={step === 1} done={step > 1} />
+                <StepPill label="2. Emergency" active={step === 2} done={step > 2} />
+                <StepPill label="3. Documents" active={step === 3} done={step > 3} />
+                <StepPill label="4. Payment" active={step === 4} done={isResidence ? step > 4 : false} />
+                {isResidence ? <StepPill label="5. Family" active={step === 5} done={false} /> : null}
               </div>
 
               {/* ── Step 1: Details ── */}
@@ -486,30 +492,14 @@ export function TenantFormModal({
                     ) : null}
                   </div>
 
-                  {/* ID type only — photo in step 2 */}
-                  <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                    <p className="text-[12px] font-semibold text-white/60">ID Type <span className="font-normal text-white/35">(optional — photo in next step)</span></p>
-                    <Field label="ID Type">
-                      <div className="relative">
-                        <FileBadge2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--accent)]" />
-                        <select
-                          value={form.idType}
-                          onChange={(e) => setField("idType", e.target.value as IdType)}
-                          disabled={submitting}
-                          className="w-full appearance-none rounded-2xl border border-white/12 bg-white/[0.06] py-3 pl-10 pr-4 text-[13px] text-white outline-none [color-scheme:dark]"
-                        >
-                          <option value="">Select ID type…</option>
-                          {(Object.entries(ID_TYPE_LABELS) as [Exclude<IdType, "">, string][]).map(([val, label]) => (
-                            <option key={val} value={val}>{label}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </Field>
-                  </div>
+                </>
+              ) : null}
 
-                  {/* Emergency contact */}
+              {/* ── Step 2: Emergency Contact ── */}
+              {step === 2 ? (
+                <>
+                  <SectionHead title="Emergency Contact" subtitle="Who to call in an emergency. Fully optional — skip if not available." />
                   <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                    <p className="text-[12px] font-semibold text-white/60">Emergency Contact <span className="font-normal text-white/35">(optional)</span></p>
                     <Field label="Contact Name">
                       <InputShell icon={<ShieldAlert className="h-4 w-4 text-amber-400" />}>
                         <input
@@ -557,10 +547,31 @@ export function TenantFormModal({
                 </>
               ) : null}
 
-              {/* ── Step 2: Documents ── */}
-              {step === 2 ? (
+              {/* ── Step 3: Documents & Photos ── */}
+              {step === 3 ? (
                 <>
-                  <SectionHead title="Documents & Photos" subtitle="Upload tenant photo and govt ID photo. Both optional — can be added later." />
+                  <SectionHead title="Documents & Photos" subtitle="Select ID type and upload tenant photo + govt ID photo. All optional." />
+
+                  {/* ID Type */}
+                  <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                    <p className="text-[12px] font-semibold text-white/60">ID Type <span className="font-normal text-white/35">(optional)</span></p>
+                    <Field label="ID Type">
+                      <div className="relative">
+                        <FileBadge2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--accent)]" />
+                        <select
+                          value={form.idType}
+                          onChange={(e) => setField("idType", e.target.value as IdType)}
+                          disabled={submitting}
+                          className="w-full appearance-none rounded-2xl border border-white/12 bg-white/[0.06] py-3 pl-10 pr-4 text-[13px] text-white outline-none [color-scheme:dark]"
+                        >
+                          <option value="">Select ID type…</option>
+                          {(Object.entries(ID_TYPE_LABELS) as [Exclude<IdType, "">, string][]).map(([val, label]) => (
+                            <option key={val} value={val}>{label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </Field>
+                  </div>
 
                   {/* Tenant photo */}
                   <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
@@ -646,8 +657,8 @@ export function TenantFormModal({
                 </>
               ) : null}
 
-              {/* ── Step 3: Payment ── */}
-              {step === 3 ? (
+              {/* ── Step 4: Payment ── */}
+              {step === 4 ? (
                 <>
                   <SectionHead
                     title="Payment Details"
@@ -799,8 +810,8 @@ export function TenantFormModal({
                 </>
               ) : null}
 
-              {/* ── Step 4: Family (RESIDENCE only) ── */}
-              {step === 4 ? (
+              {/* ── Step 5: Family (RESIDENCE only) ── */}
+              {step === 5 ? (
                 <>
                   <SectionHead title="Family Members" subtitle="Add people living in this unit. Fully optional — add or update anytime." />
 
@@ -879,17 +890,23 @@ export function TenantFormModal({
 
               {step === 1 ? (
                 <Button disabled={submitting} onClick={handleNextFromDetails} className="w-full rounded-2xl sm:flex-1">
-                  Continue
+                  Next: Emergency Contact
                 </Button>
               ) : null}
 
               {step === 2 ? (
-                <Button disabled={submitting || uploadingDocs} onClick={handleNextFromDocuments} className="w-full rounded-2xl sm:flex-1">
-                  {uploadingDocs ? "Uploading…" : "Continue to Payment"}
+                <Button disabled={submitting} onClick={handleNextFromEmergency} className="w-full rounded-2xl sm:flex-1">
+                  Next: Documents
                 </Button>
               ) : null}
 
               {step === 3 ? (
+                <Button disabled={submitting || uploadingDocs} onClick={handleNextFromDocuments} className="w-full rounded-2xl sm:flex-1">
+                  {uploadingDocs ? "Uploading…" : "Next: Payment"}
+                </Button>
+              ) : null}
+
+              {step === 4 ? (
                 isResidence ? (
                   <Button onClick={handleNextFromPayment} disabled={submitting} className="w-full rounded-2xl sm:flex-1">
                     Next: Family
@@ -901,7 +918,7 @@ export function TenantFormModal({
                 )
               ) : null}
 
-              {step === 4 ? (
+              {step === 5 ? (
                 <Button onClick={handleSubmit} disabled={submitting} loading={submitting} className="w-full rounded-2xl sm:flex-1">
                   {submitting ? "Saving…" : "Save Tenant"}
                 </Button>
