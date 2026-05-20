@@ -2,21 +2,25 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  AlertCircle, Briefcase, Building2, CalendarDays, Camera, CreditCard,
+  AlertCircle, Bed, Briefcase, Building2, CalendarDays, Camera, CreditCard,
   FileText, FileBadge2, IdCard, IndianRupee, Mail, Phone, Plus,
   Receipt, Search, ShieldAlert, Trash2, Upload, User, UserCheck, Users, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
+import { SkeletonBlock } from "@/components/ui/skeleton";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
-import { createTenant, updateTenantFamilyMembers } from "@/services/tenants/tenants.service";
-import type { BillingCycle, TenantRecord } from "@/types/tenant";
+import { cn } from "@/utils/cn";
+import { createTenant, updateTenantFamilyMembers, assignTenantRoom } from "@/services/tenants/tenants.service";
+import { fetchOwnerHostels } from "@/services/owner/owner-hostels.service";
+import type { BillingCycle, HostelBed, HostelRoom, HostelRoomInventory, TenantRecord } from "@/types/tenant";
+import type { OwnerHostel } from "@/types/owner-hostel";
 
 type IdType = "aadhar" | "pan" | "driving_licence" | "other" | "";
 type OccupationType = "employed" | "student" | "self_employed" | "other" | "";
 type EmergencyRelation = "father" | "mother" | "brother" | "sister" | "spouse" | "friend" | "other" | "";
-type TenantStep = 1 | 2 | 3 | 4 | 5;
+type TenantStep = 1 | 2 | 3 | 4 | 5 | 6;
 type FamilyMemberForm = { id: string; name: string; relation: string; age: string };
 
 const initialState = {
@@ -68,6 +72,28 @@ const RELATION_LABELS: Record<Exclude<EmergencyRelation, "">, string> = {
   friend: "Friend",
   other: "Other",
 };
+
+function mapHostelToInventory(hostel: OwnerHostel): HostelRoomInventory {
+  return {
+    hostelId: hostel.id,
+    hostelName: hostel.hostelName,
+    type: hostel.type ?? "PG",
+    rooms: (hostel.rooms ?? []).map((room): HostelRoom => ({
+      id: room.id,
+      unitId: room.unitId,
+      roomNumber: room.roomNumber,
+      capacity: hostel.type === "RESIDENCE" ? 1 : room.bedCount,
+      occupied: room.occupied ?? 0,
+      sharingType: room.sharingType,
+      propertyType: hostel.type ?? "PG",
+      beds: room.beds?.map((bed): HostelBed => ({
+        id: bed.id,
+        label: bed.label,
+        occupied: bed.occupied ?? false,
+      })),
+    })),
+  };
+}
 
 function createFamilyMember(): FamilyMemberForm {
   return { id: `fm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: "", relation: "", age: "" };
@@ -143,7 +169,7 @@ export function TenantFormModal({
     savedDraft?.familyMembers?.length ? savedDraft.familyMembers : [createFamilyMember()],
   );
 
-  // Document uploads — not persisted to draft (files can't be serialised)
+  // Document uploads
   const [tenantPhotoFile, setTenantPhotoFile] = useState<File | null>(null);
   const [tenantPhotoPreview, setTenantPhotoPreview] = useState<string>("");
   const [tenantPhotoUploadedUrl, setTenantPhotoUploadedUrl] = useState<string>("");
@@ -156,6 +182,15 @@ export function TenantFormModal({
   const [agreementPreviews, setAgreementPreviews] = useState<string[]>([]);
   const [agreementUploadedUrls, setAgreementUploadedUrls] = useState<string[]>([]);
   const [uploadingDocs, setUploadingDocs] = useState(false);
+
+  // Room assignment state
+  const [roomInventory, setRoomInventory] = useState<HostelRoomInventory[]>([]);
+  const [loadingRooms, setLoadingRooms] = useState(false);
+  const [roomHostelId, setRoomHostelId] = useState(hostelId ?? "");
+  const [roomNumber, setRoomNumber] = useState("");
+  const [roomSharingType, setRoomSharingType] = useState("");
+  const [roomBedId, setRoomBedId] = useState("");
+  const [roomMoveInDate, setRoomMoveInDate] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -184,6 +219,20 @@ export function TenantFormModal({
     : 0;
   const firstPaymentEntered = Number(form.rentPaid) > 0;
 
+  // Step numbers
+  const familyStep: TenantStep = 5;
+  const roomStep: TenantStep = isResidence ? 6 : 5;
+
+  // Derived room state
+  const selectedRoomHostel = useMemo(() => roomInventory.find((h) => h.hostelId === roomHostelId), [roomHostelId, roomInventory]);
+  const isRoomHostelResidence = selectedRoomHostel?.type === "RESIDENCE";
+  const selectedRoom = useMemo(
+    () => selectedRoomHostel?.rooms.find((r) => r.roomNumber === roomNumber),
+    [roomNumber, selectedRoomHostel],
+  );
+  const availableRooms = selectedRoomHostel?.rooms.filter((r) => r.occupied < r.capacity) ?? [];
+  const availableBeds = selectedRoom ? selectedRoom.capacity - selectedRoom.occupied : 0;
+
   useLockBodyScroll(open);
 
   useEffect(() => {
@@ -196,9 +245,23 @@ export function TenantFormModal({
     setEcSearch("");
   }, [step, open]);
 
-  if (!open) return null;
+  // Load room inventory when reaching room step
+  useEffect(() => {
+    if (!open || step !== roomStep) return;
+    if (roomInventory.length > 0) return;
+    setLoadingRooms(true);
+    void fetchOwnerHostels().then(({ data }) => {
+      const inventory = (data.hostels ?? []).map(mapHostelToInventory);
+      setRoomInventory(inventory);
+      if (!roomHostelId && inventory.length > 0) {
+        setRoomHostelId(inventory[0].hostelId);
+      }
+      setLoadingRooms(false);
+    }).catch(() => setLoadingRooms(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, step, roomStep]);
 
-  const totalSteps: TenantStep = isResidence ? 5 : 4;
+  if (!open) return null;
 
   const resetFormState = () => {
     setStep(1);
@@ -219,6 +282,12 @@ export function TenantFormModal({
     setAgreementFiles([]);
     setAgreementPreviews([]);
     setAgreementUploadedUrls([]);
+    setRoomInventory([]);
+    setRoomHostelId(hostelId ?? "");
+    setRoomNumber("");
+    setRoomSharingType("");
+    setRoomBedId("");
+    setRoomMoveInDate("");
     if (typeof window !== "undefined") window.localStorage.removeItem(DRAFT_KEY);
   };
 
@@ -292,7 +361,6 @@ export function TenantFormModal({
     setStep(3);
   };
 
-  // Step 3 → 4: upload photos + agreement, cache URLs, then proceed
   const handleNextFromDocuments = async () => {
     setError("");
     setUploadingDocs(true);
@@ -312,8 +380,12 @@ export function TenantFormModal({
   const handleNextFromPayment = () => {
     if (!form.paidOnDate) { setError("Enter joining / start date."); return; }
     setError("");
-    if (isResidence) { setStep(5); return; }
-    handleSubmit();
+    setStep(5);
+  };
+
+  const handleNextFromFamily = () => {
+    setError("");
+    setStep(6);
   };
 
   const handleSubmit = async () => {
@@ -324,7 +396,6 @@ export function TenantFormModal({
     setSubmitting(true);
     setError("");
 
-    // Upload photos + agreement only if not already uploaded in Step 3
     let tenantPhotoUrl: string | undefined = tenantPhotoUploadedUrl || undefined;
     let idPhotoUrl: string | undefined = idPhotoUploadedUrl || undefined;
     let finalAgreementUrls: string[] = agreementUploadedUrls.length > 0 ? agreementUploadedUrls : [];
@@ -366,26 +437,22 @@ export function TenantFormModal({
       hostelId: hostelId ?? undefined,
     };
 
-    let response: Response;
-    let data: { tenant?: TenantRecord; message?: string };
+    let created: TenantRecord;
     try {
-      const result = await createTenant(payload);
-      response = result.response;
-      data = result.data;
+      const { response, data } = await createTenant(payload);
+      if (!response.ok) {
+        setError(data.message ?? "Unable to create tenant.");
+        setSubmitting(false);
+        return;
+      }
+      created = data.tenant as TenantRecord;
     } catch {
       setError("Network error. Check your connection and try again.");
       setSubmitting(false);
       return;
     }
 
-    if (!response.ok) {
-      setError(data.message ?? "Unable to create tenant.");
-      setSubmitting(false);
-      return;
-    }
-
-    const created = data.tenant as TenantRecord;
-
+    // Family members (RESIDENCE)
     if (isResidence) {
       const validMembers = familyMembers
         .filter((m) => m.name.trim() && m.relation.trim())
@@ -393,6 +460,25 @@ export function TenantFormModal({
       if (validMembers.length > 0) {
         try { await updateTenantFamilyMembers({ tenantId: created.tenantId, familyMembers: validMembers }); } catch { /* non-fatal */ }
       }
+    }
+
+    // Room assignment (optional — only if room selected)
+    if (roomNumber && roomHostelId && selectedRoom) {
+      try {
+        const { response: rRes, data: rData } = await assignTenantRoom({
+          tenantId: created.tenantId,
+          hostelId: roomHostelId,
+          unitId: selectedRoom.unitId,
+          roomNumber,
+          sharingType: roomSharingType,
+          moveInDate: roomMoveInDate || form.paidOnDate,
+          propertyType: selectedRoomHostel?.type,
+          bedId: isRoomHostelResidence ? undefined : roomBedId || undefined,
+          bedLabel: isRoomHostelResidence ? undefined : selectedRoom.beds?.find((b) => b.id === roomBedId)?.label,
+          tenantRecord: created,
+        });
+        if (rRes.ok && rData.tenant) created = rData.tenant as TenantRecord;
+      } catch { /* non-fatal — tenant still created */ }
     }
 
     onCreated(created);
@@ -432,7 +518,7 @@ export function TenantFormModal({
           </div>
 
           {/* Scrollable content */}
-          <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-none touch-pan-y px-4 pb-2 pt-0 sm:px-5">
+          <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-none px-4 pb-2 pt-0 sm:px-5" style={{ WebkitOverflowScrolling: "touch" }}>
             <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
 
               {/* Step indicators */}
@@ -440,8 +526,9 @@ export function TenantFormModal({
                 <StepPill label="1. Personal" active={step === 1} done={step > 1} />
                 <StepPill label="2. Emergency" active={step === 2} done={step > 2} />
                 <StepPill label="3. Documents" active={step === 3} done={step > 3} />
-                <StepPill label="4. Payment" active={step === 4} done={isResidence ? step > 4 : false} />
-                {isResidence ? <StepPill label="5. Family" active={step === 5} done={false} /> : null}
+                <StepPill label="4. Payment" active={step === 4} done={step > 4} />
+                {isResidence ? <StepPill label="5. Family" active={step === familyStep} done={step > familyStep} /> : null}
+                <StepPill label={`${roomStep}. Room`} active={step === roomStep} done={false} />
               </div>
 
               {/* ── Step 1: Details ── */}
@@ -553,7 +640,6 @@ export function TenantFormModal({
                       </Field>
                     ) : null}
                   </div>
-
                 </>
               ) : null}
 
@@ -562,7 +648,6 @@ export function TenantFormModal({
                 <>
                   <SectionHead title="Emergency Contact" subtitle="Fully optional — skip now, add later via Edit Tenant." />
 
-                  {/* Quick-fill from existing tenant */}
                   {(allTenants?.length ?? 0) > 0 && (
                     <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-3 space-y-2">
                       <p className="text-[11px] text-white/40">Find existing tenant to auto-fill</p>
@@ -761,7 +846,7 @@ export function TenantFormModal({
                     )}
                   </div>
 
-                  {/* Signed Agreement — up to 4 images or 1 PDF */}
+                  {/* Signed Agreement */}
                   <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
                     <div className="flex items-center justify-between">
                       <p className="text-[12px] font-semibold text-white/60">
@@ -852,10 +937,7 @@ export function TenantFormModal({
               {/* ── Step 4: Payment ── */}
               {step === 4 ? (
                 <>
-                  <SectionHead
-                    title="Payment Details"
-                    subtitle={isResidence ? "Next, add family members." : "Final step. First due date is calculated automatically."}
-                  />
+                  <SectionHead title="Payment Details" subtitle="Next step is room assignment. First due date is calculated automatically." />
 
                   <div className="grid gap-2 md:grid-cols-[1.1fr_0.9fr]">
                     <div className="rounded-2xl border border-[rgba(99,102,241,0.26)] bg-[rgba(99,102,241,0.09)] p-3">
@@ -951,7 +1033,6 @@ export function TenantFormModal({
                     ) : null}
                   </div>
 
-                  {/* Receipt upload — only shown when first payment is entered */}
                   {firstPaymentEntered ? (
                     <div className="space-y-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-3">
                       <p className="text-[12px] font-semibold text-emerald-300/80">
@@ -1002,8 +1083,8 @@ export function TenantFormModal({
                 </>
               ) : null}
 
-              {/* ── Step 5: Family (RESIDENCE only) ── */}
-              {step === 5 ? (
+              {/* ── Step 5 (RESIDENCE): Family Members ── */}
+              {step === familyStep && isResidence ? (
                 <>
                   <SectionHead title="Family Members" subtitle="Add people living in this unit. Fully optional — add or update anytime." />
 
@@ -1056,6 +1137,125 @@ export function TenantFormModal({
                 </>
               ) : null}
 
+              {/* ── Room Assignment Step ── */}
+              {step === roomStep ? (
+                <>
+                  <SectionHead title="Room Assignment" subtitle="Pick a room and bed. Optional — you can assign or change later." />
+
+                  {loadingRooms ? (
+                    <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-5">
+                      <ProcessingPill label="Loading room inventory…" />
+                      <SkeletonBlock className="h-12" />
+                      <div className="grid gap-3 grid-cols-3">
+                        <SkeletonBlock className="h-20" />
+                        <SkeletonBlock className="h-20" />
+                        <SkeletonBlock className="h-20" />
+                      </div>
+                    </div>
+                  ) : roomInventory.length === 0 ? (
+                    <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-8 text-center">
+                      <Bed className="mx-auto mb-3 h-8 w-8 text-white/20" />
+                      <p className="text-[13px] text-white/40">No hostels with rooms found.</p>
+                      <p className="mt-1 text-[11px] text-white/25">Add rooms in your hostel settings first.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Hostel picker */}
+                      {roomInventory.length > 1 && (
+                        <RoomPillGroup label="Hostel">
+                          {roomInventory.map((h) => (
+                            <RoomPillButton
+                              key={h.hostelId}
+                              selected={h.hostelId === roomHostelId}
+                              disabled={submitting}
+                              onClick={() => { setRoomHostelId(h.hostelId); setRoomNumber(""); setRoomSharingType(""); setRoomBedId(""); }}
+                            >
+                              {h.hostelName}
+                            </RoomPillButton>
+                          ))}
+                        </RoomPillGroup>
+                      )}
+
+                      {/* Room picker */}
+                      {selectedRoomHostel && (
+                        <RoomPillGroup label={isRoomHostelResidence ? "Unit" : "Room"}>
+                          {availableRooms.length === 0 ? (
+                            <span className="text-[12px] text-white/40">No available {isRoomHostelResidence ? "units" : "rooms"}</span>
+                          ) : (
+                            availableRooms.map((room) => (
+                              <RoomPillButton
+                                key={room.roomNumber}
+                                selected={room.roomNumber === roomNumber}
+                                disabled={submitting}
+                                onClick={() => { setRoomNumber(room.roomNumber); setRoomSharingType(room.sharingType ?? ""); setRoomBedId(""); }}
+                              >
+                                {isRoomHostelResidence ? `Unit ${room.roomNumber}` : `Room ${room.roomNumber}`}
+                              </RoomPillButton>
+                            ))
+                          )}
+                        </RoomPillGroup>
+                      )}
+
+                      {/* Bed picker (PG only) */}
+                      {!isRoomHostelResidence && selectedRoom && (
+                        <RoomPillGroup label="Bed">
+                          {(selectedRoom.beds ?? []).length === 0 ? (
+                            <span className="text-[12px] text-white/40">No beds configured</span>
+                          ) : (
+                            (selectedRoom.beds ?? []).map((bed) => (
+                              <BedPillButton
+                                key={bed.id}
+                                selected={bed.id === roomBedId}
+                                occupied={bed.occupied ?? false}
+                                disabled={submitting || (bed.occupied ?? false)}
+                                onClick={() => setRoomBedId(bed.id)}
+                              >
+                                {bed.label}
+                              </BedPillButton>
+                            ))
+                          )}
+                        </RoomPillGroup>
+                      )}
+
+                      {/* Move-in date */}
+                      {roomNumber && (
+                        <Field label="Move-in Date">
+                          <InputShell icon={<CalendarDays className="h-4 w-4 text-sky-400" />}>
+                            <input
+                              type="date"
+                              value={roomMoveInDate || form.paidOnDate}
+                              onChange={(e) => setRoomMoveInDate(e.target.value)}
+                              disabled={submitting}
+                              className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
+                            />
+                          </InputShell>
+                        </Field>
+                      )}
+
+                      {/* Summary card */}
+                      {selectedRoom && (
+                        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.05] p-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-400">Selected</p>
+                          <p className="mt-1 text-[14px] font-semibold text-white">
+                            {isRoomHostelResidence ? "Unit" : "Room"} {selectedRoom.roomNumber}
+                            {roomBedId && selectedRoom.beds ? (
+                              <span className="ml-2 text-[12px] font-normal text-white/60">
+                                · {selectedRoom.beds.find((b) => b.id === roomBedId)?.label}
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="mt-0.5 text-[11px] text-white/45">
+                            {isRoomHostelResidence
+                              ? availableBeds > 0 ? "Vacant" : "Occupied"
+                              : `${availableBeds} of ${selectedRoom.capacity} bed${selectedRoom.capacity === 1 ? "" : "s"} available`}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : null}
+
             </div>
           </div>
 
@@ -1073,7 +1273,7 @@ export function TenantFormModal({
             <div className="flex flex-col-reverse gap-3 sm:flex-row">
               <Button
                 variant="secondary"
-                onClick={step === 1 ? handleClose : () => setStep((s) => (s - 1) as TenantStep)}
+                onClick={step === 1 ? handleClose : () => { setStep((s) => (s - 1) as TenantStep); setError(""); }}
                 disabled={submitting || uploadingDocs}
                 className="w-full rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white sm:flex-1"
               >
@@ -1099,20 +1299,20 @@ export function TenantFormModal({
               ) : null}
 
               {step === 4 ? (
-                isResidence ? (
-                  <Button onClick={handleNextFromPayment} disabled={submitting} className="w-full rounded-2xl sm:flex-1">
-                    Next: Family
-                  </Button>
-                ) : (
-                  <Button onClick={handleNextFromPayment} disabled={submitting} loading={submitting} className="w-full rounded-2xl sm:flex-1">
-                    {submitting ? "Saving…" : "Save Tenant"}
-                  </Button>
-                )
+                <Button onClick={handleNextFromPayment} disabled={submitting} className="w-full rounded-2xl sm:flex-1">
+                  {isResidence ? "Next: Family" : "Next: Room"}
+                </Button>
               ) : null}
 
-              {step === 5 ? (
+              {step === familyStep && isResidence ? (
+                <Button onClick={handleNextFromFamily} disabled={submitting} className="w-full rounded-2xl sm:flex-1">
+                  Next: Room
+                </Button>
+              ) : null}
+
+              {step === roomStep ? (
                 <Button onClick={handleSubmit} disabled={submitting} loading={submitting} className="w-full rounded-2xl sm:flex-1">
-                  {submitting ? "Saving…" : "Save Tenant"}
+                  {submitting ? "Saving…" : roomNumber ? "Save & Assign Room" : "Save Tenant"}
                 </Button>
               ) : null}
             </div>
@@ -1159,5 +1359,52 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="mb-1.5 block text-[12px] font-semibold text-white/70">{label}</span>
       {children}
     </label>
+  );
+}
+
+function RoomPillGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">{label}</p>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
+
+function RoomPillButton({ selected, disabled, onClick, children }: { selected: boolean; disabled: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "rounded-xl border px-4 py-2 text-[13px] font-medium transition",
+        selected
+          ? "border-blue-500/60 bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.3)]"
+          : "border-white/12 bg-white/[0.06] text-white/70 hover:border-white/25 hover:text-white",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function BedPillButton({ selected, occupied, disabled, onClick, children }: { selected: boolean; occupied: boolean; disabled: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "rounded-xl border px-4 py-2 text-[13px] font-semibold transition",
+        selected
+          ? "border-blue-500/60 bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.3)]"
+          : occupied
+            ? "cursor-not-allowed border-red-500/50 bg-red-600/20 text-red-400 opacity-70"
+            : "border-emerald-500/50 bg-emerald-600/15 text-emerald-400 hover:bg-emerald-600/25",
+      )}
+    >
+      {children}
+    </button>
   );
 }
