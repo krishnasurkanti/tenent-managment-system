@@ -518,7 +518,7 @@ export function TenantFormModal({
           </div>
 
           {/* Scrollable content */}
-          <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-none px-4 pb-2 pt-0 sm:px-5" style={{ WebkitOverflowScrolling: "touch" }}>
+          <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-scroll px-4 pb-2 pt-0 sm:px-5" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" }}>
             <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
 
               {/* Step indicators */}
