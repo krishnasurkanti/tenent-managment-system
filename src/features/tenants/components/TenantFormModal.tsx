@@ -495,10 +495,10 @@ export function TenantFormModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="tenant-form-modal-title"
-      className="fixed inset-x-0 top-0 z-50 flex h-screen items-end justify-center animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
+      className="fixed inset-0 z-50 flex items-end justify-center animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
       style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
     >
-      <Card className="flex w-full min-h-[82vh] max-h-[92vh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),42rem)] sm:min-h-0 sm:max-h-[88vh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
+      <Card className="flex w-full max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),42rem)] sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(90deg,rgba(99,102,241,0.14)_0%,rgba(245,158,11,0.06)_100%)]" />
 
@@ -519,7 +519,7 @@ export function TenantFormModal({
           </div>
 
           {/* Scrollable content */}
-          <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-scroll px-4 pb-2 pt-0 sm:px-5" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" }}>
+          <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-scroll px-4 pb-6 pt-0 sm:px-5" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain", paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
             <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
 
               {/* Step indicators */}
@@ -1257,65 +1257,63 @@ export function TenantFormModal({
                 </>
               ) : null}
 
-            </div>
-          </div>
+              {/* Error and processing */}
+              {error ? (
+                <div className="flex items-start gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              ) : null}
+              {uploadingDocs ? <ProcessingPill label="Uploading documents…" /> : null}
+              {submitting ? <ProcessingPill label="Creating tenant…" /> : null}
 
-          {/* Footer */}
-          <div className="shrink-0 border-t border-white/10 bg-transparent px-4 py-3 sm:px-5">
-            {error ? (
-              <div className="mb-3 flex items-start gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{error}</span>
+              {/* Action buttons */}
+              <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-3 sm:flex-row">
+                <Button
+                  variant="secondary"
+                  onClick={step === 1 ? handleClose : () => { setStep((s) => (s - 1) as TenantStep); setError(""); }}
+                  disabled={submitting || uploadingDocs}
+                  className="w-full rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white sm:flex-1"
+                >
+                  {step === 1 ? "Cancel" : "Back"}
+                </Button>
+
+                {step === 1 ? (
+                  <Button disabled={submitting} onClick={handleNextFromDetails} className="w-full rounded-2xl sm:flex-1">
+                    Next: Emergency Contact
+                  </Button>
+                ) : null}
+
+                {step === 2 ? (
+                  <Button disabled={submitting} onClick={handleNextFromEmergency} className="w-full rounded-2xl sm:flex-1">
+                    Next: Documents
+                  </Button>
+                ) : null}
+
+                {step === 3 ? (
+                  <Button disabled={submitting || uploadingDocs} onClick={handleNextFromDocuments} className="w-full rounded-2xl sm:flex-1">
+                    {uploadingDocs ? "Uploading…" : "Next: Payment"}
+                  </Button>
+                ) : null}
+
+                {step === 4 ? (
+                  <Button onClick={handleNextFromPayment} disabled={submitting} className="w-full rounded-2xl sm:flex-1">
+                    {isResidence ? "Next: Family" : "Next: Room"}
+                  </Button>
+                ) : null}
+
+                {step === familyStep && isResidence ? (
+                  <Button onClick={handleNextFromFamily} disabled={submitting} className="w-full rounded-2xl sm:flex-1">
+                    Next: Room
+                  </Button>
+                ) : null}
+
+                {step === roomStep ? (
+                  <Button onClick={handleSubmit} disabled={submitting} loading={submitting} className="w-full rounded-2xl sm:flex-1">
+                    {submitting ? "Saving…" : roomNumber ? "Save & Assign Room" : "Save Tenant"}
+                  </Button>
+                ) : null}
               </div>
-            ) : null}
-            {uploadingDocs ? <ProcessingPill label="Uploading documents…" className="mb-3" /> : null}
-            {submitting ? <ProcessingPill label="Creating tenant…" className="mb-3" /> : null}
-
-            <div className="flex flex-col-reverse gap-3 sm:flex-row">
-              <Button
-                variant="secondary"
-                onClick={step === 1 ? handleClose : () => { setStep((s) => (s - 1) as TenantStep); setError(""); }}
-                disabled={submitting || uploadingDocs}
-                className="w-full rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white sm:flex-1"
-              >
-                {step === 1 ? "Cancel" : "Back"}
-              </Button>
-
-              {step === 1 ? (
-                <Button disabled={submitting} onClick={handleNextFromDetails} className="w-full rounded-2xl sm:flex-1">
-                  Next: Emergency Contact
-                </Button>
-              ) : null}
-
-              {step === 2 ? (
-                <Button disabled={submitting} onClick={handleNextFromEmergency} className="w-full rounded-2xl sm:flex-1">
-                  Next: Documents
-                </Button>
-              ) : null}
-
-              {step === 3 ? (
-                <Button disabled={submitting || uploadingDocs} onClick={handleNextFromDocuments} className="w-full rounded-2xl sm:flex-1">
-                  {uploadingDocs ? "Uploading…" : "Next: Payment"}
-                </Button>
-              ) : null}
-
-              {step === 4 ? (
-                <Button onClick={handleNextFromPayment} disabled={submitting} className="w-full rounded-2xl sm:flex-1">
-                  {isResidence ? "Next: Family" : "Next: Room"}
-                </Button>
-              ) : null}
-
-              {step === familyStep && isResidence ? (
-                <Button onClick={handleNextFromFamily} disabled={submitting} className="w-full rounded-2xl sm:flex-1">
-                  Next: Room
-                </Button>
-              ) : null}
-
-              {step === roomStep ? (
-                <Button onClick={handleSubmit} disabled={submitting} loading={submitting} className="w-full rounded-2xl sm:flex-1">
-                  {submitting ? "Saving…" : roomNumber ? "Save & Assign Room" : "Save Tenant"}
-                </Button>
-              ) : null}
             </div>
           </div>
         </div>
