@@ -145,20 +145,25 @@ export function TenantRoomAssignmentModal({
       className="fixed inset-0 z-50 flex items-end justify-center animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
       style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
     >
-      <Card className="w-full max-h-[92dvh] overflow-y-auto rounded-t-3xl rounded-b-none border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-3 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),56rem)] sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)] sm:p-4" style={{ WebkitOverflowScrolling: "touch" as const }}>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/50">Room Assignment</span>
-            <div className="flex gap-2">
-              <StepPill label="1. Location" active={step === 1} done={step > 1} />
-              <StepPill label="2. Review" active={step === 2} done={false} />
+      <Card className="flex w-full max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),56rem)] sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
+        {/* Fixed header */}
+        <div className="shrink-0 px-3 pb-2.5 pt-3 sm:px-4 sm:pt-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/50">Room Assignment</span>
+              <div className="flex gap-2">
+                <StepPill label="1. Location" active={step === 1} done={step > 1} />
+                <StepPill label="2. Review" active={step === 2} done={false} />
+              </div>
             </div>
+            <Button variant="ghost" disabled={saving} className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-          <Button variant="ghost" disabled={saving} className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
         </div>
 
+        {/* Scrollable body */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 sm:px-4" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}>
         <div>
           {loading ? (
             <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-5">
@@ -302,6 +307,7 @@ export function TenantRoomAssignmentModal({
           <Button disabled={saving} loading={saving && step === 2} onClick={step === 1 ? handleNext : handleAssign} className="rounded-2xl bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] text-white hover:text-white hover:brightness-110">
             {step === 1 ? "Next: Review" : saving ? "Assigning..." : isResidence ? "Assign Unit" : "Assign Room"}
           </Button>
+        </div>
         </div>
       </Card>
     </div>

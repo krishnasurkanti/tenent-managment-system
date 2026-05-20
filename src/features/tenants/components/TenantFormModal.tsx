@@ -518,19 +518,21 @@ export function TenantFormModal({
             </Button>
           </div>
 
-          {/* Scrollable content */}
-          <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-scroll px-4 pb-6 pt-0 sm:px-5" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain", paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
-            <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
+          {/* Step pills — fixed, never scrolls */}
+          <div className="relative shrink-0 overflow-x-auto border-b border-white/8 px-4 py-2.5 sm:px-5" style={{ scrollbarWidth: "none" }}>
+            <div className="flex gap-2" style={{ WebkitOverflowScrolling: "touch" }}>
+              <StepPill label="1. Personal" active={step === 1} done={step > 1} />
+              <StepPill label="2. Emergency" active={step === 2} done={step > 2} />
+              <StepPill label="3. Documents" active={step === 3} done={step > 3} />
+              <StepPill label="4. Payment" active={step === 4} done={step > 4} />
+              {isResidence ? <StepPill label="5. Family" active={step === familyStep} done={step > familyStep} /> : null}
+              <StepPill label={`${roomStep}. Room`} active={step === roomStep} done={false} />
+            </div>
+          </div>
 
-              {/* Step indicators */}
-              <div className="flex flex-wrap gap-2">
-                <StepPill label="1. Personal" active={step === 1} done={step > 1} />
-                <StepPill label="2. Emergency" active={step === 2} done={step > 2} />
-                <StepPill label="3. Documents" active={step === 3} done={step > 3} />
-                <StepPill label="4. Payment" active={step === 4} done={step > 4} />
-                {isResidence ? <StepPill label="5. Family" active={step === familyStep} done={step > familyStep} /> : null}
-                <StepPill label={`${roomStep}. Room`} active={step === roomStep} done={false} />
-              </div>
+          {/* Scrollable content */}
+          <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-scroll px-4 pb-6 pt-3 sm:px-5" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain", paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
+            <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
 
               {/* ── Step 1: Details ── */}
               {step === 1 ? (
