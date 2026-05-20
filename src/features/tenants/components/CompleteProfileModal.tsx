@@ -109,7 +109,9 @@ export function CompleteProfileModal({
   })();
 
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const tenantPhotoRef = useRef<HTMLInputElement>(null);
   const idPhotoRef = useRef<HTMLInputElement>(null);
@@ -165,28 +167,54 @@ export function CompleteProfileModal({
   };
 
   const handleSave = async () => {
+    if (submitting || uploading) return;
     setError("");
-    if (submitting) return;
-    setSubmitting(true);
 
-    try {
-      let tenantPhotoUrl = tenant.tenantPhotoUrl;
-      let idPhotoUrl = tenant.idPhotoUrl;
+    // ── Client-side validation ────────────────────────────────────────────────
+    const fe: Record<string, string> = {};
+    const phoneDigits = normalizePhone(phone);
+    if (phone && phoneDigits.length !== 10) fe.phone = "Phone must be 10 digits.";
+    const emailVal = email.trim();
+    if (emailVal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) fe.email = "Enter a valid email.";
+    const ecPhone = normalizePhone(emergencyPhone);
+    if (emergencyPhone && ecPhone.length !== 10) fe.emergencyPhone = "Emergency phone must be 10 digits.";
+    if ((emergencyRelation || ecPhone) && !emergencyName.trim()) fe.emergencyName = "Enter the contact's name.";
 
-      if (tenantPhotoFile) tenantPhotoUrl = await uploadDoc(tenantPhotoFile, "tenant_photo");
-      if (idPhotoFile) idPhotoUrl = await uploadDoc(idPhotoFile, "id_photo");
+    if (Object.keys(fe).length > 0) { setFieldErrors(fe); return; }
+    setFieldErrors({});
 
-      // Agreement: keep existing (minus removed) + new uploads
-      let newAgreementUploads: string[] = [];
-      if (agreementFiles.length > 0) {
-        newAgreementUploads = await Promise.all(agreementFiles.map((f) => uploadDoc(f, "agreement")));
+    // ── Upload all files first ────────────────────────────────────────────────
+    let tenantPhotoUrl = tenant.tenantPhotoUrl;
+    let idPhotoUrl = tenant.idPhotoUrl;
+    let finalAgreementUrls = existingAgreementUrls;
+
+    const hasUploads = tenantPhotoFile || idPhotoFile || agreementFiles.length > 0;
+    if (hasUploads) {
+      setUploading(true);
+      try {
+        const [tpUrl, ipUrl, ...agUrls] = await Promise.all([
+          tenantPhotoFile ? uploadDoc(tenantPhotoFile, "tenant_photo") : Promise.resolve(tenantPhotoUrl ?? ""),
+          idPhotoFile ? uploadDoc(idPhotoFile, "id_photo") : Promise.resolve(idPhotoUrl ?? ""),
+          ...agreementFiles.map((f) => uploadDoc(f, "agreement")),
+        ]);
+        if (tenantPhotoFile) tenantPhotoUrl = tpUrl;
+        if (idPhotoFile) idPhotoUrl = ipUrl;
+        if (agreementFiles.length > 0) finalAgreementUrls = [...existingAgreementUrls, ...agUrls];
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Upload failed. Try again.");
+        setUploading(false);
+        return;
       }
-      const finalAgreementUrls = [...existingAgreementUrls, ...newAgreementUploads];
+      setUploading(false);
+    }
 
+    // ── Save profile ──────────────────────────────────────────────────────────
+    setSubmitting(true);
+    try {
       const payload: Record<string, unknown> = {
         expectedUpdatedAt: tenant.updatedAt,
-        phone: normalizePhone(phone),
-        email: email.trim(),
+        phone: phoneDigits,
+        email: emailVal,
         fatherName: fatherName.trim() || undefined,
         dateOfBirth: dateOfBirth || undefined,
         occupation: occupation || undefined,
@@ -194,12 +222,11 @@ export function CompleteProfileModal({
         idType: idType || undefined,
         emergencyContactName: emergencyName.trim() || undefined,
         emergencyContactRelation: emergencyRelation || undefined,
-        emergencyContactPhone: normalizePhone(emergencyPhone) || undefined,
+        emergencyContactPhone: ecPhone || undefined,
       };
       if (tenantPhotoUrl !== tenant.tenantPhotoUrl) payload.tenantPhotoUrl = tenantPhotoUrl;
       if (idPhotoUrl !== tenant.idPhotoUrl) payload.idPhotoUrl = idPhotoUrl;
-      const prevUrls = JSON.stringify(tenant.agreementUrls ?? []);
-      if (JSON.stringify(finalAgreementUrls) !== prevUrls) payload.agreementUrls = finalAgreementUrls;
+      if (JSON.stringify(finalAgreementUrls) !== JSON.stringify(tenant.agreementUrls ?? [])) payload.agreementUrls = finalAgreementUrls;
 
       const res = await csrfFetch(`/api/tenants/${encodeURIComponent(tenant.tenantId)}`, {
         method: "PATCH",
@@ -209,11 +236,8 @@ export function CompleteProfileModal({
       const data = (await res.json()) as { ok?: boolean; tenant?: TenantRecord; message?: string };
 
       if (!res.ok) {
-        if (res.status === 409) {
-          setError("Tenant was updated elsewhere. Refresh and try again.");
-        } else {
-          setError(data.message ?? "Update failed.");
-        }
+        if (res.status === 409) setError("Tenant was updated elsewhere. Refresh and try again.");
+        else setError(data.message ?? "Update failed. Try again.");
         return;
       }
 
@@ -244,7 +268,7 @@ export function CompleteProfileModal({
             </div>
             <Button
               variant="ghost"
-              disabled={submitting}
+              disabled={submitting || uploading}
               aria-label="Close"
               onClick={onClose}
               className="rounded-2xl px-3 text-white/60 hover:text-white"
@@ -255,7 +279,7 @@ export function CompleteProfileModal({
         </div>
 
         {/* Scrollable body */}
-        <div className="max-h-[62dvh] overflow-y-auto px-4 pb-2 sm:px-5 sm:max-h-[70dvh]">
+        <div className="max-h-[62dvh] overflow-y-auto px-4 pb-4 sm:px-5 sm:max-h-[70dvh]" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}>
           <div className="space-y-5 pb-2">
 
             {/* ── Personal ── */}
@@ -266,35 +290,37 @@ export function CompleteProfileModal({
                   {/* Phone */}
                   <label className="block">
                     <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Phone</span>
-                    <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
+                    <div className={`flex items-center gap-2 rounded-2xl border bg-white/[0.06] px-3 py-2.5 ${fieldErrors.phone ? "border-red-500/70" : "border-white/12"}`}>
                       <Phone className="h-4 w-4 shrink-0 text-emerald-500" />
                       <span className="text-[13px] font-medium text-white/50">+91</span>
                       <input
                         value={fmtPhone(phone)}
-                        onChange={(e) => setPhone(normalizePhone(e.target.value))}
-                        disabled={submitting}
+                        onChange={(e) => { setPhone(normalizePhone(e.target.value)); if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: "" })); }}
+                        disabled={submitting || uploading}
                         type="tel"
                         inputMode="tel"
                         placeholder="98765 43210"
                         className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
                       />
                     </div>
+                    {fieldErrors.phone ? <p className="mt-1 text-[11px] font-medium text-red-400">{fieldErrors.phone}</p> : null}
                   </label>
 
                   {/* Email */}
                   <label className="block">
                     <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Email</span>
-                    <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
+                    <div className={`flex items-center gap-2 rounded-2xl border bg-white/[0.06] px-3 py-2.5 ${fieldErrors.email ? "border-red-500/70" : "border-white/12"}`}>
                       <Mail className="h-4 w-4 shrink-0 text-sky-400" />
                       <input
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        disabled={submitting}
+                        onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: "" })); }}
+                        disabled={submitting || uploading}
                         type="email"
                         placeholder="tenant@email.com"
                         className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
                       />
                     </div>
+                    {fieldErrors.email ? <p className="mt-1 text-[11px] font-medium text-red-400">{fieldErrors.email}</p> : null}
                   </label>
                 </div>
 
@@ -307,7 +333,7 @@ export function CompleteProfileModal({
                       <input
                         value={fatherName}
                         onChange={(e) => setFatherName(e.target.value)}
-                        disabled={submitting}
+                        disabled={submitting || uploading}
                         placeholder="Parent name"
                         className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
                       />
@@ -323,7 +349,7 @@ export function CompleteProfileModal({
                         type="date"
                         value={dateOfBirth}
                         onChange={(e) => setDateOfBirth(e.target.value)}
-                        disabled={submitting}
+                        disabled={submitting || uploading}
                         className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
                       />
                     </div>
@@ -343,7 +369,7 @@ export function CompleteProfileModal({
                     <select
                       value={occupation}
                       onChange={(e) => setOccupation(e.target.value as OccupationType | "")}
-                      disabled={submitting}
+                      disabled={submitting || uploading}
                       className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
                     >
                       <option value="">Select…</option>
@@ -363,7 +389,7 @@ export function CompleteProfileModal({
                     <input
                       value={workplaceName}
                       onChange={(e) => setWorkplaceName(e.target.value)}
-                      disabled={submitting}
+                      disabled={submitting || uploading}
                       placeholder={occupation === "student" ? "JNTU Hyderabad" : "Company name"}
                       className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
                     />
@@ -384,7 +410,7 @@ export function CompleteProfileModal({
                     <select
                       value={idType}
                       onChange={(e) => setIdType(e.target.value as IdType | "")}
-                      disabled={submitting}
+                      disabled={submitting || uploading}
                       className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
                     >
                       <option value="">Select ID type…</option>
@@ -416,7 +442,7 @@ export function CompleteProfileModal({
                         />
                         <button
                           type="button"
-                          disabled={submitting}
+                          disabled={submitting || uploading}
                           onClick={() => { setTenantPhotoFile(null); setTenantPhotoPreview(""); }}
                           className="absolute -right-2 -top-2 rounded-full border border-white/20 bg-[#1a1a1f] p-1 text-white/60 hover:text-white"
                         >
@@ -424,7 +450,7 @@ export function CompleteProfileModal({
                         </button>
                         <button
                           type="button"
-                          disabled={submitting}
+                          disabled={submitting || uploading}
                           onClick={() => tenantPhotoRef.current?.click()}
                           className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.04] py-1.5 text-[11px] font-medium text-white/50 hover:bg-white/[0.07] transition"
                         >
@@ -435,7 +461,7 @@ export function CompleteProfileModal({
                     ) : (
                       <button
                         type="button"
-                        disabled={submitting}
+                        disabled={submitting || uploading}
                         onClick={() => tenantPhotoRef.current?.click()}
                         className="flex h-24 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.03] text-white/30 transition hover:border-white/25 hover:bg-white/[0.05]"
                       >
@@ -466,7 +492,7 @@ export function CompleteProfileModal({
                         />
                         <button
                           type="button"
-                          disabled={submitting}
+                          disabled={submitting || uploading}
                           onClick={() => { setIdPhotoFile(null); setIdPhotoPreview(""); }}
                           className="absolute -right-2 -top-2 rounded-full border border-white/20 bg-[#1a1a1f] p-1 text-white/60 hover:text-white"
                         >
@@ -474,7 +500,7 @@ export function CompleteProfileModal({
                         </button>
                         <button
                           type="button"
-                          disabled={submitting}
+                          disabled={submitting || uploading}
                           onClick={() => idPhotoRef.current?.click()}
                           className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.04] py-1.5 text-[11px] font-medium text-white/50 hover:bg-white/[0.07] transition"
                         >
@@ -485,7 +511,7 @@ export function CompleteProfileModal({
                     ) : (
                       <button
                         type="button"
-                        disabled={submitting}
+                        disabled={submitting || uploading}
                         onClick={() => idPhotoRef.current?.click()}
                         className="flex h-24 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.03] text-white/30 transition hover:border-white/25 hover:bg-white/[0.05]"
                       >
@@ -505,7 +531,7 @@ export function CompleteProfileModal({
                     {totalAgreementCount > 0 && !hasAgreementPdf && totalAgreementCount < 4 && (
                       <button
                         type="button"
-                        disabled={submitting}
+                        disabled={submitting || uploading}
                         onClick={() => agreementRef.current?.click()}
                         className="text-[11px] font-medium text-blue-400 hover:text-blue-300 disabled:opacity-40"
                       >
@@ -524,7 +550,7 @@ export function CompleteProfileModal({
                   {totalAgreementCount === 0 ? (
                     <button
                       type="button"
-                      disabled={submitting}
+                      disabled={submitting || uploading}
                       onClick={() => agreementRef.current?.click()}
                       className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-500/25 bg-blue-500/[0.03] text-blue-400/50 transition hover:border-blue-500/40 hover:bg-blue-500/[0.07] hover:text-blue-400 disabled:opacity-40"
                     >
@@ -546,7 +572,7 @@ export function CompleteProfileModal({
                       </div>
                       <button
                         type="button"
-                        disabled={submitting}
+                        disabled={submitting || uploading}
                         onClick={() => { setExistingAgreementUrls([]); setAgreementFiles([]); setAgreementFilePreviews([]); }}
                         className="ml-2 shrink-0 rounded-full p-1 text-white/40 hover:text-red-400"
                       >
@@ -561,7 +587,7 @@ export function CompleteProfileModal({
                           <img src={url} alt={`Agreement ${i + 1}`} className="h-20 w-full rounded-xl object-cover border border-white/12" />
                           <button
                             type="button"
-                            disabled={submitting}
+                            disabled={submitting || uploading}
                             onClick={() => setExistingAgreementUrls((prev) => prev.filter((_, idx) => idx !== i))}
                             className="absolute -right-1.5 -top-1.5 rounded-full bg-red-500 p-0.5 text-white shadow-md disabled:opacity-40"
                           >
@@ -575,7 +601,7 @@ export function CompleteProfileModal({
                           <img src={preview} alt={`New ${i + 1}`} className="h-20 w-full rounded-xl object-cover border border-white/12" />
                           <button
                             type="button"
-                            disabled={submitting}
+                            disabled={submitting || uploading}
                             onClick={() => {
                               setAgreementFiles((prev) => prev.filter((_, idx) => idx !== i));
                               setAgreementFilePreviews((prev) => prev.filter((_, idx) => idx !== i));
@@ -589,7 +615,7 @@ export function CompleteProfileModal({
                       {totalAgreementCount < 4 && (
                         <button
                           type="button"
-                          disabled={submitting}
+                          disabled={submitting || uploading}
                           onClick={() => agreementRef.current?.click()}
                           className="flex h-20 w-full flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-white/15 bg-white/[0.02] text-white/30 transition hover:border-blue-500/30 hover:text-blue-400 disabled:opacity-40"
                         >
@@ -617,7 +643,7 @@ export function CompleteProfileModal({
                       <input
                         value={ecSearch}
                         onChange={(e) => setEcSearch(e.target.value)}
-                        disabled={submitting}
+                        disabled={submitting || uploading}
                         placeholder="Name, phone, or room…"
                         className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-2 pl-9 pr-3 text-[12px] text-white outline-none placeholder:text-white/25"
                       />
@@ -628,7 +654,7 @@ export function CompleteProfileModal({
                           <button
                             key={t.tenantId}
                             type="button"
-                            disabled={submitting}
+                            disabled={submitting || uploading}
                             onClick={() => {
                               setEmergencyName(t.fullName);
                               setEmergencyPhone(t.phone);
@@ -654,16 +680,17 @@ export function CompleteProfileModal({
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   <label className="block">
                     <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Name</span>
-                    <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
+                    <div className={`flex items-center gap-2 rounded-2xl border bg-white/[0.06] px-3 py-2.5 ${fieldErrors.emergencyName ? "border-red-500/70" : "border-white/12"}`}>
                       <User className="h-4 w-4 shrink-0 text-red-400" />
                       <input
                         value={emergencyName}
-                        onChange={(e) => setEmergencyName(e.target.value)}
-                        disabled={submitting}
+                        onChange={(e) => { setEmergencyName(e.target.value); if (fieldErrors.emergencyName) setFieldErrors((p) => ({ ...p, emergencyName: "" })); }}
+                        disabled={submitting || uploading}
                         placeholder="Contact name"
                         className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
                       />
                     </div>
+                    {fieldErrors.emergencyName ? <p className="mt-1 text-[11px] font-medium text-red-400">{fieldErrors.emergencyName}</p> : null}
                   </label>
 
                   <label className="block">
@@ -673,7 +700,7 @@ export function CompleteProfileModal({
                       <select
                         value={emergencyRelation}
                         onChange={(e) => setEmergencyRelation(e.target.value as EmergencyRelation | "")}
-                        disabled={submitting}
+                        disabled={submitting || uploading}
                         className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
                       >
                         <option value="">Select…</option>
@@ -687,51 +714,53 @@ export function CompleteProfileModal({
 
                 <label className="block">
                   <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Phone</span>
-                  <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
+                  <div className={`flex items-center gap-2 rounded-2xl border bg-white/[0.06] px-3 py-2.5 ${fieldErrors.emergencyPhone ? "border-red-500/70" : "border-white/12"}`}>
                     <Phone className="h-4 w-4 shrink-0 text-white/30" />
                     <span className="text-[13px] font-medium text-white/50">+91</span>
                     <input
                       value={fmtPhone(emergencyPhone)}
-                      onChange={(e) => setEmergencyPhone(normalizePhone(e.target.value))}
-                      disabled={submitting}
+                      onChange={(e) => { setEmergencyPhone(normalizePhone(e.target.value)); if (fieldErrors.emergencyPhone) setFieldErrors((p) => ({ ...p, emergencyPhone: "" })); }}
+                      disabled={submitting || uploading}
                       type="tel"
                       inputMode="tel"
                       placeholder="98765 43210"
                       className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
                     />
                   </div>
+                  {fieldErrors.emergencyPhone ? <p className="mt-1 text-[11px] font-medium text-red-400">{fieldErrors.emergencyPhone}</p> : null}
                 </label>
               </div>
             </section>
 
-            {/* Error */}
+            {/* Error + processing */}
             {error ? (
               <div className="flex items-start gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>
             ) : null}
+            {uploading ? <ProcessingPill label="Uploading documents…" /> : null}
             {submitting ? <ProcessingPill label="Saving profile…" /> : null}
-          </div>
-        </div>
 
-        {/* Footer */}
-        <div className="flex flex-col-reverse gap-3 border-t border-white/10 px-4 py-3 sm:flex-row sm:px-5">
-          <Button
-            variant="secondary"
-            onClick={onClose}
-            disabled={submitting}
-            className="w-full rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white sm:flex-1"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={() => void handleSave()}
-            disabled={submitting}
-            className="w-full rounded-2xl bg-[linear-gradient(90deg,#c2410c_0%,#ea580c_100%)] text-white shadow-[0_10px_24px_rgba(194,65,12,0.3)] sm:flex-1"
-          >
-            {submitting ? "Saving…" : "Save Profile"}
-          </Button>
+            {/* Action buttons */}
+            <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-3 sm:flex-row">
+              <Button
+                variant="secondary"
+                onClick={onClose}
+                disabled={submitting || uploading}
+                className="w-full rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white sm:flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => void handleSave()}
+                disabled={submitting || uploading}
+                className="w-full rounded-2xl bg-[linear-gradient(90deg,#c2410c_0%,#ea580c_100%)] text-white shadow-[0_10px_24px_rgba(194,65,12,0.3)] sm:flex-1"
+              >
+                {uploading ? "Uploading…" : submitting ? "Saving…" : "Save Profile"}
+              </Button>
+            </div>
+          </div>
         </div>
       </Card>
     </div>

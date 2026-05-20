@@ -110,7 +110,7 @@ export function QuickAddTenantModal({
         </div>
 
         {/* Body */}
-        <div className="space-y-3 px-4 pb-2 sm:px-5">
+        <div className="space-y-3 px-4 pb-4 sm:px-5">
           {/* Name */}
           <label className="block">
             <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Full Name *</span>
@@ -189,16 +189,15 @@ export function QuickAddTenantModal({
             </div>
           ) : null}
           {submitting ? <ProcessingPill label="Creating tenant…" /> : null}
-        </div>
 
-        {/* Footer */}
-        <div className="flex flex-col-reverse gap-3 border-t border-white/10 px-4 py-3 sm:flex-row sm:px-5">
-          <Button variant="secondary" onClick={handleClose} disabled={submitting} className="w-full rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white sm:flex-1">
-            Cancel
-          </Button>
-          <Button onClick={() => void handleSave()} disabled={submitting} className="w-full rounded-2xl bg-[linear-gradient(90deg,#b45309_0%,#d97706_100%)] text-white shadow-[0_10px_24px_rgba(180,83,9,0.3)] sm:flex-1">
-            {submitting ? "Saving…" : "Save Tenant"}
-          </Button>
+          <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-3 sm:flex-row">
+            <Button variant="secondary" onClick={handleClose} disabled={submitting} className="w-full rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white sm:flex-1">
+              Cancel
+            </Button>
+            <Button onClick={() => void handleSave()} disabled={submitting} className="w-full rounded-2xl bg-[linear-gradient(90deg,#b45309_0%,#d97706_100%)] text-white shadow-[0_10px_24px_rgba(180,83,9,0.3)] sm:flex-1">
+              {submitting ? "Saving…" : "Save Tenant"}
+            </Button>
+          </div>
         </div>
       </Card>
     </div>

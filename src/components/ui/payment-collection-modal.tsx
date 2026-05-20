@@ -288,33 +288,32 @@ export function PaymentCollectionModal({
           {error ? (
             <p role="alert" className="mt-3 text-[12px] font-medium text-red-400">{error}</p>
           ) : null}
-        </div>
 
-        {/* Footer */}
-        <div className="flex flex-col-reverse gap-2 border-t border-white/10 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={submitting}
-            className="rounded-2xl border border-white/12 bg-white/[0.04] px-5 py-2.5 text-[13px] font-semibold text-white/70 transition hover:text-white disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] px-5 text-[13px] font-semibold text-white shadow-[0_14px_32px_rgba(37,99,235,0.3)] transition hover:brightness-110 disabled:opacity-60"
-          >
-            {submitting ? (
-              "Recording..."
-            ) : (
-              <>
-                <Check className="h-4 w-4" />
-                Record Payment
-              </>
-            )}
-          </button>
+          <div className="mt-4 flex flex-col-reverse gap-2 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="rounded-2xl border border-white/12 bg-white/[0.04] px-5 py-2.5 text-[13px] font-semibold text-white/70 transition hover:text-white disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] px-5 text-[13px] font-semibold text-white shadow-[0_14px_32px_rgba(37,99,235,0.3)] transition hover:brightness-110 disabled:opacity-60"
+            >
+              {submitting ? (
+                "Recording..."
+              ) : (
+                <>
+                  <Check className="h-4 w-4" />
+                  Record Payment
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>,
