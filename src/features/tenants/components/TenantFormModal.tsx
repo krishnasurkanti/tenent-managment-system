@@ -12,6 +12,7 @@ import { ProcessingPill } from "@/components/ui/processing-pill";
 import { SkeletonBlock } from "@/components/ui/skeleton";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { cn } from "@/utils/cn";
+import { csrfFetch } from "@/lib/csrf-client";
 import { createTenant, updateTenantFamilyMembers, assignTenantRoom } from "@/services/tenants/tenants.service";
 import { fetchOwnerHostels } from "@/services/owner/owner-hostels.service";
 import type { BillingCycle, HostelBed, HostelRoom, HostelRoomInventory, TenantRecord } from "@/types/tenant";
@@ -139,7 +140,7 @@ async function uploadDocument(file: File, docType: "tenant_photo" | "id_photo" |
   const fd = new FormData();
   fd.append("file", file);
   fd.append("docType", docType);
-  const res = await fetch("/api/tenants/upload-document", { method: "POST", body: fd });
+  const res = await csrfFetch("/api/tenants/upload-document", { method: "POST", body: fd });
   const data = (await res.json()) as { url?: string; message?: string };
   if (!res.ok || !data.url) throw new Error(data.message ?? "Upload failed.");
   return data.url;
