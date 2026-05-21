@@ -145,7 +145,7 @@ export function TenantRoomAssignmentModal({
       className="fixed inset-0 z-50 flex items-end justify-center animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
       style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
     >
-      <Card className="flex w-full max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),56rem)] sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
+      <Card className="flex w-full min-h-[88dvh] max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),56rem)] sm:min-h-0 sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
         {/* Fixed header */}
         <div className="shrink-0 px-3 pb-2.5 pt-3 sm:px-4 sm:pt-4">
           <div className="flex items-center justify-between gap-3">
