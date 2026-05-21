@@ -12,7 +12,13 @@ jobs:
       - name: Random jitter
         run: sleep $((RANDOM % 60))
 
+      - name: Ping app (Next.js on Render)
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "${{ secrets.APP_URL }}/api/keep-alive?source=cron")
+          echo "App status: $STATUS"
+
       - name: Ping backend health
+        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "${{ secrets.BACKEND_URL }}/api/health")
-          echo "Status: $STATUS"
+          echo "Backend status: $STATUS"

@@ -14,16 +14,17 @@ export async function GET(request: Request) {
     await new Promise((r) => setTimeout(r, jitterMs));
   }
 
+  // App is alive — always 200. Backend status is informational only.
+  let backendOk = false;
   try {
     const res = await fetch(`${getApiBaseUrl()}/api/health`, {
       cache: "no-store",
       signal: AbortSignal.timeout(15000),
     });
-    if (res.ok) {
-      return NextResponse.json({ ok: true });
-    }
-    return NextResponse.json({ ok: false }, { status: 503 });
+    backendOk = res.ok;
   } catch {
-    return NextResponse.json({ ok: false }, { status: 503 });
+    // backend unreachable — fine, app itself is still up
   }
+
+  return NextResponse.json({ ok: true, backend: backendOk });
 }
