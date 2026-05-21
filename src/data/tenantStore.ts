@@ -455,9 +455,25 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
   } else {
     const roomBeds = room.beds ?? [];
     const occupiedBedIds = getOccupiedBedIds(assignment.hostelId, assignment.roomNumber ?? "", tenantId);
+
+    // Legacy tenants without bedId occupy beds positionally — account for them too
+    const legacyTenants = tenantRecords.filter(
+      (t) =>
+        t.tenantId !== tenantId &&
+        t.assignment?.hostelId === assignment.hostelId &&
+        t.assignment?.roomNumber === assignment.roomNumber &&
+        !t.assignment?.bedId,
+    );
+    const allOccupied = new Set(occupiedBedIds);
+    let legacyIdx = 0;
+    for (const bed of roomBeds) {
+      if (legacyIdx >= legacyTenants.length) break;
+      if (!allOccupied.has(bed.id)) { allOccupied.add(bed.id); legacyIdx++; }
+    }
+
     const availableBed = assignment.bedId
-      ? roomBeds.find((bed) => bed.id === assignment.bedId && !occupiedBedIds.has(bed.id))
-      : roomBeds.find((bed) => !occupiedBedIds.has(bed.id));
+      ? roomBeds.find((bed) => bed.id === assignment.bedId && !allOccupied.has(bed.id))
+      : roomBeds.find((bed) => !allOccupied.has(bed.id));
 
     if (!availableBed) {
       throw new Error("Selected bed is not available.");

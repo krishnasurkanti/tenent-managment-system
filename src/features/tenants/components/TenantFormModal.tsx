@@ -307,12 +307,19 @@ export function TenantFormModal({
     setPreview: (s: string) => void,
   ) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { setError("File too large. Max 5 MB."); return; }
     setError("");
     setFile(file);
+    // HEIC/HEIF can't be previewed in browsers — show filename badge instead
+    if (/heic|heif/i.test(file.type) || /\.heic$|\.heif$/i.test(file.name)) {
+      setPreview("__name__:" + file.name);
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = (ev) => setPreview(ev.target?.result as string);
+    reader.onload = (ev) => setPreview((ev.target?.result as string) || ("__name__:" + file.name));
+    reader.onerror = () => setPreview("__name__:" + file.name);
     reader.readAsDataURL(file);
   }
 
@@ -495,10 +502,10 @@ export function TenantFormModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="tenant-form-modal-title"
-      className="fixed inset-0 z-50 flex items-end justify-center animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
+      className="fixed inset-0 z-50 flex items-stretch justify-center animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
       style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
     >
-      <Card className="flex w-full min-h-[88dvh] max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),42rem)] sm:min-h-0 sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
+      <Card className="flex w-full h-dvh flex-col overflow-hidden rounded-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),42rem)] sm:h-auto sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(90deg,rgba(99,102,241,0.14)_0%,rgba(245,158,11,0.06)_100%)]" />
 
@@ -775,17 +782,20 @@ export function TenantFormModal({
                     <input
                       ref={tenantPhotoInputRef}
                       type="file"
-                      accept="image/jpeg,image/png,image/webp,image/heic"
+                      accept="image/*"
                       className="hidden"
                       onChange={(e) => pickFile(e, setTenantPhotoFile, setTenantPhotoPreview)}
                     />
                     {tenantPhotoPreview ? (
                       <div className="relative inline-block">
-                        <img
-                          src={tenantPhotoPreview}
-                          alt="Tenant preview"
-                          className="h-28 w-28 rounded-2xl object-cover border border-white/12"
-                        />
+                        {tenantPhotoPreview.startsWith("__name__:") ? (
+                          <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3">
+                            <Camera className="h-5 w-5 text-emerald-400" />
+                            <span className="text-[12px] text-white/70 truncate max-w-[160px]">{tenantPhotoPreview.slice(9)}</span>
+                          </div>
+                        ) : (
+                          <img src={tenantPhotoPreview} alt="Tenant preview" className="h-28 w-28 rounded-2xl object-cover border border-white/12" />
+                        )}
                         <button
                           type="button"
                           onClick={() => { setTenantPhotoFile(null); setTenantPhotoPreview(""); }}
@@ -802,7 +812,7 @@ export function TenantFormModal({
                       >
                         <Camera className="h-7 w-7" />
                         <span className="text-[12px] font-medium">Tap to upload photo</span>
-                        <span className="text-[11px] text-white/25">JPEG, PNG, WebP · Max 5 MB</span>
+                        <span className="text-[11px] text-white/25">Any image · Max 5 MB</span>
                       </button>
                     )}
                   </div>
@@ -817,17 +827,20 @@ export function TenantFormModal({
                     <input
                       ref={idPhotoInputRef}
                       type="file"
-                      accept="image/jpeg,image/png,image/webp,image/heic"
+                      accept="image/*"
                       className="hidden"
                       onChange={(e) => pickFile(e, setIdPhotoFile, setIdPhotoPreview)}
                     />
                     {idPhotoPreview ? (
                       <div className="relative inline-block">
-                        <img
-                          src={idPhotoPreview}
-                          alt="ID photo preview"
-                          className="h-40 w-full max-w-xs rounded-2xl object-cover border border-white/12"
-                        />
+                        {idPhotoPreview.startsWith("__name__:") ? (
+                          <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3">
+                            <IdCard className="h-5 w-5 text-sky-400" />
+                            <span className="text-[12px] text-white/70 truncate max-w-[200px]">{idPhotoPreview.slice(9)}</span>
+                          </div>
+                        ) : (
+                          <img src={idPhotoPreview} alt="ID photo preview" className="h-40 w-full max-w-xs rounded-2xl object-cover border border-white/12" />
+                        )}
                         <button
                           type="button"
                           onClick={() => { setIdPhotoFile(null); setIdPhotoPreview(""); }}
@@ -844,7 +857,7 @@ export function TenantFormModal({
                       >
                         <IdCard className="h-7 w-7" />
                         <span className="text-[12px] font-medium">Tap to upload ID photo</span>
-                        <span className="text-[11px] text-white/25">JPEG, PNG, WebP · Max 5 MB</span>
+                        <span className="text-[11px] text-white/25">Any image · Max 5 MB</span>
                       </button>
                     )}
                   </div>

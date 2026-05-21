@@ -69,10 +69,19 @@ export function buildHostelInventory(hostel: OwnerHostel, tenants: TenantRecord[
         return a.roomNumber === room.roomNumber;
       });
 
+      // Tenants matched by explicit bedId; remainder fill positionally (legacy assignments have no bedId)
+      const byBedId = new Map(
+        roomTenants.filter((t) => t.assignment?.bedId).map((t) => [t.assignment!.bedId!, t]),
+      );
+      const noBedTenants = roomTenants.filter((t) => !t.assignment?.bedId);
+      let noBedIdx = 0;
+
       const beds: HostelBed[] =
         normalized.type === "PG"
           ? (room.beds ?? []).map((bed) => {
-              const assignedTenant = roomTenants.find((tenant) => tenant.assignment?.bedId === bed.id);
+              const assignedTenant =
+                byBedId.get(bed.id) ??
+                (noBedIdx < noBedTenants.length ? noBedTenants[noBedIdx++] : undefined);
               return {
                 id: bed.id,
                 label: bed.label,
