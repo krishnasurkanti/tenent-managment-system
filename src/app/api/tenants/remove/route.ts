@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ tenant: payload.tenant });
     }
 
-    const tenant = removeTenantRecord(body.tenantId);
+    const tenant = removeTenantRecord(body.tenantId, session.isDemo);
     return NextResponse.json({ tenant });
   } catch (error) {
     return NextResponse.json(

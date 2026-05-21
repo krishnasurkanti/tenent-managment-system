@@ -96,7 +96,7 @@ export async function PATCH(
   }
 
   try {
-    const tenant = updateTenantProfile(id, patch);
+    const tenant = updateTenantProfile(id, patch, session.isDemo);
     return NextResponse.json({ ok: true, tenant });
   } catch (error) {
     return NextResponse.json(

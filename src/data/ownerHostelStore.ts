@@ -61,8 +61,9 @@ const demoOwnerHostels: OwnerHostel[] = [
   },
 ];
 
-// In-memory store — demo hostels always present; persisted real hostels loaded at startup
-let ownerHostels: OwnerHostel[] = [...getDemoOwnerHostels(), ...loadPersistedHostels()];
+// Separate in-memory stores: demo is never persisted, live is from hostels.json
+const demoHostels: OwnerHostel[] = getDemoOwnerHostels();
+let liveHostels: OwnerHostel[] = loadPersistedHostels();
 
 function loadPersistedHostels(): OwnerHostel[] {
   try {
@@ -99,87 +100,98 @@ export function getDemoOwnerHostels(): OwnerHostel[] {
 }
 
 export function reloadOwnerHostels() {
-  ownerHostels = [...getDemoOwnerHostels(), ...loadPersistedHostels()];
-  return ownerHostels;
+  liveHostels = loadPersistedHostels();
+  // Reload demo hostels in place (they are const, so just re-populate them)
+  demoHostels.splice(0, demoHostels.length, ...getDemoOwnerHostels());
+  return [...demoHostels, ...liveHostels];
 }
 
-export function getOwnerHostels() {
-  return ownerHostels.map((hostel) => cloneHostel(hostel));
+export function getOwnerHostels(isDemo = false) {
+  const source = isDemo ? demoHostels : liveHostels;
+  return source.map((hostel) => cloneHostel(hostel));
 }
 
-export function getOwnerHostel(hostelId?: string) {
-  if (ownerHostels.length === 0) {
+export function getOwnerHostel(hostelId?: string, isDemo = false) {
+  const source = isDemo ? demoHostels : liveHostels;
+
+  if (source.length === 0) {
     return null;
   }
 
   const hostel = hostelId
-    ? ownerHostels.find((item) => item.id === hostelId)
-    : ownerHostels[0];
+    ? source.find((item) => item.id === hostelId)
+    : source[0];
 
   return hostel ? cloneHostel(hostel) : null;
 }
 
 export function getHostelsByOwnerId(ownerId: string): OwnerHostel[] {
-  const persisted = loadPersistedHostels();
-  const all = [...demoOwnerHostels, ...persisted];
+  const all = [...demoOwnerHostels, ...liveHostels];
   return all.filter((h) => h.ownerId === ownerId).map(cloneHostel);
 }
 
 export function getAllPersistedHostels(): OwnerHostel[] {
-  return loadPersistedHostels().map(cloneHostel);
+  return liveHostels.map(cloneHostel);
 }
 
-export function saveOwnerHostel(hostel: Omit<OwnerHostel, "id" | "createdAt"> & { ownerId?: string }) {
+export function saveOwnerHostel(hostel: Omit<OwnerHostel, "id" | "createdAt"> & { ownerId?: string }, isDemo = false) {
   const nextHostel = normalizeHostel({
     id: `owner-hostel-${Date.now()}`,
     createdAt: new Date().toISOString(),
     ...hostel,
   });
 
-  ownerHostels = [nextHostel, ...ownerHostels];
-
-  if (hostel.ownerId) {
-    const persisted = loadPersistedHostels();
-    persisted.unshift(nextHostel);
-    persistHostels(persisted);
+  if (isDemo) {
+    demoHostels.unshift(nextHostel);
+  } else {
+    liveHostels.unshift(nextHostel);
+    if (hostel.ownerId) {
+      persistHostels(liveHostels);
+    }
   }
 
   return cloneHostel(nextHostel);
 }
 
-export function updateOwnerHostel(hostel: Omit<OwnerHostel, "id" | "createdAt"> & { ownerId?: string }, hostelId?: string) {
-  const targetId = hostelId ?? ownerHostels[0]?.id;
+export function updateOwnerHostel(hostel: Omit<OwnerHostel, "id" | "createdAt"> & { ownerId?: string }, hostelId?: string, isDemo = false) {
+  const source = isDemo ? demoHostels : liveHostels;
+  const targetId = hostelId ?? source[0]?.id;
 
   if (!targetId) {
-    return saveOwnerHostel(hostel);
+    return saveOwnerHostel(hostel, isDemo);
   }
 
   let updatedHostel: OwnerHostel | null = null;
 
-  ownerHostels = ownerHostels.map((item) => {
+  const updated = source.map((item) => {
     if (item.id !== targetId) return item;
     updatedHostel = { ...item, ...hostel };
     return updatedHostel;
   });
 
-  if (updatedHostel) {
-    const persisted = loadPersistedHostels();
-    const persistedIndex = persisted.findIndex((h) => h.id === targetId);
-    if (persistedIndex !== -1) {
-      persisted[persistedIndex] = updatedHostel;
-      persistHostels(persisted);
+  if (isDemo) {
+    demoHostels.splice(0, demoHostels.length, ...updated);
+  } else {
+    liveHostels.splice(0, liveHostels.length, ...updated);
+    if (updatedHostel) {
+      persistHostels(liveHostels);
     }
   }
 
-  return updatedHostel ? cloneHostel(updatedHostel) : saveOwnerHostel(hostel);
+  return updatedHostel ? cloneHostel(updatedHostel) : saveOwnerHostel(hostel, isDemo);
 }
 
-export function resetOwnerHostel() {
-  ownerHostels = getDemoOwnerHostels();
-  persistHostels([]);
-  return getOwnerHostels();
+export function resetOwnerHostel(isDemo = false) {
+  if (isDemo) {
+    demoHostels.splice(0, demoHostels.length, ...getDemoOwnerHostels());
+  } else {
+    liveHostels = [];
+    persistHostels([]);
+  }
+  return getOwnerHostels(isDemo);
 }
 
-export function getOwnerHostelInventory(tenants: TenantRecord[] = []): HostelRoomInventory[] {
-  return ownerHostels.map((hostel) => buildHostelInventory(hostel, tenants));
+export function getOwnerHostelInventory(tenants: TenantRecord[] = [], isDemo = false): HostelRoomInventory[] {
+  const source = isDemo ? demoHostels : liveHostels;
+  return source.map((hostel) => buildHostelInventory(hostel, tenants));
 }

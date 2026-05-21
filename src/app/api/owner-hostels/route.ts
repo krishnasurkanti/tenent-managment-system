@@ -36,7 +36,7 @@ export async function GET() {
     return NextResponse.json({ hostels: normalized });
   }
 
-  return NextResponse.json({ hostels: getOwnerHostels() });
+  return NextResponse.json({ hostels: getOwnerHostels(session.isDemo) });
 }
 
 export async function POST(request: Request) {
@@ -87,9 +87,9 @@ export async function POST(request: Request) {
     type,
     rooms: rooms.map((r) => normalizeRoom(draftId, "floor-1", type, r)),
     ownerId: session.ownerId ?? undefined,
-  });
+  }, session.isDemo);
 
-  const seededTenants = seedDemoTenantsForHostel(hostel.id);
+  const seededTenants = seedDemoTenantsForHostel(hostel.id, session.isDemo);
 
   return NextResponse.json({ hostel, seededTenants }, { status: 201 });
 }

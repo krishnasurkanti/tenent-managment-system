@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE_NAME, verifyJwtPayload, verifyJwtRole } from "@/lib/auth";
 
-export type OwnerSessionMode = "demo" | "live" | "guest";
+export type OwnerSessionMode = "demo" | "local" | "live" | "guest";
 
 export async function getOwnerSession() {
   const token = (await cookies()).get(ACCESS_TOKEN_COOKIE_NAME)?.value ?? "";
@@ -16,13 +16,17 @@ export async function getOwnerSession() {
 
   // "demo" only when the token explicitly carries source:demo (set by signDemoToken)
   const isDemo = payload?.source === "demo";
+  // "local" when the token carries source:local (set by signOwnerToken for local auth)
+  const isLocal = payload?.source === "local";
 
   const mode: OwnerSessionMode =
     role !== "owner" && role !== "staff"
       ? "guest"
       : isDemo
         ? "demo"
-        : "live";
+        : isLocal
+          ? "local"
+          : "live";
 
   return {
     token,
@@ -30,6 +34,7 @@ export async function getOwnerSession() {
     ownerId,
     mode,
     isDemo: mode === "demo",
+    isLocal: mode === "local",
     isLive: mode === "live",
   };
 }

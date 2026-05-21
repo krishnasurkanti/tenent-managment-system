@@ -31,7 +31,7 @@ export default async function OwnerTenantDetailsPage({
     const payload = (await backendResponse.json()) as { tenant?: TenantRecord };
     tenant = payload.tenant;
   } else {
-    const allTenants = getTenantRecords();
+    const allTenants = getTenantRecords(session.isDemo);
     tenant = allTenants.find((t) => t.tenantId === id);
   }
 

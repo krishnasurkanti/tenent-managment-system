@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       propertyType: body.propertyType,
       bedId: body.bedId,
       bedLabel: body.bedLabel,
-    });
+    }, session.isDemo);
 
     return NextResponse.json({ tenant });
   } catch (error) {

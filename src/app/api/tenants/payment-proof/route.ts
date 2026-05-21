@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ tenant: updatePayload.tenant });
     }
 
-    const tenant = addPaymentProof(tenantId, paymentId, txnId, proofImageName, proofImageUrl, proofMimeType);
+    const tenant = addPaymentProof(tenantId, paymentId, txnId, proofImageName, proofImageUrl, proofMimeType, session.isDemo);
     return NextResponse.json({ tenant });
   } catch (error) {
     return NextResponse.json(

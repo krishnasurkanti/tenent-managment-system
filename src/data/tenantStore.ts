@@ -282,7 +282,10 @@ function buildDemoTenant(input: {
 const TENANTS_DATA_DIR = path.join(process.cwd(), ".data");
 const TENANTS_DATA_FILE = path.join(TENANTS_DATA_DIR, "tenants.json");
 
+// Live records — persisted to disk
 const tenantRecords: TenantRecord[] = loadTenantRecords();
+// Separate in-memory-only demo state (never persists to disk)
+let demoTenantRecords: TenantRecord[] = getDemoTenantRecords();
 
 function loadTenantRecords() {
   try {
@@ -323,52 +326,62 @@ export function reloadTenantRecords() {
   return tenantRecords;
 }
 
-function generateUniqueFiveDigitId() {
+export function reloadDemoTenantRecords() {
+  demoTenantRecords = getDemoTenantRecords();
+  return demoTenantRecords;
+}
+
+function generateUniqueFiveDigitId(records: TenantRecord[]) {
   let nextId = "";
 
   do {
     nextId = String(Math.floor(10000 + Math.random() * 90000));
-  } while (tenantRecords.some((tenant) => tenant.tenantId === nextId));
+  } while (records.some((tenant) => tenant.tenantId === nextId));
 
   return nextId;
 }
 
-function generateTenantIdFromPhone(phone: string) {
+function generateTenantIdFromPhone(phone: string, records: TenantRecord[]) {
   const digitsOnly = phone.replace(/\D/g, "");
   const preferredId = digitsOnly.slice(-5);
 
-  if (preferredId.length === 5 && !tenantRecords.some((tenant) => tenant.tenantId === preferredId)) {
+  if (preferredId.length === 5 && !records.some((tenant) => tenant.tenantId === preferredId)) {
     return preferredId;
   }
 
-  return generateUniqueFiveDigitId();
+  return generateUniqueFiveDigitId(records);
 }
 
-export function getTenantRecords() {
-  return tenantRecords;
+export function getTenantRecords(isDemo = false) {
+  return isDemo ? demoTenantRecords : tenantRecords;
 }
 
-export function resetTenantRecords() {
+export function resetTenantRecords(isDemo = false) {
+  if (isDemo) {
+    demoTenantRecords = getDemoTenantRecords();
+    return demoTenantRecords;
+  }
   tenantRecords.splice(0, tenantRecords.length, ...getDemoTenantRecords());
   persistTenantRecords(tenantRecords);
   return tenantRecords;
 }
 
-export function getTenantRecordById(tenantId: string) {
-  return tenantRecords.find((tenant) => tenant.tenantId === tenantId);
+export function getTenantRecordById(tenantId: string, isDemo = false) {
+  const records = isDemo ? demoTenantRecords : tenantRecords;
+  return records.find((tenant) => tenant.tenantId === tenantId);
 }
 
-export function getAssignedTenantCount(hostelId: string, roomNumber: string) {
-  return tenantRecords.filter(
+export function getAssignedTenantCount(hostelId: string, roomNumber: string, records: TenantRecord[]) {
+  return records.filter(
     (tenant) =>
       tenant.assignment?.hostelId === hostelId &&
       tenant.assignment.roomNumber === roomNumber,
   ).length;
 }
 
-function getOccupiedBedIds(hostelId: string, roomNumber: string, exceptTenantId?: string) {
+function getOccupiedBedIds(hostelId: string, roomNumber: string, records: TenantRecord[], exceptTenantId?: string) {
   return new Set(
-    tenantRecords
+    records
       .filter(
         (tenant) =>
           tenant.tenantId !== exceptTenantId &&
@@ -381,11 +394,12 @@ function getOccupiedBedIds(hostelId: string, roomNumber: string, exceptTenantId?
   );
 }
 
-export function createTenantRecord(input: Omit<TenantRecord, "tenantId" | "hostelId" | "createdAt" | "updatedAt" | "paymentHistory">) {
+export function createTenantRecord(input: Omit<TenantRecord, "tenantId" | "hostelId" | "createdAt" | "updatedAt" | "paymentHistory">, isDemo = false) {
+  const records = isDemo ? demoTenantRecords : tenantRecords;
   const now = new Date().toISOString();
   const status = getDueStatus(input.nextDueDate);
   const tenant: TenantRecord = {
-    tenantId: generateTenantIdFromPhone(input.phone),
+    tenantId: generateTenantIdFromPhone(input.phone, records),
     hostelId: DEMO_OWNER_HOSTEL_ID,
     createdAt: now,
     updatedAt: now,
@@ -406,19 +420,20 @@ export function createTenantRecord(input: Omit<TenantRecord, "tenantId" | "hoste
     ...input,
   };
 
-  tenantRecords.unshift(tenant);
-  persistTenantRecords(tenantRecords);
+  records.unshift(tenant);
+  if (!isDemo) persistTenantRecords(tenantRecords);
   return tenant;
 }
 
-export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssignment, "hostelName">) {
-  const tenant = tenantRecords.find((item) => item.tenantId === tenantId);
+export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssignment, "hostelName">, isDemo = false) {
+  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const tenant = records.find((item) => item.tenantId === tenantId);
 
   if (!tenant) {
     throw new Error("Tenant not found.");
   }
 
-  const hostel = getOwnerHostelInventory(tenantRecords).find((item) => item.hostelId === assignment.hostelId);
+  const hostel = getOwnerHostelInventory(records, isDemo).find((item) => item.hostelId === assignment.hostelId);
 
   if (!hostel) {
     throw new Error("Hostel room inventory not found.");
@@ -446,7 +461,7 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
   }
 
   if (propertyType === "RESIDENCE") {
-    const assignedCount = getAssignedTenantCount(assignment.hostelId, assignment.roomNumber ?? "");
+    const assignedCount = getAssignedTenantCount(assignment.hostelId, assignment.roomNumber ?? "", records);
     const adjustedCount = currentActiveAssignment ? Math.max(assignedCount - 1, 0) : assignedCount;
 
     if (adjustedCount >= 1) {
@@ -454,10 +469,10 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
     }
   } else {
     const roomBeds = room.beds ?? [];
-    const occupiedBedIds = getOccupiedBedIds(assignment.hostelId, assignment.roomNumber ?? "", tenantId);
+    const occupiedBedIds = getOccupiedBedIds(assignment.hostelId, assignment.roomNumber ?? "", records, tenantId);
 
     // Legacy tenants without bedId occupy beds positionally — account for them too
-    const legacyTenants = tenantRecords.filter(
+    const legacyTenants = records.filter(
       (t) =>
         t.tenantId !== tenantId &&
         t.assignment?.hostelId === assignment.hostelId &&
@@ -496,7 +511,7 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
     tenant.billingCycle ?? "monthly",
   );
 
-  persistTenantRecords(tenantRecords);
+  if (!isDemo) persistTenantRecords(tenantRecords);
   return tenant;
 }
 
@@ -509,8 +524,10 @@ export function recordTenantPayment(
   proofImageName?: string,
   proofImageUrl?: string,
   proofMimeType?: string,
+  isDemo = false,
 ) {
-  const tenant = tenantRecords.find((item) => item.tenantId === tenantId);
+  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const tenant = records.find((item) => item.tenantId === tenantId);
 
   if (!tenant) {
     throw new Error("Tenant not found.");
@@ -553,27 +570,30 @@ export function recordTenantPayment(
     tenant.paymentHistory = tenant.paymentHistory.slice(0, 120);
   }
 
-  persistTenantRecords(tenantRecords);
+  if (!isDemo) persistTenantRecords(tenantRecords);
   return tenant;
 }
 
-export function removeTenantRecord(tenantId: string) {
-  const tenantIndex = tenantRecords.findIndex((item) => item.tenantId === tenantId);
+export function removeTenantRecord(tenantId: string, isDemo = false) {
+  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const tenantIndex = records.findIndex((item) => item.tenantId === tenantId);
 
   if (tenantIndex === -1) {
     throw new Error("Tenant not found.");
   }
 
-  const [removedTenant] = tenantRecords.splice(tenantIndex, 1);
-  persistTenantRecords(tenantRecords);
+  const [removedTenant] = records.splice(tenantIndex, 1);
+  if (!isDemo) persistTenantRecords(tenantRecords);
   return removedTenant;
 }
 
 export function updateTenantProfile(
   tenantId: string,
-  patch: Partial<Pick<TenantRecord, "fullName" | "fatherName" | "dateOfBirth" | "phone" | "email" | "idType" | "idNumber" | "emergencyContactName" | "emergencyContactRelation" | "emergencyContactPhone" | "monthlyRent" | "billingCycle">>,
+  patch: Partial<Pick<TenantRecord, "fullName" | "fatherName" | "dateOfBirth" | "phone" | "email" | "idType" | "idNumber" | "emergencyContactName" | "emergencyContactRelation" | "emergencyContactPhone" | "monthlyRent" | "billingCycle" | "occupation" | "workplaceName" | "tenantPhotoUrl" | "idPhotoUrl" | "agreementUrls">>,
+  isDemo = false,
 ) {
-  const tenant = tenantRecords.find((item) => item.tenantId === tenantId);
+  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const tenant = records.find((item) => item.tenantId === tenantId);
 
   if (!tenant) {
     throw new Error("Tenant not found.");
@@ -590,19 +610,20 @@ export function updateTenantProfile(
     );
   }
 
-  persistTenantRecords(tenantRecords);
+  if (!isDemo) persistTenantRecords(tenantRecords);
   return tenant;
 }
 
-export function updateTenantFamilyMembersRecord(tenantId: string, familyMembers: TenantFamilyMember[]) {
-  const tenant = tenantRecords.find((item) => item.tenantId === tenantId);
+export function updateTenantFamilyMembersRecord(tenantId: string, familyMembers: TenantFamilyMember[], isDemo = false) {
+  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const tenant = records.find((item) => item.tenantId === tenantId);
 
   if (!tenant) {
     throw new Error("Tenant not found.");
   }
 
   tenant.familyMembers = familyMembers;
-  persistTenantRecords(tenantRecords);
+  if (!isDemo) persistTenantRecords(tenantRecords);
   return tenant;
 }
 
@@ -613,8 +634,10 @@ export function addPaymentProof(
   proofImageName?: string,
   proofImageUrl?: string,
   proofMimeType?: string,
+  isDemo = false,
 ) {
-  const tenant = tenantRecords.find((item) => item.tenantId === tenantId);
+  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const tenant = records.find((item) => item.tenantId === tenantId);
 
   if (!tenant) {
     throw new Error("Tenant not found.");
@@ -631,18 +654,19 @@ export function addPaymentProof(
   payment.proofImageUrl = proofImageUrl?.trim() ?? payment.proofImageUrl ?? "";
   payment.proofMimeType = proofMimeType?.trim() ?? payment.proofMimeType ?? "";
 
-  persistTenantRecords(tenantRecords);
+  if (!isDemo) persistTenantRecords(tenantRecords);
   return tenant;
 }
 
-export function seedDemoTenantsForHostel(hostelId: string) {
-  const hostel = getOwnerHostelInventory(tenantRecords).find((item) => item.hostelId === hostelId);
+export function seedDemoTenantsForHostel(hostelId: string, isDemo = false) {
+  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const hostel = getOwnerHostelInventory(records, isDemo).find((item) => item.hostelId === hostelId);
 
   if (!hostel) {
     return [];
   }
 
-  const alreadyAssigned = tenantRecords.some((tenant) => tenant.assignment?.hostelId === hostelId);
+  const alreadyAssigned = records.some((tenant) => tenant.assignment?.hostelId === hostelId);
   if (alreadyAssigned) {
     return [];
   }
@@ -713,7 +737,7 @@ export function seedDemoTenantsForHostel(hostelId: string) {
       billingAnchorDate: moveInDate,
       nextDueDate,
       idNumber: `TEST-ID-${index + 1}`,
-    });
+    }, isDemo);
 
     assignTenantRoom(tenant.tenantId, {
       hostelId,
@@ -724,7 +748,7 @@ export function seedDemoTenantsForHostel(hostelId: string) {
       propertyType: slot.propertyType,
       bedId: slot.bedId,
       bedLabel: slot.bedLabel,
-    });
+    }, isDemo);
 
     return tenant;
   });

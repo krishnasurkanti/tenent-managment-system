@@ -41,7 +41,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ hostel: payload.hostel });
   }
 
-  const hostel = getOwnerHostel(id);
+  const hostel = getOwnerHostel(id, session.isDemo);
 
   if (!hostel) {
     return NextResponse.json({ message: "Hostel not found." }, { status: 404 });
@@ -99,6 +99,7 @@ export async function PUT(request: Request, context: RouteContext) {
       rooms: rooms.map((r) => normalizeRoom(id, "floor-1", type, r)),
     },
     id,
+    session.isDemo,
   );
 
   return NextResponse.json({ hostel });

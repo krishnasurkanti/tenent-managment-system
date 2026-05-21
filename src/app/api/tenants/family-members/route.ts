@@ -57,12 +57,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ tenant: updatePayload.tenant });
   }
 
-  const tenant = getTenantRecordById(tenantId);
+  const tenant = getTenantRecordById(tenantId, session.isDemo);
   if (!tenant) {
     return NextResponse.json({ message: "Tenant not found." }, { status: 404 });
   }
 
-  const updated = updateTenantFamilyMembersRecord(tenantId, familyMembers);
+  const updated = updateTenantFamilyMembersRecord(tenantId, familyMembers, session.isDemo);
   return NextResponse.json({ tenant: updated });
 }
 

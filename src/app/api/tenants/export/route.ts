@@ -82,7 +82,7 @@ export async function GET(request: Request) {
 
     tenants = Array.isArray(payload.tenants) ? payload.tenants : [];
   } else {
-    tenants = getTenantRecords();
+    tenants = getTenantRecords(session.isDemo);
     if (hostelId) tenants = tenants.filter((t) => t.assignment?.hostelId === hostelId);
   }
 

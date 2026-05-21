@@ -133,6 +133,7 @@ export async function POST(request: Request) {
       proofImageName,
       proofImageUrl,
       proofMimeType,
+      session.isDemo,
     );
     return NextResponse.json({ tenant });
   } catch (error) {

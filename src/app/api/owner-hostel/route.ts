@@ -35,7 +35,7 @@ export async function GET() {
     return NextResponse.json({ hostel: hostels[0] ?? null });
   }
 
-  return NextResponse.json({ hostel: getOwnerHostel() });
+  return NextResponse.json({ hostel: getOwnerHostel(undefined, session.isDemo) });
 }
 
 export async function POST(request: Request) {
@@ -93,8 +93,8 @@ async function saveOrUpdateHostel(request: Request, mode: "create" | "update") {
 
   const hostel =
     mode === "update"
-      ? updateOwnerHostel({ hostelName, address, type, rooms: normalizedRooms }, body.hostelId)
-      : saveOwnerHostel({ hostelName, address, type, rooms: normalizedRooms });
+      ? updateOwnerHostel({ hostelName, address, type, rooms: normalizedRooms }, body.hostelId, session.isDemo)
+      : saveOwnerHostel({ hostelName, address, type, rooms: normalizedRooms }, session.isDemo);
 
   return NextResponse.json({ hostel }, { status: mode === "update" ? 200 : 201 });
 }

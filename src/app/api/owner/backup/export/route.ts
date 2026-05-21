@@ -28,8 +28,8 @@ export async function GET() {
       return NextResponse.json({ message: "Unable to fetch data from backend." }, { status: 503 });
     }
   } else {
-    tenants = getTenantRecords();
-    hostels = getOwnerHostels();
+    tenants = getTenantRecords(session.isDemo);
+    hostels = getOwnerHostels(session.isDemo);
   }
 
   const snapshot: BackupSnapshot = {

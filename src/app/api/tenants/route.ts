@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ tenants: filtered, hostels });
   }
 
-  const allTenants = getTenantRecords();
+  const allTenants = getTenantRecords(session.isDemo);
 
   const matched = allTenants.filter((tenant) => {
     if (tenantId && tenant.tenantId !== tenantId) return false;
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
     paymentHistory: t.paymentHistory.slice(0, historyLimit),
   }));
 
-  return NextResponse.json({ tenants, hostels: getOwnerHostelInventory(allTenants) });
+  return NextResponse.json({ tenants, hostels: getOwnerHostelInventory(allTenants, session.isDemo) });
 }
 
 // In-memory idempotency cache for demo mode (TTL: 60s, max 500 keys)
@@ -249,7 +249,7 @@ export async function POST(request: Request) {
     billingAnchorDate: demoAnchor,
     nextDueDate: calculateNextDueDate(paidOnDate, demoAnchor, billingCycle),
     billingCycle,
-  });
+  }, session.isDemo);
 
   if (hasAssignment) {
     try {
@@ -262,12 +262,12 @@ export async function POST(request: Request) {
         propertyType,
         bedId,
         bedLabel,
-      });
+      }, session.isDemo);
       const assignedBody = { tenant: assignedTenant };
       if (scopedKey) _setIdempotentResponse(scopedKey, payloadHash, 201, assignedBody);
       return NextResponse.json(assignedBody, { status: 201 });
     } catch (error) {
-      removeTenantRecord(tenant.tenantId);
+      removeTenantRecord(tenant.tenantId, session.isDemo);
       return NextResponse.json(
         { message: error instanceof Error ? error.message : "Unable to assign tenant to the selected room." },
         { status: 400 },

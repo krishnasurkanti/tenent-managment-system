@@ -9,7 +9,10 @@ export async function POST() {
   if (process.env.PLAYWRIGHT_TEST !== "true") {
     return NextResponse.json({ message: "Not found." }, { status: 404 });
   }
-  resetOwnerHostel();
-  resetTenantRecords();
+  // Reset both demo and live in-memory stores during tests
+  resetOwnerHostel(true);
+  resetOwnerHostel(false);
+  resetTenantRecords(true);
+  resetTenantRecords(false);
   return NextResponse.json({ ok: true });
 }

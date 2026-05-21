@@ -25,7 +25,7 @@ export default async function OwnerSettingsPage() {
     }> };
     hostel = Array.isArray(payload.hostels) ? payload.hostels[0] ?? null : null;
   } else {
-    hostel = getOwnerHostel();
+    hostel = getOwnerHostel(undefined, session.isDemo);
   }
 
   const totalRooms = hostel?.rooms.length ?? 0;

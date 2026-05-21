@@ -12,7 +12,7 @@ export default async function OwnerEditHostelPage() {
     const payload = (await backendResponse.json()) as { hostels?: unknown[] };
     hostel = Array.isArray(payload.hostels) ? payload.hostels[0] ?? null : null;
   } else {
-    hostel = getOwnerHostel();
+    hostel = getOwnerHostel(undefined, session.isDemo);
   }
 
   if (!hostel) {
