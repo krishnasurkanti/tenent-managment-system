@@ -273,6 +273,15 @@ export default function LoginPage() {
               </div>
             </form>
 
+            <div className="mt-4 border-t border-white/8 pt-3 text-center">
+              <p className="text-xs text-white/35">
+                First time?{" "}
+                <Link href="/owner/signup?key=local-setup" className="text-[#f7bf53] hover:text-[#ffd983]">
+                  Create your account
+                </Link>
+              </p>
+            </div>
+
           </div>
         </div>
       </div>

@@ -33,7 +33,10 @@ export async function POST(request: Request) {
     return response;
   }
 
-  // All real owners live in PostgreSQL via backend; fall back to local admin-control.json
+  // Try backend first; fall through to local on any failure
+  let backendToken: string | undefined;
+  let backendOwner: { id?: string | number; email?: string; name?: string; username?: string } | undefined;
+
   try {
     const backendResponse = await fetch(`${getApiBaseUrl()}/api/auth/login`, {
       method: "POST",
@@ -48,26 +51,32 @@ export async function POST(request: Request) {
       owner?: { id?: string | number; email?: string; name?: string; username?: string };
     };
 
-    if (!backendResponse.ok || !payload.token) {
-      return NextResponse.json({ message: "Invalid email or password." }, { status: 401 });
+    if (backendResponse.ok && payload.token) {
+      backendToken = payload.token;
+      backendOwner = payload.owner;
     }
-
-    const response = NextResponse.json({ ok: true, owner: payload.owner });
-    setAuthCookies(response, payload.token);
-    return response;
   } catch {
-    // Backend unavailable — try local admin-control.json credentials
-    const localResult = validateOwnerCredentials(identifier, password);
-    if (localResult.ok) {
-      const ownerId = (localResult as { ok: true; ownerId: string; hostelId: string }).ownerId;
-      const token = await signOwnerToken(ownerId, identifier);
-      const response = NextResponse.json({
-        ok: true,
-        owner: { id: ownerId, email: identifier, username: identifier },
-      });
-      setAuthCookies(response, token);
-      return response;
-    }
-    return NextResponse.json({ message: "Unable to sign in right now. Please try again." }, { status: 503 });
+    // Backend unreachable — will fall through to local check
   }
+
+  if (backendToken) {
+    const response = NextResponse.json({ ok: true, owner: backendOwner });
+    setAuthCookies(response, backendToken);
+    return response;
+  }
+
+  // Backend unavailable or returned error — try local admin-control.json credentials
+  const localResult = validateOwnerCredentials(identifier, password);
+  if (localResult.ok) {
+    const ownerId = (localResult as { ok: true; ownerId: string; hostelId: string }).ownerId;
+    const token = await signOwnerToken(ownerId, identifier);
+    const response = NextResponse.json({
+      ok: true,
+      owner: { id: ownerId, email: identifier, username: identifier },
+    });
+    setAuthCookies(response, token);
+    return response;
+  }
+
+  return NextResponse.json({ message: "Invalid email or password." }, { status: 401 });
 }

@@ -8,6 +8,12 @@ export async function GET(request: NextRequest) {
   if (!key) {
     return NextResponse.json({ message: "Key is required." }, { status: 400 });
   }
+
+  // Magic key for local-only deployments — always valid, no backend needed
+  if (key === "local-setup") {
+    return NextResponse.json({ ok: true, local: true });
+  }
+
   try {
     const res = await fetch(
       `${getApiBaseUrl()}/api/signup/validate/${encodeURIComponent(key)}`,
