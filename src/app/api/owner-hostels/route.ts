@@ -89,7 +89,8 @@ export async function POST(request: Request) {
     ownerId: session.ownerId ?? undefined,
   }, session.isDemo);
 
-  const seededTenants = seedDemoTenantsForHostel(hostel.id, session.isDemo);
+  // Only seed demo tenants for demo sessions — never for real/local data
+  const seededTenants = session.isDemo ? seedDemoTenantsForHostel(hostel.id, true) : [];
 
   return NextResponse.json({ hostel, seededTenants }, { status: 201 });
 }
