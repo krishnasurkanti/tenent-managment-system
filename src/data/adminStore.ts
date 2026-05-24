@@ -79,7 +79,7 @@ function syncHostelControls() {
       const ownerUsername = `owner_${hostel.id}`.toLowerCase();
       adminState.controls[hostel.id] = {
         hostelId: hostel.id,
-        ownerId: `owner-${hostel.id}`,
+        ownerId: hostel.ownerId ?? `owner-${hostel.id}`,
         ownerName: `Owner ${hostel.hostelName}`,
         ownerEmail: `${hostel.hostelName.toLowerCase().replace(/\s+/g, "")}@owner.example.com`,
         ownerUsername,
@@ -94,6 +94,9 @@ function syncHostelControls() {
         freeMonthsRemaining: 0,
         autoPayEnabled: false,
       };
+    } else if (hostel.ownerId && adminState.controls[hostel.id].ownerId !== hostel.ownerId) {
+      // Patch stale ownerId in case admin-control.json was persisted with a wrong synthetic ownerId
+      adminState.controls[hostel.id].ownerId = hostel.ownerId;
     }
   }
   persistState(adminState);
@@ -119,7 +122,7 @@ function getPlanSettings(planId: AdminPlanId) {
 }
 
 function getPerHostelSurcharge(hostelId: string, ownerId: string, includedHostels: number, extraHostelPrice: number) {
-  const ownerHostels = getOwnerHostels()
+  const ownerHostels = [...getOwnerHostels(false), ...getOwnerHostels(true)]
     .filter((hostel) => hostel.ownerId === ownerId)
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   const hostelIndex = ownerHostels.findIndex((hostel) => hostel.id === hostelId);
@@ -160,10 +163,14 @@ function calculateBilling(hostelId: string, monthKey: string): BillingBreakdown 
   const plan = getPlan(control.planId);
   const nextPlan = getNextPlan(plan.id);
   const planSettings = getPlanSettings(plan.id);
-  const tenants = getTenantRecords().filter((tenant) => tenant.assignment?.hostelId === hostelId);
+  // Include both demo and live tenant records
+  const allTenants = [...getTenantRecords(false), ...getTenantRecords(true)];
+  const tenants = allTenants.filter((tenant) => tenant.assignment?.hostelId === hostelId);
   const billableTenantCount = tenants.filter((tenant) => isBillableInMonth(tenant.assignment?.moveInDate ?? tenant.createdAt, monthKey)).length;
   const tenantCount = tenants.length;
-  const hostelCount = getOwnerHostels().filter((hostel) => hostel.ownerId === control.ownerId).length;
+  // Include both live and demo hostels in count
+  const allHostels = [...getOwnerHostels(false), ...getOwnerHostels(true)];
+  const hostelCount = allHostels.filter((hostel) => hostel.ownerId === control.ownerId).length;
   const extraHostels = Math.max(0, hostelCount - planSettings.includedHostels);
 
   const baseAmount = control.pricingOverride ?? plan.basePrice;
@@ -436,7 +443,9 @@ export function getOwnerBilling(hostelId: string, monthKey = monthKeyFromDate())
   const control = adminState.controls[hostelId];
   if (!control) throw new Error("Hostel not found.");
 
-  const hostel = getOwnerHostels().find((item) => item.id === hostelId);
+  // Check both live and demo hostels so billing works in demo/local mode
+  const hostel = getOwnerHostels(false).find((item) => item.id === hostelId)
+    ?? getOwnerHostels(true).find((item) => item.id === hostelId);
   if (!hostel) throw new Error("Hostel not found.");
 
   let invoice = adminState.invoices.find((item) => item.hostelId === hostelId && item.monthKey === monthKey);

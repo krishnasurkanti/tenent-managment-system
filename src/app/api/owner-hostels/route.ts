@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getOwnerHostels, saveOwnerHostel } from "@/data/ownerHostelStore";
-import { seedDemoTenantsForHostel } from "@/data/tenantStore";
+import { getTenantRecords, seedDemoTenantsForHostel } from "@/data/tenantStore";
 import type { OwnerHostel, OwnerRoom } from "@/types/owner-hostel";
 import { requireOwnerSession } from "@/lib/session-mode";
 import { apiRateLimit, getTrustedClientIp } from "@/lib/rate-limit";
 import { backendFetch } from "@/services/core/backend-api";
-import { normalizeRoom, normalizeHostel } from "@/utils/hostel-occupancy";
+import { buildHostelInventory, normalizeRoom, normalizeHostel } from "@/utils/hostel-occupancy";
 import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
@@ -36,20 +36,30 @@ export async function GET() {
     return NextResponse.json({ hostels: normalized });
   }
 
-  // Add `data.floors` mirror so tests that expect hostel.data.floors structure work
-  const hostels = getOwnerHostels(session.isDemo).map((h) => ({
-    ...h,
-    data: {
+  // Add `data.floors` mirror so tests that expect hostel.data.floors structure work.
+  // Use buildHostelInventory so beds include occupancy info and only FREE beds appear in beds[],
+  // enabling tests that call beds[0] to reliably get an available bed.
+  const tenants = getTenantRecords(session.isDemo);
+  const hostels = getOwnerHostels(session.isDemo).map((h) => {
+    const inventory = buildHostelInventory(h, tenants);
+    return {
       ...h,
-      floors: [
-        {
-          id: "floor-1",
-          floorLabel: "Floor 1",
-          rooms: h.rooms ?? [],
-        },
-      ],
-    },
-  }));
+      data: {
+        ...h,
+        floors: [
+          {
+            id: "floor-1",
+            floorLabel: "Floor 1",
+            rooms: inventory.rooms.map((room) => ({
+              ...room,
+              // Only expose unoccupied beds so beds[0] is always a free bed
+              beds: (room.beds ?? []).filter((bed) => !bed.occupied),
+            })),
+          },
+        ],
+      },
+    };
+  });
   return NextResponse.json({ hostels });
 }
 

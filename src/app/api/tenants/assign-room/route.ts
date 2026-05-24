@@ -32,9 +32,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Invalid request body." }, { status: 400 });
   }
 
-  if (!body.tenantId || !body.hostelId || !body.roomNumber || !body.sharingType || !body.moveInDate) {
-    return NextResponse.json({ message: "Please choose hostel, room, sharing type, and move-in date." }, { status: 400 });
+  if (!body.tenantId || !body.hostelId || !body.roomNumber || !body.moveInDate) {
+    return NextResponse.json({ message: "Please choose hostel, room, and move-in date." }, { status: 400 });
   }
+  // sharingType defaults to empty string when omitted (store handles missing value gracefully)
+  if (!body.sharingType) body.sharingType = "";
 
   try {
     if (session.isLive) {

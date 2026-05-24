@@ -203,7 +203,7 @@ function OwnerRoomsPageContent() {
         <Card className={`overflow-hidden ${ownerPanelClass}`}>
           <div className="border-b border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3.5 py-2.5">
             <h2 className="text-sm font-semibold text-white">{currentHostel.hostelName}</h2>
-            <p className="text-[11px] text-[color:var(--fg-secondary)]">{displayRooms.length} room{displayRooms.length !== 1 ? "s" : ""}</p>
+            <p className="text-[11px] text-[color:var(--fg-secondary)]">Floor 1 &middot; {displayRooms.length} room{displayRooms.length !== 1 ? "s" : ""}</p>
           </div>
           <div className="p-3">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
