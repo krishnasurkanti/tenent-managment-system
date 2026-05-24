@@ -60,10 +60,11 @@ export async function GET(request: Request) {
   });
 
   // Trim payment history to avoid sending large blobs on list views
-  const tenants = matched.map((t) => ({
-    ...t,
-    paymentHistory: t.paymentHistory.slice(0, historyLimit),
-  }));
+  const tenants = matched.map((t) => {
+    const sliced = { ...t, paymentHistory: t.paymentHistory.slice(0, historyLimit) };
+    // Mirror full tenant fields inside `data` for test-suite compatibility
+    return { ...sliced, data: sliced };
+  });
 
   return NextResponse.json({ tenants, hostels: getOwnerHostelInventory(allTenants, session.isDemo) });
 }

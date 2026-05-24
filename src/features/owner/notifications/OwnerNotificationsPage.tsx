@@ -41,7 +41,8 @@ export default function OwnerNotificationsPage() {
     <div className={`space-y-3 text-white transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
       <OwnerPageHero
         eyebrow="Notifications"
-        title="Alerts"
+        title="Owner Alert Centre"
+        description={alerts.length === 0 ? "Alert state: All clear — no urgent alerts right now." : `Alert state: ${alerts.length} urgent alert${alerts.length !== 1 ? "s" : ""} need attention.`}
         badge={
           <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold ${alerts.length === 0 ? "border-[#4ade80]/40 bg-[#22c55e]/10 text-[#4ade80]" : "border-red-500/40 bg-red-500/10 text-red-400"}`}>
             <Bell className="h-3 w-3" />

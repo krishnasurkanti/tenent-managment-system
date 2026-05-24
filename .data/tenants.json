@@ -1,1 +1,388 @@
-[]
+[
+  {
+    "tenantId": "51201",
+    "fullName": "Aarav Sharma",
+    "phone": "9876501201",
+    "email": "aarav.test@example.com",
+    "monthlyRent": 8500,
+    "rentPaid": 8500,
+    "paidOnDate": "2026-05-04",
+    "billingAnchorDate": "2026-05-04",
+    "nextDueDate": "2026-06-03",
+    "idNumber": "TEST-ID-51201",
+    "createdAt": "2026-05-04T09:00:00.000Z",
+    "updatedAt": "2026-05-04T09:00:00.000Z",
+    "assignment": {
+      "hostelId": "owner-hostel-aurora",
+      "hostelName": "Aurora Residency",
+      "roomNumber": "101",
+      "sharingType": "3 sharing",
+      "moveInDate": "2026-05-04"
+    },
+    "paymentHistory": [
+      {
+        "paymentId": "pay-51201",
+        "amount": 8500,
+        "paidOnDate": "2026-05-04",
+        "nextDueDate": "2026-06-03",
+        "status": "active",
+        "paymentMethod": "cash",
+        "txnId": "",
+        "proofImageName": "",
+        "proofImageUrl": "",
+        "proofMimeType": ""
+      }
+    ]
+  },
+  {
+    "tenantId": "51202",
+    "fullName": "Diya Patel",
+    "phone": "9876501202",
+    "email": "diya.test@example.com",
+    "monthlyRent": 9000,
+    "rentPaid": 9000,
+    "paidOnDate": "2026-04-29",
+    "billingAnchorDate": "2026-04-29",
+    "nextDueDate": "2026-05-28",
+    "idNumber": "TEST-ID-51202",
+    "createdAt": "2026-04-29T10:00:00.000Z",
+    "updatedAt": "2026-04-29T10:00:00.000Z",
+    "assignment": {
+      "hostelId": "owner-hostel-aurora",
+      "hostelName": "Aurora Residency",
+      "roomNumber": "101",
+      "sharingType": "3 sharing",
+      "moveInDate": "2026-04-29"
+    },
+    "paymentHistory": [
+      {
+        "paymentId": "pay-51202",
+        "amount": 9000,
+        "paidOnDate": "2026-04-29",
+        "nextDueDate": "2026-05-28",
+        "status": "active",
+        "paymentMethod": "cash",
+        "txnId": "",
+        "proofImageName": "",
+        "proofImageUrl": "",
+        "proofMimeType": ""
+      }
+    ]
+  },
+  {
+    "tenantId": "51203",
+    "fullName": "Kabir Reddy",
+    "phone": "9876501203",
+    "email": "kabir.test@example.com",
+    "monthlyRent": 7800,
+    "rentPaid": 7800,
+    "paidOnDate": "2026-04-26",
+    "billingAnchorDate": "2026-04-26",
+    "nextDueDate": "2026-05-25",
+    "idNumber": "TEST-ID-51203",
+    "createdAt": "2026-04-26T11:00:00.000Z",
+    "updatedAt": "2026-04-26T11:00:00.000Z",
+    "assignment": {
+      "hostelId": "owner-hostel-aurora",
+      "hostelName": "Aurora Residency",
+      "roomNumber": "202",
+      "sharingType": "2 sharing",
+      "moveInDate": "2026-04-26"
+    },
+    "paymentHistory": [
+      {
+        "paymentId": "pay-51203",
+        "amount": 7800,
+        "paidOnDate": "2026-04-26",
+        "nextDueDate": "2026-05-25",
+        "status": "due-soon",
+        "paymentMethod": "cash",
+        "txnId": "",
+        "proofImageName": "",
+        "proofImageUrl": "",
+        "proofMimeType": ""
+      }
+    ]
+  },
+  {
+    "tenantId": "51204",
+    "fullName": "Meera Nair",
+    "phone": "9876501204",
+    "email": "meera.test@example.com",
+    "monthlyRent": 9600,
+    "rentPaid": 9600,
+    "paidOnDate": "2026-04-20",
+    "billingAnchorDate": "2026-04-20",
+    "nextDueDate": "2026-05-19",
+    "idNumber": "TEST-ID-51204",
+    "createdAt": "2026-04-20T12:00:00.000Z",
+    "updatedAt": "2026-04-20T12:00:00.000Z",
+    "assignment": {
+      "hostelId": "owner-hostel-aurora",
+      "hostelName": "Aurora Residency",
+      "roomNumber": "401",
+      "sharingType": "3 sharing",
+      "moveInDate": "2026-04-20"
+    },
+    "paymentHistory": [
+      {
+        "paymentId": "pay-51204",
+        "amount": 9600,
+        "paidOnDate": "2026-04-20",
+        "nextDueDate": "2026-05-19",
+        "status": "overdue",
+        "paymentMethod": "cash",
+        "txnId": "",
+        "proofImageName": "",
+        "proofImageUrl": "",
+        "proofMimeType": ""
+      }
+    ]
+  },
+  {
+    "tenantId": "51205",
+    "fullName": "Rohan Verma",
+    "phone": "9876501205",
+    "email": "rohan.test@example.com",
+    "monthlyRent": 8200,
+    "rentPaid": 8200,
+    "paidOnDate": "2026-05-07",
+    "billingAnchorDate": "2026-05-07",
+    "nextDueDate": "2026-06-06",
+    "idNumber": "TEST-ID-51205",
+    "createdAt": "2026-05-07T12:00:00.000Z",
+    "updatedAt": "2026-05-07T12:00:00.000Z",
+    "assignment": {
+      "hostelId": "owner-hostel-lotus",
+      "hostelName": "Lotus Elite Stay",
+      "roomNumber": "101",
+      "sharingType": "3 sharing",
+      "moveInDate": "2026-05-07"
+    },
+    "paymentHistory": [
+      {
+        "paymentId": "pay-51205",
+        "amount": 8200,
+        "paidOnDate": "2026-05-07",
+        "nextDueDate": "2026-06-06",
+        "status": "active",
+        "paymentMethod": "cash",
+        "txnId": "",
+        "proofImageName": "",
+        "proofImageUrl": "",
+        "proofMimeType": ""
+      }
+    ]
+  },
+  {
+    "tenantId": "51206",
+    "fullName": "Sana Khan",
+    "phone": "9876501206",
+    "email": "sana.test@example.com",
+    "monthlyRent": 8800,
+    "rentPaid": 8800,
+    "paidOnDate": "2026-05-01",
+    "billingAnchorDate": "2026-05-01",
+    "nextDueDate": "2026-05-31",
+    "idNumber": "TEST-ID-51206",
+    "createdAt": "2026-05-01T12:00:00.000Z",
+    "updatedAt": "2026-05-01T12:00:00.000Z",
+    "assignment": {
+      "hostelId": "owner-hostel-lotus",
+      "hostelName": "Lotus Elite Stay",
+      "roomNumber": "201",
+      "sharingType": "3 sharing",
+      "moveInDate": "2026-05-01"
+    },
+    "paymentHistory": [
+      {
+        "paymentId": "pay-51206",
+        "amount": 8800,
+        "paidOnDate": "2026-05-01",
+        "nextDueDate": "2026-05-31",
+        "status": "active",
+        "paymentMethod": "cash",
+        "txnId": "",
+        "proofImageName": "",
+        "proofImageUrl": "",
+        "proofMimeType": ""
+      }
+    ]
+  },
+  {
+    "tenantId": "51207",
+    "fullName": "Neha Joshi",
+    "phone": "9876501207",
+    "email": "neha.test@example.com",
+    "monthlyRent": 9100,
+    "rentPaid": 9100,
+    "paidOnDate": "2026-04-28",
+    "billingAnchorDate": "2026-04-28",
+    "nextDueDate": "2026-05-27",
+    "idNumber": "TEST-ID-51207",
+    "createdAt": "2026-04-28T12:00:00.000Z",
+    "updatedAt": "2026-04-28T12:00:00.000Z",
+    "assignment": {
+      "hostelId": "owner-hostel-lotus",
+      "hostelName": "Lotus Elite Stay",
+      "roomNumber": "402",
+      "sharingType": "2 sharing",
+      "moveInDate": "2026-04-28"
+    },
+    "paymentHistory": [
+      {
+        "paymentId": "pay-51207",
+        "amount": 9100,
+        "paidOnDate": "2026-04-28",
+        "nextDueDate": "2026-05-27",
+        "status": "due-soon",
+        "paymentMethod": "cash",
+        "txnId": "",
+        "proofImageName": "",
+        "proofImageUrl": "",
+        "proofMimeType": ""
+      }
+    ]
+  },
+  {
+    "tenantId": "51208",
+    "fullName": "Arjun Rao",
+    "phone": "9876501208",
+    "email": "arjun.test@example.com",
+    "monthlyRent": 10000,
+    "rentPaid": 10000,
+    "paidOnDate": "2026-04-23",
+    "billingAnchorDate": "2026-04-23",
+    "nextDueDate": "2026-05-22",
+    "idNumber": "TEST-ID-51208",
+    "createdAt": "2026-04-23T12:00:00.000Z",
+    "updatedAt": "2026-04-23T12:00:00.000Z",
+    "assignment": {
+      "hostelId": "owner-hostel-skyline",
+      "hostelName": "Skyline Comforts",
+      "roomNumber": "102",
+      "sharingType": "2 sharing",
+      "moveInDate": "2026-04-23"
+    },
+    "paymentHistory": [
+      {
+        "paymentId": "pay-51208",
+        "amount": 10000,
+        "paidOnDate": "2026-04-23",
+        "nextDueDate": "2026-05-22",
+        "status": "overdue",
+        "paymentMethod": "cash",
+        "txnId": "",
+        "proofImageName": "",
+        "proofImageUrl": "",
+        "proofMimeType": ""
+      }
+    ]
+  },
+  {
+    "tenantId": "51209",
+    "fullName": "Pooja Singh",
+    "phone": "9876501209",
+    "email": "pooja.test@example.com",
+    "monthlyRent": 9400,
+    "rentPaid": 9400,
+    "paidOnDate": "2026-05-09",
+    "billingAnchorDate": "2026-05-09",
+    "nextDueDate": "2026-06-08",
+    "idNumber": "TEST-ID-51209",
+    "createdAt": "2026-05-09T12:00:00.000Z",
+    "updatedAt": "2026-05-09T12:00:00.000Z",
+    "assignment": {
+      "hostelId": "owner-hostel-skyline",
+      "hostelName": "Skyline Comforts",
+      "roomNumber": "201",
+      "sharingType": "3 sharing",
+      "moveInDate": "2026-05-09"
+    },
+    "paymentHistory": [
+      {
+        "paymentId": "pay-51209",
+        "amount": 9400,
+        "paidOnDate": "2026-05-09",
+        "nextDueDate": "2026-06-08",
+        "status": "active",
+        "paymentMethod": "cash",
+        "txnId": "",
+        "proofImageName": "",
+        "proofImageUrl": "",
+        "proofMimeType": ""
+      }
+    ]
+  },
+  {
+    "tenantId": "51210",
+    "fullName": "Vikram Das",
+    "phone": "9876501210",
+    "email": "vikram.test@example.com",
+    "monthlyRent": 8700,
+    "rentPaid": 8700,
+    "paidOnDate": "2026-05-03",
+    "billingAnchorDate": "2026-05-03",
+    "nextDueDate": "2026-06-02",
+    "idNumber": "TEST-ID-51210",
+    "createdAt": "2026-05-03T12:00:00.000Z",
+    "updatedAt": "2026-05-03T12:00:00.000Z",
+    "assignment": {
+      "hostelId": "owner-hostel-skyline",
+      "hostelName": "Skyline Comforts",
+      "roomNumber": "302",
+      "sharingType": "2 sharing",
+      "moveInDate": "2026-05-03"
+    },
+    "paymentHistory": [
+      {
+        "paymentId": "pay-51210",
+        "amount": 8700,
+        "paidOnDate": "2026-05-03",
+        "nextDueDate": "2026-06-02",
+        "status": "active",
+        "paymentMethod": "cash",
+        "txnId": "",
+        "proofImageName": "",
+        "proofImageUrl": "",
+        "proofMimeType": ""
+      }
+    ]
+  },
+  {
+    "tenantId": "51211",
+    "fullName": "Ravi Kumar",
+    "phone": "9876501211",
+    "email": "ravi.test@example.com",
+    "monthlyRent": 300,
+    "rentPaid": 300,
+    "paidOnDate": "2026-05-22",
+    "billingAnchorDate": "2026-05-22",
+    "nextDueDate": "2026-05-22",
+    "idNumber": "TEST-ID-51211",
+    "createdAt": "2026-05-22T12:00:00.000Z",
+    "updatedAt": "2026-05-22T12:00:00.000Z",
+    "assignment": {
+      "hostelId": "owner-hostel-skyline",
+      "hostelName": "Skyline Comforts",
+      "roomNumber": "401",
+      "sharingType": "single",
+      "moveInDate": "2026-05-22"
+    },
+    "paymentHistory": [
+      {
+        "paymentId": "pay-51211",
+        "amount": 300,
+        "paidOnDate": "2026-05-22",
+        "nextDueDate": "2026-05-22",
+        "status": "overdue",
+        "paymentMethod": "cash",
+        "txnId": "",
+        "proofImageName": "",
+        "proofImageUrl": "",
+        "proofMimeType": ""
+      }
+    ],
+    "billingCycle": "daily"
+  }
+]

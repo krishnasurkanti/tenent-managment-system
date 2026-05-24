@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(h['hostelName'], ':', [\\(r['roomNumber'], r.get\\('occupied',0\\), r.get\\('bedCount',0\\), [b.get\\('label','?'\\)+':'+str\\(b.get\\('occupied',False\\)\\) for b in r.get\\('beds',[]\\)]\\) for r in h.get\\('rooms',[]\\)]\\) for h in d.get\\('hostels',[]\\)]\")",
+      "Bash(node -e \"const d=require\\('./.data/hostels.json'\\); d.hostels.forEach\\(h=>{ console.log\\(h.hostelName\\); h.rooms?.forEach\\(r=>{ console.log\\('  Room',r.roomNumber,'occupied:',r.occupied,'beds:',r.beds?.map\\(b=>b.label+':'+b.occupied\\)\\); }\\); }\\);\")",
+      "Bash(node -e \"const d=require\\('./.data/hostels.json'\\); console.log\\(JSON.stringify\\(Object.keys\\(d\\)\\)\\); const first=Array.isArray\\(d\\)?d[0]:d; console.log\\(JSON.stringify\\(Object.keys\\(first||{}\\)\\)\\);\")",
+      "Bash(node -e \"const d=require\\('./.data/admin-control.json'\\); const owners=d.owners||d; const arr=Array.isArray\\(owners\\)?owners:Object.values\\(owners\\); arr.forEach\\(o=>{ \\(o.hostels||[]\\).forEach\\(h=>{ console.log\\(o.email||o.id, h.hostelName\\); h.rooms?.forEach\\(r=>{ console.log\\('  Room',r.roomNumber,'occupied:',r.occupied,'beds:',JSON.stringify\\(r.beds?.map\\(b=>\\({l:b.label,occ:b.occupied}\\)\\)\\)\\); }\\); }\\); }\\);\")",
+      "Bash(node -e \"const d=require\\('./.data/admin-control.json'\\); console.log\\(JSON.stringify\\(d\\).slice\\(0,200\\)\\);\")",
+      "Bash(node -e ' *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\surka\\\\Desktop\\\\Tenant managment systemmain\\\\src\" -Recurse -Include \"*login*\" -ErrorAction SilentlyContinue)",
+      "PowerShell(head -30)",
+      "Read(//c/Users/surka/Desktop/Tenant managment systemmain/**)",
+      "Bash(rm -f src/features/owner/complaints/OwnerComplaintsPage.tsx)",
+      "Bash(rmdir src/features/owner/complaints)",
+      "Bash(rm -rf src/app/audit-admin-login src/app/audit-login)",
+      "Bash(git reset *)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(JWT_SECRET=test-secret-for-playwright-testing-minimum-32-chars DEMO_USERNAME=surkanti1703 DEMO_PASSWORD=Kk17030202@ npm run build)"
+    ]
+  }
+}

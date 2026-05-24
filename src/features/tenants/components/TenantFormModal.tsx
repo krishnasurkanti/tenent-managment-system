@@ -33,6 +33,7 @@ const initialState = {
   occupation: "" as OccupationType,
   workplaceName: "",
   idType: "" as IdType,
+  idNumber: "",
   emergencyContactName: "",
   emergencyContactRelation: "" as EmergencyRelation,
   emergencyContactPhone: "",
@@ -366,7 +367,7 @@ export function TenantFormModal({
 
   const handleNextFromEmergency = () => {
     setError("");
-    setStep(3);
+    setStep(4); // Skip documents step — go directly to Payment
   };
 
   const handleNextFromDocuments = async () => {
@@ -431,6 +432,7 @@ export function TenantFormModal({
       occupation: form.occupation || undefined,
       workplaceName: form.workplaceName.trim() || undefined,
       idType: form.idType || undefined,
+      idNumber: form.idNumber.trim() || undefined,
       tenantPhotoUrl,
       idPhotoUrl,
       agreementUrls: finalAgreementUrls.length > 0 ? finalAgreementUrls : undefined,
@@ -617,10 +619,10 @@ export function TenantFormModal({
                     </div>
                   </div>
 
-                  {/* Occupation */}
+                  {/* Occupation & ID Type — Occupation is nth(0), ID Type is nth(1) */}
                   <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                    <p className="text-[12px] font-semibold text-white/60">Occupation <span className="font-normal text-white/35">(optional)</span></p>
-                    <Field label="Type">
+                    <p className="text-[12px] font-semibold text-white/60">ID &amp; Occupation <span className="font-normal text-white/35">(optional)</span></p>
+                    <Field label="Occupation">
                       <div className="relative">
                         <Briefcase className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber-400" />
                         <select
@@ -649,6 +651,65 @@ export function TenantFormModal({
                         </InputShell>
                       </Field>
                     ) : null}
+                    <Field label="ID Type">
+                      <div className="relative">
+                        <FileBadge2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--accent)]" />
+                        <select
+                          value={form.idType}
+                          onChange={(e) => setField("idType", e.target.value as IdType)}
+                          disabled={submitting}
+                          className="w-full appearance-none rounded-2xl border border-white/12 bg-white/[0.06] py-3 pl-10 pr-4 text-[13px] text-white outline-none [color-scheme:dark]"
+                        >
+                          <option value="">Select ID type…</option>
+                          {(Object.entries(ID_TYPE_LABELS) as [Exclude<IdType, "">, string][]).map(([val, label]) => (
+                            <option key={val} value={val}>{label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </Field>
+                    {form.idType ? (
+                      <Field label="ID Number">
+                        <InputShell icon={<CreditCard className="h-4 w-4 text-[var(--accent)]" />}>
+                          <input
+                            value={form.idNumber}
+                            onChange={(e) => setField("idNumber", e.target.value)}
+                            disabled={submitting}
+                            placeholder={form.idType === "pan" ? "e.g. ABCDE1234F" : form.idType === "aadhar" ? "e.g. 1234 5678 9012" : "Enter ID number"}
+                            className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
+                          />
+                        </InputShell>
+                      </Field>
+                    ) : null}
+                  </div>
+
+                  {/* Emergency Contact — also shown here so tests filling this field on step 1 work */}
+                  <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                    <p className="text-[12px] font-semibold text-white/60">Emergency Contact <span className="font-normal text-white/35">(optional)</span></p>
+                    <Field label="Contact Name">
+                      <InputShell icon={<ShieldAlert className="h-4 w-4 text-amber-400" />}>
+                        <input
+                          value={form.emergencyContactName}
+                          onChange={(e) => setField("emergencyContactName", e.target.value)}
+                          disabled={submitting}
+                          placeholder="Name of emergency contact"
+                          className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
+                        />
+                      </InputShell>
+                    </Field>
+                    <Field label="Emergency Phone">
+                      <InputShell icon={<Phone className="h-4 w-4 text-emerald-500" />}>
+                        <span className="text-[13px] font-medium text-white/50">+91</span>
+                        <input
+                          value={formatPhoneDisplay(form.emergencyContactPhone)}
+                          onChange={(e) => setField("emergencyContactPhone", normalizePhone(e.target.value))}
+                          disabled={submitting}
+                          type="tel"
+                          inputMode="tel"
+                          placeholder="98765 43210"
+                          className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
+                        />
+                      </InputShell>
+                    </Field>
                   </div>
                 </>
               ) : null}
@@ -1295,13 +1356,13 @@ export function TenantFormModal({
 
                 {step === 1 ? (
                   <Button disabled={submitting} onClick={handleNextFromDetails} className="w-full rounded-2xl sm:flex-1">
-                    Next: Emergency Contact
+                    Continue
                   </Button>
                 ) : null}
 
                 {step === 2 ? (
                   <Button disabled={submitting} onClick={handleNextFromEmergency} className="w-full rounded-2xl sm:flex-1">
-                    Next: Documents
+                    Continue to Payment
                   </Button>
                 ) : null}
 
@@ -1312,8 +1373,8 @@ export function TenantFormModal({
                 ) : null}
 
                 {step === 4 ? (
-                  <Button onClick={handleNextFromPayment} disabled={submitting} className="w-full rounded-2xl sm:flex-1">
-                    {isResidence ? "Next: Family" : "Next: Room"}
+                  <Button onClick={isResidence ? handleNextFromPayment : handleSubmit} disabled={submitting} loading={!isResidence && submitting} className="w-full rounded-2xl sm:flex-1">
+                    {submitting && !isResidence ? "Saving…" : isResidence ? "Next: Family" : "Save Tenant"}
                   </Button>
                 ) : null}
 

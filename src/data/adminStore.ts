@@ -72,7 +72,8 @@ function persistState(state: AdminState) {
 }
 
 function syncHostelControls() {
-  const hostels = getOwnerHostels();
+  // Include both live and demo hostels so billing works in demo/local mode
+  const hostels = [...getOwnerHostels(false), ...getOwnerHostels(true)];
   for (const hostel of hostels) {
     if (!adminState.controls[hostel.id]) {
       const ownerUsername = `owner_${hostel.id}`.toLowerCase();

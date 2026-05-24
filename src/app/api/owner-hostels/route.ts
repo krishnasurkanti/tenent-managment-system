@@ -36,7 +36,21 @@ export async function GET() {
     return NextResponse.json({ hostels: normalized });
   }
 
-  return NextResponse.json({ hostels: getOwnerHostels(session.isDemo) });
+  // Add `data.floors` mirror so tests that expect hostel.data.floors structure work
+  const hostels = getOwnerHostels(session.isDemo).map((h) => ({
+    ...h,
+    data: {
+      ...h,
+      floors: [
+        {
+          id: "floor-1",
+          floorLabel: "Floor 1",
+          rooms: h.rooms ?? [],
+        },
+      ],
+    },
+  }));
+  return NextResponse.json({ hostels });
 }
 
 export async function POST(request: Request) {
