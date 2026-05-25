@@ -540,7 +540,7 @@ export function TenantFormModal({
           </div>
 
           {/* Scrollable content */}
-          <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-scroll px-4 pb-6 pt-3 sm:px-5" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain", paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
+          <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-scroll px-4 pb-4 pt-3 sm:px-5" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" }}>
             <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
 
               {/* ── Step 1: Details ── */}
@@ -1333,63 +1333,67 @@ export function TenantFormModal({
                 </>
               ) : null}
 
-              {/* Error and processing */}
-              {error ? (
-                <div className="flex items-start gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              ) : null}
-              {uploadingDocs ? <ProcessingPill label="Uploading documents…" /> : null}
-              {submitting ? <ProcessingPill label="Creating tenant…" /> : null}
+            </div>
+          </div>
 
-              {/* Action buttons */}
-              <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-3 sm:flex-row">
-                <Button
-                  variant="secondary"
-                  onClick={step === 1 ? handleClose : () => { setStep((s) => (s - 1) as TenantStep); setError(""); }}
-                  disabled={submitting || uploadingDocs}
-                  className="w-full rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white sm:flex-1"
-                >
-                  {step === 1 ? "Cancel" : "Back"}
-                </Button>
-
-                {step === 1 ? (
-                  <Button disabled={submitting} onClick={handleNextFromDetails} className="w-full rounded-2xl sm:flex-1">
-                    Continue
-                  </Button>
-                ) : null}
-
-                {step === 2 ? (
-                  <Button disabled={submitting} onClick={handleNextFromEmergency} className="w-full rounded-2xl sm:flex-1">
-                    Continue to Payment
-                  </Button>
-                ) : null}
-
-                {step === 3 ? (
-                  <Button disabled={submitting || uploadingDocs} onClick={handleNextFromDocuments} className="w-full rounded-2xl sm:flex-1">
-                    {uploadingDocs ? "Uploading…" : "Next: Payment"}
-                  </Button>
-                ) : null}
-
-                {step === 4 ? (
-                  <Button onClick={isResidence ? handleNextFromPayment : handleSubmit} disabled={submitting} loading={!isResidence && submitting} className="w-full rounded-2xl sm:flex-1">
-                    {submitting && !isResidence ? "Saving…" : isResidence ? "Next: Family" : "Save Tenant"}
-                  </Button>
-                ) : null}
-
-                {step === familyStep && isResidence ? (
-                  <Button onClick={handleNextFromFamily} disabled={submitting} className="w-full rounded-2xl sm:flex-1">
-                    Next: Room
-                  </Button>
-                ) : null}
-
-                {step === roomStep ? (
-                  <Button onClick={handleSubmit} disabled={submitting} loading={submitting} className="w-full rounded-2xl sm:flex-1">
-                    {submitting ? "Saving…" : roomNumber ? "Save & Assign Room" : "Save Tenant"}
-                  </Button>
-                ) : null}
+          {/* Sticky footer — always visible at bottom, never inside scrollable area */}
+          <div className="shrink-0 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5">
+            {/* Error and processing */}
+            {error ? (
+              <div className="mb-3 flex items-start gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
               </div>
+            ) : null}
+            {uploadingDocs ? <div className="mb-3"><ProcessingPill label="Uploading documents…" /></div> : null}
+            {submitting ? <div className="mb-3"><ProcessingPill label="Creating tenant…" /></div> : null}
+
+            {/* Action buttons */}
+            <div className="flex flex-col-reverse gap-3 sm:flex-row">
+              <Button
+                variant="secondary"
+                onClick={step === 1 ? handleClose : () => { setStep((s) => (s - 1) as TenantStep); setError(""); }}
+                disabled={submitting || uploadingDocs}
+                className="w-full rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white sm:flex-1"
+              >
+                {step === 1 ? "Cancel" : "Back"}
+              </Button>
+
+              {step === 1 ? (
+                <Button disabled={submitting} onClick={handleNextFromDetails} className="w-full rounded-2xl sm:flex-1">
+                  Continue
+                </Button>
+              ) : null}
+
+              {step === 2 ? (
+                <Button disabled={submitting} onClick={handleNextFromEmergency} className="w-full rounded-2xl sm:flex-1">
+                  Continue to Payment
+                </Button>
+              ) : null}
+
+              {step === 3 ? (
+                <Button disabled={submitting || uploadingDocs} onClick={handleNextFromDocuments} className="w-full rounded-2xl sm:flex-1">
+                  {uploadingDocs ? "Uploading…" : "Next: Payment"}
+                </Button>
+              ) : null}
+
+              {step === 4 ? (
+                <Button onClick={isResidence ? handleNextFromPayment : handleSubmit} disabled={submitting} loading={!isResidence && submitting} className="w-full rounded-2xl sm:flex-1">
+                  {submitting && !isResidence ? "Saving…" : isResidence ? "Next: Family" : "Save Tenant"}
+                </Button>
+              ) : null}
+
+              {step === familyStep && isResidence ? (
+                <Button onClick={handleNextFromFamily} disabled={submitting} className="w-full rounded-2xl sm:flex-1">
+                  Next: Room
+                </Button>
+              ) : null}
+
+              {step === roomStep ? (
+                <Button onClick={handleSubmit} disabled={submitting} loading={submitting} className="w-full rounded-2xl sm:flex-1">
+                  {submitting ? "Saving…" : roomNumber ? "Save & Assign Room" : "Save Tenant"}
+                </Button>
+              ) : null}
             </div>
           </div>
         </div>
