@@ -2,6 +2,23 @@ export const PENDING_ID_NUMBER = "PENDING-ID";
 
 export type BillingCycle = "daily" | "weekly" | "monthly";
 
+export type TenantDiscount = {
+  type: "fixed" | "percent";
+  value: number;          // ₹ amount (fixed) or % (percent)
+  monthsTotal: number;    // total months to apply discount
+  monthsUsed: number;     // months already applied
+  note?: string;
+  appliedAt: string;      // YYYY-MM-DD
+};
+
+export type TenantPendingBalance = {
+  amount: number;          // remaining balance owed
+  originalRent: number;    // full rent that was due that cycle
+  partialPaidDate: string; // date partial payment was made
+  deferredTo?: string;     // optional reminder date YYYY-MM-DD
+  note?: string;
+};
+
 export type IdType = "aadhar" | "pan" | "driving_licence" | "other";
 
 export type EmergencyRelation = "father" | "mother" | "brother" | "sister" | "spouse" | "friend" | "other";
@@ -41,6 +58,8 @@ export type TenantRecord = {
   updatedAt: string;
   assignment?: TenantAssignment;
   paymentHistory: TenantPaymentHistory[];
+  activeDiscount?: TenantDiscount;
+  pendingBalance?: TenantPendingBalance;
 };
 
 export type TenantFamilyMember = {
@@ -60,6 +79,9 @@ export type TenantPaymentHistory = {
   proofImageName?: string;
   proofImageUrl?: string;
   proofMimeType?: string;
+  isPartial?: boolean;         // true = partial; balance deferred
+  discountAmount?: number;     // ₹ discount applied this payment
+  note?: string;               // balance-collection note or other memo
 };
 
 export type TenantAssignment = {

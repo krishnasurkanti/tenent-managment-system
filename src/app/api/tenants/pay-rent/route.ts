@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { recordTenantPayment } from "@/data/tenantStore";
+import { recordTenantPayment, type RecordPaymentOptions } from "@/data/tenantStore";
 import { savePaymentProofImage } from "@/lib/payment-proof-upload";
 import { validatePaymentProofWithMagicBytes } from "@/lib/document-upload";
 import { requireOwnerSession } from "@/lib/session-mode";
@@ -25,6 +25,7 @@ export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
   let tenantId: string, amount: number, paidOnDate: string, paymentMethod: string, txnId: string;
   let proofImage: FormDataEntryValue | null = null;
+  let payOptions: RecordPaymentOptions = {};
 
   if (contentType.includes("application/json")) {
     const json = await request.json() as Record<string, unknown>;
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
     paidOnDate = String(json.paidOnDate ?? "").trim();
     paymentMethod = String(json.paymentMethod ?? "").trim().toLowerCase();
     txnId = String(json.txnId ?? "").trim();
+    payOptions = extractPayOptions(json);
   } else {
     const formData = await request.formData();
     tenantId = String(formData.get("tenantId") ?? "").trim();
@@ -41,6 +43,10 @@ export async function POST(request: Request) {
     paymentMethod = String(formData.get("paymentMethod") ?? "").trim().toLowerCase();
     txnId = String(formData.get("txnId") ?? "").trim();
     proofImage = formData.get("proofImage");
+    // Extract discount/partial fields from FormData
+    const fdObj: Record<string, unknown> = {};
+    for (const [k, v] of formData.entries()) { if (k !== "proofImage") fdObj[k] = v; }
+    payOptions = extractPayOptions(fdObj);
   }
 
   if (!tenantId || !paidOnDate || !Number.isFinite(amount) || amount < 0 || !paymentMethod) {
@@ -134,6 +140,7 @@ export async function POST(request: Request) {
       proofImageUrl,
       proofMimeType,
       session.isDemo,
+      payOptions,
     );
     return NextResponse.json({ tenant });
   } catch (error) {
@@ -142,4 +149,18 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+}
+
+function extractPayOptions(src: Record<string, unknown>): RecordPaymentOptions {
+  const discountTypeRaw = String(src.discountType ?? "").trim();
+  const discountType = discountTypeRaw === "fixed" || discountTypeRaw === "percent" ? discountTypeRaw : undefined;
+  const discountValue = discountType ? Math.max(0, Number(src.discountValue ?? 0)) : undefined;
+  const discountMonths = discountType ? Math.max(1, Math.floor(Number(src.discountMonths ?? 1))) : undefined;
+  const discountNote = discountType ? String(src.discountNote ?? "").trim() || undefined : undefined;
+  const isPartial = src.isPartial === true || src.isPartial === "true";
+  const isBalanceCollection = src.isBalanceCollection === true || src.isBalanceCollection === "true";
+  const partialNote = String(src.partialNote ?? "").trim() || undefined;
+  const balanceNote = String(src.balanceNote ?? "").trim() || undefined;
+  const deferredTo = String(src.deferredTo ?? "").trim() || undefined;
+  return { discountType, discountValue, discountMonths, discountNote, isPartial, partialNote, deferredTo, isBalanceCollection, balanceNote };
 }

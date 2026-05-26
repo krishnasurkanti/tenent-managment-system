@@ -515,6 +515,21 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
   return tenant;
 }
 
+export type RecordPaymentOptions = {
+  /** Apply a discount this month */
+  discountType?: "fixed" | "percent";
+  discountValue?: number;
+  discountMonths?: number;   // set when first creating a discount; ignored if one is active
+  discountNote?: string;
+  /** Recording a partial payment — amount < full due rent */
+  isPartial?: boolean;
+  partialNote?: string;
+  deferredTo?: string;       // optional reminder date for balance
+  /** Collecting the deferred balance from a previous partial payment */
+  isBalanceCollection?: boolean;
+  balanceNote?: string;
+};
+
 export function recordTenantPayment(
   tenantId: string,
   amount: number,
@@ -525,6 +540,7 @@ export function recordTenantPayment(
   proofImageUrl?: string,
   proofMimeType?: string,
   isDemo = false,
+  options: RecordPaymentOptions = {},
 ) {
   const records = isDemo ? demoTenantRecords : tenantRecords;
   const tenant = records.find((item) => item.tenantId === tenantId);
@@ -540,6 +556,121 @@ export function recordTenantPayment(
   if (paymentMethod !== "cash" && paymentMethod !== "online") {
     throw new Error("Select a valid payment mode.");
   }
+
+  const {
+    discountType,
+    discountValue,
+    discountMonths,
+    discountNote,
+    isPartial,
+    partialNote,
+    deferredTo,
+    isBalanceCollection,
+    balanceNote,
+  } = options;
+
+  // ── Balance collection ─────────────────────────────────────────────────────
+  // Owner is collecting the deferred balance from a previous partial payment.
+  // This advances the billing cycle because full rent is now settled.
+  if (isBalanceCollection && tenant.pendingBalance) {
+    const balanceEntry = tenant.pendingBalance;
+    tenant.pendingBalance = undefined;
+    const nextDueDate = calculateNextDueDate(
+      balanceEntry.partialPaidDate, // cycle started on original partial date
+      tenant.billingAnchorDate,
+      tenant.billingCycle ?? "monthly",
+    );
+    const status = getDueStatus(nextDueDate, tenant.billingCycle ?? "monthly");
+    tenant.rentPaid = amount;
+    tenant.paidOnDate = paidOnDate;
+    tenant.nextDueDate = nextDueDate;
+    tenant.paymentHistory.unshift({
+      paymentId: `pay-${tenantId}-${crypto.randomUUID()}`,
+      amount,
+      paidOnDate,
+      nextDueDate,
+      status: status.tone === "green" ? "active" : status.tone === "yellow" || status.tone === "orange" ? "due-soon" : "overdue",
+      paymentMethod,
+      txnId: txnId?.trim() ?? "",
+      proofImageName: proofImageName?.trim() ?? "",
+      proofImageUrl: proofImageUrl?.trim() ?? "",
+      proofMimeType: proofMimeType?.trim() ?? "",
+      note: balanceNote?.trim() || `Balance collected for cycle starting ${balanceEntry.partialPaidDate}.`,
+    });
+    if (tenant.paymentHistory.length > 120) tenant.paymentHistory = tenant.paymentHistory.slice(0, 120);
+    if (!isDemo) persistTenantRecords(tenantRecords);
+    return tenant;
+  }
+
+  // ── Discount handling ──────────────────────────────────────────────────────
+  let discountApplied = 0;
+  if (discountType && discountValue !== undefined && discountValue > 0) {
+    if (!tenant.activeDiscount) {
+      // Create new discount
+      tenant.activeDiscount = {
+        type: discountType,
+        value: discountValue,
+        monthsTotal: discountMonths ?? 1,
+        monthsUsed: 0,
+        note: discountNote?.trim() || undefined,
+        appliedAt: paidOnDate,
+      };
+    }
+  }
+
+  if (tenant.activeDiscount) {
+    const disc = tenant.activeDiscount;
+    discountApplied =
+      disc.type === "fixed"
+        ? disc.value
+        : Math.round((tenant.monthlyRent * disc.value) / 100);
+    disc.monthsUsed += 1;
+    if (disc.monthsUsed >= disc.monthsTotal) {
+      tenant.activeDiscount = undefined; // expired
+    }
+  }
+
+  // ── Partial payment ────────────────────────────────────────────────────────
+  // A partial payment does NOT advance the billing cycle — nextDueDate stays.
+  // The deferred balance is stored so the owner can collect it later.
+  if (isPartial) {
+    const effectiveRent = Math.max(0, tenant.monthlyRent - discountApplied);
+    const balanceAmount = Math.max(0, effectiveRent - amount);
+    if (balanceAmount > 0) {
+      tenant.pendingBalance = {
+        amount: balanceAmount,
+        originalRent: effectiveRent,
+        partialPaidDate: paidOnDate,
+        deferredTo: deferredTo || undefined,
+        note: partialNote?.trim() || undefined,
+      };
+    }
+    // nextDueDate unchanged — cycle hasn't turned yet
+    tenant.rentPaid = amount;
+    tenant.paidOnDate = paidOnDate;
+    tenant.paymentHistory.unshift({
+      paymentId: `pay-${tenantId}-${crypto.randomUUID()}`,
+      amount,
+      paidOnDate,
+      nextDueDate: tenant.nextDueDate, // same due — not yet settled
+      status: "due-soon",             // still has a balance
+      paymentMethod,
+      txnId: txnId?.trim() ?? "",
+      proofImageName: proofImageName?.trim() ?? "",
+      proofImageUrl: proofImageUrl?.trim() ?? "",
+      proofMimeType: proofMimeType?.trim() ?? "",
+      isPartial: true,
+      discountAmount: discountApplied > 0 ? discountApplied : undefined,
+      note: partialNote?.trim() || `Partial payment — ₹${balanceAmount.toLocaleString("en-IN")} balance pending.`,
+    });
+    if (tenant.paymentHistory.length > 120) tenant.paymentHistory = tenant.paymentHistory.slice(0, 120);
+    if (!isDemo) persistTenantRecords(tenantRecords);
+    return tenant;
+  }
+
+  // ── Normal full payment ────────────────────────────────────────────────────
+  // If tenant had a pending balance, clear it (owner collected everything together).
+  if (tenant.pendingBalance) tenant.pendingBalance = undefined;
 
   const nextDueDate = calculateNextDueDate(
     paidOnDate,
@@ -563,6 +694,7 @@ export function recordTenantPayment(
     proofImageName: proofImageName?.trim() ?? "",
     proofImageUrl: proofImageUrl?.trim() ?? "",
     proofMimeType: proofMimeType?.trim() ?? "",
+    discountAmount: discountApplied > 0 ? discountApplied : undefined,
   });
 
   // Cap history at 120 entries to prevent unbounded growth

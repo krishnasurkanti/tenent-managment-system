@@ -295,6 +295,11 @@ function OwnerTenantsPageContent() {
                         <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--fg-secondary)]">
                           #{fmtTenantId(tenant.tenantId)}
                         </span>
+                        {tenant.pendingBalance && (
+                          <span className="inline-flex items-center rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400">
+                            Balance ₹{tenant.pendingBalance.amount.toLocaleString("en-IN")}
+                          </span>
+                        )}
                         {hasMissingInfo(tenant) && (
                           <button
                             type="button"
@@ -418,6 +423,11 @@ function OwnerTenantsPageContent() {
                             <Link href={`/owner/tenants/${tenant.tenantId}`} className="font-medium text-white transition hover:text-[var(--accent-electric)]">
                               {tenant.fullName}
                             </Link>
+                            {tenant.pendingBalance && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400">
+                                Balance ₹{tenant.pendingBalance.amount.toLocaleString("en-IN")}
+                              </span>
+                            )}
                             {hasMissingInfo(tenant) && (
                               <button
                                 type="button"
