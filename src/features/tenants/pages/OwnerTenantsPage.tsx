@@ -44,6 +44,10 @@ const CompleteProfileModal = dynamic(
   () => import("@/features/tenants/components/CompleteProfileModal").then((m) => ({ default: m.CompleteProfileModal })),
   { ssr: false },
 );
+const RemoveTenantSearch = dynamic(
+  () => import("@/features/tenants/components/RemoveTenantSearch").then((m) => ({ default: m.RemoveTenantSearch })),
+  { ssr: false },
+);
 
 export default function OwnerTenantsPage() {
   return (
@@ -208,6 +212,9 @@ function OwnerTenantsPageContent() {
               </button>
             </div>
           </div>
+          <div className="mt-3">
+            <RemoveTenantSearch tenants={tenants} />
+          </div>
 
           {/* Mobile search */}
           <div className="relative mt-3">
@@ -349,6 +356,9 @@ function OwnerTenantsPageContent() {
               >
                 Add New Tenant
               </button>
+              <div className="w-[160px]">
+                <RemoveTenantSearch tenants={tenants} />
+              </div>
             </div>
           </div>
         </div>

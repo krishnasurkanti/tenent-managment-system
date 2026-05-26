@@ -23,6 +23,10 @@ export type TenantRecord = {
   agreementUrls?: string[];
   monthlyRent: number;
   rentPaid: number;
+  advanceAmount?: number;
+  serviceFeeAmount?: number;
+  advanceBalance?: number;
+  serviceFeeCollected?: number;
   paidOnDate: string;
   billingAnchorDate: string;
   nextDueDate: string;

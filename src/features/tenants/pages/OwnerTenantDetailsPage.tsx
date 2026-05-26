@@ -63,6 +63,12 @@ export default async function OwnerTenantDetailsPage({
           <OwnerQuickStat label="Next due" value={formatPaymentDate(tenant.nextDueDate)} helper={`Tenant ID ${fmtTenantId(tenant.tenantId)}`} />
         </div>
 
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <OwnerQuickStat label="Refundable Advance" value={`Rs ${(tenant.advanceAmount ?? 0).toLocaleString("en-IN")}`} helper="Eligible for owner-confirmed refund" />
+          <OwnerQuickStat label="Service Fee" value={`Rs ${(tenant.serviceFeeAmount ?? 0).toLocaleString("en-IN")}`} helper="One-time non-refundable fee" />
+          <OwnerQuickStat label="Advance Balance" value={`Rs ${(tenant.advanceBalance ?? tenant.advanceAmount ?? 0).toLocaleString("en-IN")}`} helper="Before settlement adjustments" />
+        </div>
+
         {(!tenant.phone || !tenant.idType || !tenant.idPhotoUrl) && (
           <CompleteProfileButton tenant={tenant} />
         )}

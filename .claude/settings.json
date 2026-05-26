@@ -15,7 +15,17 @@
       "Bash(rm -rf src/app/audit-admin-login src/app/audit-login)",
       "Bash(git reset *)",
       "Bash(node_modules/.bin/tsc --noEmit)",
-      "Bash(JWT_SECRET=test-secret-for-playwright-testing-minimum-32-chars DEMO_USERNAME=surkanti1703 DEMO_PASSWORD=Kk17030202@ npm run build)"
+      "Bash(JWT_SECRET=test-secret-for-playwright-testing-minimum-32-chars DEMO_USERNAME=surkanti1703 DEMO_PASSWORD=Kk17030202@ npm run build)",
+      "Bash(Invoke-WebRequest -Uri \"http://localhost:3000/api/owner-billing\" -UseBasicParsing)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:3000/api/owner-billing\" -UseBasicParsing -ErrorAction SilentlyContinue)",
+      "Bash(git stash *)",
+      "Bash(NEXT_TELEMETRY_DISABLED=1 npx tsc --noEmit)",
+      "Bash(set NEXT_TELEMETRY_DISABLED=1)",
+      "Bash(set DEMO_USERNAME=surkanti1703)",
+      "Bash(set DEMO_PASSWORD=Kk17030202@)",
+      "Bash(set JWT_SECRET=f9eae8709cc37d6d866f07240ec2e42d5c52a9dfa7f41469bd53faaa748f9c6a)",
+      "Bash(grep -E \"failed$|Error:.*spec\")",
+      "Bash(grep -E \"Error:|failed$|passed$\")"
     ]
   }
 }

@@ -1,6 +1,8 @@
+
 import { NextResponse } from "next/server";
 import { getTenantRecords } from "@/data/tenantStore";
 import { requireOwnerSession } from "@/lib/session-mode";
+
 import { backendFetch } from "@/services/core/backend-api";
 import { getDueStatus } from "@/utils/payment";
 import type { TenantRecord } from "@/types/tenant";
@@ -25,6 +27,8 @@ function buildCSV(tenants: TenantRecord[]): string {
     "Room",
     "Monthly Rent (Rs)",
     "Rent Paid (Rs)",
+    "Refundable Advance (Rs)",
+    "Service Fee (Rs)",
     "Paid On",
     "Next Due",
     "Status",
@@ -43,6 +47,8 @@ function buildCSV(tenants: TenantRecord[]): string {
       t.assignment?.roomNumber ?? "",
       t.monthlyRent,
       t.rentPaid,
+      t.advanceAmount ?? 0,
+      t.serviceFeeAmount ?? 0,
       t.paidOnDate,
       t.nextDueDate,
       label,

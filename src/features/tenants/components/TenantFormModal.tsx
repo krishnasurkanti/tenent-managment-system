@@ -39,6 +39,8 @@ const initialState = {
   emergencyContactPhone: "",
   monthlyRent: "",
   rentPaid: "",
+  advanceAmount: "",
+  serviceFeeAmount: "",
   paidOnDate: new Date().toISOString().slice(0, 10),
 };
 
@@ -219,7 +221,9 @@ export function TenantFormModal({
   const paymentCoverage = Number(form.monthlyRent) > 0
     ? Math.min(100, Math.round((Number(form.rentPaid || 0) / Number(form.monthlyRent)) * 100))
     : 0;
-  const firstPaymentEntered = Number(form.rentPaid) > 0;
+  const firstPaymentTotal =
+    Number(form.rentPaid || 0) + Number(form.advanceAmount || 0) + Number(form.serviceFeeAmount || 0);
+  const firstPaymentEntered = firstPaymentTotal > 0;
 
   // Step numbers
   const familyStep: TenantStep = 5;
@@ -441,6 +445,8 @@ export function TenantFormModal({
       emergencyContactPhone: form.emergencyContactPhone || undefined,
       monthlyRent: form.monthlyRent,
       rentPaid: form.rentPaid || "0",
+      advanceAmount: form.advanceAmount || "0",
+      serviceFeeAmount: form.serviceFeeAmount || "0",
       paidOnDate: form.paidOnDate,
       firstPaymentReceiptUrl: receiptUrl,
       billingCycle,
@@ -1014,7 +1020,7 @@ export function TenantFormModal({
               {/* ── Step 4: Payment ── */}
               {step === 4 ? (
                 <>
-                  <SectionHead title="Payment Details" subtitle="Next step is room assignment. First due date is calculated automatically." />
+                  <SectionHead title="Payment Details" subtitle="Track rent, refundable advance, and one-time service fee separately." />
 
                   <div className="grid gap-2 md:grid-cols-[1.1fr_0.9fr]">
                     <div className="rounded-2xl border border-[rgba(99,102,241,0.26)] bg-[rgba(99,102,241,0.09)] p-3">
@@ -1025,7 +1031,7 @@ export function TenantFormModal({
                       </p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55">Payment coverage</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55">Rent coverage</p>
                       <p className="mt-1 text-sm font-semibold text-white">{paymentCoverage}% of first cycle</p>
                       <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/8">
                         <div className="h-full rounded-full bg-[linear-gradient(90deg,#22c55e_0%,#6366f1_100%)] transition-[width] duration-300" style={{ width: `${paymentCoverage}%` }} />
@@ -1049,7 +1055,7 @@ export function TenantFormModal({
                       </InputShell>
                     </Field>
 
-                    <Field label="First Payment Collected">
+                    <Field label="Rent Collected">
                       <InputShell icon={<CreditCard className="h-4 w-4 text-[var(--accent)]" />}>
                         <input
                           type="number"
@@ -1057,7 +1063,35 @@ export function TenantFormModal({
                           value={form.rentPaid}
                           onChange={(e) => setField("rentPaid", e.target.value)}
                           disabled={submitting}
-                          placeholder="0 if not collected yet"
+                          placeholder="Rent amount collected"
+                          className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
+                        />
+                      </InputShell>
+                    </Field>
+
+                    <Field label="Refundable Advance">
+                      <InputShell icon={<IndianRupee className="h-4 w-4 text-emerald-400" />}>
+                        <input
+                          type="number"
+                          min="0"
+                          value={form.advanceAmount}
+                          onChange={(e) => setField("advanceAmount", e.target.value)}
+                          disabled={submitting}
+                          placeholder="0 if not collected"
+                          className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
+                        />
+                      </InputShell>
+                    </Field>
+
+                    <Field label="One-time Service Fee">
+                      <InputShell icon={<Receipt className="h-4 w-4 text-amber-400" />}>
+                        <input
+                          type="number"
+                          min="0"
+                          value={form.serviceFeeAmount}
+                          onChange={(e) => setField("serviceFeeAmount", e.target.value)}
+                          disabled={submitting}
+                          placeholder="0 if not collected"
                           className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
                         />
                       </InputShell>
@@ -1074,6 +1108,16 @@ export function TenantFormModal({
                         />
                       </InputShell>
                     </Field>
+                  </div>
+
+                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300/70">First Payment Total</p>
+                        <p className="mt-1 text-[11px] text-white/45">Rent + refundable advance + service fee</p>
+                      </div>
+                      <p className="text-base font-semibold text-white">Rs {firstPaymentTotal.toLocaleString("en-IN")}</p>
+                    </div>
                   </div>
 
                   <div>

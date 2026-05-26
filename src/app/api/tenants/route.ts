@@ -1,5 +1,6 @@
 import { createHash } from "crypto";
 import { NextResponse } from "next/server";
+import { addFinanceLedgerEntry } from "@/data/financeLedgerStore";
 import { getOwnerHostelInventory } from "@/data/ownerHostelStore";
 import { assignTenantRoom, createTenantRecord, getTenantRecords, removeTenantRecord } from "@/data/tenantStore";
 import { calculateNextDueDate } from "@/utils/payment";
@@ -142,6 +143,8 @@ export async function POST(request: Request) {
   const emergencyContactPhone = String(body.emergencyContactPhone ?? "").trim() || undefined;
   const monthlyRent = Number(body.monthlyRent ?? 0);
   const rentPaid = Number(body.rentPaid ?? 0);
+  const advanceAmount = Number(body.advanceAmount ?? 0);
+  const serviceFeeAmount = Number(body.serviceFeeAmount ?? 0);
   const paidOnDate = String(body.paidOnDate ?? "").trim();
   const billingCycleRaw = String(body.billingCycle ?? "monthly").trim();
   const billingCycle = (billingCycleRaw === "daily" || billingCycleRaw === "weekly") ? billingCycleRaw : "monthly" as const;
@@ -159,7 +162,10 @@ export async function POST(request: Request) {
   if (!fullName || !Number.isFinite(monthlyRent) || monthlyRent < 0 || !Number.isFinite(rentPaid) || rentPaid < 0 || !paidOnDate) {
     return NextResponse.json({ message: "Name and payment details are required." }, { status: 400 });
   }
-  if (monthlyRent > 10_000_000 || rentPaid > 10_000_000) {
+  if (!Number.isFinite(advanceAmount) || advanceAmount < 0 || !Number.isFinite(serviceFeeAmount) || serviceFeeAmount < 0) {
+    return NextResponse.json({ message: "Advance and service fee must be valid amounts." }, { status: 400 });
+  }
+  if (monthlyRent > 10_000_000 || rentPaid > 10_000_000 || advanceAmount > 10_000_000 || serviceFeeAmount > 10_000_000) {
     return NextResponse.json({ message: "Rent amount cannot exceed 10,000,000." }, { status: 400 });
   }
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -198,6 +204,10 @@ export async function POST(request: Request) {
         emergencyContactPhone,
         monthlyRent,
         rentPaid,
+        advanceAmount,
+        serviceFeeAmount,
+        advanceBalance: advanceAmount,
+        serviceFeeCollected: serviceFeeAmount,
         paidOnDate,
         billingCycle,
         billingAnchorDate: liveAnchor,
@@ -226,6 +236,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: payload.message || "Unable to create tenant." }, { status: backendResponse.status });
     }
 
+    const createdTenant = payload.tenant as TenantRecord | undefined;
+    recordInitialLedgerEntries({
+      ownerId: session.ownerId ?? undefined,
+      hostelId,
+      tenantId: createdTenant?.tenantId ?? "",
+      tenantName: fullName,
+      advanceAmount,
+      serviceFeeAmount,
+      date: paidOnDate,
+      isDemo: session.isDemo,
+    });
+
     return NextResponse.json({ tenant: payload.tenant }, { status: 201 });
   }
 
@@ -246,6 +268,10 @@ export async function POST(request: Request) {
     emergencyContactPhone,
     monthlyRent,
     rentPaid,
+    advanceAmount,
+    serviceFeeAmount,
+    advanceBalance: advanceAmount,
+    serviceFeeCollected: serviceFeeAmount,
     paidOnDate,
     billingAnchorDate: demoAnchor,
     nextDueDate: calculateNextDueDate(paidOnDate, demoAnchor, billingCycle),
@@ -265,6 +291,16 @@ export async function POST(request: Request) {
         bedLabel,
       }, session.isDemo);
       const assignedBody = { tenant: assignedTenant };
+      recordInitialLedgerEntries({
+        ownerId: session.ownerId ?? undefined,
+        hostelId: assignedTenant.assignment?.hostelId ?? hostelId,
+        tenantId: assignedTenant.tenantId,
+        tenantName: assignedTenant.fullName,
+        advanceAmount,
+        serviceFeeAmount,
+        date: paidOnDate,
+        isDemo: session.isDemo,
+      });
       if (scopedKey) _setIdempotentResponse(scopedKey, payloadHash, 201, assignedBody);
       return NextResponse.json(assignedBody, { status: 201 });
     } catch (error) {
@@ -277,6 +313,66 @@ export async function POST(request: Request) {
   }
 
   const createdBody = { tenant };
+  recordInitialLedgerEntries({
+    ownerId: session.ownerId ?? undefined,
+    hostelId: tenant.assignment?.hostelId ?? hostelId,
+    tenantId: tenant.tenantId,
+    tenantName: tenant.fullName,
+    advanceAmount,
+    serviceFeeAmount,
+    date: paidOnDate,
+    isDemo: session.isDemo,
+  });
   if (scopedKey) _setIdempotentResponse(scopedKey, payloadHash, 201, createdBody);
   return NextResponse.json(createdBody, { status: 201 });
+}
+
+function recordInitialLedgerEntries({
+  ownerId,
+  hostelId,
+  tenantId,
+  tenantName,
+  advanceAmount,
+  serviceFeeAmount,
+  date,
+  isDemo,
+}: {
+  ownerId?: string;
+  hostelId?: string;
+  tenantId: string;
+  tenantName: string;
+  advanceAmount: number;
+  serviceFeeAmount: number;
+  date: string;
+  isDemo: boolean;
+}) {
+  if (!tenantId) return;
+
+  if (advanceAmount > 0) {
+    addFinanceLedgerEntry({
+      ownerId,
+      hostelId,
+      tenantId,
+      tenantName,
+      type: "advance_collected",
+      direction: "credit",
+      amount: advanceAmount,
+      date,
+      note: "Refundable advance collected at admission.",
+    }, isDemo);
+  }
+
+  if (serviceFeeAmount > 0) {
+    addFinanceLedgerEntry({
+      ownerId,
+      hostelId,
+      tenantId,
+      tenantName,
+      type: "service_fee_collected",
+      direction: "credit",
+      amount: serviceFeeAmount,
+      date,
+      note: "One-time non-refundable service fee collected at admission.",
+    }, isDemo);
+  }
 }

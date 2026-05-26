@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Download, FileBarChart2, TrendingUp, Users, Wallet } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
@@ -8,11 +8,32 @@ import { ownerPanelClass } from "@/components/ui/owner-theme";
 import { useHostelContext } from "@/store/hostel-context";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
 import { getDueStatus } from "@/utils/payment";
+import type { FinanceLedgerEntry } from "@/types/finance-ledger";
 
 export default function OwnerReportsPage() {
   const { currentHostel, currentHostelId } = useHostelContext();
   const { tenants: allTenants, loading } = useOwnerTenants(currentHostelId);
+  const [ledgerEntries, setLedgerEntries] = useState<FinanceLedgerEntry[]>([]);
   const downloadRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    if (!currentHostelId) {
+      setLedgerEntries([]);
+      return;
+    }
+
+    let cancelled = false;
+    void fetch(`/api/finance-ledger?hostelId=${encodeURIComponent(currentHostelId)}`, { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : { entries: [] })
+      .then((data: { entries?: FinanceLedgerEntry[] }) => {
+        if (!cancelled) setLedgerEntries(Array.isArray(data.entries) ? data.entries : []);
+      })
+      .catch(() => {
+        if (!cancelled) setLedgerEntries([]);
+      });
+
+    return () => { cancelled = true; };
+  }, [currentHostelId]);
 
   const tenants = currentHostel
     ? allTenants.filter((t) => t.assignment?.hostelId === currentHostel.id)
@@ -30,6 +51,17 @@ export default function OwnerReportsPage() {
     .filter((t) => getDueStatus(t.nextDueDate).tone === "green")
     .reduce((sum, t) => sum + t.rentPaid, 0);
   const collectionRate = totalRent > 0 ? Math.round((collectedRent / totalRent) * 100) : 0;
+  const advanceCollected = ledgerEntries
+    .filter((entry) => entry.type === "advance_collected")
+    .reduce((sum, entry) => sum + entry.amount, 0);
+  const serviceFeeCollected = ledgerEntries
+    .filter((entry) => entry.type === "service_fee_collected")
+    .reduce((sum, entry) => sum + entry.amount, 0);
+  const advanceRefunded = ledgerEntries
+    .filter((entry) => entry.type === "advance_refund")
+    .reduce((sum, entry) => sum + entry.amount, 0);
+  const grossIncome = collectedRent + advanceCollected + serviceFeeCollected;
+  const netAfterRefunds = grossIncome - advanceRefunded;
 
   const exportHref = currentHostelId
     ? `/api/tenants/export?hostelId=${encodeURIComponent(currentHostelId)}`
@@ -70,6 +102,21 @@ export default function OwnerReportsPage() {
               <SummaryRow label="Paid on time" value={`${paidCount} tenants`} color="green" />
               <SummaryRow label="Due soon" value={`${dueSoonCount} tenants`} color="yellow" />
               <SummaryRow label="Overdue" value={`${overdueCount} tenants`} color="red" />
+            </div>
+          </Card>
+
+          <Card className={`p-4 ${ownerPanelClass}`}>
+            <div className="mb-3 flex items-center gap-2">
+              <div className="rounded-xl bg-[color:var(--brand-soft)] p-2 text-[#9edcff]">
+                <FileBarChart2 className="h-4 w-4" />
+              </div>
+              <p className="text-sm font-semibold text-white">Advance & Service Ledger</p>
+            </div>
+            <div className="space-y-2">
+              <SummaryRow label="Advance collected" value={`Rs ${advanceCollected.toLocaleString("en-IN")}`} color="green" />
+              <SummaryRow label="Service fee collected" value={`Rs ${serviceFeeCollected.toLocaleString("en-IN")}`} color="green" />
+              <SummaryRow label="Advance refund debit" value={`Rs ${advanceRefunded.toLocaleString("en-IN")}`} color={advanceRefunded > 0 ? "red" : "default"} />
+              <SummaryRow label="Net after refunds" value={`Rs ${netAfterRefunds.toLocaleString("en-IN")}`} color={netAfterRefunds >= 0 ? "green" : "red"} />
             </div>
           </Card>
 

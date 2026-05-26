@@ -15,6 +15,10 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedTenantId, setSelectedTenantId] = useState("");
+  const [advanceRefundEligible, setAdvanceRefundEligible] = useState(false);
+  const [refundAdvance, setRefundAdvance] = useState(false);
+  const [refundAmount, setRefundAmount] = useState("");
+  const [settlementNote, setSettlementNote] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -46,6 +50,10 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
     setOpen(false);
     setQuery("");
     setSelectedTenantId("");
+    setAdvanceRefundEligible(false);
+    setRefundAdvance(false);
+    setRefundAmount("");
+    setSettlementNote("");
     setConfirmed(false);
     setSubmitting(false);
     setMessage("");
@@ -67,11 +75,23 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
       return;
     }
 
+    const numericRefund = Number(refundAmount || 0);
+    if (Number.isNaN(numericRefund) || numericRefund < 0) {
+      setError("Enter a valid refund amount.");
+      return;
+    }
+
     setSubmitting(true);
     setError("");
     setMessage("");
 
-    const { response, data } = await removeTenant(selectedTenant.tenantId);
+    const { response, data } = await removeTenant(selectedTenant.tenantId, {
+      advanceRefundEligible,
+      refundAdvance,
+      refundAmount: refundAdvance ? numericRefund : 0,
+      settlementNote,
+      settlementDate: new Date().toISOString().slice(0, 10),
+    });
 
     if (!response.ok) {
       setError(data.message ?? "Unable to remove tenant.");
@@ -169,6 +189,11 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                         disabled={submitting}
                         onClick={() => {
                           setSelectedTenantId(tenant.tenantId);
+                          const suggestedRefund = tenant.advanceBalance ?? tenant.advanceAmount ?? 0;
+                          setAdvanceRefundEligible(false);
+                          setRefundAdvance(false);
+                          setRefundAmount(String(suggestedRefund));
+                          setSettlementNote("");
                           setConfirmed(false);
                           setMessage("");
                           setError("");
@@ -201,6 +226,56 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                       Room {selectedTenant.assignment?.roomNumber ?? "-"}
                     </p>
                     <p className="mt-1">Removing this tenant will free the assigned room/bed for reuse. Payment history is preserved.</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] p-4 text-sm shadow-sm">
+                    <p className="font-semibold text-slate-900">Vacating settlement</p>
+                    <p className="mt-1 text-[13px] text-slate-600">
+                      Suggested refundable advance: Rs {(selectedTenant.advanceBalance ?? selectedTenant.advanceAmount ?? 0).toLocaleString("en-IN")}
+                    </p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <label className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3">
+                        <input
+                          type="checkbox"
+                          checked={advanceRefundEligible}
+                          onChange={(event) => setAdvanceRefundEligible(event.target.checked)}
+                          disabled={submitting}
+                          className="mt-0.5 h-4 w-4 accent-emerald-600"
+                        />
+                        <span className="text-slate-800">Advance refund eligible?</span>
+                      </label>
+                      <label className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3">
+                        <input
+                          type="checkbox"
+                          checked={refundAdvance}
+                          onChange={(event) => setRefundAdvance(event.target.checked)}
+                          disabled={submitting}
+                          className="mt-0.5 h-4 w-4 accent-emerald-600"
+                        />
+                        <span className="text-slate-800">Refund advance?</span>
+                      </label>
+                    </div>
+                    <label className="mt-3 block">
+                      <span className="mb-1.5 block text-[12px] font-medium text-slate-700">Refund amount</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={refundAmount}
+                        onChange={(event) => setRefundAmount(event.target.value)}
+                        disabled={submitting || !refundAdvance}
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none disabled:opacity-60"
+                      />
+                    </label>
+                    <label className="mt-3 block">
+                      <span className="mb-1.5 block text-[12px] font-medium text-slate-700">Note</span>
+                      <textarea
+                        value={settlementNote}
+                        onChange={(event) => setSettlementNote(event.target.value)}
+                        disabled={submitting}
+                        rows={2}
+                        placeholder="Optional settlement note"
+                        className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none"
+                      />
+                    </label>
                   </div>
                   <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[color:var(--error)] bg-[linear-gradient(180deg,rgba(220,38,38,0.08)_0%,rgba(254,226,226,0.7)_100%)] p-4 text-sm">
                     <input

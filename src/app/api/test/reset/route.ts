@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resetFinanceLedgerEntries } from "@/data/financeLedgerStore";
 import { resetOwnerHostel } from "@/data/ownerHostelStore";
 import { resetTenantRecords } from "@/data/tenantStore";
 
@@ -14,5 +15,7 @@ export async function POST() {
   resetOwnerHostel(false);
   resetTenantRecords(true);
   resetTenantRecords(false);
+  resetFinanceLedgerEntries(true);
+  resetFinanceLedgerEntries(false);
   return NextResponse.json({ ok: true });
 }

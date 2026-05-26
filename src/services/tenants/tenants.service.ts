@@ -64,11 +64,20 @@ export async function uploadTenantPaymentProof(formData: FormData) {
   return { response, data };
 }
 
-export async function removeTenant(tenantId: string) {
+export async function removeTenant(
+  tenantId: string,
+  settlement?: {
+    advanceRefundEligible?: boolean;
+    refundAdvance?: boolean;
+    refundAmount?: number;
+    settlementNote?: string;
+    settlementDate?: string;
+  },
+) {
   const response = await csrfFetch("/api/tenants/remove", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ tenantId }),
+    body: JSON.stringify({ tenantId, ...settlement }),
   });
   const data = (await response.json()) as { tenant?: TenantRecord; message?: string };
   return { response, data };

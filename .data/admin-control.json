@@ -1,5 +1,57 @@
 {
-  "controls": {},
+  "controls": {
+    "owner-hostel-aurora": {
+      "hostelId": "owner-hostel-aurora",
+      "ownerId": "owner-demo-001",
+      "ownerName": "Owner Aurora Residency",
+      "ownerEmail": "auroraresidency@owner.example.com",
+      "ownerUsername": "owner_owner-hostel-aurora",
+      "ownerPasswordHash": "267d0fb54ea8e81c26cc5ece43b6306a:e68eced239bcab01d43f2a24f1c57865f216e99136f246e338c9aa92cefe1f0ffb771d05fea6434a5c412887d0fb6b10db6bfc4d2d280e44d04b5ec41a80eb51",
+      "failedLoginAttempts": 0,
+      "lockedUntil": null,
+      "ownerSuspended": false,
+      "hostelActive": true,
+      "planId": "free",
+      "pricingOverride": null,
+      "discountPercent": 0,
+      "freeMonthsRemaining": 0,
+      "autoPayEnabled": false
+    },
+    "owner-hostel-lotus": {
+      "hostelId": "owner-hostel-lotus",
+      "ownerId": "owner-demo-002",
+      "ownerName": "Owner Lotus Elite Stay",
+      "ownerEmail": "lotuselitestay@owner.example.com",
+      "ownerUsername": "owner_owner-hostel-lotus",
+      "ownerPasswordHash": "65e524720616055a83f44b5c047a3dfc:b144706708852690f7d7b524c6f19f813a6b9f829138c04737e35ec1c74debe80860a43cd2d46f240296ac36c0852b8c95b139227f9615e11689ea8cb532aff4",
+      "failedLoginAttempts": 0,
+      "lockedUntil": null,
+      "ownerSuspended": false,
+      "hostelActive": true,
+      "planId": "free",
+      "pricingOverride": null,
+      "discountPercent": 0,
+      "freeMonthsRemaining": 0,
+      "autoPayEnabled": false
+    },
+    "owner-hostel-skyline": {
+      "hostelId": "owner-hostel-skyline",
+      "ownerId": "owner-demo-003",
+      "ownerName": "Owner Skyline Comforts",
+      "ownerEmail": "skylinecomforts@owner.example.com",
+      "ownerUsername": "owner_owner-hostel-skyline",
+      "ownerPasswordHash": "c4fb76c1215c1471036d0f913f02643c:1d481dee9d3743390c20e01057f6913701ac62099dad62637706755ac53c03c260f46620ebf1455379b6d365700ccd5a6a0775545b0e899b1c57a9a1fc5c11dc",
+      "failedLoginAttempts": 0,
+      "lockedUntil": null,
+      "ownerSuspended": false,
+      "hostelActive": true,
+      "planId": "free",
+      "pricingOverride": null,
+      "discountPercent": 0,
+      "freeMonthsRemaining": 0,
+      "autoPayEnabled": false
+    }
+  },
   "invoices": [],
   "upgradeRequests": [],
   "features": {
