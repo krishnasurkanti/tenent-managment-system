@@ -1,5 +1,14 @@
+const path = require("path");
 const dotenv = require("dotenv");
-dotenv.config();
+// Monorepo layout: server.js lives at backend/src/server.js, env files at repo root.
+// Try .env.local first (Next.js convention), then .env, then CWD default.
+const root = path.resolve(__dirname, "../..");
+// Load order: backend/.env → root .env.local → root .env → CWD .env
+// First match wins (dotenv skips already-set vars when override:false).
+dotenv.config({ path: path.join(root, "backend", ".env") });
+dotenv.config({ path: path.join(root, ".env.local") });
+dotenv.config({ path: path.join(root, ".env") });
+dotenv.config(); // fallback: .env in CWD
 
 // Sentry is optional — only loads if the package is resolvable and DSN is set
 if (process.env.SENTRY_DSN) {

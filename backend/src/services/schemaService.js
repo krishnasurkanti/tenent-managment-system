@@ -335,6 +335,25 @@ async function initializeDatabase() {
   await query(`
     CREATE INDEX IF NOT EXISTS idx_complaints_status ON complaints(status)
   `);
+
+  // ── SECURITY: Enable RLS on all tables (migration 002) ──────────────────
+  // Direct pg connections (postgres superuser) bypass RLS — backend unaffected.
+  // This blocks all PostgREST / Supabase Data API access which was fully open.
+  const rlsTables = [
+    "owners", "owner_invitations", "signup_keys", "hostels", "tenants",
+    "allocations", "owner_invoices", "owner_tenant_logs",
+    "owner_upgrade_requests", "admin_backups", "admin_audit_log", "complaints",
+  ];
+  for (const t of rlsTables) {
+    await query(`ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`);
+    // Revoke table-level grants from Supabase anon/authenticated roles.
+    // These roles may not exist on non-Supabase Postgres — ignore gracefully.
+    try {
+      await query(`REVOKE ALL ON TABLE public.${t} FROM anon, authenticated`);
+    } catch {
+      // Non-Supabase environment or roles already revoked — safe to ignore.
+    }
+  }
 }
 
 module.exports = { initializeDatabase };

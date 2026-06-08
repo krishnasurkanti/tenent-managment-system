@@ -44,6 +44,10 @@ function createPool(rejectUnauthorizedOverride) {
     max: Number(process.env.DB_POOL_MAX || 10),
     idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT_MS || 10000),
     connectionTimeoutMillis: Number(process.env.DB_CONNECTION_TIMEOUT_MS || 10000),
+    // Force IPv4 — Render and some cloud providers cannot reach IPv6 addresses.
+    // Supabase pooler resolves to both A (IPv4) and AAAA (IPv6); without this,
+    // Node picks IPv6 first and fails with ENETUNREACH on IPv4-only hosts.
+    family: 4,
   });
 }
 
