@@ -15,15 +15,6 @@ type RouteContext = {
   }>;
 };
 
-function wrapRoomsInFloor(rooms: OwnerRoom[], hostelId: string, type: "PG" | "RESIDENCE") {
-  return [
-    {
-      id: "floor-1",
-      floorLabel: "Floor 1",
-      rooms: rooms.map((room) => normalizeRoom(hostelId, "floor-1", type, room)),
-    },
-  ];
-}
 
 export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
@@ -77,10 +68,10 @@ export async function PUT(request: Request, context: RouteContext) {
   }
 
   if (session.isLive) {
-    const floors = wrapRoomsInFloor(rooms, id, type);
+    const normalizedRooms = rooms.map((r) => normalizeRoom(id, "main", type, r));
     const backendResponse = await backendFetch(`/api/hostels/${id}`, {
       method: "PUT",
-      body: JSON.stringify({ name: hostelName, address, type, floors }),
+      body: JSON.stringify({ name: hostelName, address, type, rooms: normalizedRooms }),
     });
     const payload = (await backendResponse.json()) as { hostel?: unknown; message?: string };
 
@@ -96,7 +87,7 @@ export async function PUT(request: Request, context: RouteContext) {
       hostelName,
       address,
       type,
-      rooms: rooms.map((r) => normalizeRoom(id, "floor-1", type, r)),
+      rooms: rooms.map((r) => normalizeRoom(id, "main", type, r)),
     },
     id,
     session.isDemo,

@@ -9,15 +9,6 @@ import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
-function wrapRoomsInFloor(rooms: OwnerRoom[], hostelId: string, type: "PG" | "RESIDENCE") {
-  return [
-    {
-      id: "floor-1",
-      floorLabel: "Floor 1",
-      rooms: rooms.map((room) => normalizeRoom(hostelId, "floor-1", type, room)),
-    },
-  ];
-}
 
 export async function GET() {
   const session = await requireOwnerSession();
@@ -75,10 +66,10 @@ async function saveOrUpdateHostel(request: Request, mode: "create" | "update") {
   }
 
   if (session.isLive) {
-    const floors = wrapRoomsInFloor(rooms, hostelId, type);
+    const normalizedRooms = rooms.map((r) => normalizeRoom(hostelId, "main", type, r));
     const backendResponse = await backendFetch(mode === "update" && body.hostelId ? `/api/hostels/${body.hostelId}` : "/api/hostels", {
       method: mode === "update" ? "PUT" : "POST",
-      body: JSON.stringify({ name: hostelName, address, type, floors }),
+      body: JSON.stringify({ name: hostelName, address, type, rooms: normalizedRooms }),
     });
     const payload = (await backendResponse.json()) as { hostel?: unknown; message?: string };
 
@@ -89,7 +80,7 @@ async function saveOrUpdateHostel(request: Request, mode: "create" | "update") {
     return NextResponse.json({ hostel: payload.hostel }, { status: mode === "update" ? 200 : 201 });
   }
 
-  const normalizedRooms = rooms.map((r) => normalizeRoom(hostelId, "floor-1", type, r));
+  const normalizedRooms = rooms.map((r) => normalizeRoom(hostelId, "main", type, r));
 
   const hostel =
     mode === "update"

@@ -10,15 +10,6 @@ import { parseJsonBody } from "@/lib/safe-json";
 
 export const dynamic = "force-dynamic";
 
-function wrapRoomsInFloor(rooms: OwnerRoom[], hostelId: string, type: "PG" | "RESIDENCE") {
-  return [
-    {
-      id: "floor-1",
-      floorLabel: "Floor 1",
-      rooms: rooms.map((room) => normalizeRoom(hostelId, "floor-1", type, room)),
-    },
-  ];
-}
 
 export async function GET() {
   const session = await requireOwnerSession();
@@ -36,9 +27,6 @@ export async function GET() {
     return NextResponse.json({ hostels: normalized });
   }
 
-  // Add `data.floors` mirror so tests that expect hostel.data.floors structure work.
-  // Use buildHostelInventory so beds include occupancy info and only FREE beds appear in beds[],
-  // enabling tests that call beds[0] to reliably get an available bed.
   const tenants = getTenantRecords(session.isDemo);
   const hostels = getOwnerHostels(session.isDemo).map((h) => {
     const inventory = buildHostelInventory(h, tenants);
@@ -46,17 +34,10 @@ export async function GET() {
       ...h,
       data: {
         ...h,
-        floors: [
-          {
-            id: "floor-1",
-            floorLabel: "Floor 1",
-            rooms: inventory.rooms.map((room) => ({
-              ...room,
-              // Only expose unoccupied beds so beds[0] is always a free bed
-              beds: (room.beds ?? []).filter((bed) => !bed.occupied),
-            })),
-          },
-        ],
+        rooms: inventory.rooms.map((room) => ({
+          ...room,
+          beds: (room.beds ?? []).filter((bed) => !bed.occupied),
+        })),
       },
     };
   });
@@ -89,12 +70,12 @@ export async function POST(request: Request) {
   }
 
   const draftId = `draft-${Date.now()}`;
-  const floors = wrapRoomsInFloor(rooms, draftId, type);
+  const normalizedRooms = rooms.map((r) => normalizeRoom(draftId, "main", type, r));
 
   if (session.isLive) {
     const backendResponse = await backendFetch("/api/hostels", {
       method: "POST",
-      body: JSON.stringify({ name: hostelName, address, type, floors }),
+      body: JSON.stringify({ name: hostelName, address, type, rooms: normalizedRooms }),
     });
     const payload = (await backendResponse.json()) as { hostel?: unknown; message?: string };
 
@@ -109,7 +90,7 @@ export async function POST(request: Request) {
     hostelName,
     address,
     type,
-    rooms: rooms.map((r) => normalizeRoom(draftId, "floor-1", type, r)),
+    rooms: normalizedRooms,
     ownerId: session.ownerId ?? undefined,
   }, session.isDemo);
 

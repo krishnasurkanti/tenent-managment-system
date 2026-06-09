@@ -46,10 +46,16 @@ export function normalizeRoom(hostelId: string, parentId: string, type: OwnerHos
 
 export function normalizeHostel(hostel: OwnerHostel): OwnerHostel {
   const type = hostel.type ?? "PG";
+  // Support both direct `rooms` (new) and legacy floor-wrapped `floors[0].rooms` (old backend)
+  const rawHostel = hostel as OwnerHostel & { floors?: Array<{ rooms?: OwnerRoom[] }> };
+  const rawRooms: OwnerRoom[] =
+    (hostel.rooms?.length ?? 0) > 0
+      ? hostel.rooms
+      : (rawHostel.floors?.[0]?.rooms ?? []);
   return {
     ...hostel,
     type,
-    rooms: (hostel.rooms ?? []).map((room) => normalizeRoom(hostel.id, "main", type, room)),
+    rooms: rawRooms.map((room) => normalizeRoom(hostel.id, "main", type, room)),
   };
 }
 
