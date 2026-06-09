@@ -28,8 +28,8 @@ function AddTenantPageContent() {
 
   const handleCreated = async (tenant: TenantRecord) => {
     void queryClient.invalidateQueries({ queryKey: ["owner-tenants", currentHostelId ?? null] });
-    // Navigate to the tenant detail page so user can see the new tenant
-    router.push(`/owner/tenants/${tenant.tenantId}`);
+    // Go straight to room assignment after tenant creation
+    router.push(`/owner/tenants/${tenant.tenantId}/assign-room`);
   };
 
   if (hostelLoading) return <AddTenantSkeleton />;
