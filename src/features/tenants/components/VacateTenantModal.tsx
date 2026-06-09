@@ -23,6 +23,7 @@ export function VacateTenantModal({ tenant, onClose, onRemoved }: Props) {
   const [refundAdvance, setRefundAdvance] = useState(false);
   const [refundAmount, setRefundAmount] = useState("");
   const [settlementNote, setSettlementNote] = useState("");
+  const [noticeGivenDate, setNoticeGivenDate] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -34,6 +35,7 @@ export function VacateTenantModal({ tenant, onClose, onRemoved }: Props) {
     setRefundAdvance(false);
     setRefundAmount("");
     setSettlementNote("");
+    setNoticeGivenDate("");
     setConfirmed(false);
     setSubmitting(false);
     setError("");
@@ -79,6 +81,7 @@ export function VacateTenantModal({ tenant, onClose, onRemoved }: Props) {
       refundAmount: refundAdvance ? numericRefund : 0,
       settlementNote,
       settlementDate: new Date().toISOString().slice(0, 10),
+      noticeGivenDate: noticeGivenDate || null,
     });
 
     if (!response.ok) {
@@ -177,6 +180,18 @@ export function VacateTenantModal({ tenant, onClose, onRemoved }: Props) {
                     className="w-full bg-transparent text-[13px] text-white outline-none disabled:opacity-40 placeholder:text-white/25"
                   />
                 </div>
+              </label>
+
+              <label className="block">
+                <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Notice given date</span>
+                <span className="mb-1.5 block text-[11px] text-white/35">Date tenant was informed of vacating (e.g. 30 days ago)</span>
+                <input
+                  type="date"
+                  value={noticeGivenDate}
+                  onChange={(e) => setNoticeGivenDate(e.target.value)}
+                  disabled={submitting}
+                  className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5 text-[13px] text-white outline-none [color-scheme:dark] [&::-webkit-datetime-edit]:text-white"
+                />
               </label>
 
               <label className="block">

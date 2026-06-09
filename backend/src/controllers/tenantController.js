@@ -480,6 +480,26 @@ async function updateTenant(req, res) {
 }
 
 async function deleteTenant(req, res) {
+  const {
+    moveOutDate,
+    advanceRefundAmount,
+    refundAdvance,
+    advanceRefundEligible,
+    settlementNote,
+    noticeGivenDate,
+    settlementDate,
+  } = req.body || {};
+
+  const vacateInfo = {
+    vacatedAt: new Date().toISOString(),
+    moveOutDate: moveOutDate || settlementDate || new Date().toISOString().slice(0, 10),
+    advanceRefundAmount: Number(advanceRefundAmount) || 0,
+    refundAdvance: Boolean(refundAdvance),
+    advanceRefundEligible: Boolean(advanceRefundEligible),
+    settlementNote: (settlementNote || "").trim(),
+    noticeGivenDate: noticeGivenDate || null,
+  };
+
   const client = await getClient();
 
   try {
@@ -495,15 +515,16 @@ async function deleteTenant(req, res) {
       [req.user.ownerId, req.params.id],
     );
 
-    // Soft delete — preserve payment history in the JSONB data column
+    // Soft delete — merge vacateInfo into data JSONB so it is preserved forever
     const result = await client.query(
       `
         UPDATE tenants
-        SET deleted_at = NOW()
+        SET deleted_at = NOW(),
+            data = data || $3::jsonb
         WHERE id = $1 AND owner_id = $2 AND deleted_at IS NULL
-        RETURNING id, owner_id, hostel_id, data, created_at
+        RETURNING id, owner_id, hostel_id, data, created_at, deleted_at
       `,
-      [req.params.id, req.user.ownerId],
+      [req.params.id, req.user.ownerId, JSON.stringify({ vacateInfo })],
     );
 
     if (result.rowCount === 0) {
@@ -524,10 +545,66 @@ async function deleteTenant(req, res) {
   }
 }
 
+// ── Admin: all vacated tenants across all owners ─────────────────────────────
+
+async function getVacatedTenantsAdmin(req, res) {
+  const { period } = req.query;
+
+  let periodFilter = "";
+  if (period === "daily") periodFilter = "AND t.deleted_at >= CURRENT_DATE";
+  else if (period === "weekly") periodFilter = "AND t.deleted_at >= DATE_TRUNC('week', CURRENT_TIMESTAMP)";
+  else if (period === "monthly") periodFilter = "AND t.deleted_at >= DATE_TRUNC('month', CURRENT_TIMESTAMP)";
+
+  const result = await query(
+    `
+      SELECT
+        t.id,
+        t.owner_id,
+        t.hostel_id,
+        t.data,
+        t.created_at,
+        t.deleted_at,
+        h.name AS hostel_name,
+        o.name AS owner_name,
+        o.email AS owner_email
+      FROM tenants t
+      JOIN hostels h ON h.id = t.hostel_id
+      JOIN owners o ON o.id = t.owner_id
+      WHERE t.deleted_at IS NOT NULL
+      ${periodFilter}
+      ORDER BY t.deleted_at DESC
+      LIMIT 1000
+    `,
+  );
+
+  const tenants = result.rows.map((row) => {
+    const base = mapTenantRow(row);
+    return {
+      ...base,
+      vacatedAt: row.deleted_at,
+      hostelName: row.hostel_name,
+      ownerName: row.owner_name,
+      ownerEmail: row.owner_email,
+      vacateInfo: row.data?.vacateInfo ?? null,
+    };
+  });
+
+  // Period summaries
+  const totalRefund = tenants.reduce((sum, t) => sum + (t.vacateInfo?.advanceRefundAmount ?? 0), 0);
+
+  return res.json({
+    period: period || "all",
+    count: tenants.length,
+    totalAdvanceRefunded: totalRefund,
+    tenants,
+  });
+}
+
 module.exports = {
   createTenant,
   getTenants,
   getTenantById,
   updateTenant,
+  getVacatedTenantsAdmin,
   deleteTenant,
 };

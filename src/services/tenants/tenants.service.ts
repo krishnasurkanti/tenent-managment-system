@@ -72,6 +72,7 @@ export async function removeTenant(
     refundAmount?: number;
     settlementNote?: string;
     settlementDate?: string;
+    noticeGivenDate?: string | null;
   },
 ) {
   const response = await csrfFetch("/api/tenants/remove", {

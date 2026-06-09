@@ -2,18 +2,19 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Archive, BarChart3, Building2, LayoutDashboard, LogOut, Settings, Wallet } from "lucide-react";
+import { Archive, BarChart3, Building2, LayoutDashboard, LogOut, Settings, UserMinus, Wallet } from "lucide-react";
 import { logoutAdmin } from "@/services/auth/auth.service";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { cn } from "@/utils/cn";
 
 const nav = [
-  { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { name: "Hostels",   href: "/admin/hostels",   icon: Building2        },
-  { name: "Billing",   href: "/admin/billing",   icon: Wallet           },
-  { name: "Analytics", href: "/admin/analytics", icon: BarChart3        },
-  { name: "Backups",   href: "/admin/backups",   icon: Archive          },
-  { name: "Settings",  href: "/admin/settings",  icon: Settings         },
+  { name: "Dashboard", href: "/admin/dashboard",        icon: LayoutDashboard },
+  { name: "Hostels",   href: "/admin/hostels",          icon: Building2        },
+  { name: "Billing",   href: "/admin/billing",          icon: Wallet           },
+  { name: "Vacated",   href: "/admin/vacated-tenants",  icon: UserMinus        },
+  { name: "Analytics", href: "/admin/analytics",        icon: BarChart3        },
+  { name: "Backups",   href: "/admin/backups",          icon: Archive          },
+  { name: "Settings",  href: "/admin/settings",         icon: Settings         },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {

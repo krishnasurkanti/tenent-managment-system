@@ -12,6 +12,7 @@ const signupRoutes = require("./routes/signupRoutes");
 const ownerBillingRoutes = require("./routes/ownerBillingRoutes");
 const adminBillingRoutes = require("./routes/adminBillingRoutes");
 const adminBackupRoutes = require("./routes/adminBackupRoutes");
+const adminTenantRoutes = require("./routes/adminTenantRoutes");
 const platformStatsRoutes = require("./routes/platformStatsRoutes");
 const complaintRoutes = require("./routes/complaintRoutes");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
@@ -78,6 +79,7 @@ app.use("/api/signup", signupRoutes);
 app.use("/api/owner-billing", ownerBillingRoutes);
 app.use("/api/admin/billing", adminBillingRoutes);
 app.use("/api/admin/backups", adminBackupRoutes);
+app.use("/api/admin/tenants", adminTenantRoutes);
 app.use("/api/platform-stats", platformStatsRoutes);
 app.use("/api/complaints", complaintRoutes);
 

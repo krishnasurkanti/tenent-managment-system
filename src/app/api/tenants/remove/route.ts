@@ -52,8 +52,18 @@ export async function POST(request: Request) {
         tenantForLedger = existingPayload.tenant ?? null;
       }
 
+      // Pass full vacate metadata so backend stores it in the data JSONB for permanent reference
       const backendResponse = await backendFetch(`/api/tenants/${encodeURIComponent(body.tenantId)}`, {
         method: "DELETE",
+        body: JSON.stringify({
+          advanceRefundAmount: body.refundAmount ?? 0,
+          refundAdvance: body.refundAdvance ?? false,
+          advanceRefundEligible: body.advanceRefundEligible ?? false,
+          settlementNote: body.settlementNote ?? "",
+          settlementDate: body.settlementDate,
+          noticeGivenDate: (body as Record<string, unknown>).noticeGivenDate ?? null,
+          moveOutDate: body.settlementDate,
+        }),
       });
       const payload = (await backendResponse.json()) as { tenant?: unknown; message?: string };
 
