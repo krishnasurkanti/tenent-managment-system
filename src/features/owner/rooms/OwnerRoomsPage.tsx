@@ -141,7 +141,7 @@ function OwnerRoomsPageContent() {
               ) : (
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   {(room.beds ?? []).map((bed, index) => {
-                    const assignedTenant = roomTenants.find((tenant) => tenant.assignment?.bedId === bed.id) ?? roomTenants[index];
+                    const assignedTenant = roomTenants.find((tenant) => tenant.assignment?.bedId === bed.id);
                     const isOverdue = assignedTenant ? getDueStatus(assignedTenant.nextDueDate).tone === "red" : false;
                     const toneClass = !assignedTenant
                       ? "border border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white shadow-[0_10px_22px_rgba(34,197,94,0.24)]"

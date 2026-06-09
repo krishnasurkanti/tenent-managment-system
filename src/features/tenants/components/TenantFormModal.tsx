@@ -734,7 +734,7 @@ export function TenantFormModal({
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300/70">First Payment Total</p>
-                        <p className="mt-1 text-[11px] text-white/45">Rent + refundable advance + service fee</p>
+                        <p className="mt-1 text-[11px] text-white/45">Rent collected + advance + service fee</p>
                       </div>
                       <p className="text-base font-semibold text-white">Rs {firstPaymentTotal.toLocaleString("en-IN")}</p>
                     </div>
