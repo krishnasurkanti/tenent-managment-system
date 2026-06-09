@@ -22,11 +22,14 @@ export function QuickAddTenantModal({
   onClose,
   onCreated,
   hostelId,
+  asPage = false,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: (tenant: TenantRecord) => void;
   hostelId?: string;
+  /** Render as inline page element (no overlay, no body lock) */
+  asPage?: boolean;
 }) {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -36,9 +39,9 @@ export function QuickAddTenantModal({
   const [error, setError] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
 
-  useLockBodyScroll(open);
+  useLockBodyScroll(asPage ? false : open);
 
-  if (!open) return null;
+  if (!asPage && !open) return null;
 
   const reset = () => {
     setFullName(""); setPhone(""); setMonthlyRent("");
@@ -85,13 +88,18 @@ export function QuickAddTenantModal({
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
+      {...(!asPage && { role: "dialog", "aria-modal": "true" })}
       aria-labelledby="quick-add-title"
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4 sm:py-4"
-      style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
+      className={asPage
+        ? "w-full"
+        : "fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4 sm:py-4"
+      }
+      {...(!asPage && { style: { background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" } })}
     >
-      <Card className="flex w-full min-h-[72dvh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] sm:w-[min(calc(100vw-2rem),34rem)] sm:min-h-0 sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
+      <Card className={asPage
+        ? "flex w-full flex-col overflow-hidden rounded-[10px] border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0"
+        : "flex w-full min-h-[72dvh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] sm:w-[min(calc(100vw-2rem),34rem)] sm:min-h-0 sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
+      }>
         {/* Header */}
         <div className="relative px-4 pb-3 pt-4 sm:px-5 sm:pt-5">
           <div className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(90deg,rgba(234,179,8,0.12)_0%,rgba(99,102,241,0.06)_100%)]" />
@@ -103,9 +111,11 @@ export function QuickAddTenantModal({
               </div>
               <p className="mt-2 text-[11px] text-white/45">Name + rent only. Fill remaining details later.</p>
             </div>
-            <Button variant="ghost" disabled={submitting} aria-label="Close" onClick={handleClose} className="rounded-2xl px-3 text-white/60 hover:text-white">
-              <X className="h-4 w-4" />
-            </Button>
+            {!asPage && (
+              <Button variant="ghost" disabled={submitting} aria-label="Close" onClick={handleClose} className="rounded-2xl px-3 text-white/60 hover:text-white">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 

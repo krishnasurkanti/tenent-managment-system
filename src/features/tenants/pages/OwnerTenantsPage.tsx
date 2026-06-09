@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { Suspense, useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, Download, Plus, Search, UserCheck, UserRound, Wallet, Zap } from "lucide-react";
@@ -11,7 +10,6 @@ import { TenantAvatar } from "@/components/ui/tenant-avatar";
 import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
 import { SkeletonBlock, SkeletonStatCard, SkeletonTableRow } from "@/components/ui/skeleton";
-import { assignTenantRoom } from "@/services/tenants/tenants.service";
 import { useHostelContext } from "@/store/hostel-context";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
 import {
@@ -24,24 +22,8 @@ import {
 import { formatPaymentDate, getDueStatus, fmtTenantId } from "@/utils/payment";
 import { type TenantRecord } from "@/types/tenant";
 
-const TenantFormModal = dynamic(
-  () => import("@/features/tenants/components/TenantFormModal").then((m) => ({ default: m.TenantFormModal })),
-  { ssr: false },
-);
-const TenantRoomAssignmentModal = dynamic(
-  () => import("@/features/tenants/components/TenantRoomAssignmentModal").then((m) => ({ default: m.TenantRoomAssignmentModal })),
-  { ssr: false },
-);
 const PaymentCollectionModal = dynamic(
   () => import("@/components/ui/payment-collection-modal").then((m) => ({ default: m.PaymentCollectionModal })),
-  { ssr: false },
-);
-const QuickAddTenantModal = dynamic(
-  () => import("@/features/tenants/components/QuickAddTenantModal").then((m) => ({ default: m.QuickAddTenantModal })),
-  { ssr: false },
-);
-const CompleteProfileModal = dynamic(
-  () => import("@/features/tenants/components/CompleteProfileModal").then((m) => ({ default: m.CompleteProfileModal })),
   { ssr: false },
 );
 const RemoveTenantSearch = dynamic(
@@ -59,68 +41,23 @@ export default function OwnerTenantsPage() {
 
 function OwnerTenantsPageContent() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const searchParams = useSearchParams();
+const searchParams = useSearchParams();
   const { currentHostel, currentHostelId, loading: hostelLoading, isSwitching } = useHostelContext();
   const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants(currentHostelId);
 
-  const [createdTenants, setCreatedTenants] = useState<TenantRecord[]>([]);
   const [tenantOverrides, setTenantOverrides] = useState<Record<string, TenantRecord>>({});
-  const [modalOpen, setModalOpen] = useState(false);
-  const [quickAddOpen, setQuickAddOpen] = useState(false);
-  const [assignmentOpen, setAssignmentOpen] = useState(false);
-  const [pendingTenant, setPendingTenant] = useState<TenantRecord | null>(null);
   const [paymentTenant, setPaymentTenant] = useState<TenantRecord | null>(null);
-  const [completingTenant, setCompletingTenant] = useState<TenantRecord | null>(null);
   const [searchQuery, setSearchQuery] = useState(() => searchParams.get("q") ?? "");
-
-  const preferredAssignment = useMemo(
-    () => ({
-      action: searchParams.get("action") ?? undefined,
-      hostelId: searchParams.get("hostelId") ?? undefined,
-      roomNumber: searchParams.get("room") ?? undefined,
-      sharingType: searchParams.get("sharingType") ?? undefined,
-    }),
-    [searchParams],
-  );
-
-  const shouldAutoAssign =
-    preferredAssignment.action === "add-tenant" &&
-    !!preferredAssignment.hostelId &&
-    !!preferredAssignment.roomNumber &&
-    !!preferredAssignment.sharingType;
-
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    setModalOpen(searchParams.get("action") === "add-tenant");
-    const q = searchParams.get("q");
-    if (q !== null) setSearchQuery(q);
-  }, [searchParams]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  const closeModal = useCallback(() => {
-    setModalOpen(false);
-    router.replace("/owner/tenants");
-  }, [router]);
 
   const tenants = useMemo(() => {
     if (!currentHostel) return [];
 
-    const visibleTenantIds = new Set<string>();
     const scopedExisting = allTenants
       .filter((t) => t.hostelId === currentHostel.id || t.assignment?.hostelId === currentHostel.id)
-      .map((t) => {
-        visibleTenantIds.add(t.tenantId);
-        return tenantOverrides[t.tenantId] ?? t;
-      });
+      .map((t) => tenantOverrides[t.tenantId] ?? t);
 
-    const scopedCreated = createdTenants.filter((t) => {
-      if (visibleTenantIds.has(t.tenantId)) return false;
-      return t.assignment?.hostelId === currentHostel.id || !t.assignment;
-    });
-
-    return [...scopedCreated, ...scopedExisting];
-  }, [allTenants, createdTenants, currentHostel, tenantOverrides]);
+    return scopedExisting;
+  }, [allTenants, currentHostel, tenantOverrides]);
 
   const filteredTenants = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -196,7 +133,7 @@ function OwnerTenantsPageContent() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setQuickAddOpen(true)}
+                onClick={() => router.push("/owner/tenants/quick-add")}
                 className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-amber-500/40 bg-amber-500/10 px-3 text-[12px] font-semibold text-amber-300"
               >
                 <Zap className="mr-1 h-3.5 w-3.5" />
@@ -204,7 +141,7 @@ function OwnerTenantsPageContent() {
               </button>
               <button
                 type="button"
-                onClick={() => setModalOpen(true)}
+                onClick={() => router.push("/owner/tenants/new")}
                 className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-3 text-sm font-semibold text-white shadow-[0_14px_32px_rgba(37,99,235,0.22)]"
               >
                 <Plus className="mr-1 h-4 w-4" />
@@ -251,7 +188,7 @@ function OwnerTenantsPageContent() {
                 <p className="text-sm font-semibold text-white/70">No tenants yet</p>
                 <p className="mt-1 text-xs text-[color:var(--fg-secondary)]">Add your first tenant to start tracking rent and room assignments.</p>
                 <button
-                  onClick={() => setModalOpen(true)}
+                  onClick={() => router.push("/owner/tenants/new")}
                   className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--cta-strong)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
                 >
                   <Plus className="h-4 w-4" />
@@ -303,7 +240,7 @@ function OwnerTenantsPageContent() {
                         {hasMissingInfo(tenant) && (
                           <button
                             type="button"
-                            onClick={(e) => { e.preventDefault(); setCompletingTenant(tenant); }}
+                            onClick={(e) => { e.preventDefault(); router.push(`/owner/tenants/${tenant.tenantId}/complete-profile`); }}
                             className="inline-flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400 hover:bg-orange-500/20 transition"
                           >
                             <AlertTriangle className="h-2.5 w-2.5" />
@@ -348,7 +285,7 @@ function OwnerTenantsPageContent() {
               </a>
               <button
                 type="button"
-                onClick={() => setQuickAddOpen(true)}
+                onClick={() => router.push("/owner/tenants/quick-add")}
                 className="inline-flex min-h-11 items-center gap-1.5 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 text-[12px] font-semibold text-amber-300 transition hover:bg-amber-500/15"
               >
                 <Zap className="h-3.5 w-3.5" />
@@ -356,7 +293,7 @@ function OwnerTenantsPageContent() {
               </button>
               <button
                 type="button"
-                onClick={() => setModalOpen(true)}
+                onClick={() => router.push("/owner/tenants/new")}
                 className="inline-flex min-h-11 min-w-[164px] items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-5 py-2.5 text-[12px] font-semibold text-white shadow-[0_14px_32px_rgba(37,99,235,0.22)]"
               >
                 Add New Tenant
@@ -431,7 +368,7 @@ function OwnerTenantsPageContent() {
                             {hasMissingInfo(tenant) && (
                               <button
                                 type="button"
-                                onClick={() => setCompletingTenant(tenant)}
+                                onClick={() => router.push(`/owner/tenants/${tenant.tenantId}/complete-profile`)}
                                 className="inline-flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400 hover:bg-orange-500/20 transition"
                               >
                                 <AlertTriangle className="h-2.5 w-2.5" />
@@ -466,87 +403,13 @@ function OwnerTenantsPageContent() {
         </Card>
       </section>
 
-      {/* Modals */}
-      <TenantFormModal
-        open={modalOpen}
-        onClose={closeModal}
-        hostelId={currentHostel.id}
-        propertyType={currentHostel.type}
-        allTenants={allTenants}
-        onCreated={async (tenant) => {
-          void queryClient.invalidateQueries({ queryKey: ["owner-tenants", currentHostelId ?? null] });
-          if (shouldAutoAssign) {
-            const { hostelId, roomNumber, sharingType } = preferredAssignment as {
-              hostelId: string; roomNumber: string; sharingType: string;
-            };
-
-            const { response, data } = await assignTenantRoom({
-              tenantId: tenant.tenantId,
-              hostelId,
-              roomNumber,
-              sharingType,
-              moveInDate: tenant.paidOnDate,
-            });
-
-            if (response.ok) {
-              const assigned = data.tenant as TenantRecord | undefined;
-              if (!assigned) { closeModal(); return; }
-              setCreatedTenants((prev) => [assigned, ...prev.filter((t) => t.tenantId !== assigned.tenantId)]);
-              setTenantOverrides((prev) => ({ ...prev, [assigned.tenantId]: assigned }));
-              setPendingTenant(assigned);
-              closeModal();
-              return;
-            }
-          }
-
-          setCreatedTenants((prev) => [tenant, ...prev.filter((t) => t.tenantId !== tenant.tenantId)]);
-          setPendingTenant(tenant);
-          setAssignmentOpen(true);
-          closeModal();
-        }}
-      />
-
-      <TenantRoomAssignmentModal
-        open={assignmentOpen}
-        tenant={pendingTenant}
-        onClose={() => setAssignmentOpen(false)}
-        onAssigned={(tenant) => {
-          setCreatedTenants((prev) => [tenant, ...prev.filter((t) => t.tenantId !== tenant.tenantId)]);
-          setTenantOverrides((prev) => ({ ...prev, [tenant.tenantId]: tenant }));
-          setPendingTenant(tenant);
-          setAssignmentOpen(false);
-        }}
-        preferredAssignment={preferredAssignment}
-      />
-
+      {/* Payment modal — quick overlay action, stays as modal */}
       <PaymentCollectionModal
         open={!!paymentTenant}
         tenant={paymentTenant}
         onClose={() => setPaymentTenant(null)}
         onSuccess={handlePaymentSuccess}
       />
-
-      <QuickAddTenantModal
-        open={quickAddOpen}
-        hostelId={currentHostel.id}
-        onClose={() => setQuickAddOpen(false)}
-        onCreated={(tenant) => {
-          setCreatedTenants((prev) => [tenant, ...prev.filter((t) => t.tenantId !== tenant.tenantId)]);
-          setQuickAddOpen(false);
-        }}
-      />
-
-      {completingTenant && (
-        <CompleteProfileModal
-          tenant={completingTenant}
-          allTenants={allTenants}
-          onClose={() => setCompletingTenant(null)}
-          onSaved={(updated) => {
-            setTenantOverrides((prev) => ({ ...prev, [updated.tenantId]: updated }));
-            setCompletingTenant(null);
-          }}
-        />
-      )}
     </div>
   );
 }

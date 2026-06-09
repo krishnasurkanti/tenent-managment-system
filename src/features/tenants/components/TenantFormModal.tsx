@@ -156,6 +156,7 @@ export function TenantFormModal({
   hostelId,
   propertyType,
   allTenants,
+  asPage = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -163,6 +164,8 @@ export function TenantFormModal({
   hostelId?: string;
   propertyType?: "PG" | "RESIDENCE";
   allTenants?: TenantRecord[];
+  /** Render as an inline page element (no overlay, no body lock, sticky footer) */
+  asPage?: boolean;
 }) {
   const isResidence = propertyType === "RESIDENCE";
   const savedDraft = getSavedDraft();
@@ -239,7 +242,7 @@ export function TenantFormModal({
   const availableRooms = selectedRoomHostel?.rooms.filter((r) => r.occupied < r.capacity) ?? [];
   const availableBeds = selectedRoom ? selectedRoom.capacity - selectedRoom.occupied : 0;
 
-  useLockBodyScroll(open);
+  useLockBodyScroll(asPage ? false : open);
 
   useEffect(() => {
     if (!open || typeof window === "undefined") return;
@@ -267,7 +270,7 @@ export function TenantFormModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, step, roomStep]);
 
-  if (!open) return null;
+  if (!asPage && !open) return null;
 
   const resetFormState = () => {
     setStep(1);
@@ -507,14 +510,19 @@ export function TenantFormModal({
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
+      {...(!asPage && { role: "dialog", "aria-modal": "true" })}
       aria-labelledby="tenant-form-modal-title"
-      className="fixed inset-0 z-50 flex items-stretch justify-center overflow-hidden animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
-      style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
+      className={asPage
+        ? "w-full"
+        : "fixed inset-0 z-50 flex items-stretch justify-center overflow-hidden animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
+      }
+      {...(!asPage && { style: { background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" } })}
     >
-      <Card className="flex w-full h-full flex-col overflow-hidden rounded-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),42rem)] sm:h-auto sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <Card className={asPage
+        ? "flex w-full flex-col overflow-hidden rounded-[10px] border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0"
+        : "flex w-full h-full flex-col overflow-hidden rounded-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),42rem)] sm:h-auto sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
+      }>
+        <div className={asPage ? "relative flex flex-col" : "relative flex min-h-0 flex-1 flex-col overflow-hidden"}>
           <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(90deg,rgba(99,102,241,0.14)_0%,rgba(245,158,11,0.06)_100%)]" />
 
           {/* Header */}
@@ -528,9 +536,11 @@ export function TenantFormModal({
               </div>
               <p className="mt-2 text-[11px] leading-5 text-white/45">Only name is required. Add other details now or later.</p>
             </div>
-            <Button variant="ghost" disabled={submitting || uploadingDocs} aria-label="Close" className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={handleClose}>
-              <X className="h-4 w-4" />
-            </Button>
+            {!asPage && (
+              <Button variant="ghost" disabled={submitting || uploadingDocs} aria-label="Close" className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={handleClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
 
           {/* Step pills — fixed, never scrolls */}
@@ -546,7 +556,14 @@ export function TenantFormModal({
           </div>
 
           {/* Scrollable content */}
-          <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-scroll px-4 pb-4 pt-3 sm:px-5" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" }}>
+          <div
+            ref={scrollRef}
+            className={asPage
+              ? "relative px-4 pb-4 pt-3 sm:px-5"
+              : "relative min-h-0 flex-1 overflow-x-hidden overflow-y-scroll px-4 pb-4 pt-3 sm:px-5"
+            }
+            {...(!asPage && { style: { WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" } })}
+          >
             <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
 
               {/* ── Step 1: Details ── */}
@@ -1353,7 +1370,10 @@ export function TenantFormModal({
           </div>
 
           {/* Sticky footer — always visible at bottom, never inside scrollable area */}
-          <div className="shrink-0 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5">
+          <div className={asPage
+            ? "sticky bottom-0 z-10 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5"
+            : "shrink-0 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5"
+          }>
             {/* Error and processing */}
             {error ? (
               <div className="mb-3 flex items-start gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">

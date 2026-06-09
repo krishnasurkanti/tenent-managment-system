@@ -70,11 +70,14 @@ export function CompleteProfileModal({
   onClose,
   onSaved,
   allTenants,
+  asPage = false,
 }: {
   tenant: TenantRecord;
   onClose: () => void;
   onSaved: (updated: TenantRecord) => void;
   allTenants?: TenantRecord[];
+  /** Render as inline page element (no overlay, no body lock) */
+  asPage?: boolean;
 }) {
   const [phone, setPhone] = useState(tenant.phone ?? "");
   const [email, setEmail] = useState(tenant.email ?? "");
@@ -149,7 +152,7 @@ export function CompleteProfileModal({
     });
   }
 
-  useLockBodyScroll(true);
+  useLockBodyScroll(!asPage);
 
   const pickPhoto = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -251,13 +254,18 @@ export function CompleteProfileModal({
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
+      {...(!asPage && { role: "dialog", "aria-modal": "true" })}
       aria-labelledby="complete-profile-title"
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4 sm:py-4"
-      style={{ background: "rgba(2,6,23,0.80)", backdropFilter: "blur(6px)" }}
+      className={asPage
+        ? "w-full"
+        : "fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4 sm:py-4"
+      }
+      {...(!asPage && { style: { background: "rgba(2,6,23,0.80)", backdropFilter: "blur(6px)" } })}
     >
-      <Card className="flex w-full flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] sm:w-[min(calc(100vw-2rem),38rem)] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
+      <Card className={asPage
+        ? "flex w-full flex-col overflow-hidden rounded-[10px] border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0"
+        : "flex w-full flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] sm:w-[min(calc(100vw-2rem),38rem)] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
+      }>
         {/* Header */}
         <div className="relative shrink-0 px-4 pb-3 pt-4 sm:px-5 sm:pt-5">
           <div className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(90deg,rgba(249,115,22,0.1)_0%,rgba(168,85,247,0.05)_100%)]" />
@@ -266,20 +274,22 @@ export function CompleteProfileModal({
               <p id="complete-profile-title" className="text-base font-semibold text-white">Complete Profile</p>
               <p className="mt-0.5 text-[11px] text-white/45">{tenant.fullName} · Fill in missing details</p>
             </div>
-            <Button
-              variant="ghost"
-              disabled={submitting || uploading}
-              aria-label="Close"
-              onClick={onClose}
-              className="rounded-2xl px-3 text-white/60 hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            {!asPage && (
+              <Button
+                variant="ghost"
+                disabled={submitting || uploading}
+                aria-label="Close"
+                onClick={onClose}
+                className="rounded-2xl px-3 text-white/60 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Scrollable body */}
-        <div className="max-h-[62dvh] overflow-y-auto px-4 pb-4 sm:px-5 sm:max-h-[70dvh]" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}>
+        {/* Body */}
+        <div className={asPage ? "px-4 pb-4 sm:px-5" : "max-h-[62dvh] overflow-y-auto px-4 pb-4 sm:px-5 sm:max-h-[70dvh]"} {...(!asPage && { style: { WebkitOverflowScrolling: "touch", touchAction: "pan-y" } })}>
           <div className="space-y-5 pb-2">
 
             {/* ── Personal ── */}
@@ -743,7 +753,10 @@ export function CompleteProfileModal({
             {submitting ? <ProcessingPill label="Saving profile…" /> : null}
 
             {/* Action buttons */}
-            <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-3 sm:flex-row">
+            <div className={asPage
+              ? "sticky bottom-0 z-10 -mx-4 sm:-mx-5 flex flex-col-reverse gap-3 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:flex-row sm:px-5"
+              : "flex flex-col-reverse gap-3 border-t border-white/10 pt-3 sm:flex-row"
+            }>
               <Button
                 variant="secondary"
                 onClick={onClose}

@@ -19,6 +19,7 @@ export function TenantRoomAssignmentModal({
   onClose,
   onAssigned,
   preferredAssignment,
+  asPage = false,
 }: {
   open: boolean;
   tenant: TenantRecord | null;
@@ -29,6 +30,8 @@ export function TenantRoomAssignmentModal({
     roomNumber?: string;
     sharingType?: string;
   };
+  /** Render as inline page element (no overlay, no body lock) */
+  asPage?: boolean;
 }) {
   const [step, setStep] = useState<1 | 2>(1);
   const [hostels, setHostels] = useState<HostelRoomInventory[]>([]);
@@ -41,10 +44,10 @@ export function TenantRoomAssignmentModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  useLockBodyScroll(open);
+  useLockBodyScroll(asPage ? false : open);
 
   useEffect(() => {
-    if (!open) return;
+    if (!asPage && !open) return;
 
     const load = async () => {
       setLoading(true);
@@ -62,7 +65,8 @@ export function TenantRoomAssignmentModal({
     };
 
     void load();
-  }, [open, preferredAssignment?.hostelId, preferredAssignment?.roomNumber]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, asPage, preferredAssignment?.hostelId, preferredAssignment?.roomNumber]);
 
   const selectedHostel = useMemo(() => hostels.find((item) => item.hostelId === hostelId), [hostelId, hostels]);
   const isResidence = selectedHostel?.type === "RESIDENCE";
@@ -73,7 +77,7 @@ export function TenantRoomAssignmentModal({
   const availableBeds = selectedRoom ? selectedRoom.capacity - selectedRoom.occupied : 0;
   const availableRooms = selectedHostel?.rooms.filter((room) => room.occupied < room.capacity) ?? [];
 
-  if (!open || !tenant) return null;
+  if ((!asPage && !open) || !tenant) return null;
 
   const handleAssign = async () => {
     if (!hostelId || !roomNumber || !selectedRoom) {
@@ -142,11 +146,18 @@ export function TenantRoomAssignmentModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
-      style={{ background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
+      {...(!asPage && { role: "dialog", "aria-modal": "true" })}
+      className={asPage
+        ? "w-full"
+        : "fixed inset-0 z-50 flex items-end justify-center animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
+      }
+      {...(!asPage && { style: { background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" } })}
     >
-      <Card className="flex w-full min-h-[88dvh] max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),56rem)] sm:min-h-0 sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
-        {/* Fixed header */}
+      <Card className={asPage
+        ? "flex w-full flex-col overflow-hidden rounded-[10px] border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-0"
+        : "flex w-full min-h-[88dvh] max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),56rem)] sm:min-h-0 sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
+      }>
+        {/* Header */}
         <div className="shrink-0 px-3 pb-2.5 pt-3 sm:px-4 sm:pt-4">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -156,14 +167,16 @@ export function TenantRoomAssignmentModal({
                 <StepPill label="2. Review" active={step === 2} done={false} />
               </div>
             </div>
-            <Button variant="ghost" disabled={saving} className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
+            {!asPage && (
+              <Button variant="ghost" disabled={saving} className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Scrollable body */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 sm:px-4" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}>
+        {/* Body */}
+        <div className={asPage ? "px-3 pb-4 sm:px-4" : "min-h-0 flex-1 overflow-y-auto px-3 pb-4 sm:px-4"} {...(!asPage && { style: { WebkitOverflowScrolling: "touch", touchAction: "pan-y" } })}>
         <div>
           {loading ? (
             <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-5">
@@ -300,9 +313,12 @@ export function TenantRoomAssignmentModal({
         {error ? <p className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</p> : null}
         {saving ? <ProcessingPill label="Assigning room and updating tenant record" className="mt-4" /> : null}
 
-        <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <div className={asPage
+          ? "sticky bottom-0 z-10 mt-4 border-t border-white/10 bg-[#0d1525] px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+          : "mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+        }>
           <Button variant="secondary" disabled={saving} onClick={step === 1 ? onClose : () => { setStep(1); setError(""); }} className="rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white">
-            {step === 1 ? "Later" : "Back"}
+            {step === 1 ? (asPage ? "Cancel" : "Later") : "Back"}
           </Button>
           <Button disabled={saving} loading={saving && step === 2} onClick={step === 1 ? handleNext : handleAssign} className="rounded-2xl bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] text-white hover:text-white hover:brightness-110">
             {step === 1 ? "Next: Review" : saving ? "Assigning..." : isResidence ? "Assign Unit" : "Assign Room"}
