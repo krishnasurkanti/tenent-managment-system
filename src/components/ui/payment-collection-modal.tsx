@@ -114,7 +114,7 @@ export function PaymentCollectionModal({
       style={{ background: "rgba(2,6,23,0.72)", backdropFilter: "blur(6px)" }}
     >
       <div
-        className="w-full max-w-lg overflow-hidden rounded-[10px] border border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-[float-up_var(--motion-medium)_var(--ease-enter)]"
+        className="flex w-full max-w-lg max-h-[92dvh] flex-col overflow-hidden rounded-[10px] border border-white/12 bg-[linear-gradient(180deg,#131d2e_0%,#0d1525_100%)] shadow-[0_40px_100px_rgba(0,0,0,0.6)] animate-[float-up_var(--motion-medium)_var(--ease-enter)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -142,8 +142,8 @@ export function PaymentCollectionModal({
           </div>
         </div>
 
-        {/* Scrollable body */}
-        <div className="max-h-[90dvh] overflow-y-auto overscroll-none touch-pan-y px-3 pb-2 sm:px-4">
+        {/* Scrollable body — flex-1 so footer stays at bottom */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-none touch-pan-y px-3 pb-2 sm:px-4">
           {/* Tenant info card */}
           {tenant ? (
             <div className="mb-3 rounded-[8px] border border-white/10 bg-white/[0.04] p-3 sm:mb-4 sm:p-4">
@@ -288,8 +288,11 @@ export function PaymentCollectionModal({
           {error ? (
             <p role="alert" className="mt-3 text-[12px] font-medium text-red-400">{error}</p>
           ) : null}
+        </div>
 
-          <div className="mt-4 flex flex-col-reverse gap-2 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
+        {/* Sticky footer — always visible, never inside scroll area */}
+        <div className="shrink-0 border-t border-white/10 bg-[#0d1525] px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-4">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={onClose}
