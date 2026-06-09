@@ -39,12 +39,12 @@ function AssignRoomPageContent() {
   if (isLoading) return <AssignRoomSkeleton />;
 
   return (
-    <div className="space-y-3 pb-8 px-3 sm:px-4 sm:max-w-3xl sm:mx-auto">
+    <div className="space-y-3 pb-8 w-full">
       {/* Back navigation */}
       <button
         type="button"
         onClick={() => router.push(`/owner/tenants/${params.id}`)}
-        className="inline-flex items-center gap-1.5 rounded-xl px-2 py-1.5 text-[13px] font-medium text-white/50 hover:text-white transition"
+        className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/50 hover:text-white transition ml-2"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Tenant
@@ -63,7 +63,7 @@ function AssignRoomPageContent() {
 
 function AssignRoomSkeleton() {
   return (
-    <div className="space-y-3 pb-8 px-3 sm:px-4 sm:max-w-3xl sm:mx-auto">
+    <div className="space-y-3 pb-8 w-full">
       <SkeletonBlock className="h-8 w-36 rounded-xl" />
       <SkeletonBlock className="h-[480px] rounded-[10px]" />
     </div>

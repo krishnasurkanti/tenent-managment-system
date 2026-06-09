@@ -97,7 +97,7 @@ export function QuickAddTenantModal({
       {...(!asPage && { style: { background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" } })}
     >
       <Card className={asPage
-        ? "flex w-full flex-col overflow-hidden rounded-[10px] border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0"
+        ? "flex w-full flex-col overflow-hidden rounded-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0"
         : "flex w-full min-h-[72dvh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] sm:w-[min(calc(100vw-2rem),34rem)] sm:min-h-0 sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
       }>
         {/* Header */}

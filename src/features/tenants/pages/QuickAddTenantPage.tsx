@@ -32,12 +32,12 @@ function QuickAddTenantPageContent() {
   if (hostelLoading) return <QuickAddSkeleton />;
 
   return (
-    <div className="space-y-3 pb-8 px-3 sm:px-4 sm:max-w-lg sm:mx-auto">
+    <div className="space-y-3 pb-8 w-full">
       {/* Back navigation */}
       <button
         type="button"
         onClick={() => router.push("/owner/tenants")}
-        className="inline-flex items-center gap-1.5 rounded-xl px-2 py-1.5 text-[13px] font-medium text-white/50 hover:text-white transition"
+        className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/50 hover:text-white transition ml-2"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Tenants
@@ -56,7 +56,7 @@ function QuickAddTenantPageContent() {
 
 function QuickAddSkeleton() {
   return (
-    <div className="space-y-3 pb-8 px-3 sm:px-4 sm:max-w-lg sm:mx-auto">
+    <div className="space-y-3 pb-8 w-full">
       <SkeletonBlock className="h-8 w-36 rounded-xl" />
       <SkeletonBlock className="h-80 rounded-[10px]" />
     </div>

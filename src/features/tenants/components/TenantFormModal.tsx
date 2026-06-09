@@ -2,21 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  AlertCircle, Bed, Briefcase, Building2, CalendarDays, Camera, CreditCard,
-  FileText, FileBadge2, IdCard, IndianRupee, Mail, Phone, Plus,
+  AlertCircle, Briefcase, Building2, CalendarDays, CreditCard,
+  FileBadge2, IndianRupee, Mail, Phone, Plus,
   Receipt, Search, ShieldAlert, Trash2, Upload, User, UserCheck, Users, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
-import { SkeletonBlock } from "@/components/ui/skeleton";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
-import { cn } from "@/utils/cn";
 import { csrfFetch } from "@/lib/csrf-client";
-import { createTenant, updateTenantFamilyMembers, assignTenantRoom } from "@/services/tenants/tenants.service";
-import { fetchOwnerHostels } from "@/services/owner/owner-hostels.service";
-import type { BillingCycle, HostelBed, HostelRoom, HostelRoomInventory, TenantRecord } from "@/types/tenant";
-import type { OwnerHostel } from "@/types/owner-hostel";
+import { createTenant, updateTenantFamilyMembers } from "@/services/tenants/tenants.service";
+import type { BillingCycle, TenantRecord } from "@/types/tenant";
 
 type IdType = "aadhar" | "pan" | "driving_licence" | "other" | "";
 type OccupationType = "employed" | "student" | "self_employed" | "other" | "";
@@ -76,28 +72,6 @@ const RELATION_LABELS: Record<Exclude<EmergencyRelation, "">, string> = {
   friend: "Friend",
   other: "Other",
 };
-
-function mapHostelToInventory(hostel: OwnerHostel): HostelRoomInventory {
-  return {
-    hostelId: hostel.id,
-    hostelName: hostel.hostelName,
-    type: hostel.type ?? "PG",
-    rooms: (hostel.rooms ?? []).map((room): HostelRoom => ({
-      id: room.id,
-      unitId: room.unitId,
-      roomNumber: room.roomNumber,
-      capacity: hostel.type === "RESIDENCE" ? 1 : room.bedCount,
-      occupied: room.occupied ?? 0,
-      sharingType: room.sharingType,
-      propertyType: hostel.type ?? "PG",
-      beds: room.beds?.map((bed): HostelBed => ({
-        id: bed.id,
-        label: bed.label,
-        occupied: bed.occupied ?? false,
-      })),
-    })),
-  };
-}
 
 function createFamilyMember(): FamilyMemberForm {
   return { id: `fm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: "", relation: "", age: "" };
@@ -176,36 +150,14 @@ export function TenantFormModal({
     savedDraft?.familyMembers?.length ? savedDraft.familyMembers : [createFamilyMember()],
   );
 
-  // Document uploads
-  const [tenantPhotoFile, setTenantPhotoFile] = useState<File | null>(null);
-  const [tenantPhotoPreview, setTenantPhotoPreview] = useState<string>("");
-  const [tenantPhotoUploadedUrl, setTenantPhotoUploadedUrl] = useState<string>("");
-  const [idPhotoFile, setIdPhotoFile] = useState<File | null>(null);
-  const [idPhotoPreview, setIdPhotoPreview] = useState<string>("");
-  const [idPhotoUploadedUrl, setIdPhotoUploadedUrl] = useState<string>("");
+  // Receipt upload (payment step)
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string>("");
-  const [agreementFiles, setAgreementFiles] = useState<File[]>([]);
-  const [agreementPreviews, setAgreementPreviews] = useState<string[]>([]);
-  const [agreementUploadedUrls, setAgreementUploadedUrls] = useState<string[]>([]);
-  const [uploadingDocs, setUploadingDocs] = useState(false);
-
-  // Room assignment state
-  const [roomInventory, setRoomInventory] = useState<HostelRoomInventory[]>([]);
-  const [loadingRooms, setLoadingRooms] = useState(false);
-  const [roomHostelId, setRoomHostelId] = useState(hostelId ?? "");
-  const [roomNumber, setRoomNumber] = useState("");
-  const [roomSharingType, setRoomSharingType] = useState("");
-  const [roomBedId, setRoomBedId] = useState("");
-  const [roomMoveInDate, setRoomMoveInDate] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const tenantPhotoInputRef = useRef<HTMLInputElement>(null);
-  const idPhotoInputRef = useRef<HTMLInputElement>(null);
   const receiptInputRef = useRef<HTMLInputElement>(null);
-  const agreementInputRef = useRef<HTMLInputElement>(null);
 
   const [ecSearch, setEcSearch] = useState("");
   const ecSearchResults = useMemo(() => {
@@ -228,19 +180,9 @@ export function TenantFormModal({
     Number(form.rentPaid || 0) + Number(form.advanceAmount || 0) + Number(form.serviceFeeAmount || 0);
   const firstPaymentEntered = firstPaymentTotal > 0;
 
-  // Step numbers
-  const familyStep: TenantStep = 5;
-  const roomStep: TenantStep = isResidence ? 6 : 5;
+  // Step numbers — Docs and Room steps removed; flow: Personal→Emergency→Payment→[Family]→Save
+  const familyStep: TenantStep = 4;
 
-  // Derived room state
-  const selectedRoomHostel = useMemo(() => roomInventory.find((h) => h.hostelId === roomHostelId), [roomHostelId, roomInventory]);
-  const isRoomHostelResidence = selectedRoomHostel?.type === "RESIDENCE";
-  const selectedRoom = useMemo(
-    () => selectedRoomHostel?.rooms.find((r) => r.roomNumber === roomNumber),
-    [roomNumber, selectedRoomHostel],
-  );
-  const availableRooms = selectedRoomHostel?.rooms.filter((r) => r.occupied < r.capacity) ?? [];
-  const availableBeds = selectedRoom ? selectedRoom.capacity - selectedRoom.occupied : 0;
 
   useLockBodyScroll(asPage ? false : open);
 
@@ -250,25 +192,15 @@ export function TenantFormModal({
   }, [billingCycle, familyMembers, form, open, step]);
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    if (asPage) {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    } else if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
     setEcSearch("");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, open]);
 
-  // Load room inventory when reaching room step
-  useEffect(() => {
-    if (!open || step !== roomStep) return;
-    if (roomInventory.length > 0) return;
-    setLoadingRooms(true);
-    void fetchOwnerHostels().then(({ data }) => {
-      const inventory = (data.hostels ?? []).map(mapHostelToInventory);
-      setRoomInventory(inventory);
-      if (!roomHostelId && inventory.length > 0) {
-        setRoomHostelId(inventory[0].hostelId);
-      }
-      setLoadingRooms(false);
-    }).catch(() => setLoadingRooms(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, step, roomStep]);
 
   if (!asPage && !open) return null;
 
@@ -278,30 +210,14 @@ export function TenantFormModal({
     setForm(initialState);
     setFamilyMembers([createFamilyMember()]);
     setSubmitting(false);
-    setUploadingDocs(false);
     setError("");
-    setTenantPhotoFile(null);
-    setTenantPhotoPreview("");
-    setTenantPhotoUploadedUrl("");
-    setIdPhotoFile(null);
-    setIdPhotoPreview("");
-    setIdPhotoUploadedUrl("");
     setReceiptFile(null);
     setReceiptPreview("");
-    setAgreementFiles([]);
-    setAgreementPreviews([]);
-    setAgreementUploadedUrls([]);
-    setRoomInventory([]);
-    setRoomHostelId(hostelId ?? "");
-    setRoomNumber("");
-    setRoomSharingType("");
-    setRoomBedId("");
-    setRoomMoveInDate("");
     if (typeof window !== "undefined") window.localStorage.removeItem(DRAFT_KEY);
   };
 
   const handleClose = () => {
-    if (submitting || uploadingDocs) return;
+    if (submitting) return;
     resetFormState();
     onClose();
   };
@@ -331,41 +247,6 @@ export function TenantFormModal({
     reader.readAsDataURL(file);
   }
 
-  function pickAgreementFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const picked = Array.from(e.target.files ?? []);
-    e.target.value = "";
-    if (!picked.length) return;
-
-    const pdf = picked.find((f) => f.type === "application/pdf");
-    if (pdf) {
-      if (pdf.size > 10 * 1024 * 1024) { setError("Agreement too large. Max 10 MB."); return; }
-      setError("");
-      setAgreementFiles([pdf]);
-      setAgreementPreviews(["__pdf__"]);
-      setAgreementUploadedUrls([]);
-      return;
-    }
-
-    const images = picked.filter((f) => f.type.startsWith("image/"));
-    const existingImages = agreementFiles.filter((f) => f.type.startsWith("image/"));
-    const canAdd = 4 - existingImages.length;
-    if (canAdd <= 0) { setError("Maximum 4 agreement images."); return; }
-    const oversized = images.find((f) => f.size > 10 * 1024 * 1024);
-    if (oversized) { setError("File too large. Max 10 MB each."); return; }
-    setError("");
-    const toAdd = images.slice(0, canAdd);
-    setAgreementFiles([...existingImages, ...toAdd]);
-    toAdd.forEach((f) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => setAgreementPreviews((prev) => [
-        ...prev.filter((p) => p !== "__pdf__"),
-        ev.target?.result as string,
-      ]);
-      reader.readAsDataURL(f);
-    });
-    setAgreementUploadedUrls([]);
-  }
-
   const handleNextFromDetails = () => {
     if (!form.fullName.trim()) { setError("Enter tenant name to continue."); return; }
     setError("");
@@ -374,34 +255,17 @@ export function TenantFormModal({
 
   const handleNextFromEmergency = () => {
     setError("");
-    setStep(4); // Skip documents step — go directly to Payment
-  };
-
-  const handleNextFromDocuments = async () => {
-    setError("");
-    setUploadingDocs(true);
-    try {
-      if (tenantPhotoFile) setTenantPhotoUploadedUrl(await uploadDocument(tenantPhotoFile, "tenant_photo"));
-      if (idPhotoFile) setIdPhotoUploadedUrl(await uploadDocument(idPhotoFile, "id_photo"));
-      if (agreementFiles.length > 0) setAgreementUploadedUrls(await Promise.all(agreementFiles.map((f) => uploadDocument(f, "agreement"))));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
-      setUploadingDocs(false);
-      return;
-    }
-    setUploadingDocs(false);
-    setStep(4);
+    setStep(3);
   };
 
   const handleNextFromPayment = () => {
     if (!form.paidOnDate) { setError("Enter joining / start date."); return; }
     setError("");
-    setStep(5);
+    setStep(4);
   };
 
   const handleNextFromFamily = () => {
-    setError("");
-    setStep(6);
+    void handleSubmit();
   };
 
   const handleSubmit = async () => {
@@ -412,20 +276,12 @@ export function TenantFormModal({
     setSubmitting(true);
     setError("");
 
-    let tenantPhotoUrl: string | undefined = tenantPhotoUploadedUrl || undefined;
-    let idPhotoUrl: string | undefined = idPhotoUploadedUrl || undefined;
-    let finalAgreementUrls: string[] = agreementUploadedUrls.length > 0 ? agreementUploadedUrls : [];
     let receiptUrl: string | undefined;
 
     try {
-      if (tenantPhotoFile && !tenantPhotoUrl) tenantPhotoUrl = await uploadDocument(tenantPhotoFile, "tenant_photo");
-      if (idPhotoFile && !idPhotoUrl) idPhotoUrl = await uploadDocument(idPhotoFile, "id_photo");
-      if (agreementFiles.length > 0 && finalAgreementUrls.length === 0) {
-        finalAgreementUrls = await Promise.all(agreementFiles.map((f) => uploadDocument(f, "agreement")));
-      }
       if (receiptFile) receiptUrl = await uploadDocument(receiptFile, "receipt");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Photo upload failed.");
+      setError(err instanceof Error ? err.message : "Receipt upload failed.");
       setSubmitting(false);
       return;
     }
@@ -440,9 +296,6 @@ export function TenantFormModal({
       workplaceName: form.workplaceName.trim() || undefined,
       idType: form.idType || undefined,
       idNumber: form.idNumber.trim() || undefined,
-      tenantPhotoUrl,
-      idPhotoUrl,
-      agreementUrls: finalAgreementUrls.length > 0 ? finalAgreementUrls : undefined,
       emergencyContactName: form.emergencyContactName.trim() || undefined,
       emergencyContactRelation: form.emergencyContactRelation || undefined,
       emergencyContactPhone: form.emergencyContactPhone || undefined,
@@ -481,24 +334,6 @@ export function TenantFormModal({
       }
     }
 
-    // Room assignment (optional — only if room selected)
-    if (roomNumber && roomHostelId && selectedRoom) {
-      try {
-        const { response: rRes, data: rData } = await assignTenantRoom({
-          tenantId: created.tenantId,
-          hostelId: roomHostelId,
-          unitId: selectedRoom.unitId,
-          roomNumber,
-          sharingType: roomSharingType,
-          moveInDate: roomMoveInDate || form.paidOnDate,
-          propertyType: selectedRoomHostel?.type,
-          bedId: isRoomHostelResidence ? undefined : roomBedId || undefined,
-          bedLabel: isRoomHostelResidence ? undefined : selectedRoom.beds?.find((b) => b.id === roomBedId)?.label,
-          tenantRecord: created,
-        });
-        if (rRes.ok && rData.tenant) created = rData.tenant as TenantRecord;
-      } catch { /* non-fatal — tenant still created */ }
-    }
 
     onCreated(created);
     resetFormState();
@@ -519,7 +354,7 @@ export function TenantFormModal({
       {...(!asPage && { style: { background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" } })}
     >
       <Card className={asPage
-        ? "flex w-full flex-col overflow-hidden rounded-[10px] border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0"
+        ? "flex w-full flex-col overflow-hidden rounded-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0"
         : "flex w-full h-full flex-col overflow-hidden rounded-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),42rem)] sm:h-auto sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
       }>
         <div className={asPage ? "relative flex flex-col" : "relative flex min-h-0 flex-1 flex-col overflow-hidden"}>
@@ -537,7 +372,7 @@ export function TenantFormModal({
               <p className="mt-2 text-[11px] leading-5 text-white/45">Only name is required. Add other details now or later.</p>
             </div>
             {!asPage && (
-              <Button variant="ghost" disabled={submitting || uploadingDocs} aria-label="Close" className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={handleClose}>
+              <Button variant="ghost" disabled={submitting} aria-label="Close" className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={handleClose}>
                 <X className="h-4 w-4" />
               </Button>
             )}
@@ -548,10 +383,8 @@ export function TenantFormModal({
             <div className="flex gap-2" style={{ WebkitOverflowScrolling: "touch" }}>
               <StepPill label="1. Personal" active={step === 1} done={step > 1} />
               <StepPill label="2. Emergency" active={step === 2} done={step > 2} />
-              <StepPill label="3. Documents" active={step === 3} done={step > 3} />
-              <StepPill label="4. Payment" active={step === 4} done={step > 4} />
-              {isResidence ? <StepPill label="5. Family" active={step === familyStep} done={step > familyStep} /> : null}
-              <StepPill label={`${roomStep}. Room`} active={step === roomStep} done={false} />
+              <StepPill label="3. Payment" active={step === 3} done={step > 3} />
+              {isResidence ? <StepPill label="4. Family" active={step === familyStep} done={step > familyStep} /> : null}
             </div>
           </div>
 
@@ -804,210 +637,8 @@ export function TenantFormModal({
                 </>
               ) : null}
 
-              {/* ── Step 3: Documents & Photos ── */}
+              {/* ── Step 3: Payment ── */}
               {step === 3 ? (
-                <>
-                  <SectionHead title="Documents & Photos" subtitle="Select ID type and upload tenant photo + govt ID photo. All optional." />
-
-                  {/* ID Type */}
-                  <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                    <p className="text-[12px] font-semibold text-white/60">ID Type <span className="font-normal text-white/35">(optional)</span></p>
-                    <Field label="ID Type">
-                      <div className="relative">
-                        <FileBadge2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--accent)]" />
-                        <select
-                          value={form.idType}
-                          onChange={(e) => setField("idType", e.target.value as IdType)}
-                          disabled={submitting}
-                          className="w-full appearance-none rounded-2xl border border-white/12 bg-white/[0.06] py-3 pl-10 pr-4 text-[13px] text-white outline-none [color-scheme:dark]"
-                        >
-                          <option value="">Select ID type…</option>
-                          {(Object.entries(ID_TYPE_LABELS) as [Exclude<IdType, "">, string][]).map(([val, label]) => (
-                            <option key={val} value={val}>{label}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </Field>
-                  </div>
-
-                  {/* Tenant photo */}
-                  <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                    <p className="text-[12px] font-semibold text-white/60">
-                      Tenant Photo <span className="font-normal text-white/35">(optional)</span>
-                    </p>
-                    <input
-                      ref={tenantPhotoInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => pickFile(e, setTenantPhotoFile, setTenantPhotoPreview)}
-                    />
-                    {tenantPhotoPreview ? (
-                      <div className="relative inline-block">
-                        {tenantPhotoPreview.startsWith("__name__:") ? (
-                          <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3">
-                            <Camera className="h-5 w-5 text-emerald-400" />
-                            <span className="text-[12px] text-white/70 truncate max-w-[160px]">{tenantPhotoPreview.slice(9)}</span>
-                          </div>
-                        ) : (
-                          <img src={tenantPhotoPreview} alt="Tenant preview" className="h-28 w-28 rounded-2xl object-cover border border-white/12" />
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => { setTenantPhotoFile(null); setTenantPhotoPreview(""); }}
-                          className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white shadow-md"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => tenantPhotoInputRef.current?.click()}
-                        className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 bg-white/[0.03] py-8 text-white/40 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white/60"
-                      >
-                        <Camera className="h-7 w-7" />
-                        <span className="text-[12px] font-medium">Tap to upload photo</span>
-                        <span className="text-[11px] text-white/25">Any image · Max 5 MB</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Govt ID photo */}
-                  <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                    <p className="text-[12px] font-semibold text-white/60">
-                      Govt ID Photo
-                      {form.idType ? <span className="ml-1.5 text-white/35 font-normal">— {ID_TYPE_LABELS[form.idType as Exclude<IdType, "">]}</span> : null}
-                      <span className="ml-1.5 font-normal text-white/35">(optional)</span>
-                    </p>
-                    <input
-                      ref={idPhotoInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => pickFile(e, setIdPhotoFile, setIdPhotoPreview)}
-                    />
-                    {idPhotoPreview ? (
-                      <div className="relative inline-block">
-                        {idPhotoPreview.startsWith("__name__:") ? (
-                          <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3">
-                            <IdCard className="h-5 w-5 text-sky-400" />
-                            <span className="text-[12px] text-white/70 truncate max-w-[200px]">{idPhotoPreview.slice(9)}</span>
-                          </div>
-                        ) : (
-                          <img src={idPhotoPreview} alt="ID photo preview" className="h-40 w-full max-w-xs rounded-2xl object-cover border border-white/12" />
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => { setIdPhotoFile(null); setIdPhotoPreview(""); }}
-                          className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white shadow-md"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => idPhotoInputRef.current?.click()}
-                        className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 bg-white/[0.03] py-8 text-white/40 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white/60"
-                      >
-                        <IdCard className="h-7 w-7" />
-                        <span className="text-[12px] font-medium">Tap to upload ID photo</span>
-                        <span className="text-[11px] text-white/25">Any image · Max 5 MB</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Signed Agreement */}
-                  <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[12px] font-semibold text-white/60">
-                        Signed Agreement <span className="font-normal text-white/35">(optional)</span>
-                      </p>
-                      {agreementFiles.length > 0 && agreementFiles[0].type !== "application/pdf" && agreementFiles.length < 4 && (
-                        <button
-                          type="button"
-                          onClick={() => agreementInputRef.current?.click()}
-                          className="text-[11px] font-medium text-blue-400 hover:text-blue-300"
-                        >
-                          + Add more
-                        </button>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-white/30">
-                      Up to 4 photos of signed pages, or 1 PDF · Max 10 MB each · Can add later
-                    </p>
-                    <input
-                      ref={agreementInputRef}
-                      type="file"
-                      multiple
-                      accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
-                      className="hidden"
-                      onChange={pickAgreementFiles}
-                    />
-                    {agreementFiles.length === 0 ? (
-                      <button
-                        type="button"
-                        onClick={() => agreementInputRef.current?.click()}
-                        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-500/25 bg-blue-500/[0.03] py-5 text-blue-400/50 transition hover:border-blue-500/40 hover:bg-blue-500/[0.07] hover:text-blue-400"
-                      >
-                        <FileText className="h-4 w-4" />
-                        <span className="text-[12px] font-medium">Upload signed agreement</span>
-                      </button>
-                    ) : agreementFiles[0].type === "application/pdf" ? (
-                      <div className="flex items-center justify-between rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <FileText className="h-5 w-5 shrink-0 text-blue-400" />
-                          <span className="text-[13px] text-white/70 truncate">{agreementFiles[0].name}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => { setAgreementFiles([]); setAgreementPreviews([]); setAgreementUploadedUrls([]); }}
-                          className="ml-2 shrink-0 rounded-full p-1 text-white/40 hover:text-red-400"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2">
-                        {agreementPreviews.map((preview, i) => (
-                          <div key={i} className="relative">
-                            <img
-                              src={preview}
-                              alt={`Agreement page ${i + 1}`}
-                              className="h-28 w-full rounded-xl object-cover border border-white/12"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setAgreementFiles((prev) => prev.filter((_, idx) => idx !== i));
-                                setAgreementPreviews((prev) => prev.filter((_, idx) => idx !== i));
-                                setAgreementUploadedUrls([]);
-                              }}
-                              className="absolute -right-1.5 -top-1.5 rounded-full bg-red-500 p-1 text-white shadow-md"
-                            >
-                              <X className="h-2.5 w-2.5" />
-                            </button>
-                          </div>
-                        ))}
-                        {agreementFiles.length < 4 && (
-                          <button
-                            type="button"
-                            onClick={() => agreementInputRef.current?.click()}
-                            className="flex h-28 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/15 bg-white/[0.02] text-white/30 transition hover:border-blue-500/30 hover:bg-blue-500/[0.04] hover:text-blue-400"
-                          >
-                            <Plus className="h-5 w-5" />
-                            <span className="text-[10px] font-medium">Add page</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : null}
-
-              {/* ── Step 4: Payment ── */}
-              {step === 4 ? (
                 <>
                   <SectionHead title="Payment Details" subtitle="Track rent, refundable advance, and one-time service fee separately." />
 
@@ -1247,124 +878,6 @@ export function TenantFormModal({
                 </>
               ) : null}
 
-              {/* ── Room Assignment Step ── */}
-              {step === roomStep ? (
-                <>
-                  <SectionHead title="Room Assignment" subtitle="Pick a room and bed. Optional — you can assign or change later." />
-
-                  {loadingRooms ? (
-                    <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-5">
-                      <ProcessingPill label="Loading room inventory…" />
-                      <SkeletonBlock className="h-12" />
-                      <div className="grid gap-3 grid-cols-3">
-                        <SkeletonBlock className="h-20" />
-                        <SkeletonBlock className="h-20" />
-                        <SkeletonBlock className="h-20" />
-                      </div>
-                    </div>
-                  ) : roomInventory.length === 0 ? (
-                    <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-8 text-center">
-                      <Bed className="mx-auto mb-3 h-8 w-8 text-white/20" />
-                      <p className="text-[13px] text-white/40">No hostels with rooms found.</p>
-                      <p className="mt-1 text-[11px] text-white/25">Add rooms in your hostel settings first.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {/* Hostel picker */}
-                      {roomInventory.length > 1 && (
-                        <RoomPillGroup label="Hostel">
-                          {roomInventory.map((h) => (
-                            <RoomPillButton
-                              key={h.hostelId}
-                              selected={h.hostelId === roomHostelId}
-                              disabled={submitting}
-                              onClick={() => { setRoomHostelId(h.hostelId); setRoomNumber(""); setRoomSharingType(""); setRoomBedId(""); }}
-                            >
-                              {h.hostelName}
-                            </RoomPillButton>
-                          ))}
-                        </RoomPillGroup>
-                      )}
-
-                      {/* Room picker */}
-                      {selectedRoomHostel && (
-                        <RoomPillGroup label={isRoomHostelResidence ? "Unit" : "Room"}>
-                          {availableRooms.length === 0 ? (
-                            <span className="text-[12px] text-white/40">No available {isRoomHostelResidence ? "units" : "rooms"}</span>
-                          ) : (
-                            availableRooms.map((room) => (
-                              <RoomPillButton
-                                key={room.roomNumber}
-                                selected={room.roomNumber === roomNumber}
-                                disabled={submitting}
-                                onClick={() => { setRoomNumber(room.roomNumber); setRoomSharingType(room.sharingType ?? ""); setRoomBedId(""); }}
-                              >
-                                {isRoomHostelResidence ? `Unit ${room.roomNumber}` : `Room ${room.roomNumber}`}
-                              </RoomPillButton>
-                            ))
-                          )}
-                        </RoomPillGroup>
-                      )}
-
-                      {/* Bed picker (PG only) */}
-                      {!isRoomHostelResidence && selectedRoom && (
-                        <RoomPillGroup label="Bed">
-                          {(selectedRoom.beds ?? []).length === 0 ? (
-                            <span className="text-[12px] text-white/40">No beds configured</span>
-                          ) : (
-                            (selectedRoom.beds ?? []).map((bed) => (
-                              <BedPillButton
-                                key={bed.id}
-                                selected={bed.id === roomBedId}
-                                occupied={bed.occupied ?? false}
-                                disabled={submitting || (bed.occupied ?? false)}
-                                onClick={() => setRoomBedId(bed.id)}
-                              >
-                                {bed.label}
-                              </BedPillButton>
-                            ))
-                          )}
-                        </RoomPillGroup>
-                      )}
-
-                      {/* Move-in date */}
-                      {roomNumber && (
-                        <Field label="Move-in Date">
-                          <InputShell icon={<CalendarDays className="h-4 w-4 text-sky-400" />}>
-                            <input
-                              type="date"
-                              value={roomMoveInDate || form.paidOnDate}
-                              onChange={(e) => setRoomMoveInDate(e.target.value)}
-                              disabled={submitting}
-                              className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
-                            />
-                          </InputShell>
-                        </Field>
-                      )}
-
-                      {/* Summary card */}
-                      {selectedRoom && (
-                        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.05] p-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-400">Selected</p>
-                          <p className="mt-1 text-[14px] font-semibold text-white">
-                            {isRoomHostelResidence ? "Unit" : "Room"} {selectedRoom.roomNumber}
-                            {roomBedId && selectedRoom.beds ? (
-                              <span className="ml-2 text-[12px] font-normal text-white/60">
-                                · {selectedRoom.beds.find((b) => b.id === roomBedId)?.label}
-                              </span>
-                            ) : null}
-                          </p>
-                          <p className="mt-0.5 text-[11px] text-white/45">
-                            {isRoomHostelResidence
-                              ? availableBeds > 0 ? "Vacant" : "Occupied"
-                              : `${availableBeds} of ${selectedRoom.capacity} bed${selectedRoom.capacity === 1 ? "" : "s"} available`}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              ) : null}
 
             </div>
           </div>
@@ -1381,7 +894,6 @@ export function TenantFormModal({
                 <span>{error}</span>
               </div>
             ) : null}
-            {uploadingDocs ? <div className="mb-3"><ProcessingPill label="Uploading documents…" /></div> : null}
             {submitting ? <div className="mb-3"><ProcessingPill label="Creating tenant…" /></div> : null}
 
             {/* Action buttons */}
@@ -1389,7 +901,7 @@ export function TenantFormModal({
               <Button
                 variant="secondary"
                 onClick={step === 1 ? handleClose : () => { setStep((s) => (s - 1) as TenantStep); setError(""); }}
-                disabled={submitting || uploadingDocs}
+                disabled={submitting}
                 className="w-full rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white sm:flex-1"
               >
                 {step === 1 ? "Cancel" : "Back"}
@@ -1408,26 +920,14 @@ export function TenantFormModal({
               ) : null}
 
               {step === 3 ? (
-                <Button disabled={submitting || uploadingDocs} onClick={handleNextFromDocuments} className="w-full rounded-2xl sm:flex-1">
-                  {uploadingDocs ? "Uploading…" : "Next: Payment"}
-                </Button>
-              ) : null}
-
-              {step === 4 ? (
                 <Button onClick={isResidence ? handleNextFromPayment : handleSubmit} disabled={submitting} loading={!isResidence && submitting} className="w-full rounded-2xl sm:flex-1">
                   {submitting && !isResidence ? "Saving…" : isResidence ? "Next: Family" : "Save Tenant"}
                 </Button>
               ) : null}
 
               {step === familyStep && isResidence ? (
-                <Button onClick={handleNextFromFamily} disabled={submitting} className="w-full rounded-2xl sm:flex-1">
-                  Next: Room
-                </Button>
-              ) : null}
-
-              {step === roomStep ? (
-                <Button onClick={handleSubmit} disabled={submitting} loading={submitting} className="w-full rounded-2xl sm:flex-1">
-                  {submitting ? "Saving…" : roomNumber ? "Save & Assign Room" : "Save Tenant"}
+                <Button onClick={handleNextFromFamily} disabled={submitting} loading={submitting} className="w-full rounded-2xl sm:flex-1">
+                  {submitting ? "Saving…" : "Save Tenant"}
                 </Button>
               ) : null}
             </div>
@@ -1477,49 +977,3 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function RoomPillGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">{label}</p>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
-  );
-}
-
-function RoomPillButton({ selected, disabled, onClick, children }: { selected: boolean; disabled: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={cn(
-        "rounded-xl border px-4 py-2 text-[13px] font-medium transition",
-        selected
-          ? "border-blue-500/60 bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.3)]"
-          : "border-white/12 bg-white/[0.06] text-white/70 hover:border-white/25 hover:text-white",
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
-function BedPillButton({ selected, occupied, disabled, onClick, children }: { selected: boolean; occupied: boolean; disabled: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={cn(
-        "rounded-xl border px-4 py-2 text-[13px] font-semibold transition",
-        selected
-          ? "border-blue-500/60 bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.3)]"
-          : occupied
-            ? "cursor-not-allowed border-red-500/50 bg-red-600/20 text-red-400 opacity-70"
-            : "border-emerald-500/50 bg-emerald-600/15 text-emerald-400 hover:bg-emerald-600/25",
-      )}
-    >
-      {children}
-    </button>
-  );
-}
