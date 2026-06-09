@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Briefcase, CalendarDays, CreditCard, FileText, IdCard, Mail, Phone, User2, Users2 } from "lucide-react";
+import { ArrowLeft, Bed, Briefcase, CalendarDays, CreditCard, FileText, IdCard, Mail, Phone, User2, Users2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
 import { CompleteProfileButton } from "@/features/tenants/components/CompleteProfileButton";
@@ -156,7 +156,16 @@ export default async function OwnerTenantDetailsPage({
           </Card>
 
           <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
-            <h2 className="text-base font-semibold text-white">Stay details</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-base font-semibold text-white">Stay details</h2>
+              <Link
+                href={`/owner/tenants/${tenant.tenantId}/assign-room`}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-blue-500/40 bg-blue-600/20 px-3 py-1.5 text-[12px] font-semibold text-blue-300 transition hover:bg-blue-600/35"
+              >
+                <Bed className="h-3.5 w-3.5" />
+                {tenant.assignment?.roomNumber ? "Change Room" : "Assign Room"}
+              </Link>
+            </div>
             <div className="mt-4 space-y-3">
               <DetailRow label="Hostel" value={tenant.assignment?.hostelName ?? "Not assigned"} />
               <DetailRow label="Room" value={tenant.assignment?.roomNumber ?? "Not assigned"} />
