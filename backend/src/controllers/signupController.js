@@ -24,13 +24,16 @@ async function validateSignupKey(req, res) {
 
 async function registerWithKey(req, res) {
   const { key } = req.params;
-  const { name, email, phoneNumber, password, hostelName, hostelAddress, hostelType, floors } = req.validatedBody;
+  const { name, email, phoneNumber, password, hostelName, hostelAddress, hostelType, rooms, floors } = req.validatedBody;
 
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedPhone = phoneNumber?.trim() || null;
   const hashedPassword = await bcrypt.hash(password, 12);
   const validHostelType = ["PG", "RESIDENCE"].includes(hostelType) ? hostelType : "PG";
-  const floorsData = Array.isArray(floors) && floors.length > 0 ? floors : [];
+  // Accept rooms directly (new) or legacy floors (old)
+  const roomsData = Array.isArray(rooms) && rooms.length > 0
+    ? rooms
+    : (Array.isArray(floors) ? floors.flatMap((f) => f.rooms ?? []) : []);
   const client = await getClient();
 
   try {
@@ -65,7 +68,7 @@ async function registerWithKey(req, res) {
       `INSERT INTO hostels (owner_id, name, address, type, data)
        VALUES ($1, $2, $3, $4, $5::jsonb)
        RETURNING id, name`,
-      [owner.id, hostelName.trim(), hostelAddress.trim(), validHostelType, JSON.stringify({ floors: floorsData })],
+      [owner.id, hostelName.trim(), hostelAddress.trim(), validHostelType, JSON.stringify({ rooms: roomsData })],
     );
     const hostel = hostelResult.rows[0];
 

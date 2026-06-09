@@ -17,32 +17,34 @@ const authLoginSchema = z.object({
   path: ["email"],
 });
 
+const roomItemSchema = z.object({
+  id: z.string().trim().min(1).max(160),
+  roomNumber: z.string().trim().min(1).max(40),
+  bedCount: z.coerce.number().int().positive(),
+  sharingType: z.string().trim().min(1).max(120).optional(),
+  unitId: z.string().trim().min(1).max(160).optional(),
+  propertyType: z.enum(["PG", "RESIDENCE"]).optional(),
+  beds: z.array(
+    z.object({
+      id: z.string().trim().min(1).max(160),
+      label: z.string().trim().min(1).max(80),
+    }),
+  ).optional(),
+});
+
 const hostelCreateSchema = z.object({
   name: z.string().trim().min(1).max(160),
   address: z.string().trim().min(1).max(280),
   type: z.enum(["PG", "RESIDENCE"]).optional(),
-  floors: z.array(
-    z.object({
-      id: z.string().trim().min(1).max(160),
-      floorLabel: z.string().trim().min(1).max(160),
-      rooms: z.array(
-        z.object({
-          id: z.string().trim().min(1).max(160),
-          roomNumber: z.string().trim().min(1).max(40),
-          bedCount: z.coerce.number().int().positive(),
-          sharingType: z.string().trim().min(1).max(120).optional(),
-          unitId: z.string().trim().min(1).max(160).optional(),
-          propertyType: z.enum(["PG", "RESIDENCE"]).optional(),
-          beds: z.array(
-            z.object({
-              id: z.string().trim().min(1).max(160),
-              label: z.string().trim().min(1).max(80),
-            }),
-          ).optional(),
-        }),
-      ).min(1),
-    }),
-  ).min(1),
+  // Accept rooms directly (new) OR legacy floors wrapper (old) — floors ignored if rooms present
+  rooms: z.array(roomItemSchema).min(1).optional(),
+  floors: z.array(z.object({
+    id: z.string().trim().min(1).max(160).optional(),
+    floorLabel: z.string().trim().min(1).max(160).optional(),
+    rooms: z.array(roomItemSchema).min(1),
+  })).min(1).optional(),
+}).refine((data) => data.rooms || data.floors, {
+  message: "Either rooms or floors is required.",
 });
 
 const assignmentSchema = z
@@ -148,7 +150,8 @@ const registerWithKeySchema = z.object({
   hostelName: z.string().trim().min(1).max(160),
   hostelAddress: z.string().trim().min(1).max(280),
   hostelType: z.enum(["PG", "RESIDENCE"]).optional(),
-  floors: z.array(z.unknown()).optional(),
+  rooms: z.array(z.unknown()).optional(),
+  floors: z.array(z.unknown()).optional(), // legacy — kept for backward compat
 });
 
 const acceptInvitationSchema = z.object({

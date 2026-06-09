@@ -16,21 +16,25 @@ function buildOccupancy(allocs) {
 }
 
 function mapHostel(row, hostelOccupancy = {}) {
-  const floors = Array.isArray(row.data?.floors) ? row.data.floors : [];
-  const allRooms = floors.flatMap((floor) =>
-    (floor.rooms ?? []).map((room) => {
-      const unitId = room.unitId ?? room.id;
-      const unitData = hostelOccupancy[unitId] ?? { totalAllocs: 0, beds: new Set() };
-      return {
-        ...room,
-        occupied: unitData.totalAllocs,
-        beds: (room.beds ?? []).map((bed) => ({
-          ...bed,
-          occupied: unitData.beds.has(bed.id),
-        })),
-      };
-    })
-  );
+  // Support both new direct rooms and legacy floor-wrapped rooms in existing DB rows
+  const data = row.data ?? {};
+  const rawRooms = Array.isArray(data.rooms) && data.rooms.length > 0
+    ? data.rooms
+    : (Array.isArray(data.floors) ? data.floors.flatMap((f) => f.rooms ?? []) : []);
+
+  const allRooms = rawRooms.map((room) => {
+    const unitId = room.unitId ?? room.id;
+    const unitData = hostelOccupancy[unitId] ?? { totalAllocs: 0, beds: new Set() };
+    return {
+      ...room,
+      occupied: unitData.totalAllocs,
+      beds: (room.beds ?? []).map((bed) => ({
+        ...bed,
+        occupied: unitData.beds.has(bed.id),
+      })),
+    };
+  });
+
   return {
     id: String(row.id),
     hostelName: row.name,
@@ -84,9 +88,19 @@ async function getHostelById(req, res) {
   return res.json({ hostel: mapHostel(result.rows[0], occupancy[String(result.rows[0].id)] ?? {}) });
 }
 
+function extractRooms(body) {
+  // Prefer direct rooms; fall back to floors[0].rooms for old clients
+  if (Array.isArray(body.rooms) && body.rooms.length > 0) return body.rooms;
+  if (Array.isArray(body.floors) && body.floors.length > 0) {
+    return body.floors.flatMap((f) => f.rooms ?? []);
+  }
+  return [];
+}
+
 async function createHostel(req, res) {
-  const { name, address, floors, type: validatedType } = req.validatedBody;
+  const { name, address, type: validatedType } = req.validatedBody;
   const type = VALID_HOSTEL_TYPES.includes(validatedType) ? validatedType : "PG";
+  const rooms = extractRooms(req.validatedBody);
 
   const result = await query(
     `
@@ -94,7 +108,7 @@ async function createHostel(req, res) {
       VALUES ($1, $2, $3, $4, $5::jsonb)
       RETURNING id, owner_id, name, address, type, data, complaints_enabled, created_at
     `,
-    [req.user.ownerId, name, address, type, JSON.stringify({ floors })],
+    [req.user.ownerId, name, address, type, JSON.stringify({ rooms })],
   );
 
   return res.status(201).json({
@@ -104,8 +118,9 @@ async function createHostel(req, res) {
 }
 
 async function updateHostel(req, res) {
-  const { name, address, floors, type: validatedType } = req.validatedBody;
+  const { name, address, type: validatedType } = req.validatedBody;
   const type = VALID_HOSTEL_TYPES.includes(validatedType) ? validatedType : "PG";
+  const rooms = extractRooms(req.validatedBody);
 
   const result = await query(
     `
@@ -114,7 +129,7 @@ async function updateHostel(req, res) {
       WHERE id = $1 AND owner_id = $2
       RETURNING id, owner_id, name, address, type, data, complaints_enabled, created_at
     `,
-    [req.params.id, req.user.ownerId, name, address, type, JSON.stringify({ floors })],
+    [req.params.id, req.user.ownerId, name, address, type, JSON.stringify({ rooms })],
   );
 
   if (result.rowCount === 0) {
