@@ -31,6 +31,7 @@ export function normalizeRoom(hostelId: string, parentId: string, type: OwnerHos
       ? Array.from({ length: capacity }, (_, index) => ({
           id: room.beds?.[index]?.id || buildBedId(unitId, index),
           label: room.beds?.[index]?.label || `Bed ${index + 1}`,
+          occupied: room.beds?.[index]?.occupied,
         }))
       : [];
 

@@ -140,6 +140,13 @@ export function TenantRoomAssignmentModal({
       setError("Please choose an available bed before continuing.");
       return;
     }
+    if (!isResidence && bedId) {
+      const chosenBed = selectedRoom?.beds?.find((b) => b.id === bedId);
+      if (chosenBed?.occupied) {
+        setError("That bed is already occupied. Please choose a different bed.");
+        return;
+      }
+    }
     setError("");
     setStep(2);
   };
