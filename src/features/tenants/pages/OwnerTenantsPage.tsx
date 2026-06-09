@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { Suspense, useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, Download, Plus, Search, UserCheck, UserRound, Wallet, Zap } from "lucide-react";
+import { AlertTriangle, Download, LogOut, Plus, Search, UserCheck, UserRound, Wallet, Zap } from "lucide-react";
 import { TenantAvatar } from "@/components/ui/tenant-avatar";
 import { Card } from "@/components/ui/card";
 import { ProcessingPill } from "@/components/ui/processing-pill";
@@ -30,6 +30,10 @@ const RemoveTenantSearch = dynamic(
   () => import("@/features/tenants/components/RemoveTenantSearch").then((m) => ({ default: m.RemoveTenantSearch })),
   { ssr: false },
 );
+const VacateTenantModal = dynamic(
+  () => import("@/features/tenants/components/VacateTenantModal").then((m) => ({ default: m.VacateTenantModal })),
+  { ssr: false },
+);
 
 export default function OwnerTenantsPage() {
   return (
@@ -47,6 +51,7 @@ const searchParams = useSearchParams();
 
   const [tenantOverrides, setTenantOverrides] = useState<Record<string, TenantRecord>>({});
   const [paymentTenant, setPaymentTenant] = useState<TenantRecord | null>(null);
+  const [vacateTenant, setVacateTenant] = useState<TenantRecord | null>(null);
   const [searchQuery, setSearchQuery] = useState(() => searchParams.get("q") ?? "");
 
   const tenants = useMemo(() => {
@@ -91,6 +96,20 @@ const searchParams = useSearchParams();
     setTenantOverrides((prev) => ({ ...prev, [updated.tenantId]: updated }));
     setPaymentTenant(null);
   }, []);
+
+  const openVacate = useCallback((tenant: TenantRecord) => {
+    setVacateTenant(tenant);
+  }, []);
+
+  const handleVacated = useCallback((tenantId: string) => {
+    setTenantOverrides((prev) => {
+      const next = { ...prev };
+      delete next[tenantId];
+      return next;
+    });
+    setVacateTenant(null);
+    router.refresh();
+  }, [router]);
 
   const mobileListRef = useRef<HTMLDivElement>(null);
   const [mobileScrollMargin, setMobileScrollMargin] = useState(0);
@@ -224,39 +243,50 @@ const searchParams = useSearchParams();
                     paddingBottom: "10px",
                   }}
                 >
-                  <div className={`grid grid-cols-[auto_1fr_auto] gap-3 rounded-[8px] px-3 py-3 ${ownerPanelClass}`}>
-                    <TenantAvatar tenantId={tenant.tenantId} size="sm" readOnly />
-                    <Link href={`/owner/tenants/${tenant.tenantId}`} className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="truncate text-sm font-semibold text-white">{tenant.fullName}</p>
-                        <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--fg-secondary)]">
-                          #{fmtTenantId(tenant.tenantId)}
-                        </span>
-                        {tenant.pendingBalance && (
-                          <span className="inline-flex items-center rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400">
-                            Balance ₹{tenant.pendingBalance.amount.toLocaleString("en-IN")}
+                  <div className={`rounded-[8px] px-3 py-3 ${ownerPanelClass}`}>
+                    <div className="grid grid-cols-[auto_1fr_auto] gap-3">
+                      <TenantAvatar tenantId={tenant.tenantId} size="sm" readOnly />
+                      <Link href={`/owner/tenants/${tenant.tenantId}`} className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="truncate text-sm font-semibold text-white">{tenant.fullName}</p>
+                          <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--fg-secondary)]">
+                            #{fmtTenantId(tenant.tenantId)}
                           </span>
-                        )}
-                        {hasMissingInfo(tenant) && (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.preventDefault(); router.push(`/owner/tenants/${tenant.tenantId}/complete-profile`); }}
-                            className="inline-flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400 hover:bg-orange-500/20 transition"
-                          >
-                            <AlertTriangle className="h-2.5 w-2.5" />
-                            Missing info
-                          </button>
-                        )}
-                      </div>
-                      <p className="mt-1 truncate text-[11px] text-[color:var(--fg-secondary)]">
-                        {tenant.assignment ? `Room ${tenant.assignment.roomNumber}` : "Pending assignment"} / {tenant.phone}
-                      </p>
-                      <div className="mt-2 grid grid-cols-2 gap-2">
-                        <MiniInfo label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} />
-                        <MiniInfo label="Next Due" value={formatPaymentDate(tenant.nextDueDate)} />
-                      </div>
-                    </Link>
-                    <ActionButton tone={status.tone} isPaid={isPaid} onClick={() => openPayment(tenant)} />
+                          {tenant.pendingBalance && (
+                            <span className="inline-flex items-center rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400">
+                              Balance ₹{tenant.pendingBalance.amount.toLocaleString("en-IN")}
+                            </span>
+                          )}
+                          {hasMissingInfo(tenant) && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); router.push(`/owner/tenants/${tenant.tenantId}/complete-profile`); }}
+                              className="inline-flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400 hover:bg-orange-500/20 transition"
+                            >
+                              <AlertTriangle className="h-2.5 w-2.5" />
+                              Missing info
+                            </button>
+                          )}
+                        </div>
+                        <p className="mt-1 truncate text-[11px] text-[color:var(--fg-secondary)]">
+                          {tenant.assignment ? `Room ${tenant.assignment.roomNumber}` : "Pending assignment"} / {tenant.phone}
+                        </p>
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          <MiniInfo label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} />
+                          <MiniInfo label="Next Due" value={formatPaymentDate(tenant.nextDueDate)} />
+                        </div>
+                      </Link>
+                      <ActionButton tone={status.tone} isPaid={isPaid} onClick={() => openPayment(tenant)} />
+                    </div>
+                    {/* Vacate button — full width, below card content */}
+                    <button
+                      type="button"
+                      onClick={() => openVacate(tenant)}
+                      className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/[0.07] py-2 text-[11px] font-semibold text-red-400 transition hover:bg-red-500/15 active:scale-[0.98]"
+                    >
+                      <LogOut className="h-3 w-3" />
+                      Vacate
+                    </button>
                   </div>
                 </div>
               );
@@ -387,11 +417,22 @@ const searchParams = useSearchParams();
                         <td className="px-3 py-3 text-[color:var(--fg-primary)]">Rs {tenant.monthlyRent.toLocaleString("en-IN")}</td>
                         <td className="px-3 py-3 text-[color:var(--fg-primary)]">{formatPaymentDate(tenant.nextDueDate)}</td>
                         <td className="px-3 py-3">
-                          <ActionButton
-                            tone={status.tone}
-                            isPaid={isPaid}
-                            onClick={() => openPayment(tenant)}
-                          />
+                          <div className="flex items-center gap-2">
+                            <ActionButton
+                              tone={status.tone}
+                              isPaid={isPaid}
+                              onClick={() => openPayment(tenant)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => openVacate(tenant)}
+                              className="inline-flex min-h-10 items-center gap-1 rounded-xl border border-red-500/30 bg-red-500/[0.07] px-2.5 text-[11px] font-semibold text-red-400 transition hover:bg-red-500/15"
+                              title="Vacate tenant"
+                            >
+                              <LogOut className="h-3.5 w-3.5" />
+                              Vacate
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -409,6 +450,13 @@ const searchParams = useSearchParams();
         tenant={paymentTenant}
         onClose={() => setPaymentTenant(null)}
         onSuccess={handlePaymentSuccess}
+      />
+
+      {/* Vacate modal — per-card action */}
+      <VacateTenantModal
+        tenant={vacateTenant}
+        onClose={() => setVacateTenant(null)}
+        onRemoved={handleVacated}
       />
     </div>
   );
