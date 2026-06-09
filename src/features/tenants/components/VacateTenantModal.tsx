@@ -14,9 +14,11 @@ interface Props {
   tenant: TenantRecord | null;
   onClose: () => void;
   onRemoved: (tenantId: string) => void;
+  /** Render as inline page element — no overlay, no body scroll lock */
+  asPage?: boolean;
 }
 
-export function VacateTenantModal({ tenant, onClose, onRemoved }: Props) {
+export function VacateTenantModal({ tenant, onClose, onRemoved, asPage = false }: Props) {
   const open = tenant !== null;
 
   const [advanceRefundEligible, setAdvanceRefundEligible] = useState(false);
@@ -28,7 +30,7 @@ export function VacateTenantModal({ tenant, onClose, onRemoved }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  useLockBodyScroll(open);
+  useLockBodyScroll(asPage ? false : open);
 
   const reset = () => {
     setAdvanceRefundEligible(false);
@@ -47,18 +49,9 @@ export function VacateTenantModal({ tenant, onClose, onRemoved }: Props) {
     onClose();
   };
 
-  // Sync refund amount when tenant changes
   const suggestedRefund = tenant
     ? String(tenant.advanceBalance ?? tenant.advanceAmount ?? 0)
     : "0";
-
-  const handleOpen = () => {
-    // Pre-fill refund amount each time modal opens
-    setRefundAmount(suggestedRefund);
-  };
-
-  // Called once when tenant is truthy and modal mounts
-  // We use a key-based approach in the parent, but also do a simple init here
   const displayRefund = refundAmount === "" ? suggestedRefund : refundAmount;
 
   const handleRemove = async () => {
@@ -92,21 +85,26 @@ export function VacateTenantModal({ tenant, onClose, onRemoved }: Props) {
 
     const removedId = tenant.tenantId;
     reset();
-    onClose();
     onRemoved(removedId);
+    if (!asPage) onClose();
   };
 
-  if (!open || !tenant) return null;
+  if ((!asPage && !open) || !tenant) return null;
 
+  /* ── wrapper ────────────────────────────────────────────────────────────── */
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="vacate-modal-title"
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4 sm:py-4"
-      style={{ background: "rgba(2,6,23,0.82)", backdropFilter: "blur(6px)" }}
+      {...(!asPage && { role: "dialog", "aria-modal": "true", "aria-labelledby": "vacate-modal-title" })}
+      className={asPage
+        ? "w-full"
+        : "fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4 sm:py-4"
+      }
+      {...(!asPage && { style: { background: "rgba(2,6,23,0.82)", backdropFilter: "blur(6px)" } })}
     >
-      <Card className="flex w-full max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] sm:w-[min(calc(100vw-2rem),40rem)] sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
+      <Card className={asPage
+        ? "flex w-full flex-col overflow-hidden rounded-[10px] border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0"
+        : "flex w-full max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] sm:w-[min(calc(100vw-2rem),40rem)] sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
+      }>
 
         {/* Header */}
         <div className="relative shrink-0 px-4 pb-3 pt-4 sm:px-5 sm:pt-5">
@@ -123,21 +121,22 @@ export function VacateTenantModal({ tenant, onClose, onRemoved }: Props) {
           </div>
         </div>
 
-        {/* Scrollable body */}
+        {/* Body — scrollable only in modal mode; page handles its own scroll */}
         <div
-          className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-5"
-          style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
+          className={asPage
+            ? "px-4 pb-4 sm:px-5"
+            : "min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-5"
+          }
+          {...(!asPage && { style: { WebkitOverflowScrolling: "touch", touchAction: "pan-y" } })}
         >
           <div className="space-y-3">
 
-            {/* Info strip */}
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
               <p className="text-[11px] text-white/40">
                 Removing frees the room/bed for a new tenant. Payment history is preserved.
               </p>
             </div>
 
-            {/* Settlement */}
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 space-y-3">
               <p className="text-[12px] font-semibold text-white/70">Vacating settlement</p>
               <p className="text-[11px] text-white/40">
@@ -207,7 +206,7 @@ export function VacateTenantModal({ tenant, onClose, onRemoved }: Props) {
               </label>
             </div>
 
-            {/* Confirmation */}
+            {/* Confirmation checkbox */}
             <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/[0.08] p-3 text-[12px]">
               <input
                 type="checkbox"
@@ -215,6 +214,7 @@ export function VacateTenantModal({ tenant, onClose, onRemoved }: Props) {
                 onChange={(e) => setConfirmed(e.target.checked)}
                 disabled={submitting}
                 className="mt-0.5 h-4 w-4 shrink-0 accent-red-500"
+                data-testid="vacate-confirm-checkbox"
               />
               <span className="text-red-300">
                 I understand <strong>{tenant.fullName}</strong> will be permanently removed. This cannot be undone.
@@ -228,9 +228,12 @@ export function VacateTenantModal({ tenant, onClose, onRemoved }: Props) {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="shrink-0 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5">
-          <div className="flex flex-col-reverse gap-3 sm:flex-row">
+        {/* Footer — sticky when asPage so it always visible without internal scroll */}
+        <div className={asPage
+          ? "sticky bottom-0 z-10 mt-4 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5 flex flex-col-reverse gap-3 sm:flex-row"
+          : "shrink-0 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5"
+        }>
+          <div className={asPage ? "contents" : "flex flex-col-reverse gap-3 sm:flex-row"}>
             <Button
               variant="secondary"
               disabled={submitting}
@@ -242,6 +245,7 @@ export function VacateTenantModal({ tenant, onClose, onRemoved }: Props) {
             <Button
               disabled={submitting || !confirmed}
               onClick={() => void handleRemove()}
+              data-testid="vacate-submit-btn"
               className="w-full rounded-2xl bg-[linear-gradient(90deg,#b91c1c_0%,#dc2626_100%)] text-white shadow-[0_10px_24px_rgba(185,28,28,0.3)] hover:brightness-110 disabled:opacity-50 sm:flex-1"
             >
               {submitting ? "Removing…" : "Vacate & Remove"}

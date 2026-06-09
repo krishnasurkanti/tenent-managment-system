@@ -30,10 +30,6 @@ const RemoveTenantSearch = dynamic(
   () => import("@/features/tenants/components/RemoveTenantSearch").then((m) => ({ default: m.RemoveTenantSearch })),
   { ssr: false },
 );
-const VacateTenantModal = dynamic(
-  () => import("@/features/tenants/components/VacateTenantModal").then((m) => ({ default: m.VacateTenantModal })),
-  { ssr: false },
-);
 
 export default function OwnerTenantsPage() {
   return (
@@ -51,7 +47,6 @@ const searchParams = useSearchParams();
 
   const [tenantOverrides, setTenantOverrides] = useState<Record<string, TenantRecord>>({});
   const [paymentTenant, setPaymentTenant] = useState<TenantRecord | null>(null);
-  const [vacateTenant, setVacateTenant] = useState<TenantRecord | null>(null);
   const [searchQuery, setSearchQuery] = useState(() => searchParams.get("q") ?? "");
 
   const tenants = useMemo(() => {
@@ -97,19 +92,6 @@ const searchParams = useSearchParams();
     setPaymentTenant(null);
   }, []);
 
-  const openVacate = useCallback((tenant: TenantRecord) => {
-    setVacateTenant(tenant);
-  }, []);
-
-  const handleVacated = useCallback((tenantId: string) => {
-    setTenantOverrides((prev) => {
-      const next = { ...prev };
-      delete next[tenantId];
-      return next;
-    });
-    setVacateTenant(null);
-    router.refresh();
-  }, [router]);
 
   const mobileListRef = useRef<HTMLDivElement>(null);
   const [mobileScrollMargin, setMobileScrollMargin] = useState(0);
@@ -281,7 +263,7 @@ const searchParams = useSearchParams();
                     {/* Vacate button — full width, below card content */}
                     <button
                       type="button"
-                      onClick={() => openVacate(tenant)}
+                      onClick={() => router.push(`/owner/tenants/${tenant.tenantId}/vacate`)}
                       className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/[0.07] py-2 text-[11px] font-semibold text-red-400 transition hover:bg-red-500/15 active:scale-[0.98]"
                     >
                       <LogOut className="h-3 w-3" />
@@ -425,7 +407,7 @@ const searchParams = useSearchParams();
                             />
                             <button
                               type="button"
-                              onClick={() => openVacate(tenant)}
+                              onClick={() => router.push(`/owner/tenants/${tenant.tenantId}/vacate`)}
                               className="inline-flex min-h-10 items-center gap-1 rounded-xl border border-red-500/30 bg-red-500/[0.07] px-2.5 text-[11px] font-semibold text-red-400 transition hover:bg-red-500/15"
                               title="Vacate tenant"
                             >
@@ -452,12 +434,6 @@ const searchParams = useSearchParams();
         onSuccess={handlePaymentSuccess}
       />
 
-      {/* Vacate modal — per-card action */}
-      <VacateTenantModal
-        tenant={vacateTenant}
-        onClose={() => setVacateTenant(null)}
-        onRemoved={handleVacated}
-      />
     </div>
   );
 }
