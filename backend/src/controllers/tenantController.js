@@ -112,15 +112,27 @@ function resolveAssignment(hostelRow, assignment) {
 
   const floors = normalizeHostelFloors(hostelRow);
   const propertyType = normalizeHostelType(hostelRow.type);
-  const floorNumber = Number(assignment.floorNumber || 0);
   const roomNumber = String(assignment.roomNumber || "").trim();
-  const floor = floors[floorNumber - 1];
 
-  if (!floor) {
-    throw createHttpError(400, "Selected floor was not found.");
+  // Prefer unitId lookup — new frontend sends unitId directly without floorNumber.
+  // Fall back to legacy floorNumber+roomNumber for backward compatibility.
+  let room = null;
+
+  if (assignment.unitId) {
+    for (const floor of floors) {
+      const found = floor.rooms.find((r) => r.unitId === assignment.unitId);
+      if (found) { room = found; break; }
+    }
   }
 
-  const room = floor.rooms.find((item) => item.roomNumber === roomNumber);
+  if (!room && roomNumber) {
+    const floorNumber = Number(assignment.floorNumber || 0);
+    const floor = floors[floorNumber - 1];
+    if (!floor) {
+      throw createHttpError(400, "Selected floor was not found.");
+    }
+    room = floor.rooms.find((r) => r.roomNumber === roomNumber);
+  }
 
   if (!room) {
     throw createHttpError(400, "Selected room or unit was not found.");
@@ -140,8 +152,7 @@ function resolveAssignment(hostelRow, assignment) {
       bedId: bed.id,
       bedLabel: bed.label,
       sharingType: room.sharingType,
-      floorNumber,
-      roomNumber,
+      roomNumber: room.roomNumber,
       moveInDate: assignment.moveInDate || "",
     };
   }
@@ -152,8 +163,7 @@ function resolveAssignment(hostelRow, assignment) {
     bedId: null,
     bedLabel: "",
     sharingType: room.sharingType,
-    floorNumber,
-    roomNumber,
+    roomNumber: room.roomNumber,
     moveInDate: assignment.moveInDate || "",
   };
 }

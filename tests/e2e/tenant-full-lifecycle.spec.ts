@@ -689,7 +689,7 @@ test.describe("Room assignment", () => {
     if (await laterBtn.isVisible()) await laterBtn.click();
   });
 
-  test("assign tenant to room via API", async ({ page }, testInfo) => {
+  test("assign tenant to room via API — unitId lookup (no floorNumber)", async ({ page }, testInfo) => {
     const d = uniqueTenantData(testInfo.title, testInfo.project.name);
     await loginAsDemoOwner(page);
     await page.goto("/owner/tenants");
@@ -708,6 +708,7 @@ test.describe("Room assignment", () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const hostels: any[] = (hostelData as any).hostels ?? [];
+    let assigned = false;
     if (hostels.length > 0) {
       const hostel = hostels[0];
       const floor = hostel.data?.floors?.[0];
@@ -718,15 +719,35 @@ test.describe("Room assignment", () => {
         const result = await apiPost(page, "/api/tenants/assign-room", {
           tenantId,
           hostelId: String(hostel.id),
-          unitId: room.unitId,
+          // Send unitId WITHOUT floorNumber — this is the new frontend code path.
+          // Old bug: backend did floors[floorNumber-1] → floors[-1] = undefined → "Floor not found".
+          // Fixed: backend searches all floors by unitId first.
+          unitId: room.unitId ?? `${hostel.id}-${floor.id ?? "f0"}-${String(room.roomNumber ?? "").toLowerCase()}`,
           bedId: bed.id,
           bedLabel: bed.label,
           roomNumber: room.roomNumber,
           moveInDate: "2026-05-01",
         });
-        // Might succeed or fail if bed occupied — just no 500
+        // Must not be 400 "floor not found" or 500
+        expect([200, 409]).toContain(result.status); // 409 = bed already occupied (ok)
+        expect(result.status).not.toBe(400);
         expect(result.status).not.toBe(500);
+        assigned = result.status === 200;
       }
+    }
+
+    // Verify assignment persisted when assignment succeeded
+    if (assigned) {
+      const csrf2 = await getCsrf(page);
+      const check = await page.evaluate(async ({ id, csrf }) => {
+        const res = await fetch(`/api/tenants/${encodeURIComponent(id)}`, {
+          headers: { "x-csrf-token": decodeURIComponent(csrf) },
+          credentials: "same-origin",
+        });
+        return res.json();
+      }, { id: tenantId, csrf: csrf2 });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((check as any).tenant?.assignment?.roomNumber).toBeTruthy();
     }
 
     await deleteTenantApi(page, tenantId);

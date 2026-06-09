@@ -688,35 +688,7 @@ export function TenantFormModal({
                     ) : null}
                   </div>
 
-                  {/* Emergency Contact — also shown here so tests filling this field on step 1 work */}
-                  <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                    <p className="text-[12px] font-semibold text-white/60">Emergency Contact <span className="font-normal text-white/35">(optional)</span></p>
-                    <Field label="Contact Name">
-                      <InputShell icon={<ShieldAlert className="h-4 w-4 text-amber-400" />}>
-                        <input
-                          value={form.emergencyContactName}
-                          onChange={(e) => setField("emergencyContactName", e.target.value)}
-                          disabled={submitting}
-                          placeholder="Name of emergency contact"
-                          className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                        />
-                      </InputShell>
-                    </Field>
-                    <Field label="Emergency Phone">
-                      <InputShell icon={<Phone className="h-4 w-4 text-emerald-500" />}>
-                        <span className="text-[13px] font-medium text-white/50">+91</span>
-                        <input
-                          value={formatPhoneDisplay(form.emergencyContactPhone)}
-                          onChange={(e) => setField("emergencyContactPhone", normalizePhone(e.target.value))}
-                          disabled={submitting}
-                          type="tel"
-                          inputMode="tel"
-                          placeholder="98765 43210"
-                          className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                        />
-                      </InputShell>
-                    </Field>
-                  </div>
+                  {/* Emergency Contact intentionally removed from step 1 — collected in step 2 */}
                 </>
               ) : null}
 
