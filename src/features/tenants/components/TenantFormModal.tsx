@@ -559,7 +559,7 @@ export function TenantFormModal({
           <div
             ref={scrollRef}
             className={asPage
-              ? "relative px-4 pb-4 pt-3 sm:px-5"
+              ? "relative overflow-x-hidden px-4 pb-4 pt-3 sm:px-5"
               : "relative min-h-0 flex-1 overflow-x-hidden overflow-y-scroll px-4 pb-4 pt-3 sm:px-5"
             }
             {...(!asPage && { style: { WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" } })}

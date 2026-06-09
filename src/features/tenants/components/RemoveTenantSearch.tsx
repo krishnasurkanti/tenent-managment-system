@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ProcessingPill } from "@/components/ui/processing-pill";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { removeTenant } from "@/services/tenants/tenants.service";
 import { fmtTenantId } from "@/utils/payment";
@@ -29,24 +30,16 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
   const normalizedQuery = query.trim().toLowerCase();
 
   const matches = useMemo(() => {
-    if (!normalizedQuery) {
-      return [];
-    }
-
-    return tenants.filter((tenant) => {
-      const tenantIdMatch = tenant.tenantId.includes(normalizedQuery);
-      const nameMatch = tenant.fullName.toLowerCase().includes(normalizedQuery);
-      return tenantIdMatch || nameMatch;
-    });
+    if (!normalizedQuery) return [];
+    return tenants.filter((t) =>
+      t.tenantId.includes(normalizedQuery) || t.fullName.toLowerCase().includes(normalizedQuery),
+    );
   }, [normalizedQuery, tenants]);
 
-  const selectedTenant = matches.find((tenant) => tenant.tenantId === selectedTenantId) ?? null;
+  const selectedTenant = matches.find((t) => t.tenantId === selectedTenantId) ?? null;
 
   const closeModal = () => {
-    if (submitting) {
-      return;
-    }
-
+    if (submitting) return;
     setOpen(false);
     setQuery("");
     setSelectedTenantId("");
@@ -61,25 +54,12 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
   };
 
   const handleRemove = async () => {
-    if (!selectedTenant) {
-      setError("Select a tenant before removing. Search and choose the tenant first.");
-      return;
-    }
-
-    if (!confirmed) {
-      setError("Please confirm you understand this action before proceeding.");
-      return;
-    }
-
-    if (submitting) {
-      return;
-    }
+    if (!selectedTenant) { setError("Select a tenant before removing."); return; }
+    if (!confirmed) { setError("Please confirm before proceeding."); return; }
+    if (submitting) return;
 
     const numericRefund = Number(refundAmount || 0);
-    if (Number.isNaN(numericRefund) || numericRefund < 0) {
-      setError("Enter a valid refund amount.");
-      return;
-    }
+    if (Number.isNaN(numericRefund) || numericRefund < 0) { setError("Enter a valid refund amount."); return; }
 
     setSubmitting(true);
     setError("");
@@ -99,7 +79,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
       return;
     }
 
-    setMessage(`${selectedTenant.fullName} was removed. Room and bed are now available again.`);
+    setMessage(`${selectedTenant.fullName} was removed.`);
     setSubmitting(false);
     router.refresh();
   };
@@ -107,14 +87,11 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
   return (
     <>
       <Button
-        className="min-h-12 w-full rounded-2xl border border-white/80 bg-[linear-gradient(90deg,#ff8ca6_0%,#ff6e8d_100%)] px-4 text-[13px] font-semibold text-white shadow-[0_16px_30px_rgba(255,110,141,0.2)] hover:opacity-95"
+        className="min-h-12 w-full rounded-2xl border border-red-500/40 bg-red-500/10 px-4 text-[13px] font-semibold text-red-400 hover:bg-red-500/15 transition"
+        variant="ghost"
         onClick={() => {
-          setQuery("");
-          setSelectedTenantId("");
-          setSubmitting(false);
-          setMessage("");
-          setError("");
-          setOpen(true);
+          setQuery(""); setSelectedTenantId(""); setSubmitting(false);
+          setMessage(""); setError(""); setOpen(true);
         }}
       >
         <Trash2 className="mr-2 h-4 w-4" />
@@ -126,186 +103,181 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="remove-tenant-modal-title"
-          className="fixed inset-0 z-50 overflow-y-auto overscroll-none touch-pan-y bg-[rgba(48,28,75,0.28)] px-3 py-3 sm:px-4 sm:py-4"
+          className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4 sm:py-4"
+          style={{ background: "rgba(2,6,23,0.80)", backdropFilter: "blur(6px)" }}
         >
-          <div className="flex min-h-full items-center justify-center">
-            <Card className="flex max-h-[90dvh] w-[min(calc(100vw-2rem),42rem)] flex-col overflow-hidden border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82)_0%,rgba(244,236,255,0.95)_100%)] p-3 sm:p-4 shadow-[0_28px_70px_rgba(170,148,255,0.22)]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/72 px-3 py-1.5 text-[13px] font-semibold text-slate-700 shadow-sm">
-                  <span className="rounded-full bg-[linear-gradient(135deg,#ff8ca6_0%,#ff6e8d_100%)] p-1 text-white">
+          <Card className="flex w-full max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] sm:w-[min(calc(100vw-2rem),42rem)] sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
+
+            {/* Header */}
+            <div className="relative shrink-0 px-4 pb-3 pt-4 sm:px-5 sm:pt-5">
+              <div className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(90deg,rgba(239,68,68,0.12)_0%,rgba(220,38,38,0.05)_100%)]" />
+              <div className="relative flex items-start justify-between gap-4">
+                <div>
+                  <div id="remove-tenant-modal-title" className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[13px] font-semibold text-red-400">
                     <Trash2 className="h-3.5 w-3.5" />
-                  </span>
-                  Remove Tenant
+                    Remove Tenant
+                  </div>
+                  <p className="mt-2 text-[11px] text-white/45">Search by ID or name, confirm, then remove.</p>
                 </div>
-                <h2 id="remove-tenant-modal-title" className="mt-3 text-xl font-semibold sm:text-2xl">Remove Tenant</h2>
-                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                  Search by tenant ID or name, confirm room details, then remove the tenant from the hostel.
-                </p>
+                <Button variant="ghost" disabled={submitting} aria-label="Close" className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={closeModal}>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-              <Button variant="ghost" disabled={submitting} aria-label="Close" className="rounded-2xl px-3" onClick={closeModal}>
-                <X className="h-4 w-4" />
-              </Button>
             </div>
 
-            <div className="mt-3 sm:mt-4 flex-1 space-y-4 overflow-y-auto overscroll-none touch-pan-y pr-1">
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium">Search by tenant ID or name</span>
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-                  <input
-                    value={query}
-                    onChange={(event) => {
-                      setQuery(event.target.value);
-                      setSelectedTenantId("");
-                      setConfirmed(false);
-                      setMessage("");
-                      setError("");
-                    }}
-                    disabled={submitting}
-                    placeholder="Type last 5-digit ID or tenant name"
-                    className="w-full rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-3 pl-11 text-sm outline-none shadow-sm"
-                  />
-                </div>
-              </label>
+            {/* Scrollable body */}
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-5" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}>
+              <div className="space-y-3">
 
-              {!normalizedQuery ? (
-                <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] px-4 py-4 text-sm text-[var(--muted-foreground)] shadow-sm">
-                  Start typing a tenant ID or name to find the tenant.
-                </div>
-              ) : matches.length === 0 ? (
-                <div className="rounded-2xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-4 py-4 text-sm text-[color:var(--error)]">
-                  No tenant matched that search.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {matches.map((tenant) => {
-                    const active = selectedTenantId === tenant.tenantId;
-
-                    return (
-                      <button
-                        key={tenant.tenantId}
-                        type="button"
-                        disabled={submitting}
-                        onClick={() => {
-                          setSelectedTenantId(tenant.tenantId);
-                          const suggestedRefund = tenant.advanceBalance ?? tenant.advanceAmount ?? 0;
-                          setAdvanceRefundEligible(false);
-                          setRefundAdvance(false);
-                          setRefundAmount(String(suggestedRefund));
-                          setSettlementNote("");
-                          setConfirmed(false);
-                          setMessage("");
-                          setError("");
-                        }}
-                        className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
-                          active
-                            ? "border-[color:var(--error)] bg-[linear-gradient(180deg,rgba(220,38,38,0.18)_0%,rgba(254,226,226,0.92)_100%)]"
-                            : "border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] hover:border-[color:color-mix(in_srgb,var(--error)_34%,transparent)]"
-                        }`}
-                      >
-                        <p className="font-semibold text-[var(--foreground)]">{tenant.fullName}</p>
-                        <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                          Tenant ID {fmtTenantId(tenant.tenantId)} • {tenant.phone}
-                        </p>
-                        <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                          Room {tenant.assignment?.roomNumber ?? "-"}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {selectedTenant ? (
-                <>
-                  <div className="rounded-2xl border border-[color:var(--error)] bg-[linear-gradient(180deg,rgba(220,38,38,0.14)_0%,rgba(254,226,226,0.92)_100%)] p-4 text-sm text-[color:var(--error)]">
-                    <p className="font-semibold text-[#991b1b]">{selectedTenant.fullName}</p>
-                    <p className="mt-1">Tenant ID: {fmtTenantId(selectedTenant.tenantId)}</p>
-                    <p className="mt-1">
-                      Room {selectedTenant.assignment?.roomNumber ?? "-"}
-                    </p>
-                    <p className="mt-1">Removing this tenant will free the assigned room/bed for reuse. Payment history is preserved.</p>
+                {/* Search */}
+                <label className="block">
+                  <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Search by tenant ID or name</span>
+                  <div className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-3">
+                    <Search className="h-4 w-4 shrink-0 text-white/30" />
+                    <input
+                      value={query}
+                      onChange={(e) => { setQuery(e.target.value); setSelectedTenantId(""); setConfirmed(false); setMessage(""); setError(""); }}
+                      disabled={submitting}
+                      placeholder="Type last 5-digit ID or tenant name"
+                      className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
+                    />
                   </div>
-                  <div className="rounded-2xl border border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f8f2ff_100%)] p-4 text-sm shadow-sm">
-                    <p className="font-semibold text-slate-900">Vacating settlement</p>
-                    <p className="mt-1 text-[13px] text-slate-600">
-                      Suggested refundable advance: Rs {(selectedTenant.advanceBalance ?? selectedTenant.advanceAmount ?? 0).toLocaleString("en-IN")}
-                    </p>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <label className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3">
-                        <input
-                          type="checkbox"
-                          checked={advanceRefundEligible}
-                          onChange={(event) => setAdvanceRefundEligible(event.target.checked)}
+                </label>
+
+                {/* Results */}
+                {!normalizedQuery ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 text-[13px] text-white/40">
+                    Start typing a tenant ID or name to find the tenant.
+                  </div>
+                ) : matches.length === 0 ? (
+                  <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-[13px] text-red-400">
+                    No tenant matched that search.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {matches.map((t) => {
+                      const active = selectedTenantId === t.tenantId;
+                      return (
+                        <button
+                          key={t.tenantId}
+                          type="button"
                           disabled={submitting}
-                          className="mt-0.5 h-4 w-4 accent-emerald-600"
-                        />
-                        <span className="text-slate-800">Advance refund eligible?</span>
+                          onClick={() => {
+                            setSelectedTenantId(t.tenantId);
+                            setRefundAmount(String(t.advanceBalance ?? t.advanceAmount ?? 0));
+                            setAdvanceRefundEligible(false);
+                            setRefundAdvance(false);
+                            setSettlementNote("");
+                            setConfirmed(false);
+                            setMessage(""); setError("");
+                          }}
+                          className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                            active
+                              ? "border-red-500/50 bg-red-500/15"
+                              : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.06]"
+                          }`}
+                        >
+                          <p className="text-[13px] font-semibold text-white">{t.fullName}</p>
+                          <p className="mt-0.5 text-[11px] text-white/45">
+                            #{fmtTenantId(t.tenantId)} · {t.phone || "No phone"} · Room {t.assignment?.roomNumber ?? "Unassigned"}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Settlement section */}
+                {selectedTenant ? (
+                  <>
+                    <div className="rounded-2xl border border-red-500/25 bg-red-500/[0.08] p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-red-400">Selected tenant</p>
+                      <p className="mt-1 text-[14px] font-semibold text-white">{selectedTenant.fullName}</p>
+                      <p className="mt-0.5 text-[11px] text-white/45">
+                        #{fmtTenantId(selectedTenant.tenantId)} · Room {selectedTenant.assignment?.roomNumber ?? "Unassigned"}
+                      </p>
+                      <p className="mt-1.5 text-[11px] text-white/40">Removing frees room/bed for reuse. Payment history preserved.</p>
+                    </div>
+
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 space-y-3">
+                      <p className="text-[12px] font-semibold text-white/70">Vacating settlement</p>
+                      <p className="text-[11px] text-white/40">
+                        Suggested refundable advance: ₹{(selectedTenant.advanceBalance ?? selectedTenant.advanceAmount ?? 0).toLocaleString("en-IN")}
+                      </p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <label className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 cursor-pointer">
+                          <input type="checkbox" checked={advanceRefundEligible} onChange={(e) => setAdvanceRefundEligible(e.target.checked)} disabled={submitting} className="mt-0.5 h-4 w-4 accent-emerald-500" />
+                          <span className="text-[12px] text-white/70">Advance refund eligible?</span>
+                        </label>
+                        <label className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 cursor-pointer">
+                          <input type="checkbox" checked={refundAdvance} onChange={(e) => setRefundAdvance(e.target.checked)} disabled={submitting} className="mt-0.5 h-4 w-4 accent-emerald-500" />
+                          <span className="text-[12px] text-white/70">Refund advance?</span>
+                        </label>
+                      </div>
+                      <label className="block">
+                        <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Refund amount</span>
+                        <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
+                          <input
+                            type="number"
+                            min="0"
+                            value={refundAmount}
+                            onChange={(e) => setRefundAmount(e.target.value)}
+                            disabled={submitting || !refundAdvance}
+                            className="w-full bg-transparent text-[13px] text-white outline-none disabled:opacity-40 placeholder:text-white/25"
+                          />
+                        </div>
                       </label>
-                      <label className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3">
-                        <input
-                          type="checkbox"
-                          checked={refundAdvance}
-                          onChange={(event) => setRefundAdvance(event.target.checked)}
+                      <label className="block">
+                        <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Note (optional)</span>
+                        <textarea
+                          value={settlementNote}
+                          onChange={(e) => setSettlementNote(e.target.value)}
                           disabled={submitting}
-                          className="mt-0.5 h-4 w-4 accent-emerald-600"
+                          rows={2}
+                          placeholder="Optional settlement note"
+                          className="w-full resize-none rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5 text-[13px] text-white outline-none placeholder:text-white/25"
                         />
-                        <span className="text-slate-800">Refund advance?</span>
                       </label>
                     </div>
-                    <label className="mt-3 block">
-                      <span className="mb-1.5 block text-[12px] font-medium text-slate-700">Refund amount</span>
+
+                    <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/[0.08] p-3 text-[12px]">
                       <input
-                        type="number"
-                        min="0"
-                        value={refundAmount}
-                        onChange={(event) => setRefundAmount(event.target.value)}
-                        disabled={submitting || !refundAdvance}
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none disabled:opacity-60"
-                      />
-                    </label>
-                    <label className="mt-3 block">
-                      <span className="mb-1.5 block text-[12px] font-medium text-slate-700">Note</span>
-                      <textarea
-                        value={settlementNote}
-                        onChange={(event) => setSettlementNote(event.target.value)}
+                        type="checkbox"
+                        checked={confirmed}
+                        onChange={(e) => setConfirmed(e.target.checked)}
                         disabled={submitting}
-                        rows={2}
-                        placeholder="Optional settlement note"
-                        className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none"
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-red-500"
                       />
+                      <span className="text-red-300">
+                        I understand <strong>{selectedTenant.fullName}</strong> will be permanently removed. This cannot be undone.
+                      </span>
                     </label>
-                  </div>
-                  <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[color:var(--error)] bg-[linear-gradient(180deg,rgba(220,38,38,0.08)_0%,rgba(254,226,226,0.7)_100%)] p-4 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={confirmed}
-                      onChange={(e) => setConfirmed(e.target.checked)}
-                      disabled={submitting}
-                      className="mt-0.5 h-4 w-4 shrink-0 accent-red-600"
-                    />
-                    <span className="text-[#991b1b]">
-                      I understand that <strong>{selectedTenant.fullName}</strong> will be removed from this hostel. This cannot be undone.
-                    </span>
-                  </label>
-                </>
-              ) : null}
+                  </>
+                ) : null}
+
+                {error ? <p className="rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-[13px] text-red-400">{error}</p> : null}
+                {message ? <p className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-[13px] text-emerald-400">{message}</p> : null}
+                {submitting ? <ProcessingPill label="Removing tenant…" /> : null}
+              </div>
             </div>
 
-            {error ? <p className="mt-4 text-sm text-[color:var(--error)]">{error}</p> : null}
-            {message ? <p className="mt-4 text-sm text-emerald-600">{message}</p> : null}
-
-            <div className="mt-3 sm:mt-4 flex flex-col-reverse gap-3 border-t border-[var(--border)] pt-4 sm:flex-row sm:justify-end">
-              <Button variant="secondary" disabled={submitting} onClick={closeModal} className="rounded-2xl border-white/80 bg-[linear-gradient(180deg,#ffffff_0%,#f6efff_100%)]">
-                Cancel
-              </Button>
-              <Button variant="danger" disabled={submitting} onClick={handleRemove} className={submitting ? "opacity-70" : ""}>
-                {submitting ? "Removing..." : "Remove Tenant"}
-              </Button>
+            {/* Footer */}
+            <div className="shrink-0 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5">
+              <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                <Button variant="secondary" disabled={submitting} onClick={closeModal} className="w-full rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white sm:flex-1">
+                  Cancel
+                </Button>
+                <Button
+                  disabled={submitting || !confirmed}
+                  onClick={() => void handleRemove()}
+                  className="w-full rounded-2xl bg-[linear-gradient(90deg,#b91c1c_0%,#dc2626_100%)] text-white shadow-[0_10px_24px_rgba(185,28,28,0.3)] hover:brightness-110 disabled:opacity-50 sm:flex-1"
+                >
+                  {submitting ? "Removing…" : "Remove Tenant"}
+                </Button>
+              </div>
             </div>
-            </Card>
-          </div>
+
+          </Card>
         </div>
       ) : null}
     </>

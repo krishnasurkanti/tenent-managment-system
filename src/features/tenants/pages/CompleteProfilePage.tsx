@@ -38,7 +38,7 @@ function CompleteProfilePageContent() {
   if (isLoading) return <CompleteProfileSkeleton />;
   if (!tenant) {
     return (
-      <div className="mx-auto max-w-lg space-y-3 pb-8">
+      <div className="space-y-3 pb-8 px-3 sm:px-4 sm:max-w-lg sm:mx-auto">
         <button
           type="button"
           onClick={() => router.push("/owner/tenants")}
@@ -53,7 +53,7 @@ function CompleteProfilePageContent() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-3 pb-8">
+    <div className="space-y-3 pb-8 px-3 sm:px-4 sm:max-w-lg sm:mx-auto">
       {/* Back navigation */}
       <button
         type="button"
@@ -77,7 +77,7 @@ function CompleteProfilePageContent() {
 
 function CompleteProfileSkeleton() {
   return (
-    <div className="mx-auto max-w-lg space-y-3 pb-8">
+    <div className="space-y-3 pb-8 px-3 sm:px-4 sm:max-w-lg sm:mx-auto">
       <SkeletonBlock className="h-8 w-36 rounded-xl" />
       <SkeletonBlock className="h-[520px] rounded-[10px]" />
     </div>

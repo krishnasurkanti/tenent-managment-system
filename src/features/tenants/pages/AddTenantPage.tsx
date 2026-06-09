@@ -35,7 +35,7 @@ function AddTenantPageContent() {
   if (hostelLoading) return <AddTenantSkeleton />;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-3 pb-8">
+    <div className="space-y-3 pb-8 px-3 sm:px-4 sm:max-w-2xl sm:mx-auto">
       {/* Back navigation */}
       <button
         type="button"
@@ -61,7 +61,7 @@ function AddTenantPageContent() {
 
 function AddTenantSkeleton() {
   return (
-    <div className="mx-auto max-w-2xl space-y-3 pb-8">
+    <div className="space-y-3 pb-8 px-3 sm:px-4 sm:max-w-2xl sm:mx-auto">
       <SkeletonBlock className="h-8 w-36 rounded-xl" />
       <SkeletonBlock className="h-[600px] rounded-[10px]" />
     </div>

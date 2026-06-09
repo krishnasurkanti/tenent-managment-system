@@ -32,7 +32,7 @@ function QuickAddTenantPageContent() {
   if (hostelLoading) return <QuickAddSkeleton />;
 
   return (
-    <div className="mx-auto max-w-lg space-y-3 pb-8">
+    <div className="space-y-3 pb-8 px-3 sm:px-4 sm:max-w-lg sm:mx-auto">
       {/* Back navigation */}
       <button
         type="button"
@@ -56,7 +56,7 @@ function QuickAddTenantPageContent() {
 
 function QuickAddSkeleton() {
   return (
-    <div className="mx-auto max-w-lg space-y-3 pb-8">
+    <div className="space-y-3 pb-8 px-3 sm:px-4 sm:max-w-lg sm:mx-auto">
       <SkeletonBlock className="h-8 w-36 rounded-xl" />
       <SkeletonBlock className="h-80 rounded-[10px]" />
     </div>
