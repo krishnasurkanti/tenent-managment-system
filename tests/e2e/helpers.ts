@@ -3,17 +3,30 @@ import AxeBuilder from "@axe-core/playwright";
 
 export async function gotoAndWaitForHydration(page: Page, path: string) {
   await page.goto(path);
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
   // wait for main content to appear as a lightweight hydration signal
   await page.waitForSelector("main, [data-testid=app-root]", { timeout: 10000 }).catch(() => {});
 }
 
 export async function loginDemoOwner(page: Page) {
-  await gotoAndWaitForHydration(page, "/owner/login");
+  await page.addInitScript(() => {
+    window.localStorage.clear();
+    // Pre-select Aurora Residency — test-created hostels get prepended to the
+    // demo store and would become hostels[0], making UI default to the wrong hostel.
+    window.localStorage.setItem("currentHostelId", "owner-hostel-aurora");
+  });
+  await page.goto("/owner/login");
+  // Register before click so we catch the owner-hostels response that fires after dashboard loads.
+  // Filter out the initial 401 — the real non-401 response arrives after session is established.
+  const hostelsPromise = page.waitForResponse(
+    (r) => r.url().includes("/api/owner-hostels") && r.status() !== 401,
+    { timeout: 20000 },
+  ).catch(() => {}); // non-fatal: some callers don't navigate to dashboard at all
   const demoBtn = page.getByRole("button", { name: /try demo workspace/i });
   if (await demoBtn.count()) {
     await demoBtn.click();
-    await page.waitForLoadState("networkidle");
+    await hostelsPromise;
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
   }
 }
 
