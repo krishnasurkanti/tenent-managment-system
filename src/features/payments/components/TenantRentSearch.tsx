@@ -119,8 +119,8 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
         setAmountTouched(false);
         setPaidOnDate(new Date().toISOString().slice(0, 10));
         setStep(2);
-        // Auto-detect balance mode
-        if (targetTenant.pendingBalance) {
+        // Auto-detect balance mode (only when balance is positive — negative means credit)
+        if (targetTenant.pendingBalance && targetTenant.pendingBalance.amount > 0) {
           setIsBalanceMode(true);
           setAmount(String(targetTenant.pendingBalance.amount));
         } else {
@@ -267,7 +267,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
     }
 
     // When moving to step 2, set up modes based on tenant state
-    const hasPending = !!selectedTenant.pendingBalance;
+    const hasPending = !!selectedTenant.pendingBalance && selectedTenant.pendingBalance.amount > 0;
     const hasActiveDiscount = !!selectedTenant.activeDiscount;
 
     setIsBalanceMode(hasPending);
@@ -365,7 +365,7 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
                       <div className="space-y-3">
                         {matches.map((tenant) => {
                           const active = selectedTenantId === tenant.tenantId;
-                          const hasPending = !!tenant.pendingBalance;
+                          const hasPending = !!tenant.pendingBalance && tenant.pendingBalance.amount > 0;
 
                           return (
                             <button
