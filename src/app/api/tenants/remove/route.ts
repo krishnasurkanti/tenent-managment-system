@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { addFinanceLedgerEntry } from "@/data/financeLedgerStore";
 import { getTenantRecordById, removeTenantRecord } from "@/data/tenantStore";
 import { requireOwnerSession } from "@/lib/session-mode";
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  if (process.env.PLAYWRIGHT_TEST !== "true" && apiRateLimit(getTrustedClientIp(request))) {
+  if (process.env.NODE_ENV === "production" && apiRateLimit(getTrustedClientIp(request))) {
     return NextResponse.json({ message: "Too many requests. Try again later." }, { status: 429 });
   }
 
@@ -36,6 +36,11 @@ export async function POST(request: Request) {
 
   if (!body.tenantId) {
     return NextResponse.json({ message: "Tenant ID is required." }, { status: 400 });
+  }
+
+  // M-07 fix: validate settlementDate format to prevent invalid dates in ledger
+  if (body.settlementDate && !/^\d{4}-\d{2}-\d{2}$/.test(body.settlementDate)) {
+    return NextResponse.json({ message: "Settlement date must be YYYY-MM-DD." }, { status: 400 });
   }
 
   try {

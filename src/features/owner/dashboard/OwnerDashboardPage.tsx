@@ -66,7 +66,7 @@ function DashboardContent({
     const ov: TenantRecord[] = [];
     const pd: TenantRecord[] = [];
     for (const t of tenants) {
-      const tone = getDueStatus(t.nextDueDate).tone;
+      const tone = getDueStatus(t.nextDueDate, t.billingCycle).tone;
       if (tone === "orange" || tone === "yellow") ds.push(t);
       else if (tone === "red") ov.push(t);
       else if (tone === "green") pd.push(t);
@@ -95,7 +95,7 @@ function DashboardContent({
 
   const allDueItems = useMemo(
     () => tenants
-      .map((t) => ({ tenant: t, status: getDueStatus(t.nextDueDate) }))
+      .map((t) => ({ tenant: t, status: getDueStatus(t.nextDueDate, t.billingCycle) }))
       .sort((a, b) => a.status.priority - b.status.priority),
     [tenants],
   );
@@ -109,7 +109,7 @@ function DashboardContent({
     { label: "Paid on track", value: String(paid.length) },
     { label: "Needs attention", value: `${attentionCount} (${urgentShare}%)` },
     { label: isResidence ? "Vacant units" : "Vacant beds", value: String(availableBeds) },
-    { label: "Monthly expected", value: `Rs ${expectedRevenue.toLocaleString("en-IN")}` },
+    { label: "Monthly expected", value: `₹${expectedRevenue.toLocaleString("en-IN")}` },
   ], [collectionRate, paymentHealthScore, paid.length, attentionCount, urgentShare, isResidence, availableBeds, expectedRevenue]);
 
   return (
@@ -255,7 +255,7 @@ function DashboardContent({
                 {paymentHealthScore}/100 health score • {attentionCount} collections need attention
               </div>
               <div className="mt-4 grid gap-2.5 sm:grid-cols-4">
-                <DesktopMetric icon={CreditCard} label="Collected" value={`Rs ${totalCollected.toLocaleString("en-IN")}`} />
+                <DesktopMetric icon={CreditCard} label="Collected" value={`₹${totalCollected.toLocaleString("en-IN")}`} />
                 <DesktopMetric icon={TrendingUp} label="Collection Rate" value={`${collectionRate}%`} />
                 <DesktopMetric icon={Users} label={isResidence ? "Occupied Units" : "Occupied"} value={String(occupiedBeds)} />
                 <DesktopMetric icon={DoorOpen} label="At Risk" value={String(attentionCount)} />

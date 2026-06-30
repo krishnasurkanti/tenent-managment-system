@@ -128,6 +128,7 @@ export function OnboardingChecklist({
           <button
             type="button"
             onClick={() => setCollapsed((c) => !c)}
+            aria-label={collapsed ? "Expand checklist" : "Collapse checklist"}
             className="rounded-xl p-1.5 text-white/40 transition hover:bg-white/8 hover:text-white/70"
           >
             {collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}

@@ -1,20 +1,30 @@
-/**
+﻿/**
  * bed-reuse.spec.ts
- * Bed lifecycle: assign → vacate → reuse.
+ * Bed lifecycle: assign â†’ vacate â†’ reuse.
  * Verifies payment isolation, occupancy counts, dashboard stats, no ghost tenants.
  * Covers scenarios 1, 2, 5, 6, 7 from the QA spec.
  */
 import { expect, test, type Page } from "@playwright/test";
 import { uniqueTenantData } from "./test-data";
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function loginAsDemoOwner(page: Page) {
-  await page.addInitScript(() => window.localStorage.clear());
+  await page.addInitScript(() => {
+    window.localStorage.clear();
+    // Pre-select Aurora Residency — test-created hostels get prepended (unshift) to the
+    // demo store and would become hostels[0], making UI default to the wrong hostel.
+    window.localStorage.setItem("currentHostelId", "owner-hostel-aurora");
+  });
   await page.goto("/owner/login");
+  const hostelsPromise = page.waitForResponse(
+    (r) => r.url().includes("/api/owner-hostels") && r.status() !== 401,
+    { timeout: 15000 },
+  );
   await page.getByRole("button", { name: /try demo workspace/i }).click();
   await expect(page).toHaveURL(/\/owner\/dashboard/, { timeout: 15000 });
-  await page.waitForLoadState("networkidle");
+  await hostelsPromise;
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 }
 
 async function getCsrf(page: Page): Promise<string> {
@@ -125,7 +135,7 @@ async function assignToBed(page: Page, tenantId: string, bed: NonNullable<Awaite
   });
 }
 
-// ── scenario 1: pay rent, then remove tenant ──────────────────────────────────
+// â”€â”€ scenario 1: pay rent, then remove tenant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Scenario 1: Pay rent then remove tenant", () => {
   test("payment history preserved after tenant removal", async ({ page }, testInfo) => {
@@ -156,7 +166,7 @@ test.describe("Scenario 1: Pay rent then remove tenant", () => {
 
     // Verify not in UI list
     await page.goto("/owner/tenants");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await expect(page.getByText(fullName).filter({ visible: true })).toHaveCount(0, { timeout: 8000 });
   });
 
@@ -179,7 +189,7 @@ test.describe("Scenario 1: Pay rent then remove tenant", () => {
   });
 });
 
-// ── scenario 2: remove tenant → new tenant in same bed ───────────────────────
+// â”€â”€ scenario 2: remove tenant â†’ new tenant in same bed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Scenario 2: Bed reuse after vacate", () => {
   test("bed becomes available after tenant removed and accepts new tenant", async ({ page }, testInfo) => {
@@ -188,7 +198,7 @@ test.describe("Scenario 2: Bed reuse after vacate", () => {
 
     const bed = await getFirstAvailableBed(page);
     if (!bed) {
-      test.skip(true, "No hostel with beds found — skipping bed reuse test");
+      test.skip(true, "No hostel with beds found â€” skipping bed reuse test");
       return;
     }
 
@@ -201,7 +211,7 @@ test.describe("Scenario 2: Bed reuse after vacate", () => {
     // If bed is already occupied by demo tenant, skip gracefully
     if (!assignA.ok && assignA.status === 409) {
       await deleteTenant(page, idA);
-      test.skip(true, "Bed already occupied — cannot test reuse without vacating demo tenant");
+      test.skip(true, "Bed already occupied â€” cannot test reuse without vacating demo tenant");
       return;
     }
 
@@ -215,7 +225,7 @@ test.describe("Scenario 2: Bed reuse after vacate", () => {
     const activeAfterA = await getActiveTenants(page);
     expect(activeAfterA.find(t => t.tenantId === idA)).toBeUndefined();
 
-    // Tenant B — assign to same bed
+    // Tenant B â€” assign to same bed
     const dB = uniqueTenantData(`${testInfo.title}-B`);
     const { tenantId: idB, fullName: nameB } = await createTenant(page, { fullName: dB.fullName });
     const assignB = await assignToBed(page, idB, bed);
@@ -240,8 +250,8 @@ test.describe("Scenario 2: Bed reuse after vacate", () => {
 
     // Verify UI shows B in list (it was there)
     await page.goto("/owner/tenants");
-    await page.waitForLoadState("networkidle");
-    // After cleanup B is gone too — just check A and B not mixed
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+    // After cleanup B is gone too â€” just check A and B not mixed
     await expect(page.getByText(nameA).filter({ visible: true })).toHaveCount(0, { timeout: 5000 });
   });
 
@@ -267,14 +277,14 @@ test.describe("Scenario 2: Bed reuse after vacate", () => {
 
     // Check rooms page shows occupied
     await page.goto("/owner/rooms");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     // Remove tenant A
     await deleteTenant(page, idA);
 
     // Rooms page should not still show A
     await page.goto("/owner/rooms");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     const aName = dA.fullName;
     await expect(page.getByText(aName).filter({ visible: true })).toHaveCount(0, { timeout: 5000 });
   });
@@ -309,7 +319,7 @@ test.describe("Scenario 2: Bed reuse after vacate", () => {
 
     // B's detail page should NOT show A's payment amount 6500 as B's
     await page.goto(`/owner/tenants/${idB}`);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     // B's name should be visible
     await expect(page.getByText(dB.fullName).filter({ visible: true }).first()).toBeVisible({ timeout: 8000 });
@@ -347,7 +357,7 @@ test.describe("Scenario 2: Bed reuse after vacate", () => {
 
     // Refresh tenants list
     await page.goto("/owner/tenants");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await expect(page.getByText(nameB).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
 
     // Check B's detail persists after reload
@@ -359,7 +369,7 @@ test.describe("Scenario 2: Bed reuse after vacate", () => {
   });
 });
 
-// ── same tenant name in different hostels ─────────────────────────────────────
+// â”€â”€ same tenant name in different hostels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Same name in different hostels", () => {
   test("API: tenants scoped to hostelId don't return other hostel's tenants", async ({ page }, testInfo) => {
@@ -430,13 +440,13 @@ test.describe("Same name in different hostels", () => {
   });
 });
 
-// ── dashboard consistency ─────────────────────────────────────────────────────
+// â”€â”€ dashboard consistency â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Dashboard consistency after tenant changes", () => {
   test("dashboard stats update after creating and deleting tenant", async ({ page }, testInfo) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/dashboard");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     // Read initial tenant count from API
     const csrf = await getCsrf(page);

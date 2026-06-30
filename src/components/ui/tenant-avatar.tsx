@@ -129,6 +129,7 @@ export function TenantAvatar({ tenantId, size = "sm", readOnly = false }: Props)
               <button
                 type="button"
                 onClick={() => setPickerOpen(false)}
+                aria-label="Close avatar picker"
                 className="rounded-full p-1 text-white/40 hover:text-white/70"
               >
                 <X className="h-4 w-4" />
@@ -140,6 +141,7 @@ export function TenantAvatar({ tenantId, size = "sm", readOnly = false }: Props)
                   key={i}
                   type="button"
                   onClick={() => handleSelect(i)}
+                  aria-label={`Select ${av.emoji} avatar`}
                   className="relative flex items-center justify-center rounded-full transition active:scale-90"
                   style={{ width: 52, height: 52 }}
                 >

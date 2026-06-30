@@ -60,7 +60,8 @@ export default function OwnerReportsPage() {
   const advanceRefunded = ledgerEntries
     .filter((entry) => entry.type === "advance_refund")
     .reduce((sum, entry) => sum + entry.amount, 0);
-  const grossIncome = collectedRent + advanceCollected + serviceFeeCollected;
+  // O-20 fix: advance is a refundable liability, not income — exclude it from gross income
+  const grossIncome = collectedRent + serviceFeeCollected;
   const netAfterRefunds = grossIncome - advanceRefunded;
 
   const exportHref = currentHostelId
@@ -97,8 +98,8 @@ export default function OwnerReportsPage() {
               <p className="text-sm font-semibold text-white">Payment Summary</p>
             </div>
             <div className="space-y-2">
-              <SummaryRow label="Expected monthly" value={`Rs ${totalRent.toLocaleString("en-IN")}`} />
-              <SummaryRow label="Collected this cycle" value={`Rs ${collectedRent.toLocaleString("en-IN")}`} color="green" />
+              <SummaryRow label="Expected monthly" value={`₹${totalRent.toLocaleString("en-IN")}`} />
+              <SummaryRow label="Collected this cycle" value={`₹${collectedRent.toLocaleString("en-IN")}`} color="green" />
               <SummaryRow label="Paid on time" value={`${paidCount} tenants`} color="green" />
               <SummaryRow label="Due soon" value={`${dueSoonCount} tenants`} color="yellow" />
               <SummaryRow label="Overdue" value={`${overdueCount} tenants`} color="red" />
@@ -113,10 +114,10 @@ export default function OwnerReportsPage() {
               <p className="text-sm font-semibold text-white">Advance & Service Ledger</p>
             </div>
             <div className="space-y-2">
-              <SummaryRow label="Advance collected" value={`Rs ${advanceCollected.toLocaleString("en-IN")}`} color="green" />
-              <SummaryRow label="Service fee collected" value={`Rs ${serviceFeeCollected.toLocaleString("en-IN")}`} color="green" />
-              <SummaryRow label="Advance refund debit" value={`Rs ${advanceRefunded.toLocaleString("en-IN")}`} color={advanceRefunded > 0 ? "red" : "default"} />
-              <SummaryRow label="Net after refunds" value={`Rs ${netAfterRefunds.toLocaleString("en-IN")}`} color={netAfterRefunds >= 0 ? "green" : "red"} />
+              <SummaryRow label="Advance collected" value={`₹${advanceCollected.toLocaleString("en-IN")}`} color="green" />
+              <SummaryRow label="Service fee collected" value={`₹${serviceFeeCollected.toLocaleString("en-IN")}`} color="green" />
+              <SummaryRow label="Advance refund debit" value={`₹${advanceRefunded.toLocaleString("en-IN")}`} color={advanceRefunded > 0 ? "red" : "default"} />
+              <SummaryRow label="Net after refunds" value={`₹${netAfterRefunds.toLocaleString("en-IN")}`} color={netAfterRefunds >= 0 ? "green" : "red"} />
             </div>
           </Card>
 

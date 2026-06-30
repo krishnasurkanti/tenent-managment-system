@@ -99,8 +99,9 @@ export default function OwnerBackupPage() {
       if (!res.ok) {
         setMessage({ type: "error", text: data.message ?? "Restore failed." });
       } else {
-        setMessage({ type: "success", text: data.message ?? "Restore complete. Reload the page to see updated data." });
+        setMessage({ type: "success", text: data.message ?? "Restore complete. Reloading..." });
         await loadBackups();
+        window.location.reload();
       }
     } catch {
       setMessage({ type: "error", text: "Network error during restore." });
@@ -112,6 +113,10 @@ export default function OwnerBackupPage() {
   };
 
   const handleFileRestore = async (file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      setMessage({ type: "error", text: "Backup file is too large (max 10 MB). Select a valid backup file." });
+      return;
+    }
     setRestoring(true);
     setMessage(null);
     try {
@@ -126,8 +131,9 @@ export default function OwnerBackupPage() {
       if (!res.ok) {
         setMessage({ type: "error", text: data.message ?? "Restore failed." });
       } else {
-        setMessage({ type: "success", text: data.message ?? "Restore complete." });
+        setMessage({ type: "success", text: data.message ?? "Restore complete. Reloading..." });
         await loadBackups();
+        window.location.reload();
       }
     } catch {
       setMessage({ type: "error", text: "Invalid backup file." });

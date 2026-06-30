@@ -25,9 +25,10 @@ export function getTrustedClientIp(request: Request): string {
 }
 
 type Entry = { count: number; resetAt: number };
-const store = new Map<string, Entry>();
 
 function createLimiter(max: number, windowMs: number) {
+  // Each limiter gets its own store — prevents key collisions between auth and API limits (P-05)
+  const store = new Map<string, Entry>();
   return function check(key: string): boolean {
     const now = Date.now();
     const entry = store.get(key);

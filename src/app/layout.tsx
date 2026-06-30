@@ -23,8 +23,8 @@ const syne = Syne({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // WCAG 1.4.4: do NOT set maximumScale=1 or userScalable=false — users must be
+  // able to zoom. Removed per bug H-14 / K-02.
   viewportFit: "cover",
   themeColor: "#09090b",
 };

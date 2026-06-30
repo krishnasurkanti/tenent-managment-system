@@ -396,6 +396,7 @@ export default function OwnerSignupPage() {
                             </button>
                             {rooms.length > 1 && (
                               <button type="button" onClick={() => removeRoom(room.id)}
+                                aria-label="Remove room"
                                 className="inline-flex h-6 w-6 items-center justify-center rounded-lg text-white/25 hover:bg-red-500/15 hover:text-red-400">
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>

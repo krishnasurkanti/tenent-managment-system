@@ -16,7 +16,7 @@ export async function PATCH(
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  if (process.env.PLAYWRIGHT_TEST !== "true" && apiRateLimit(getTrustedClientIp(request))) {
+  if (process.env.NODE_ENV === "production" && apiRateLimit(getTrustedClientIp(request))) {
     return NextResponse.json({ message: "Too many requests. Try again later." }, { status: 429 });
   }
 
@@ -66,6 +66,16 @@ export async function PATCH(
   if (body.billingCycle !== undefined) {
     const v = String(body.billingCycle ?? "").trim();
     patch.billingCycle = (v === "daily" || v === "weekly") ? v : "monthly";
+  }
+  if (body.paidOnDate !== undefined) {
+    // N-14 fix: allow patching paidOnDate; recalculates nextDueDate in updateTenantProfile
+    const v = String(body.paidOnDate ?? "").trim();
+    if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return NextResponse.json({ message: "paidOnDate must be YYYY-MM-DD." }, { status: 400 });
+    if (v) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      if (v > todayStr) return NextResponse.json({ message: "Payment date cannot be in the future." }, { status: 400 });
+    }
+    patch.paidOnDate = v || undefined;
   }
   if (body.occupation !== undefined) patch.occupation = str("occupation") as TenantRecord["occupation"];
   if (body.workplaceName !== undefined) patch.workplaceName = str("workplaceName");

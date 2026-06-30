@@ -77,7 +77,8 @@ function CreateHostelPageContent() {
   const [editingHostelId, setEditingHostelId] = useState<string | null>(null);
   const [hostelName, setHostelName] = useState("");
   const [address, setAddress] = useState("");
-  const [hostelType] = useState<"PG" | "RESIDENCE">("PG");
+  // O-05 fix: hostelType is now selectable instead of hardcoded to PG
+  const [hostelType, setHostelType] = useState<"PG" | "RESIDENCE">("PG");
   const [rooms, setRooms] = useState<RoomForm[]>([createRoom()]);
   const [step, setStep] = useState<1 | 2>(1);
   const [saving, setSaving] = useState(false);
@@ -311,8 +312,15 @@ function CreateHostelPageContent() {
     setSubmittingPlanId(planId);
     try {
       if (planId !== "free" && savedHostelId) {
-        await requestOwnerPlanUpgrade(savedHostelId, "free", planId);
+        const { response } = await requestOwnerPlanUpgrade(savedHostelId, "free", planId);
+        if (!response.ok) {
+          setError("Plan upgrade failed. You can update your plan from the dashboard settings.");
+          return;
+        }
       }
+    } catch {
+      setError("Unable to process plan upgrade. You can update your plan from the dashboard settings.");
+      return;
     } finally {
       setSubmittingPlanId(null);
     }
@@ -439,10 +447,33 @@ function CreateHostelPageContent() {
             <div className="px-4 pb-4 sm:px-5">
               <Field label="Property Type">
                 <div className="flex gap-2 pt-0.5">
-                  <div className="flex-1 rounded-2xl border border-[color:color-mix(in_srgb,var(--brand)_42%,transparent)] bg-[color:var(--brand-soft)] px-4 py-3 text-[13px] font-semibold text-[#9edcff] shadow-sm">
+                  {/* O-05 fix: hostelType is now selectable */}
+                  <button
+                    type="button"
+                    disabled={saving || isEditMode}
+                    onClick={() => setHostelType("PG")}
+                    className={`flex-1 rounded-2xl border px-4 py-3 text-left text-[13px] font-semibold transition ${
+                      hostelType === "PG"
+                        ? "border-[color:color-mix(in_srgb,var(--brand)_42%,transparent)] bg-[color:var(--brand-soft)] text-[#9edcff]"
+                        : "border-[color:var(--border)] bg-transparent text-white/40 hover:text-white/70"
+                    }`}
+                  >
                     <p>Hostel / PG</p>
                     <p className="mt-0.5 text-[11px] font-normal text-[color:var(--fg-secondary)]">Bed-based sharing rooms</p>
-                  </div>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={saving || isEditMode}
+                    onClick={() => setHostelType("RESIDENCE")}
+                    className={`flex-1 rounded-2xl border px-4 py-3 text-left text-[13px] font-semibold transition ${
+                      hostelType === "RESIDENCE"
+                        ? "border-[color:color-mix(in_srgb,var(--brand)_42%,transparent)] bg-[color:var(--brand-soft)] text-[#9edcff]"
+                        : "border-[color:var(--border)] bg-transparent text-white/40 hover:text-white/70"
+                    }`}
+                  >
+                    <p>Residence / Flat</p>
+                    <p className="mt-0.5 text-[11px] font-normal text-[color:var(--fg-secondary)]">Private units (1 bed/room)</p>
+                  </button>
                 </div>
               </Field>
             </div>
@@ -479,8 +510,8 @@ function CreateHostelPageContent() {
               </div>
               <div className={`rounded-[16px] px-3 py-3 ${ownerSubtlePanelClass}`}>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">Property type</p>
-                <p className="mt-1 text-sm font-semibold text-white">Hostel / PG</p>
-                <p className="mt-1 text-[11px] text-[color:var(--fg-secondary)]">Shared-room setup.</p>
+                <p className="mt-1 text-sm font-semibold text-white">{hostelType === "RESIDENCE" ? "Residence / Flat" : "Hostel / PG"}</p>
+                <p className="mt-1 text-[11px] text-[color:var(--fg-secondary)]">{hostelType === "RESIDENCE" ? "Private units." : "Shared-room setup."}</p>
               </div>
             </div>
           </Card>
@@ -616,6 +647,7 @@ function CreateHostelPageContent() {
                                     min="0"
                                     value={bed.rent}
                                     onChange={(e) => updateBed(room.id, bedIdx, "rent", e.target.value)}
+                                    onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
                                     placeholder="Monthly rent (Rs)"
                                     disabled={saving}
                                     className="w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 pl-8 text-[13px] text-white outline-none placeholder:text-white/25 focus:border-[#f2bb4d]/50"

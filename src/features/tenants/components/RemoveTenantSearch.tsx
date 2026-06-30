@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Search, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import type { TenantRecord } from "@/types/tenant";
 
 export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedTenantId, setSelectedTenantId] = useState("");
@@ -81,6 +83,8 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
 
     setMessage(`${selectedTenant.fullName} was removed.`);
     setSubmitting(false);
+    // Invalidate TanStack Query cache so tenant list updates immediately (F-07)
+    void queryClient.invalidateQueries({ queryKey: ["owner-tenants"] });
     router.refresh();
   };
 
@@ -234,6 +238,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
                           onChange={(e) => setSettlementNote(e.target.value)}
                           disabled={submitting}
                           rows={2}
+                          maxLength={500}
                           placeholder="Optional settlement note"
                           className="w-full resize-none rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5 text-[13px] text-white outline-none placeholder:text-white/25"
                         />

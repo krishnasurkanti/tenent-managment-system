@@ -42,7 +42,7 @@ function QrModal({ hostelId, hostelName, onClose }: { hostelId: string; hostelNa
             <p className="text-sm font-semibold text-white">QR Code</p>
             <p className="mt-0.5 text-[11px] text-white/40">{hostelName}</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-xl p-1.5 text-white/40 hover:text-white transition">
+          <button type="button" onClick={onClose} aria-label="Close QR code" className="rounded-xl p-1.5 text-white/40 hover:text-white transition">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -142,6 +142,7 @@ function ComplaintCard({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
+          aria-label={open ? "Collapse complaint" : "Expand complaint"}
           className="shrink-0 rounded-xl p-1.5 text-white/30 hover:text-white transition"
         >
           <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
@@ -209,6 +210,7 @@ function ComplaintsContent() {
   const [loading, setLoading] = useState(true);
   const [qrOpen, setQrOpen] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [toggleError, setToggleError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<ComplaintStatus | "all">("all");
 
   const fetchComplaints = useCallback(async (hostelId: string) => {
@@ -233,13 +235,21 @@ function ComplaintsContent() {
   const handleToggle = async () => {
     if (!currentHostel || toggling) return;
     setToggling(true);
+    setToggleError(null);
     try {
-      await csrfFetch(`/api/hostels/${encodeURIComponent(currentHostel.id)}/complaints-toggle`, {
+      const res = await csrfFetch(`/api/hostels/${encodeURIComponent(currentHostel.id)}/complaints-toggle`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enabled: !(currentHostel.complaintsEnabled ?? true) }),
       });
-      await refreshHostels();
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { message?: string };
+        setToggleError(body.message ?? "Failed to update complaints status.");
+      } else {
+        await refreshHostels();
+      }
+    } catch {
+      setToggleError("Network error. Could not update complaints status.");
     } finally {
       setToggling(false);
     }
@@ -305,6 +315,10 @@ function ComplaintsContent() {
                   : <ToggleLeft className="h-4 w-4" />}
                 {complaintsEnabled ? "Accepting" : "Disabled"}
               </button>
+            )}
+
+            {toggleError && (
+              <p role="alert" className="text-[11px] font-medium text-red-400">{toggleError}</p>
             )}
 
             {/* QR button */}

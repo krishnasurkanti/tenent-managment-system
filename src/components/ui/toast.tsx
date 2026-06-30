@@ -33,7 +33,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => [...prev, { id, message, variant }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3500);
+    }, 5000);
   }, []);
 
   return (
@@ -42,7 +42,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div
         aria-live="polite"
         aria-atomic="false"
-        className="pointer-events-none fixed bottom-5 right-4 z-[9999] flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-2"
+        className="pointer-events-none fixed bottom-[calc(var(--nav-h)+8px)] right-4 z-[9999] flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-2 md:bottom-5"
       >
         {toasts.map((t) => (
           <div

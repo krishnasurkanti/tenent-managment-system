@@ -1,22 +1,32 @@
-/**
+﻿/**
  * auth-deep.spec.ts
  * Deep authentication testing: login flows, wrong passwords, rate limiting,
  * session persistence, logout, protected routes, admin/super-admin access.
  */
 import { expect, test, type Page } from "@playwright/test";
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function clearSession(page: Page) {
-  await page.addInitScript(() => window.localStorage.clear());
+  await page.addInitScript(() => {
+    window.localStorage.clear();
+    // Pre-select Aurora Residency — test-created hostels get prepended (unshift) to the
+    // demo store and would become hostels[0], making UI default to the wrong hostel.
+    window.localStorage.setItem("currentHostelId", "owner-hostel-aurora");
+  });
 }
 
 async function loginAsDemoOwner(page: Page) {
   await clearSession(page);
   await page.goto("/owner/login");
+  const hostelsPromise = page.waitForResponse(
+    (r) => r.url().includes("/api/owner-hostels") && r.status() !== 401,
+    { timeout: 15000 },
+  );
   await page.getByRole("button", { name: /try demo workspace/i }).click();
   await expect(page).toHaveURL(/\/owner\/dashboard/, { timeout: 15000 });
-  await page.waitForLoadState("networkidle");
+  await hostelsPromise;
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 }
 
 async function postLogin(page: Page, body: Record<string, string>) {
@@ -35,7 +45,7 @@ async function postLogin(page: Page, body: Record<string, string>) {
   }, body);
 }
 
-// ── demo login ────────────────────────────────────────────────────────────────
+// â”€â”€ demo login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Demo login", () => {
   test("demo login button lands on dashboard", async ({ page }) => {
@@ -67,7 +77,7 @@ test.describe("Demo login", () => {
   });
 });
 
-// ── owner login with credentials ──────────────────────────────────────────────
+// â”€â”€ owner login with credentials â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Owner login with credentials", () => {
   test("wrong password returns 401 or error message", async ({ page }) => {
@@ -108,7 +118,7 @@ test.describe("Owner login with credentials", () => {
     if (result.status === 200) {
       expect(result.body.token ?? result.body.ok).toBeTruthy();
     } else {
-      // seeded owners may not exist in all envs — just check no 500
+      // seeded owners may not exist in all envs â€” just check no 500
       expect(result.status).not.toBe(500);
     }
   });
@@ -125,14 +135,14 @@ test.describe("Owner login with credentials", () => {
       await emailInput.fill("arjun@demo.com");
       await passInput.fill("WrongPass999");
       await page.getByRole("button", { name: /^login$/i }).click();
-      // Should show error — not redirect to dashboard
+      // Should show error â€” not redirect to dashboard
       await page.waitForTimeout(2000);
       await expect(page).not.toHaveURL(/\/owner\/dashboard/);
     }
   });
 });
 
-// ── rate limiting ─────────────────────────────────────────────────────────────
+// â”€â”€ rate limiting â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Rate limiting on auth endpoints", () => {
   test("11 rapid wrong-password attempts trigger 429", async ({ page }) => {
@@ -171,10 +181,10 @@ test.describe("Rate limiting on auth endpoints", () => {
   });
 });
 
-// ── logout & session ──────────────────────────────────────────────────────────
+// â”€â”€ logout & session â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Logout and session", () => {
-  test("logout clears session — protected route redirects to login", async ({ page }) => {
+  test("logout clears session â€” protected route redirects to login", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/api/auth/logout", { method: "GET" } as Parameters<typeof page.goto>[1]);
 
@@ -229,7 +239,7 @@ test.describe("Logout and session", () => {
   });
 });
 
-// ── protected routes without login ───────────────────────────────────────────
+// â”€â”€ protected routes without login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Protected routes without auth", () => {
   const PROTECTED = [
@@ -245,7 +255,7 @@ test.describe("Protected routes without auth", () => {
 
   for (const route of PROTECTED) {
     test(`${route} redirects to login when unauthenticated`, async ({ page }) => {
-      // Fresh page — no session
+      // Fresh page â€” no session
       await page.goto(route);
       await expect(page).toHaveURL(/login/, { timeout: 10000 });
     });
@@ -270,7 +280,7 @@ test.describe("Protected routes without auth", () => {
   });
 });
 
-// ── admin login ───────────────────────────────────────────────────────────────
+// â”€â”€ admin login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Admin login", () => {
   test("admin login with wrong password returns 401", async ({ page }) => {
@@ -300,7 +310,7 @@ test.describe("Admin login", () => {
   });
 });
 
-// ── super-admin login ─────────────────────────────────────────────────────────
+// â”€â”€ super-admin login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Super-admin login", () => {
   test("/super-admin redirects to login when unauthenticated", async ({ page }) => {
@@ -333,7 +343,7 @@ test.describe("Super-admin login", () => {
   });
 });
 
-// ── CSRF protection ───────────────────────────────────────────────────────────
+// â”€â”€ CSRF protection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("CSRF protection", () => {
   test("mutation without CSRF token returns 403", async ({ page }) => {

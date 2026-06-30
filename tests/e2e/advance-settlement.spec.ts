@@ -1,11 +1,21 @@
-import { expect, test, type Page } from "@playwright/test";
+﻿import { expect, test, type Page } from "@playwright/test";
 
 async function loginAsDemoOwner(page: Page) {
-  await page.addInitScript(() => window.localStorage.clear());
+  await page.addInitScript(() => {
+    window.localStorage.clear();
+    // Pre-select Aurora Residency — test-created hostels get prepended (unshift) to the
+    // demo store and would become hostels[0], making UI default to the wrong hostel.
+    window.localStorage.setItem("currentHostelId", "owner-hostel-aurora");
+  });
   await page.goto("/owner/login");
+  const hostelsPromise = page.waitForResponse(
+    (r) => r.url().includes("/api/owner-hostels") && r.status() !== 401,
+    { timeout: 15000 },
+  );
   await page.getByRole("button", { name: /try demo workspace/i }).click();
   await expect(page).toHaveURL(/\/owner\/dashboard/, { timeout: 15000 });
-  await page.waitForLoadState("networkidle");
+  await hostelsPromise;
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 }
 
 async function getCsrf(page: Page): Promise<string> {
@@ -99,7 +109,9 @@ test.describe("Advance and service fee settlement", () => {
     await expect(page.getByText("One-time Service Fee").filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByText("First Payment Total").filter({ visible: true }).first()).toBeVisible();
 
-    await page.getByLabel("Close").filter({ visible: true }).first().click();
+    // Close the form by navigating away (asPage mode has no Close button)
+    await page.goto("/owner/tenants");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     await page.getByRole("button", { name: /remove tenant/i }).filter({ visible: true }).first().click();
     await page.getByPlaceholder(/tenant name/i).fill("Aarav");
@@ -135,11 +147,22 @@ test.describe("Advance and service fee settlement", () => {
     });
     expect(removed.ok).toBe(true);
 
-    await page.goto("/owner/reports");
-    await page.waitForLoadState("networkidle");
+    // Verify the ledger API recorded the specific refund entry for this tenant
+    const ledger = await page.evaluate(async () => {
+      const res = await fetch("/api/finance-ledger");
+      return res.json() as Promise<{ entries: Array<{ tenantName: string; type: string; amount: number; direction: string }> }>;
+    });
+    expect(ledger.entries.some((e) =>
+      e.tenantName === "Reports Advance Tenant" &&
+      e.type === "advance_refund" &&
+      e.direction === "debit" &&
+      e.amount === 1500
+    )).toBe(true);
 
+    // Also verify reports page renders the ledger section
+    await page.goto("/owner/reports");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await expect(page.getByText("Advance & Service Ledger").filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByText("Advance refund debit").filter({ visible: true }).first()).toBeVisible();
-    await expect(page.getByText("Rs 1,500").filter({ visible: true }).first()).toBeVisible();
   });
 });

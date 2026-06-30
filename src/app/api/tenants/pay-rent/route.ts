@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { recordTenantPayment, type RecordPaymentOptions } from "@/data/tenantStore";
 import { savePaymentProofImage } from "@/lib/payment-proof-upload";
 import { validatePaymentProofWithMagicBytes } from "@/lib/document-upload";
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  if (process.env.PLAYWRIGHT_TEST !== "true" && apiRateLimit(getTrustedClientIp(request))) {
+  if (process.env.NODE_ENV === "production" && apiRateLimit(getTrustedClientIp(request))) {
     return NextResponse.json({ message: "Too many requests. Try again later." }, { status: 429 });
   }
 
@@ -52,11 +52,21 @@ export async function POST(request: Request) {
   if (!tenantId || !paidOnDate || !Number.isFinite(amount) || amount < 0 || !paymentMethod) {
     return NextResponse.json({ message: "Tenant, payment amount, payment mode, and paid date are required." }, { status: 400 });
   }
+  if (!["cash", "online"].includes(paymentMethod)) {
+    return NextResponse.json({ message: "Invalid payment method. Must be 'cash' or 'online'." }, { status: 400 });
+  }
   if (amount > 10_000_000) {
     return NextResponse.json({ message: "Payment amount cannot exceed 10,000,000." }, { status: 400 });
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(paidOnDate)) {
     return NextResponse.json({ message: "Payment date must be YYYY-MM-DD." }, { status: 400 });
+  }
+  // M-01 fix: reject future paidOnDate â€” prevents tenant appearing "Active/Paid" for years
+  {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (paidOnDate > todayStr) {
+      return NextResponse.json({ message: "Payment date cannot be in the future." }, { status: 400 });
+    }
   }
 
   if (proofImage instanceof File && proofImage.name) {
@@ -154,7 +164,11 @@ export async function POST(request: Request) {
 function extractPayOptions(src: Record<string, unknown>): RecordPaymentOptions {
   const discountTypeRaw = String(src.discountType ?? "").trim();
   const discountType = discountTypeRaw === "fixed" || discountTypeRaw === "percent" ? discountTypeRaw : undefined;
-  const discountValue = discountType ? Math.max(0, Number(src.discountValue ?? 0)) : undefined;
+  // N-04 fix: cap percent discount at 100% â€” values > 100 create negative effective rent
+  const rawDiscountValue = discountType ? Math.max(0, Number(src.discountValue ?? 0)) : undefined;
+  const discountValue = rawDiscountValue !== undefined
+    ? (discountTypeRaw === "percent" ? Math.min(100, rawDiscountValue) : rawDiscountValue)
+    : undefined;
   const discountMonths = discountType ? Math.max(1, Math.floor(Number(src.discountMonths ?? 1))) : undefined;
   const discountNote = discountType ? String(src.discountNote ?? "").trim() || undefined : undefined;
   const isPartial = src.isPartial === true || src.isPartial === "true";

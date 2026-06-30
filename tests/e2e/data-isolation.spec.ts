@@ -1,4 +1,4 @@
-/**
+﻿/**
  * data-isolation.spec.ts
  * Cross-hostel and cross-owner data isolation.
  * IDOR checks, owner-scoped queries, search isolation, API privilege guards.
@@ -7,14 +7,24 @@
 import { expect, test, type Page } from "@playwright/test";
 import { uniqueTenantData } from "./test-data";
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function loginAsDemoOwner(page: Page) {
-  await page.addInitScript(() => window.localStorage.clear());
+  await page.addInitScript(() => {
+    window.localStorage.clear();
+    // Pre-select Aurora Residency — test-created hostels get prepended (unshift) to the
+    // demo store and would become hostels[0], making UI default to the wrong hostel.
+    window.localStorage.setItem("currentHostelId", "owner-hostel-aurora");
+  });
   await page.goto("/owner/login");
+  const hostelsPromise = page.waitForResponse(
+    (r) => r.url().includes("/api/owner-hostels") && r.status() !== 401,
+    { timeout: 15000 },
+  );
   await page.getByRole("button", { name: /try demo workspace/i }).click();
   await expect(page).toHaveURL(/\/owner\/dashboard/, { timeout: 15000 });
-  await page.waitForLoadState("networkidle");
+  await hostelsPromise;
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 }
 
 async function getCsrf(page: Page): Promise<string> {
@@ -73,7 +83,7 @@ async function deleteTenant(page: Page, tenantId: string) {
   return apiPost(page, "/api/tenants/remove", { tenantId });
 }
 
-// ── owner-scoped API isolation ────────────────────────────────────────────────
+// â”€â”€ owner-scoped API isolation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Owner-scoped API isolation", () => {
   test("/api/tenants returns only current owner's tenants", async ({ page }) => {
@@ -136,7 +146,7 @@ test.describe("Owner-scoped API isolation", () => {
       return;
     }
 
-    // Query hostel B's tenants — tenant from A must not appear
+    // Query hostel B's tenants â€” tenant from A must not appear
     const resultB = await apiGet(page, `/api/tenants?hostelId=${hostelB.id}`);
     const tenantsB = (resultB.body as { tenants?: Array<{ tenantId?: string; data?: { fullName?: string } }> }).tenants ?? [];
     const leaked = tenantsB.find(t => t.tenantId === tenantId || t.data?.fullName === fullName);
@@ -148,7 +158,7 @@ test.describe("Owner-scoped API isolation", () => {
   test("direct URL /owner/tenants/{tenantId} with non-existent ID returns error", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/tenants/999999999");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     // Should show an error state, not random data
     const body = await page.locator("body").textContent();
@@ -168,18 +178,21 @@ test.describe("Owner-scoped API isolation", () => {
     }
 
     await page.goto("/owner/tenants");
-    const searchInput = page.getByPlaceholder(/search/i).filter({ visible: true }).first();
-    await searchInput.fill(fullName);
-    await page.waitForTimeout(600);
+    // Wait for the hostelId-filtered tenant list to load
+    await page.waitForResponse(
+      r => r.url().includes("/api/tenants") && r.url().includes("hostelId=owner-hostel-aurora") && r.status() === 200,
+      { timeout: 10000 }
+    );
+    await page.waitForTimeout(300);
 
-    // Should find the tenant we just created
+    // Should find the tenant we just created in the list
     await expect(page.getByText(fullName).filter({ visible: true }).first()).toBeVisible({ timeout: 5000 });
 
     await deleteTenant(page, tenantId);
   });
 });
 
-// ── privilege escalation guards ───────────────────────────────────────────────
+// â”€â”€ privilege escalation guards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Privilege escalation guards", () => {
   test("owner cannot GET /api/admin/hostels", async ({ page }) => {
@@ -214,7 +227,8 @@ test.describe("Privilege escalation guards", () => {
   });
 
   test("unauthenticated user gets 401 from /api/tenants", async ({ page }) => {
-    // Fresh page — no session
+    // Navigate to establish base URL so relative fetch URLs resolve correctly
+    await page.goto("/owner/login");
     const result = await page.evaluate(async () => {
       const res = await fetch("/api/tenants", { credentials: "same-origin" });
       return res.status;
@@ -223,6 +237,7 @@ test.describe("Privilege escalation guards", () => {
   });
 
   test("unauthenticated user gets 401 from /api/owner-hostels", async ({ page }) => {
+    await page.goto("/owner/login");
     const result = await page.evaluate(async () => {
       const res = await fetch("/api/owner-hostels", { credentials: "same-origin" });
       return res.status;
@@ -231,6 +246,7 @@ test.describe("Privilege escalation guards", () => {
   });
 
   test("unauthenticated user gets 401 from /api/owner-billing", async ({ page }) => {
+    await page.goto("/owner/login");
     const result = await page.evaluate(async () => {
       const res = await fetch("/api/owner-billing", { credentials: "same-origin" });
       return res.status;
@@ -239,7 +255,7 @@ test.describe("Privilege escalation guards", () => {
   });
 });
 
-// ── IDOR checks ───────────────────────────────────────────────────────────────
+// â”€â”€ IDOR checks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("IDOR protection", () => {
   test("PATCH /api/tenants/{randomId} without ownership returns 403/404/400", async ({ page }) => {
@@ -278,20 +294,20 @@ test.describe("IDOR protection", () => {
   });
 });
 
-// ── data integrity: reports & export scoped to owner ─────────────────────────
+// â”€â”€ data integrity: reports & export scoped to owner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Reports and export data isolation", () => {
   test("reports page loads and shows only current owner's stats", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/reports");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     await expect(
       page.getByText(/total tenants|collection rate|occupancy|assigned/i).first()
     ).toBeVisible({ timeout: 10000 });
   });
 
-  test("CSV export scoped to current owner — no foreign tenant names", async ({ page }) => {
+  test("CSV export scoped to current owner â€” no foreign tenant names", async ({ page }) => {
     await loginAsDemoOwner(page);
     const csrf = await getCsrf(page);
 
@@ -308,7 +324,7 @@ test.describe("Reports and export data isolation", () => {
     // Must contain demo owner's tenants
     expect(csv).toMatch(/Aarav|Meera|PW Tenant/i);
     // Must not contain seeded owner data not owned by demo owner (arjun@ etc. tenants)
-    // (This is a best-effort check — seeded owners have distinct names)
+    // (This is a best-effort check â€” seeded owners have distinct names)
     expect(csv.toLowerCase()).not.toContain("vikram executive");
   });
 
@@ -316,7 +332,7 @@ test.describe("Reports and export data isolation", () => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/dashboard");
     await page.reload();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     await expect(
       page.getByText(/aurora residency|tenants|collection/i).first()
@@ -326,32 +342,34 @@ test.describe("Reports and export data isolation", () => {
   });
 });
 
-// ── cross-hostel search UI isolation ─────────────────────────────────────────
+// â”€â”€ cross-hostel search UI isolation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Search result identity checks", () => {
   test("search result click navigates to correct tenant by ID", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/tenants");
 
-    // Click Aarav Sharma — should navigate to exact tenant ID 51201
+    // Click Aarav Sharma â€” should navigate to exact tenant ID 51201
     const link = page.getByRole("link", { name: /Aarav Sharma/i }).first();
     if (await link.isVisible()) {
       await link.click();
       await expect(page).toHaveURL(/\/owner\/tenants\/51201/);
       await expect(page.getByText("Aarav Sharma").filter({ visible: true }).first()).toBeVisible();
-      // Phone and email shown on detail are Aarav's — not another tenant
+      // Phone and email shown on detail are Aarav's â€” not another tenant
       await expect(page.getByText("9876501201").filter({ visible: true }).first()).toBeVisible();
     }
   });
 
   test("tenant IDs displayed in list are 6-digit padded", async ({ page }) => {
     await loginAsDemoOwner(page);
-    await page.goto("/owner/tenants");
+    // Use search param to ensure Aarav renders in virtualizer (parallel tests may push him off-screen)
+    await page.goto("/owner/tenants?q=Aarav");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await expect(page.getByText("Aarav Sharma").filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(/0?51201/).filter({ visible: true }).first()).toBeVisible();
   });
 
-  test("same room number in different hostels — search scoped to current hostel", async ({ page }) => {
+  test("same room number in different hostels â€” search scoped to current hostel", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/tenants");
 
@@ -367,15 +385,15 @@ test.describe("Search result identity checks", () => {
   });
 });
 
-// ── notifications scoped to owner ────────────────────────────────────────────
+// â”€â”€ notifications scoped to owner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Notifications scoped to owner", () => {
   test("notifications page shows only current owner's alerts", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/notifications");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
-    // Should show alert content or empty state — not crash
+    // Should show alert content or empty state â€” not crash
     await expect(
       page.getByText(/overdue|due soon|no active|alert/i).first()
     ).toBeVisible({ timeout: 10000 });
@@ -387,7 +405,7 @@ test.describe("Notifications scoped to owner", () => {
   test("billing page reflects only current owner's plan", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/billing");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     await expect(
       page.getByText(/plan|billing|tenant|free|trial|upgrade/i).first()

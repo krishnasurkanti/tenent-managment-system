@@ -8,7 +8,10 @@ export function useLockBodyScroll(active: boolean) {
       return;
     }
 
-    const scrollY = window.scrollY;
+    // A-14 fix: if body is already locked (another modal open), read scroll from style.top
+    const scrollY = document.body.style.position === "fixed"
+      ? Math.abs(parseInt(document.body.style.top || "0", 10))
+      : window.scrollY;
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
     const previousBodyTouchAction = document.body.style.touchAction;

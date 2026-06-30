@@ -22,6 +22,8 @@ type HostelContextValue = {
   currentHostel: OwnerHostel | null;
   loading: boolean;
   isSwitching: boolean;
+  // X-08 fix: expose fetch error so consumers can surface it instead of silent blank
+  fetchError: string | null;
   refreshHostels: () => Promise<void>;
   selectHostel: (hostelId: string) => void;
 };
@@ -35,6 +37,8 @@ export function HostelContextProvider({ children }: { children: React.ReactNode 
   const [currentHostelId, setCurrentHostelId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSwitching, setIsSwitching] = useState(false);
+  // X-08 fix: track fetch error instead of swallowing it
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Use a ref so refreshHostels can read the latest hostelId without being
   // recreated on every hostel switch (which would cause an infinite effect loop).
@@ -45,6 +49,7 @@ export function HostelContextProvider({ children }: { children: React.ReactNode 
 
   const refreshHostels = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
 
     try {
       const { data } = await fetchOwnerHostels();
@@ -67,6 +72,9 @@ export function HostelContextProvider({ children }: { children: React.ReactNode 
           window.localStorage.removeItem(STORAGE_KEY);
         }
       }
+    } catch (err) {
+      // X-08 fix: surface error to consumers instead of swallowing it
+      setFetchError(err instanceof Error ? err.message : "Failed to load hostels.");
     } finally {
       setLoading(false);
     }
@@ -118,10 +126,11 @@ export function HostelContextProvider({ children }: { children: React.ReactNode 
       currentHostel,
       loading,
       isSwitching,
+      fetchError,
       refreshHostels,
       selectHostel,
     }),
-    [currentHostel, hostels, isSwitching, loading, refreshHostels, selectHostel],
+    [currentHostel, fetchError, hostels, isSwitching, loading, refreshHostels, selectHostel],
   );
 
   return <HostelContext.Provider value={value}>{children}</HostelContext.Provider>;

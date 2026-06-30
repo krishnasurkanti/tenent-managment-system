@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Suspense } from "react";
 import { useRouter } from "next/navigation";
@@ -25,7 +25,12 @@ function QuickAddTenantPageContent() {
   const handleClose = () => router.push("/owner/tenants");
 
   const handleCreated = async (tenant: TenantRecord) => {
-    void queryClient.invalidateQueries({ queryKey: ["owner-tenants", currentHostelId ?? null] });
+    // Optimistically update cache before invalidating â€” avoids stale-data race
+    queryClient.setQueryData<TenantRecord[]>(
+      ["owner-tenants", currentHostelId ?? null],
+      (old) => [tenant, ...(old ?? [])],
+    );
+    void queryClient.invalidateQueries({ queryKey: ["owner-tenants"] });
     router.push(`/owner/tenants/${tenant.tenantId}`);
   };
 

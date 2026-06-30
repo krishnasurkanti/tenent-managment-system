@@ -18,13 +18,22 @@ import { gotoAndWaitForHydration } from "./helpers";
 async function loginDemoOwner(page: Page) {
   await page.addInitScript(() => window.localStorage.clear());
   await page.goto("/owner/login");
+  const hostelsPromise = page.waitForResponse(
+    (r) => r.url().includes("/api/owner-hostels") && r.status() !== 401,
+    { timeout: 20000 },
+  );
   await page.getByRole("button", { name: /try demo workspace/i }).click();
-  await expect(page).toHaveURL(/\/owner\/dashboard/);
+  await expect(page).toHaveURL(/\/owner\/dashboard/, { timeout: 20000 });
+  await hostelsPromise;
   await page.waitForLoadState("networkidle");
 }
 
 async function runAxeAndAssert(page: Page, route: string) {
   await gotoAndWaitForHydration(page, route);
+  // Wait for React deferred state updates to settle (prevents false positives
+  // from critical violations in loading skeletons before data arrives).
+  // 2000ms covers slow report/ledger fetches that fire in useEffect after mount.
+  await page.waitForTimeout(2000);
 
   const results = await new AxeBuilder({ page })
     .disableRules(["color-contrast"]) // design-token colors vary per theme; separate audit

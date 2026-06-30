@@ -284,8 +284,33 @@ const TENANTS_DATA_FILE = path.join(TENANTS_DATA_DIR, "tenants.json");
 
 // Live records — persisted to disk
 const tenantRecords: TenantRecord[] = loadTenantRecords();
-// Separate in-memory-only demo state (never persists to disk)
-let demoTenantRecords: TenantRecord[] = getDemoTenantRecords();
+
+// ── Demo state ────────────────────────────────────────────────────────────────
+// Store demo records on globalThis so ALL Turbopack/Next.js module bundles in the
+// same Node.js process share a single array instance.  Without this, each route
+// bundle gets its own copy of tenantStore.ts (module duplication) and mutations
+// (create/delete) in one bundle are invisible to reads in another bundle.
+declare global {
+  // eslint-disable-next-line no-var
+  var __demoTenantStore: { records: TenantRecord[] } | undefined;
+  // eslint-disable-next-line no-var
+  var __demoSeedingEnabled: boolean | undefined;
+}
+if (!globalThis.__demoTenantStore) {
+  globalThis.__demoTenantStore = { records: getDemoTenantRecords() };
+}
+// demoRef.records is the shared, mutable demo array for this process
+const demoRef = globalThis.__demoTenantStore;
+
+// Set to false by the test reset endpoint so hostel creation never auto-seeds during tests,
+// even when PLAYWRIGHT_TEST env var is absent (reused dev server).
+export function disableDemoSeeding() {
+  globalThis.__demoSeedingEnabled = false;
+}
+export function isDemoSeedingEnabled() {
+  // Default true (normal demo UX); false only after reset endpoint is called
+  return globalThis.__demoSeedingEnabled !== false;
+}
 
 function loadTenantRecords() {
   try {
@@ -298,14 +323,16 @@ function loadTenantRecords() {
     const fileContent = fs.readFileSync(TENANTS_DATA_FILE, "utf8");
     const parsed = JSON.parse(fileContent) as TenantRecord[];
 
+    // N-09 fix: if file is corrupt/invalid, return demo data WITHOUT overwriting
+    // the real file — preserves the original data for manual recovery.
     if (!Array.isArray(parsed)) {
-      const demo = getDemoTenantRecords();
-      persistTenantRecords(demo);
-      return demo;
+      console.error("[tenantStore] tenants.json is not an array — using demo data as fallback, file preserved.");
+      return getDemoTenantRecords();
     }
 
     return parsed;
   } catch {
+    console.error("[tenantStore] tenants.json failed to parse — using demo data as fallback, file preserved.");
     return getDemoTenantRecords();
   }
 }
@@ -327,8 +354,8 @@ export function reloadTenantRecords() {
 }
 
 export function reloadDemoTenantRecords() {
-  demoTenantRecords = getDemoTenantRecords();
-  return demoTenantRecords;
+  demoRef.records = getDemoTenantRecords();
+  return demoRef.records;
 }
 
 function generateUniqueFiveDigitId(records: TenantRecord[]) {
@@ -353,13 +380,13 @@ function generateTenantIdFromPhone(phone: string, records: TenantRecord[]) {
 }
 
 export function getTenantRecords(isDemo = false) {
-  return isDemo ? demoTenantRecords : tenantRecords;
+  return isDemo ? demoRef.records : tenantRecords;
 }
 
 export function resetTenantRecords(isDemo = false) {
   if (isDemo) {
-    demoTenantRecords = getDemoTenantRecords();
-    return demoTenantRecords;
+    demoRef.records = getDemoTenantRecords();
+    return demoRef.records;
   }
   tenantRecords.splice(0, tenantRecords.length, ...getDemoTenantRecords());
   persistTenantRecords(tenantRecords);
@@ -367,7 +394,7 @@ export function resetTenantRecords(isDemo = false) {
 }
 
 export function getTenantRecordById(tenantId: string, isDemo = false) {
-  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const records = isDemo ? demoRef.records : tenantRecords;
   return records.find((tenant) => tenant.tenantId === tenantId);
 }
 
@@ -394,13 +421,14 @@ function getOccupiedBedIds(hostelId: string, roomNumber: string, records: Tenant
   );
 }
 
-export function createTenantRecord(input: Omit<TenantRecord, "tenantId" | "hostelId" | "createdAt" | "updatedAt" | "paymentHistory">, isDemo = false) {
-  const records = isDemo ? demoTenantRecords : tenantRecords;
+export function createTenantRecord(input: Omit<TenantRecord, "tenantId" | "createdAt" | "updatedAt" | "paymentHistory"> & { hostelId?: string }, isDemo = false) {
+  const records = isDemo ? demoRef.records : tenantRecords;
   const now = new Date().toISOString();
   const status = getDueStatus(input.nextDueDate);
   const tenant: TenantRecord = {
+    ...input,
     tenantId: generateTenantIdFromPhone(input.phone, records),
-    hostelId: DEMO_OWNER_HOSTEL_ID,
+    hostelId: input.hostelId || DEMO_OWNER_HOSTEL_ID,
     createdAt: now,
     updatedAt: now,
     paymentHistory: [
@@ -417,8 +445,17 @@ export function createTenantRecord(input: Omit<TenantRecord, "tenantId" | "hoste
         proofMimeType: "",
       },
     ],
-    ...input,
   };
+
+  // Set initial pendingBalance when rentPaid differs from monthlyRent
+  const initialBalance = input.monthlyRent - input.rentPaid;
+  if (initialBalance !== 0 && !tenant.pendingBalance) {
+    tenant.pendingBalance = {
+      amount: initialBalance,
+      originalRent: input.monthlyRent,
+      partialPaidDate: input.paidOnDate,
+    };
+  }
 
   records.unshift(tenant);
   if (!isDemo) persistTenantRecords(tenantRecords);
@@ -426,7 +463,7 @@ export function createTenantRecord(input: Omit<TenantRecord, "tenantId" | "hoste
 }
 
 export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssignment, "hostelName">, isDemo = false) {
-  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const records = isDemo ? demoRef.records : tenantRecords;
   const tenant = records.find((item) => item.tenantId === tenantId);
 
   if (!tenant) {
@@ -439,9 +476,14 @@ export function assignTenantRoom(tenantId: string, assignment: Omit<TenantAssign
     throw new Error("Hostel room inventory not found.");
   }
 
+  // X-10 fix: trim roomNumber on both sides to handle trailing/leading spaces
+  if (assignment.roomNumber) {
+    assignment.roomNumber = assignment.roomNumber.trim();
+  }
+
   const room = hostel.rooms.find((item) =>
     (assignment.unitId && item.unitId && item.unitId === assignment.unitId) ||
-    item.roomNumber === assignment.roomNumber,
+    item.roomNumber.trim() === (assignment.roomNumber ?? "").trim(),
   );
 
   if (!room) {
@@ -542,7 +584,7 @@ export function recordTenantPayment(
   isDemo = false,
   options: RecordPaymentOptions = {},
 ) {
-  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const records = isDemo ? demoRef.records : tenantRecords;
   const tenant = records.find((item) => item.tenantId === tenantId);
 
   if (!tenant) {
@@ -622,7 +664,7 @@ export function recordTenantPayment(
     const disc = tenant.activeDiscount;
     discountApplied =
       disc.type === "fixed"
-        ? disc.value
+        ? Math.min(disc.value, tenant.monthlyRent)  // N-03 fix: cap fixed discount at monthlyRent
         : Math.round((tenant.monthlyRent * disc.value) / 100);
     disc.monthsUsed += 1;
     if (disc.monthsUsed >= disc.monthsTotal) {
@@ -669,8 +711,35 @@ export function recordTenantPayment(
   }
 
   // ── Normal full payment ────────────────────────────────────────────────────
-  // If tenant had a pending balance, clear it (owner collected everything together).
-  if (tenant.pendingBalance) tenant.pendingBalance = undefined;
+  // If tenant has a pending balance, auto-reduce it rather than blindly clearing.
+  // Payment < pendingBalance.amount → reduce, don't advance cycle.
+  // Payment >= pendingBalance.amount → clear and fall through to advance cycle.
+  if (tenant.pendingBalance) {
+    const newAmount = tenant.pendingBalance.amount - amount;
+    if (newAmount > 0) {
+      tenant.pendingBalance = { ...tenant.pendingBalance, amount: newAmount };
+      tenant.rentPaid = amount;
+      tenant.paidOnDate = paidOnDate;
+      tenant.paymentHistory.unshift({
+        paymentId: `pay-${tenantId}-${crypto.randomUUID()}`,
+        amount,
+        paidOnDate,
+        nextDueDate: tenant.nextDueDate,
+        status: "due-soon",
+        paymentMethod,
+        txnId: txnId?.trim() ?? "",
+        proofImageName: proofImageName?.trim() ?? "",
+        proofImageUrl: proofImageUrl?.trim() ?? "",
+        proofMimeType: proofMimeType?.trim() ?? "",
+        discountAmount: discountApplied > 0 ? discountApplied : undefined,
+      });
+      if (tenant.paymentHistory.length > 120) tenant.paymentHistory = tenant.paymentHistory.slice(0, 120);
+      tenant.updatedAt = new Date().toISOString();
+      if (!isDemo) persistTenantRecords(tenantRecords);
+      return tenant;
+    }
+    tenant.pendingBalance = undefined;
+  }
 
   const nextDueDate = calculateNextDueDate(
     paidOnDate,
@@ -707,7 +776,7 @@ export function recordTenantPayment(
 }
 
 export function removeTenantRecord(tenantId: string, isDemo = false) {
-  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const records = isDemo ? demoRef.records : tenantRecords;
   const tenantIndex = records.findIndex((item) => item.tenantId === tenantId);
 
   if (tenantIndex === -1) {
@@ -721,10 +790,10 @@ export function removeTenantRecord(tenantId: string, isDemo = false) {
 
 export function updateTenantProfile(
   tenantId: string,
-  patch: Partial<Pick<TenantRecord, "fullName" | "fatherName" | "dateOfBirth" | "phone" | "email" | "idType" | "idNumber" | "emergencyContactName" | "emergencyContactRelation" | "emergencyContactPhone" | "monthlyRent" | "billingCycle" | "occupation" | "workplaceName" | "tenantPhotoUrl" | "idPhotoUrl" | "agreementUrls">>,
+  patch: Partial<Pick<TenantRecord, "fullName" | "fatherName" | "dateOfBirth" | "phone" | "email" | "idType" | "idNumber" | "emergencyContactName" | "emergencyContactRelation" | "emergencyContactPhone" | "monthlyRent" | "billingCycle" | "paidOnDate" | "occupation" | "workplaceName" | "tenantPhotoUrl" | "idPhotoUrl" | "agreementUrls">>,
   isDemo = false,
 ) {
-  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const records = isDemo ? demoRef.records : tenantRecords;
   const tenant = records.find((item) => item.tenantId === tenantId);
 
   if (!tenant) {
@@ -733,13 +802,17 @@ export function updateTenantProfile(
 
   Object.assign(tenant, patch);
 
-  if (patch.billingCycle || patch.monthlyRent !== undefined) {
-    // billingCycle change invalidates the stored nextDueDate
+  if (patch.billingCycle || patch.monthlyRent !== undefined || patch.paidOnDate) {
+    // N-14 fix: paidOnDate/billingCycle/monthlyRent change all invalidate the stored nextDueDate
     tenant.nextDueDate = calculateNextDueDate(
       tenant.paidOnDate,
       tenant.billingAnchorDate,
       tenant.billingCycle ?? "monthly",
     );
+    // Bug 7 fix: keep paymentHistory[0].nextDueDate in sync when nextDueDate is recalculated
+    if (tenant.paymentHistory.length > 0) {
+      tenant.paymentHistory[0].nextDueDate = tenant.nextDueDate;
+    }
   }
 
   if (!isDemo) persistTenantRecords(tenantRecords);
@@ -747,7 +820,7 @@ export function updateTenantProfile(
 }
 
 export function updateTenantFamilyMembersRecord(tenantId: string, familyMembers: TenantFamilyMember[], isDemo = false) {
-  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const records = isDemo ? demoRef.records : tenantRecords;
   const tenant = records.find((item) => item.tenantId === tenantId);
 
   if (!tenant) {
@@ -768,7 +841,7 @@ export function addPaymentProof(
   proofMimeType?: string,
   isDemo = false,
 ) {
-  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const records = isDemo ? demoRef.records : tenantRecords;
   const tenant = records.find((item) => item.tenantId === tenantId);
 
   if (!tenant) {
@@ -791,7 +864,7 @@ export function addPaymentProof(
 }
 
 export function seedDemoTenantsForHostel(hostelId: string, isDemo = false) {
-  const records = isDemo ? demoTenantRecords : tenantRecords;
+  const records = isDemo ? demoRef.records : tenantRecords;
   const hostel = getOwnerHostelInventory(records, isDemo).find((item) => item.hostelId === hostelId);
 
   if (!hostel) {

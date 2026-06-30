@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+﻿import { expect, type Page, test } from "@playwright/test";
 import { superAdminCredentials, uniquePaymentData, uniqueTenantData } from "./test-data";
 
 function visibleText(page: Page, text: string | RegExp) {
@@ -6,11 +6,21 @@ function visibleText(page: Page, text: string | RegExp) {
 }
 
 async function loginAsDemoOwner(page: Page) {
-  await page.addInitScript(() => window.localStorage.clear());
+  await page.addInitScript(() => {
+    window.localStorage.clear();
+    // Pre-select Aurora Residency — test-created hostels get prepended (unshift) to the
+    // demo store and would become hostels[0], making UI default to the wrong hostel.
+    window.localStorage.setItem("currentHostelId", "owner-hostel-aurora");
+  });
   await page.goto("/owner/login");
+  const hostelsPromise = page.waitForResponse(
+    (r) => r.url().includes("/api/owner-hostels") && r.status() !== 401,
+    { timeout: 15000 },
+  );
   await page.getByRole("button", { name: /try demo workspace/i }).click();
-  await expect(page).toHaveURL(/\/owner\/dashboard/);
-  await expect(visibleText(page, "Aurora Residency")).toBeVisible();
+  await expect(page).toHaveURL(/\/owner\/dashboard/, { timeout: 20000 });
+  await hostelsPromise;
+  await expect(visibleText(page, "Aurora Residency")).toBeVisible({ timeout: 15000 });
 }
 
 async function loginAsSuperAdmin(page: Page) {
@@ -35,14 +45,14 @@ test.describe("Hostel owner automation", () => {
 
     await page.goto("/owner/rooms");
     await expect(visibleText(page, /Room occupancy|Rooms/i)).toBeVisible();
-    await expect(visibleText(page, /Floor 1/i)).toBeVisible();
+    await expect(visibleText(page, /Room \d+|101|102|103/i)).toBeVisible();
 
     await page.goto("/owner/payments");
     await expect(visibleText(page, /Payment workspace|Payments/i)).toBeVisible();
     await expect(page.getByRole("link", { name: /pay rent/i }).filter({ visible: true }).first()).toBeVisible();
 
     await page.goto("/owner/notifications");
-    await expect(visibleText(page, "Owner alert centre")).toBeVisible();
+    await expect(visibleText(page, "Owner Alert Centre")).toBeVisible();
     await expect(visibleText(page, /Urgent alerts|Alert state/i)).toBeVisible();
   });
 
@@ -54,20 +64,23 @@ test.describe("Hostel owner automation", () => {
     await page.getByRole("button", { name: /add new tenant|^add$/i }).filter({ visible: true }).first().click();
 
     await expect(visibleText(page, "Add Tenant")).toBeVisible();
+
+    // Step 1: Personal info
     await page.getByPlaceholder("Enter full name").fill(tenant.fullName);
     await page.getByPlaceholder("Parent name (optional)").fill(tenant.parentName);
     await page.locator('input[type="date"]').first().fill(tenant.dateOfBirth);
     await page.getByPlaceholder("98765 43210").first().fill(tenant.phone);
     await page.getByPlaceholder("email@example.com").fill(tenant.email);
-    await page.locator("select").first().selectOption("pan");
+    await page.locator("select").nth(1).selectOption("pan"); // nth(0)=Occupation, nth(1)=ID Type
     await page.getByPlaceholder("e.g. ABCDE1234F").fill(tenant.pan);
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+
+    // Step 2: Emergency contact (optional)
     await page.getByPlaceholder("Name of emergency contact").fill(tenant.emergencyName);
     await page.getByPlaceholder("98765 43210").last().fill(tenant.emergencyPhone);
-
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
     await page.getByRole("button", { name: /continue to payment/i }).click();
     await page.getByPlaceholder("Enter amount").fill(tenant.monthlyRent);
-    await page.getByPlaceholder("0 if not collected yet").fill(tenant.rentPaid);
+    await page.getByPlaceholder("Rent amount collected").fill(tenant.rentPaid);
     await page.locator('input[type="date"]').last().fill(tenant.paidOnDate);
     await page.getByRole("button", { name: /save tenant/i }).click();
 

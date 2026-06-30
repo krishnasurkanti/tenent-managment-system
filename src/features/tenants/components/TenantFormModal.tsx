@@ -335,9 +335,10 @@ export function TenantFormModal({
     }
 
 
-    onCreated(created);
     resetFormState();
-    onClose();
+    // onClose is intentionally NOT called here — onCreated handles navigation (e.g., to assign-room page).
+    // Calling onClose after onCreated would overwrite the navigation pushed by onCreated.
+    onCreated(created);
   };
 
   const updateFamilyMember = (id: string, key: keyof Omit<FamilyMemberForm, "id">, value: string) =>
@@ -348,16 +349,20 @@ export function TenantFormModal({
       {...(!asPage && { role: "dialog", "aria-modal": "true" })}
       aria-labelledby="tenant-form-modal-title"
       className={asPage
-        ? "w-full"
+        ? "flex min-h-0 w-full flex-col"
         : "fixed inset-0 z-50 flex items-stretch justify-center overflow-hidden animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
       }
-      {...(!asPage && { style: { background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" } })}
+      style={asPage
+        /* Constrain form height so content scrolls internally and footer always stays visible.
+           calc: viewport - topbar (48px) - back-button row + gaps (~3.5rem) */
+        ? { maxHeight: "calc(100dvh - var(--topbar-h) - 3.5rem)" }
+        : { background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
     >
       <Card className={asPage
-        ? "flex w-full flex-col overflow-hidden rounded-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0"
+        ? "flex min-h-0 flex-1 flex-col rounded-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0"
         : "flex w-full h-full flex-col overflow-hidden rounded-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),42rem)] sm:h-auto sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
       }>
-        <div className={asPage ? "relative flex flex-col" : "relative flex min-h-0 flex-1 flex-col overflow-hidden"}>
+        <div className={asPage ? "relative flex min-h-0 flex-1 flex-col" : "relative flex min-h-0 flex-1 flex-col overflow-hidden"}>
           <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(90deg,rgba(99,102,241,0.14)_0%,rgba(245,158,11,0.06)_100%)]" />
 
           {/* Header */}
@@ -381,10 +386,10 @@ export function TenantFormModal({
           {/* Step pills — fixed, never scrolls */}
           <div className="relative shrink-0 overflow-x-auto border-b border-white/8 px-4 py-2.5 sm:px-5" style={{ scrollbarWidth: "none" }}>
             <div className="flex gap-2" style={{ WebkitOverflowScrolling: "touch" }}>
-              <StepPill label="1. Personal" active={step === 1} done={step > 1} />
-              <StepPill label="2. Emergency" active={step === 2} done={step > 2} />
-              <StepPill label="3. Payment" active={step === 3} done={step > 3} />
-              {isResidence ? <StepPill label="4. Family" active={step === familyStep} done={step > familyStep} /> : null}
+              <StepPill label="1. Personal" active={step === 1} done={step > 1} onClick={step > 1 ? () => { setStep(1); setError(""); } : undefined} />
+              <StepPill label="2. Emergency" active={step === 2} done={step > 2} onClick={step > 2 ? () => { setStep(2); setError(""); } : undefined} />
+              <StepPill label="3. Payment" active={step === 3} done={step > 3} onClick={step > 3 ? () => { setStep(3); setError(""); } : undefined} />
+              {isResidence ? <StepPill label="4. Family" active={step === familyStep} done={step > familyStep} onClick={step > familyStep ? () => { setStep(4 as TenantStep); setError(""); } : undefined} /> : null}
             </div>
           </div>
 
@@ -392,10 +397,10 @@ export function TenantFormModal({
           <div
             ref={scrollRef}
             className={asPage
-              ? "relative overflow-x-hidden px-4 pb-4 pt-3 sm:px-5"
+              ? "relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pb-4 pt-3 sm:px-5"
               : "relative min-h-0 flex-1 overflow-x-hidden overflow-y-scroll px-4 pb-4 pt-3 sm:px-5"
             }
-            {...(!asPage && { style: { WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" } })}
+            style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" }}
           >
             <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
 
@@ -435,6 +440,7 @@ export function TenantFormModal({
                           <input
                             type="date"
                             value={form.dateOfBirth}
+                            max={new Date().toISOString().slice(0, 10)}
                             onChange={(e) => setField("dateOfBirth", e.target.value)}
                             disabled={submitting}
                             className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
@@ -668,6 +674,7 @@ export function TenantFormModal({
                           min="0"
                           value={form.monthlyRent}
                           onChange={(e) => setField("monthlyRent", e.target.value)}
+                          onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
                           disabled={submitting}
                           placeholder="Enter amount"
                           className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
@@ -682,6 +689,7 @@ export function TenantFormModal({
                           min="0"
                           value={form.rentPaid}
                           onChange={(e) => setField("rentPaid", e.target.value)}
+                          onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
                           disabled={submitting}
                           placeholder="Rent amount collected"
                           className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
@@ -696,6 +704,7 @@ export function TenantFormModal({
                           min="0"
                           value={form.advanceAmount}
                           onChange={(e) => setField("advanceAmount", e.target.value)}
+                          onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
                           disabled={submitting}
                           placeholder="0 if not collected"
                           className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
@@ -710,6 +719,7 @@ export function TenantFormModal({
                           min="0"
                           value={form.serviceFeeAmount}
                           onChange={(e) => setField("serviceFeeAmount", e.target.value)}
+                          onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
                           disabled={submitting}
                           placeholder="0 if not collected"
                           className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
@@ -722,6 +732,7 @@ export function TenantFormModal({
                         <input
                           type="date"
                           value={form.paidOnDate}
+                          max={new Date().toISOString().slice(0, 10)}
                           onChange={(e) => setField("paidOnDate", e.target.value)}
                           disabled={submitting}
                           className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
@@ -736,7 +747,7 @@ export function TenantFormModal({
                         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300/70">First Payment Total</p>
                         <p className="mt-1 text-[11px] text-white/45">Rent collected + advance + service fee</p>
                       </div>
-                      <p className="text-base font-semibold text-white">Rs {firstPaymentTotal.toLocaleString("en-IN")}</p>
+                      <p className="text-base font-semibold text-white">₹{firstPaymentTotal.toLocaleString("en-IN")}</p>
                     </div>
                   </div>
 
@@ -882,14 +893,11 @@ export function TenantFormModal({
             </div>
           </div>
 
-          {/* Sticky footer — always visible at bottom, never inside scrollable area */}
-          <div className={asPage
-            ? "sticky bottom-0 z-10 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5"
-            : "shrink-0 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5"
-          }>
+          {/* Footer — always visible at bottom; content scrolls above it */}
+          <div className="shrink-0 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5">
             {/* Error and processing */}
             {error ? (
-              <div className="mb-3 flex items-start gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
+              <div role="alert" className="mb-3 flex items-start gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>
@@ -947,16 +955,21 @@ function SectionHead({ title, subtitle }: { title: string; subtitle: string }) {
   );
 }
 
-function StepPill({ label, active, done }: { label: string; active: boolean; done: boolean }) {
-  return (
-    <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-semibold ${
-      active ? "border border-blue-500/60 bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)]"
-        : done ? "border border-emerald-500/40 bg-emerald-500/15 text-emerald-400"
-        : "border border-white/12 bg-white/[0.05] text-white/40"
-    }`}>
-      {label}
-    </span>
-  );
+// X-06 fix: done step pills are <button> so keyboard users can navigate back
+function StepPill({ label, active, done, onClick }: { label: string; active: boolean; done: boolean; onClick?: () => void }) {
+  const cls = `inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-semibold ${
+    active ? "border border-blue-500/60 bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)]"
+      : done ? "border border-emerald-500/40 bg-emerald-500/15 text-emerald-400 cursor-pointer hover:bg-emerald-500/25 transition"
+      : "border border-white/12 bg-white/[0.05] text-white/40"
+  }`;
+  if (done && onClick) {
+    return (
+      <button type="button" className={cls} onClick={onClick}>
+        {label}
+      </button>
+    );
+  }
+  return <span className={cls}>{label}</span>;
 }
 
 function InputShell({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {

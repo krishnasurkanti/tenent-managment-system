@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -31,7 +31,7 @@ function CompleteProfilePageContent() {
   const handleClose = () => router.push(`/owner/tenants/${params.id}`);
 
   const handleSaved = async (updated: TenantRecord) => {
-    void queryClient.invalidateQueries({ queryKey: ["owner-tenants", currentHostelId ?? null] });
+    void queryClient.invalidateQueries({ queryKey: ["owner-tenants"] });
     router.push(`/owner/tenants/${updated.tenantId}`);
   };
 

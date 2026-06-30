@@ -19,8 +19,13 @@ async function clearSession(page: Page) {
 async function loginDemoOwner(page: Page) {
   await clearSession(page);
   await page.goto("/owner/login");
+  const hostelsPromise = page.waitForResponse(
+    (r) => r.url().includes("/api/owner-hostels") && r.status() !== 401,
+    { timeout: 20000 },
+  );
   await page.getByRole("button", { name: /try demo workspace/i }).click();
-  await expect(page).toHaveURL(/\/owner\/dashboard/);
+  await expect(page).toHaveURL(/\/owner\/dashboard/, { timeout: 20000 });
+  await hostelsPromise;
   await page.waitForLoadState("networkidle");
 }
 

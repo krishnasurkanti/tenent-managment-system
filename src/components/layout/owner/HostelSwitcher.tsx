@@ -175,7 +175,7 @@ export function HostelSwitcher() {
                 </div>
                 <h3 className="mt-3 text-base font-semibold text-white">Add Another Hostel</h3>
               </div>
-              <button type="button" onClick={() => setShowPaywall(false)} className="rounded-xl p-1.5 text-white/40 hover:text-white/70">
+              <button type="button" onClick={() => setShowPaywall(false)} aria-label="Close" className="rounded-xl p-1.5 text-white/40 hover:text-white/70">
                 <X className="h-4 w-4" />
               </button>
             </div>

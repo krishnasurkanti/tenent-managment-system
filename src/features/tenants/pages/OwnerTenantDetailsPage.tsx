@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
+﻿import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Bed, Briefcase, CalendarDays, CreditCard, FileText, IdCard, Mail, Phone, User2, Users2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
@@ -20,12 +20,12 @@ export default async function OwnerTenantDetailsPage({
   const { id } = await params;
   const session = await getOwnerSession();
 
-  if (session.mode === "guest") notFound();
+  if (session.mode === "guest") redirect("/owner/login");
 
   let tenant: TenantRecord | undefined;
 
   if (session.isLive) {
-    // Call the backend directly — never build URLs from user-supplied headers
+    // Call the backend directly â€” never build URLs from user-supplied headers
     const backendResponse = await backendFetch(`/api/tenants/${encodeURIComponent(id)}`);
     if (!backendResponse.ok) notFound();
     const payload = (await backendResponse.json()) as { tenant?: TenantRecord };
@@ -58,15 +58,15 @@ export default async function OwnerTenantDetailsPage({
         />
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <OwnerQuickStat label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} helper="Current monthly amount" />
+          <OwnerQuickStat label="Rent" value={`₹${tenant.monthlyRent.toLocaleString("en-IN")}`} helper="Current monthly amount" />
           <OwnerQuickStat label="Last paid" value={formatPaymentDate(tenant.paidOnDate)} helper="Most recent payment date" />
           <OwnerQuickStat label="Next due" value={formatPaymentDate(tenant.nextDueDate)} helper={`Tenant ID ${fmtTenantId(tenant.tenantId)}`} />
         </div>
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <OwnerQuickStat label="Refundable Advance" value={`Rs ${(tenant.advanceAmount ?? 0).toLocaleString("en-IN")}`} helper="Eligible for owner-confirmed refund" />
-          <OwnerQuickStat label="Service Fee" value={`Rs ${(tenant.serviceFeeAmount ?? 0).toLocaleString("en-IN")}`} helper="One-time non-refundable fee" />
-          <OwnerQuickStat label="Advance Balance" value={`Rs ${(tenant.advanceBalance ?? tenant.advanceAmount ?? 0).toLocaleString("en-IN")}`} helper="Before settlement adjustments" />
+          <OwnerQuickStat label="Refundable Advance" value={`â‚¹${(tenant.advanceBalance ?? tenant.advanceAmount ?? 0).toLocaleString("en-IN")}`} helper="Current refundable balance after adjustments" />
+          <OwnerQuickStat label="Service Fee" value={`â‚¹${(tenant.serviceFeeAmount ?? 0).toLocaleString("en-IN")}`} helper="One-time non-refundable fee" />
+          <OwnerQuickStat label="Original Advance" value={`â‚¹${(tenant.advanceAmount ?? 0).toLocaleString("en-IN")}`} helper="Amount deposited at admission" />
         </div>
 
         {(!tenant.phone || !tenant.idType || !tenant.idPhotoUrl) && (
@@ -147,10 +147,10 @@ export default async function OwnerTenantDetailsPage({
                 <InfoCard
                   icon={Briefcase}
                   label="Occupation"
-                  value={`${tenant.occupation.replace("_", "-")}${tenant.workplaceName ? ` · ${tenant.workplaceName}` : ""}`}
+                  value={`${tenant.occupation.replace("_", "-")}${tenant.workplaceName ? ` Â· ${tenant.workplaceName}` : ""}`}
                 />
               )}
-              {tenant.emergencyContactName && <InfoCard icon={Phone} label="Emergency Contact" value={`${tenant.emergencyContactName}${tenant.emergencyContactRelation ? ` (${tenant.emergencyContactRelation})` : ""}${tenant.emergencyContactPhone ? ` · ${tenant.emergencyContactPhone}` : ""}`} />}
+              {tenant.emergencyContactName && <InfoCard icon={Phone} label="Emergency Contact" value={`${tenant.emergencyContactName}${tenant.emergencyContactRelation ? ` (${tenant.emergencyContactRelation})` : ""}${tenant.emergencyContactPhone ? ` Â· ${tenant.emergencyContactPhone}` : ""}`} />}
               <InfoCard icon={CalendarDays} label="Joined On" value={formatPaymentDate(tenant.createdAt.slice(0, 10))} />
             </div>
           </Card>
@@ -183,7 +183,7 @@ export default async function OwnerTenantDetailsPage({
                 <InfoCard
                   key={`${member.name}-${member.relation}-${index}`}
                   icon={Users2}
-                  label={`${member.relation}${member.age !== undefined ? ` • ${member.age} yrs` : ""}`}
+                  label={`${member.relation}${member.age !== undefined ? ` â€¢ ${member.age} yrs` : ""}`}
                   value={member.name}
                 />
               ))}
@@ -198,7 +198,7 @@ export default async function OwnerTenantDetailsPage({
           </div>
 
           <div className="space-y-3 p-3 md:hidden">
-            {tenant.paymentHistory.map((payment) => (
+            {[...tenant.paymentHistory].reverse().map((payment) => (
               <div key={payment.paymentId} className="rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -208,10 +208,10 @@ export default async function OwnerTenantDetailsPage({
                     </p>
                   </div>
                   <span className={getStatusClassName(payment.status === "active" ? "green" : payment.status === "due-soon" ? "orange" : "red")}>
-                    {payment.status}
+                    {payment.status === "active" ? "Active" : payment.status === "due-soon" ? "Due soon" : "Overdue"}
                   </span>
                 </div>
-                <p className="mt-3 text-sm font-semibold text-white">Rs {payment.amount.toLocaleString("en-IN")}</p>
+                <p className="mt-3 text-sm font-semibold text-white">â‚¹{payment.amount.toLocaleString("en-IN")}</p>
               </div>
             ))}
           </div>
@@ -228,15 +228,15 @@ export default async function OwnerTenantDetailsPage({
                 </tr>
               </thead>
               <tbody>
-                {tenant.paymentHistory.map((payment) => (
+                {[...tenant.paymentHistory].reverse().map((payment) => (
                   <tr key={payment.paymentId} className="border-t border-[color:var(--border)] text-white">
                     <td className="px-4 py-4 font-medium">{payment.paymentId}</td>
-                    <td className="px-4 py-4">Rs {payment.amount.toLocaleString("en-IN")}</td>
+                    <td className="px-4 py-4">â‚¹{payment.amount.toLocaleString("en-IN")}</td>
                     <td className="px-4 py-4 text-[color:var(--fg-secondary)]">{formatPaymentDate(payment.paidOnDate)}</td>
                     <td className="px-4 py-4 text-[color:var(--fg-secondary)]">{formatPaymentDate(payment.nextDueDate)}</td>
                     <td className="px-4 py-4">
                       <span className={getStatusClassName(payment.status === "active" ? "green" : payment.status === "due-soon" ? "orange" : "red")}>
-                        {payment.status}
+                        {payment.status === "active" ? "Active" : payment.status === "due-soon" ? "Due soon" : "Overdue"}
                       </span>
                     </td>
                   </tr>

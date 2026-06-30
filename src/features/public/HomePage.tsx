@@ -392,6 +392,7 @@ export default function HomePage() {
             <button
               className="lp-nav-toggle"
               onClick={() => setNavOpen(v => !v)}
+              aria-label="Toggle navigation"
               style={{
                 display: "none", width: 34, height: 34, borderRadius: 8,
                 background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.07)",

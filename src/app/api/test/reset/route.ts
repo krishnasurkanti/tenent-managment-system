@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { resetFinanceLedgerEntries } from "@/data/financeLedgerStore";
 import { resetOwnerHostel } from "@/data/ownerHostelStore";
-import { resetTenantRecords } from "@/data/tenantStore";
+import { disableDemoSeeding, resetTenantRecords } from "@/data/tenantStore";
 
 export const dynamic = "force-dynamic";
 
-// Only available during Playwright test runs. Resets in-memory stores to demo state.
+// Only available in development. Resets in-memory stores to demo state.
 export async function POST() {
-  if (process.env.PLAYWRIGHT_TEST !== "true") {
+  if (process.env.NODE_ENV === "production") {
     return NextResponse.json({ message: "Not found." }, { status: 404 });
   }
   // Reset both demo and live in-memory stores during tests
@@ -17,5 +17,8 @@ export async function POST() {
   resetTenantRecords(false);
   resetFinanceLedgerEntries(true);
   resetFinanceLedgerEntries(false);
+  // Disable hostel auto-seeding so test-created hostels start empty (reliable even when
+  // PLAYWRIGHT_TEST env var is absent due to server reuse).
+  disableDemoSeeding();
   return NextResponse.json({ ok: true });
 }

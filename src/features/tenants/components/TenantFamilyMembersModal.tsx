@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Users2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -40,6 +40,21 @@ export function TenantFamilyMembersModal({
   const [error, setError] = useState("");
 
   useLockBodyScroll(open);
+
+  useEffect(() => {
+    if (!open || !tenant) return;
+    if (tenant.familyMembers && tenant.familyMembers.length > 0) {
+      setMembers(tenant.familyMembers.map((m) => ({
+        id: `family-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        name: m.name,
+        relation: m.relation,
+        age: m.age !== undefined ? String(m.age) : "",
+      })));
+    } else {
+      setMembers([createFamilyMember()]);
+    }
+    setError("");
+  }, [open, tenant]);
 
   if (!open || !tenant) {
     return null;
@@ -179,7 +194,7 @@ export function TenantFamilyMembersModal({
               </div>
             ))}
 
-            {error ? <div className="rounded-2xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-3 py-2.5 text-sm font-medium text-[color:var(--error)]">{error}</div> : null}
+            {error ? <div role="alert" className="rounded-2xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-3 py-2.5 text-sm font-medium text-[color:var(--error)]">{error}</div> : null}
 
             <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
               <Button variant="secondary" onClick={onClose} disabled={saving} className="w-full rounded-2xl border-slate-200 bg-white text-slate-700 shadow-sm sm:flex-1">

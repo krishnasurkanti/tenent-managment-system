@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -98,8 +98,8 @@ export default function OwnerPaymentsPage() {
       />
 
       <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-        <OwnerQuickStat label="Collected" value={`Rs ${collectedTotal.toLocaleString("en-IN")}`} helper="Recorded this cycle" />
-        <OwnerQuickStat label="Expected" value={`Rs ${expectedTotal.toLocaleString("en-IN")}`} helper="Current tenant rent total" />
+        <OwnerQuickStat label="Collected" value={`₹${collectedTotal.toLocaleString("en-IN")}`} helper="Recorded this cycle" />
+        <OwnerQuickStat label="Expected" value={`₹${expectedTotal.toLocaleString("en-IN")}`} helper="Current tenant rent total" />
         <OwnerQuickStat label="Needs attention" value={String(overdueCount + dueSoonCount)} helper="Due soon and overdue" />
         <OwnerQuickStat label="Proof coverage" value={`${proofCoverage}/${tenants.length}`} helper="Txn ID or file attached" />
       </div>
@@ -107,12 +107,12 @@ export default function OwnerPaymentsPage() {
       <section className="space-y-3 lg:hidden">
         <Card className={`${ownerHeroCardClass} rounded-[10px] p-3`}>
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Payments · {currentHostel.hostelName}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Payments Â· {currentHostel.hostelName}</p>
           </div>
           <div className="grid grid-cols-[1.4fr_1fr] gap-2">
             <div className="rounded-[8px] bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-3 py-3 text-white shadow-[0_18px_36px_rgba(37,99,235,0.22)]">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-100/80">Collected</p>
-              <p className="mt-1 text-[1.5rem] font-semibold leading-none">Rs {collectedTotal.toLocaleString("en-IN")}</p>
+              <p className="mt-1 text-[1.5rem] font-semibold leading-none">â‚¹{collectedTotal.toLocaleString("en-IN")}</p>
             </div>
             <div className="grid gap-2">
               <MetricBox label="Due" value={String(dueSoonCount)} tone="warning" />
@@ -147,7 +147,7 @@ export default function OwnerPaymentsPage() {
                   </div>
 
                   <div className="mt-3 grid grid-cols-2 gap-2 min-[420px]:grid-cols-3">
-                    <MiniValue label="Amount" value={`Rs ${tenant.rentPaid.toLocaleString("en-IN")}`} />
+                    <MiniValue label="Amount" value={`₹${(tenant.paymentHistory[0]?.amount ?? tenant.rentPaid).toLocaleString("en-IN")}`} />
                     <MiniValue label="Paid" value={formatPaymentDate(tenant.paidOnDate)} />
                     <MiniValue label="Next" value={formatPaymentDate(tenant.nextDueDate)} />
                   </div>
@@ -206,7 +206,7 @@ export default function OwnerPaymentsPage() {
                             <p className="mt-1 text-[10px] text-[color:var(--fg-secondary)]">{fmtTenantId(tenant.tenantId)} / {tenant.phone}</p>
                           </td>
                           <td className="px-3 py-3 text-[color:var(--fg-secondary)]">
-                            {tenant.assignment ? `Room ${tenant.assignment.roomNumber}` : "-"}
+                            {tenant.assignment?.roomNumber ? `Room ${tenant.assignment.roomNumber}` : "-"}
                           </td>
                           <td className="px-3 py-3">
                             <span className={statusClass(status.tone)}>{status.label}</span>
@@ -216,7 +216,7 @@ export default function OwnerPaymentsPage() {
                               {latestPayment?.paymentMethod ?? "cash"}
                             </span>
                           </td>
-                          <td className="px-3 py-3 font-semibold text-white">Rs {tenant.rentPaid.toLocaleString("en-IN")}</td>
+                          <td className="px-3 py-3 font-semibold text-white">â‚¹{(tenant.paymentHistory[0]?.amount ?? tenant.rentPaid).toLocaleString("en-IN")}</td>
                           <td className="px-3 py-3 text-[color:var(--fg-secondary)]">{formatPaymentDate(tenant.paidOnDate)}</td>
                           <td className="px-3 py-3 font-medium text-[#ffd978]">{formatPaymentDate(tenant.nextDueDate)}</td>
                           <td className="px-3 py-3 text-[color:var(--fg-secondary)]">{renderProofCell({ tenant, latestPayment, setProofModal, setTxnIdInput, setProofImage, setProofError })}</td>
@@ -232,7 +232,7 @@ export default function OwnerPaymentsPage() {
           <div className="space-y-3">
             <Card className={`${ownerPanelClass} p-3`}>
               <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-1">
-                <MetricBox label="Collected" value={`Rs ${collectedTotal.toLocaleString("en-IN")}`} />
+                <MetricBox label="Collected" value={`₹${collectedTotal.toLocaleString("en-IN")}`} />
                 <MetricBox label="Overdue" value={String(overdueCount)} tone="danger" />
                 <MetricBox label="Due Soon" value={String(dueSoonCount)} tone="warning" />
               </div>
@@ -255,7 +255,7 @@ export default function OwnerPaymentsPage() {
                         <div>
                           <p className="text-[11px] font-semibold text-white">{tenant.fullName}</p>
                           <p className="mt-0.5 text-[9px] text-[color:var(--fg-secondary)]">
-                            {fmtTenantId(tenant.tenantId)} / Room {tenant.assignment?.roomNumber}
+                            {fmtTenantId(tenant.tenantId)} / Room {tenant.assignment?.roomNumber ?? "-"}
                           </p>
                           <p className="mt-0.5 text-[9px] text-[color:var(--fg-secondary)]">Next due {formatPaymentDate(tenant.nextDueDate)}</p>
                         </div>
@@ -276,7 +276,14 @@ export default function OwnerPaymentsPage() {
           txnId={txnIdInput}
           onTxnIdChange={setTxnIdInput}
           proofImage={proofImage}
-          onProofImageChange={setProofImage}
+          onProofImageChange={(file) => {
+            if (file && file.size > 5 * 1024 * 1024) {
+              setProofError("File is too large. Maximum size is 5 MB.");
+              return;
+            }
+            setProofError("");
+            setProofImage(file);
+          }}
           error={proofError}
           saving={savingProof}
           onClose={() => {
@@ -516,7 +523,7 @@ function AddProofModal({
               <h2 className="text-[14px] font-semibold text-white">Add Payment Proof</h2>
               <p className="mt-0.5 text-[10px] text-[color:var(--fg-secondary)]">Save proof for {tenantName}. You can add transaction id, image proof, or both.</p>
             </div>
-            <Button variant="ghost" className="px-2" onClick={onClose}>
+            <Button variant="ghost" aria-label="Close" className="px-2" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>

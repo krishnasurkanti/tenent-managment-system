@@ -73,7 +73,8 @@ export function buildHostelInventory(hostel: OwnerHostel, tenants: TenantRecord[
         const a = tenant.assignment;
         // match by unitId when both sides have it; fall back to roomNumber
         if (a.unitId && room.unitId) return a.unitId === room.unitId;
-        return a.roomNumber === room.roomNumber;
+        // I-05 fix: trim before comparing to handle legacy trailing-space room numbers
+        return (a.roomNumber ?? "").trim() === room.roomNumber.trim();
       });
 
       // Tenants matched by explicit bedId; remainder fill positionally (legacy assignments have no bedId)

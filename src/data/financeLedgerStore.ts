@@ -7,7 +7,15 @@ const LEDGER_DATA_DIR = path.join(process.cwd(), ".data");
 const LEDGER_DATA_FILE = path.join(LEDGER_DATA_DIR, "finance-ledger.json");
 
 let liveLedgerEntries: FinanceLedgerEntry[] = loadLedgerEntries();
-let demoLedgerEntries: FinanceLedgerEntry[] = [];
+// Use globalThis so all Turbopack bundles share the same demo ledger instance
+declare global {
+  // eslint-disable-next-line no-var
+  var __demoLedgerStore: { entries: FinanceLedgerEntry[] } | undefined;
+}
+if (!globalThis.__demoLedgerStore) {
+  globalThis.__demoLedgerStore = { entries: [] };
+}
+const demoLedgerRef = globalThis.__demoLedgerStore;
 
 function loadLedgerEntries() {
   try {
@@ -30,13 +38,13 @@ function persistLedgerEntries(records: FinanceLedgerEntry[]) {
 }
 
 export function getFinanceLedgerEntries(isDemo = false) {
-  return isDemo ? demoLedgerEntries : liveLedgerEntries;
+  return isDemo ? demoLedgerRef.entries : liveLedgerEntries;
 }
 
 export function resetFinanceLedgerEntries(isDemo = false) {
   if (isDemo) {
-    demoLedgerEntries = [];
-    return demoLedgerEntries;
+    demoLedgerRef.entries = [];
+    return demoLedgerRef.entries;
   }
 
   liveLedgerEntries = [];
@@ -52,7 +60,7 @@ export function addFinanceLedgerEntry(
     throw new Error("Ledger amount must be greater than zero.");
   }
 
-  const records = isDemo ? demoLedgerEntries : liveLedgerEntries;
+  const records = isDemo ? demoLedgerRef.entries : liveLedgerEntries;
   const entry: FinanceLedgerEntry = {
     id: `ledger-${crypto.randomUUID()}`,
     createdAt: new Date().toISOString(),

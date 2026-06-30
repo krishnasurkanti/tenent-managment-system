@@ -95,6 +95,8 @@ export function OwnerSidebar({ open, onClose }: { open: boolean; onClose: () => 
     await logoutOwner();
     if (typeof window !== "undefined") {
       window.localStorage.removeItem("currentHostelId");
+      // L-06 fix: clear tenant form draft on logout so stale data doesn't pre-fill next session
+      window.localStorage.removeItem("tenant-form-draft-v5");
     }
     onClose();
     router.push("/owner/login");

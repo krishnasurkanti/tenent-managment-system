@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { assignTenantRoom } from "@/data/tenantStore";
 import { requireOwnerSession } from "@/lib/session-mode";
 import { apiRateLimit, getTrustedClientIp } from "@/lib/rate-limit";
@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  if (process.env.PLAYWRIGHT_TEST !== "true" && apiRateLimit(getTrustedClientIp(request))) {
+  if (process.env.NODE_ENV === "production" && apiRateLimit(getTrustedClientIp(request))) {
     return NextResponse.json({ message: "Too many requests. Try again later." }, { status: 429 });
   }
 

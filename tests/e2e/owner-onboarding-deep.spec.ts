@@ -1,4 +1,4 @@
-/**
+﻿/**
  * owner-onboarding-deep.spec.ts
  * Deep hostel creation, editing, room/bed management.
  * Tests every field, every validation, mobile layout, refresh behavior.
@@ -6,14 +6,24 @@
 import { expect, test, type Page } from "@playwright/test";
 import { uniqueHostelData, uniqueRoomData } from "./test-data";
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function loginAsDemoOwner(page: Page) {
-  await page.addInitScript(() => window.localStorage.clear());
+  await page.addInitScript(() => {
+    window.localStorage.clear();
+    // Pre-select Aurora Residency — test-created hostels get prepended (unshift) to the
+    // demo store and would become hostels[0], making UI default to the wrong hostel.
+    window.localStorage.setItem("currentHostelId", "owner-hostel-aurora");
+  });
   await page.goto("/owner/login");
+  const hostelsPromise = page.waitForResponse(
+    (r) => r.url().includes("/api/owner-hostels") && r.status() !== 401,
+    { timeout: 15000 },
+  );
   await page.getByRole("button", { name: /try demo workspace/i }).click();
   await expect(page).toHaveURL(/\/owner\/dashboard/, { timeout: 15000 });
-  await page.waitForLoadState("networkidle");
+  await hostelsPromise;
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 }
 
 async function getCsrf(page: Page): Promise<string> {
@@ -40,12 +50,12 @@ async function apiGet(page: Page, path: string) {
 
 async function goToCreateHostel(page: Page) {
   await page.goto("/owner/create-hostel");
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 }
 
-// ── hostel creation — valid flows ─────────────────────────────────────────────
+// â”€â”€ hostel creation â€” valid flows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-test.describe("Create hostel — valid flows", () => {
+test.describe("Create hostel â€” valid flows", () => {
   test("Step 1: fills name and address, continues to Step 2", async ({ page }) => {
     await loginAsDemoOwner(page);
     await goToCreateHostel(page);
@@ -124,7 +134,10 @@ test.describe("Create hostel — valid flows", () => {
     await expect(page.getByPlaceholder(/ex: 101/i)).toHaveCount(3);
 
     await page.getByRole("button", { name: /save hostel|create hostel/i }).click();
-    await expect(page).not.toHaveURL(/create-hostel/, { timeout: 12000 });
+    // After saving, the pricing carousel shows at the same URL â€” check for success text instead
+    await expect(
+      page.getByText(/hostel saved|choose your plan|dashboard/i).filter({ visible: true }).first()
+    ).toBeVisible({ timeout: 12000 });
   });
 
   test("Step 2: inline tenant entry in bed form fills and submits", async ({ page }) => {
@@ -152,13 +165,16 @@ test.describe("Create hostel — valid flows", () => {
     }
 
     await page.getByRole("button", { name: /save hostel|create hostel/i }).click();
-    await expect(page).not.toHaveURL(/create-hostel/, { timeout: 12000 });
+    // After saving, the pricing carousel shows at the same URL â€” check for success text instead
+    await expect(
+      page.getByText(/hostel saved|choose your plan|dashboard/i).filter({ visible: true }).first()
+    ).toBeVisible({ timeout: 12000 });
   });
 });
 
-// ── hostel creation — validation ──────────────────────────────────────────────
+// â”€â”€ hostel creation â€” validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-test.describe("Create hostel — validation", () => {
+test.describe("Create hostel â€” validation", () => {
   test("cannot continue Step 1 with empty hostel name", async ({ page }) => {
     await loginAsDemoOwner(page);
     await goToCreateHostel(page);
@@ -231,9 +247,9 @@ test.describe("Create hostel — validation", () => {
   });
 });
 
-// ── hostel creation — mobile layout ──────────────────────────────────────────
+// â”€â”€ hostel creation â€” mobile layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-test.describe("Create hostel — mobile layout", () => {
+test.describe("Create hostel â€” mobile layout", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
   test("hostel creation form fits mobile screen without horizontal scroll", async ({ page }) => {
@@ -273,9 +289,9 @@ test.describe("Create hostel — mobile layout", () => {
   });
 });
 
-// ── hostel creation — refresh behavior ───────────────────────────────────────
+// â”€â”€ hostel creation â€” refresh behavior â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-test.describe("Create hostel — refresh mid-form", () => {
+test.describe("Create hostel â€” refresh mid-form", () => {
   test("refresh on Step 1 resets form (expected behavior)", async ({ page }) => {
     await loginAsDemoOwner(page);
     await goToCreateHostel(page);
@@ -288,12 +304,12 @@ test.describe("Create hostel — refresh mid-form", () => {
     const nameInput = page.getByPlaceholder(/hostel name/i);
     if (await nameInput.isVisible()) {
       const value = await nameInput.inputValue();
-      // Either empty (reset) or retained (fine too) — just must not crash
+      // Either empty (reset) or retained (fine too) â€” just must not crash
       expect(typeof value).toBe("string");
     }
   });
 
-  test("refresh on Step 2 returns to Step 1 or Step 2 — no crash", async ({ page }) => {
+  test("refresh on Step 2 returns to Step 1 or Step 2 â€” no crash", async ({ page }) => {
     await loginAsDemoOwner(page);
     await goToCreateHostel(page);
 
@@ -304,20 +320,22 @@ test.describe("Create hostel — refresh mid-form", () => {
     await expect(page.getByPlaceholder(/ex: 101/i).first()).toBeVisible({ timeout: 8000 });
 
     await page.reload();
-    // Should not throw error — just check page loaded
+    // Should not throw error â€” just check page loaded
     await expect(page.locator("body")).not.toBeEmpty();
   });
 });
 
-// ── edit hostel ───────────────────────────────────────────────────────────────
+// â”€â”€ edit hostel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Edit hostel", () => {
   test("edit hostel link on settings page navigates to edit form", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/settings");
 
-    const editLink = page.getByRole("link", { name: /edit hostel/i })
-      .or(page.getByRole("button", { name: /edit hostel/i })).first();
+    // Scope to main to exclude the sidebar (sidebar "Edit Hostel" button is outside viewport on mobile)
+    const main = page.locator("main");
+    const editLink = main.getByRole("link", { name: /edit hostel/i })
+      .or(main.getByRole("button", { name: /edit hostel/i })).first();
     if (await editLink.isVisible()) {
       await editLink.click();
       await expect(page).toHaveURL(/create-hostel.*edit|edit.*hostel/i, { timeout: 8000 });
@@ -344,7 +362,7 @@ test.describe("Edit hostel", () => {
   });
 });
 
-// ── rooms page after hostel creation ─────────────────────────────────────────
+// â”€â”€ rooms page after hostel creation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Rooms page reflects hostel data", () => {
   test("rooms page shows at least one floor or room", async ({ page }) => {
@@ -381,7 +399,7 @@ test.describe("Rooms page reflects hostel data", () => {
   test("each room card has assign/add tenant button", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/rooms");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     // At least one assign or add tenant link/button should exist
     const assignBtns = page.getByRole("link", { name: /assign|add tenant/i })
@@ -396,7 +414,7 @@ test.describe("Rooms page reflects hostel data", () => {
   test("rooms page no horizontal scroll on desktop", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/rooms");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const viewportWidth = await page.evaluate(() => window.innerWidth);

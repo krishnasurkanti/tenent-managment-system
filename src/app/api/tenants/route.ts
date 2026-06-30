@@ -1,7 +1,6 @@
-import { createHash } from "crypto";
+﻿import { createHash } from "crypto";
 import { NextResponse } from "next/server";
 import { addFinanceLedgerEntry } from "@/data/financeLedgerStore";
-import { getOwnerHostelInventory } from "@/data/ownerHostelStore";
 import { assignTenantRoom, createTenantRecord, getTenantRecords, removeTenantRecord } from "@/data/tenantStore";
 import { calculateNextDueDate } from "@/utils/payment";
 import { requireOwnerSession } from "@/lib/session-mode";
@@ -33,7 +32,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ tenants: filtered, hostels: [] });
     }
 
-    // Single backend call — returns all owner tenants without N+1 per-hostel loop
+    // Single backend call â€” returns all owner tenants without N+1 per-hostel loop
     const [allTenantsResponse, hostelsResponse] = await Promise.all([
       backendFetch("/api/tenants"),
       backendFetch("/api/hostels"),
@@ -62,16 +61,17 @@ export async function GET(request: Request) {
 
   // Trim payment history to avoid sending large blobs on list views
   const tenants = matched.map((t) => {
-    const sliced = { ...t, paymentHistory: t.paymentHistory.slice(0, historyLimit) };
+    const effectiveHostelId = t.assignment?.hostelId ?? t.hostelId;
+    const sliced = { ...t, hostelId: effectiveHostelId, paymentHistory: t.paymentHistory.slice(0, historyLimit) };
     // Mirror full tenant fields inside `data` for test-suite compatibility
     return { ...sliced, data: sliced };
   });
 
-  return NextResponse.json({ tenants, hostels: getOwnerHostelInventory(allTenants, session.isDemo) });
+  return NextResponse.json({ tenants });
 }
 
 // In-memory idempotency cache for demo mode (TTL: 60s, max 500 keys)
-// payloadHash is stored to detect same-key+different-payload conflict → 409
+// payloadHash is stored to detect same-key+different-payload conflict â†’ 409
 const _idempotencyCache = new Map<string, { status: number; body: unknown; payloadHash: string; expiresAt: number }>();
 const _IDEMPOTENCY_MAX = 500;
 
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  if (process.env.PLAYWRIGHT_TEST !== "true" && apiRateLimit(getTrustedClientIp(request))) {
+  if (process.env.NODE_ENV === "production" && apiRateLimit(getTrustedClientIp(request))) {
     return NextResponse.json({ message: "Too many requests. Try again later." }, { status: 429 });
   }
 
@@ -141,10 +141,11 @@ export async function POST(request: Request) {
   const emergencyContactName = String(body.emergencyContactName ?? "").trim() || undefined;
   const emergencyContactRelation = String(body.emergencyContactRelation ?? "").trim() || undefined;
   const emergencyContactPhone = String(body.emergencyContactPhone ?? "").trim() || undefined;
-  const monthlyRent = Number(body.monthlyRent ?? 0);
-  const rentPaid = Number(body.rentPaid ?? 0);
-  const advanceAmount = Number(body.advanceAmount ?? 0);
-  const serviceFeeAmount = Number(body.serviceFeeAmount ?? 0);
+  // null means client sent Infinity/NaN (JSON can't represent them) â€” treat as NaN so isFinite check rejects
+  const monthlyRent = body.monthlyRent !== null ? Number(body.monthlyRent ?? 0) : NaN;
+  const rentPaid = body.rentPaid !== null ? Number(body.rentPaid ?? 0) : NaN;
+  const advanceAmount = body.advanceAmount !== null ? Number(body.advanceAmount ?? 0) : NaN;
+  const serviceFeeAmount = body.serviceFeeAmount !== null ? Number(body.serviceFeeAmount ?? 0) : NaN;
   const paidOnDate = String(body.paidOnDate ?? "").trim();
   const billingCycleRaw = String(body.billingCycle ?? "monthly").trim();
   const billingCycle = (billingCycleRaw === "daily" || billingCycleRaw === "weekly") ? billingCycleRaw : "monthly" as const;
@@ -162,6 +163,9 @@ export async function POST(request: Request) {
   if (!fullName || !Number.isFinite(monthlyRent) || monthlyRent < 0 || !Number.isFinite(rentPaid) || rentPaid < 0 || !paidOnDate) {
     return NextResponse.json({ message: "Name and payment details are required." }, { status: 400 });
   }
+  if (fullName.length > 160) {
+    return NextResponse.json({ message: "Full name must not exceed 160 characters." }, { status: 400 });
+  }
   if (!Number.isFinite(advanceAmount) || advanceAmount < 0 || !Number.isFinite(serviceFeeAmount) || serviceFeeAmount < 0) {
     return NextResponse.json({ message: "Advance and service fee must be valid amounts." }, { status: 400 });
   }
@@ -176,6 +180,14 @@ export async function POST(request: Request) {
   }
   if (paidOnDate && !/^\d{4}-\d{2}-\d{2}$/.test(paidOnDate)) {
     return NextResponse.json({ message: "Payment date must be YYYY-MM-DD." }, { status: 400 });
+  }
+  // M-02 fix: reject future paidOnDate â€” a future date creates nextDueDate years ahead
+  // making the tenant appear "Active / Paid" for years.
+  if (paidOnDate) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (paidOnDate > today) {
+      return NextResponse.json({ message: "Payment date cannot be in the future." }, { status: 400 });
+    }
   }
 
   if (session.isLive) {
@@ -276,6 +288,7 @@ export async function POST(request: Request) {
     billingAnchorDate: demoAnchor,
     nextDueDate: calculateNextDueDate(paidOnDate, demoAnchor, billingCycle),
     billingCycle,
+    hostelId: hostelId || undefined,
   }, session.isDemo);
 
   if (hasAssignment) {
@@ -374,5 +387,34 @@ function recordInitialLedgerEntries({
       date,
       note: "One-time non-refundable service fee collected at admission.",
     }, isDemo);
+  }
+}
+
+/**
+ * DELETE /api/tenants?tenantId={id}
+ * Thin demo-mode delete so CREATE (POST) and DELETE share the same module instance
+ * (avoids cross-bundle demoTenantRecords isolation in Turbopack dev mode).
+ * Used only by Playwright tests via deleteTenantViaApi helper.
+ */
+export async function DELETE(request: Request) {
+  const session = await requireOwnerSession();
+  if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const tenantId = searchParams.get("tenantId");
+  if (!tenantId) return NextResponse.json({ message: "tenantId query param required." }, { status: 400 });
+
+  if (session.isLive) {
+    const backendResponse = await backendFetch(`/api/tenants/${encodeURIComponent(tenantId)}`, { method: "DELETE" });
+    const payload = (await backendResponse.json()) as { message?: string };
+    if (!backendResponse.ok) return NextResponse.json({ message: payload.message ?? "Failed to delete tenant." }, { status: backendResponse.status });
+    return NextResponse.json({ ok: true });
+  }
+
+  try {
+    const tenant = removeTenantRecord(tenantId, session.isDemo);
+    return NextResponse.json({ ok: true, tenant });
+  } catch (error) {
+    return NextResponse.json({ message: error instanceof Error ? error.message : "Not found." }, { status: 404 });
   }
 }

@@ -62,7 +62,18 @@ const demoOwnerHostels: OwnerHostel[] = [
 ];
 
 // Separate in-memory stores: demo is never persisted, live is from hostels.json
-const demoHostels: OwnerHostel[] = getDemoOwnerHostels();
+// Use globalThis so all Turbopack bundles share the same demo instance
+declare global {
+  // eslint-disable-next-line no-var
+  var __demoHostelStore: { hostels: OwnerHostel[] } | undefined;
+}
+if (!globalThis.__demoHostelStore) {
+  globalThis.__demoHostelStore = { hostels: getDemoOwnerHostels() };
+}
+const demoHostelRef = globalThis.__demoHostelStore;
+// demoHostelRef.hostels is the shared, mutable demo array
+// Keep `demoHostels` as an alias for backward compatibility with existing code below
+const demoHostels = demoHostelRef.hostels;
 let liveHostels: OwnerHostel[] = loadPersistedHostels();
 
 function loadPersistedHostels(): OwnerHostel[] {

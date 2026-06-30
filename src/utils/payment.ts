@@ -7,28 +7,30 @@ export function calculateNextDueDate(
   billingAnchorDate: string,
   billingCycle: "daily" | "weekly" | "monthly" = "monthly",
 ): string {
+  // Use UTC throughout to avoid timezone-offset day shifts when the server runs in
+  // non-UTC timezones (e.g. IST UTC+5:30). Dates are stored as YYYY-MM-DD strings
+  // with no timezone, so UTC is the correct reference frame.
   if (billingCycle === "daily") {
-    const date = new Date(`${paidOnDate}T00:00:00`);
-    date.setDate(date.getDate() + 1);
+    const date = new Date(`${paidOnDate}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + 1);
     return date.toISOString().slice(0, 10);
   }
 
   if (billingCycle === "weekly") {
-    const date = new Date(`${paidOnDate}T00:00:00`);
-    date.setDate(date.getDate() + 7);
+    const date = new Date(`${paidOnDate}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + 7);
     return date.toISOString().slice(0, 10);
   }
 
   // monthly — same anchor day next month
-  const paid = new Date(`${paidOnDate}T00:00:00`);
-  const anchor = new Date(`${billingAnchorDate}T00:00:00`);
-  const year = paid.getFullYear();
-  const month = paid.getMonth();
-  const anchorDay = anchor.getDate();
+  const paid = new Date(`${paidOnDate}T00:00:00Z`);
+  const anchor = new Date(`${billingAnchorDate}T00:00:00Z`);
+  const year = paid.getUTCFullYear();
+  const month = paid.getUTCMonth();
+  const anchorDay = anchor.getUTCDate();
 
-  const nextMonthDate = new Date(year, month + 1, 1);
-  const lastDayOfNextMonth = new Date(year, month + 2, 0).getDate();
-  nextMonthDate.setDate(Math.min(anchorDay, lastDayOfNextMonth));
+  const lastDayOfNextMonth = new Date(Date.UTC(year, month + 2, 0)).getUTCDate();
+  const nextMonthDate = new Date(Date.UTC(year, month + 1, Math.min(anchorDay, lastDayOfNextMonth)));
 
   return nextMonthDate.toISOString().slice(0, 10);
 }
@@ -45,15 +47,24 @@ export function formatPaymentDate(value: string) {
 }
 
 export function getDaysUntilDue(nextDueDate: string) {
+  if (!nextDueDate) return NaN;
   const today = new Date();
   const current = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const due = new Date(`${nextDueDate}T00:00:00`);
+  if (isNaN(due.getTime())) return NaN;
   const diff = due.getTime() - current.getTime();
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
 export function getDueStatus(nextDueDate: string, billingCycle: "daily" | "weekly" | "monthly" = "monthly") {
+  if (!nextDueDate) {
+    return { label: "No due date", tone: "orange", priority: 2 };
+  }
   const daysUntilDue = getDaysUntilDue(nextDueDate);
+
+  if (isNaN(daysUntilDue)) {
+    return { label: "No due date", tone: "orange", priority: 2 };
+  }
 
   if (daysUntilDue < 0) {
     const abs = Math.abs(daysUntilDue);

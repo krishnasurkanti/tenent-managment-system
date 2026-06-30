@@ -77,9 +77,9 @@ export function QuickAddTenantModal({
         return;
       }
 
-      onCreated(data.tenant as TenantRecord);
       reset();
-      onClose();
+      // onClose intentionally NOT called — onCreated handles navigation
+      onCreated(data.tenant as TenantRecord);
     } catch {
       setError("Network error. Try again.");
       setSubmitting(false);
@@ -169,6 +169,7 @@ export function QuickAddTenantModal({
                   min="0"
                   value={monthlyRent}
                   onChange={(e) => setMonthlyRent(e.target.value)}
+                  onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
                   disabled={submitting}
                   placeholder="8500"
                   className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
@@ -193,7 +194,7 @@ export function QuickAddTenantModal({
           </label>
 
           {error ? (
-            <div className="flex items-start gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
+            <div role="alert" className="flex items-start gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -49,6 +49,14 @@ export function VacateTenantModal({ tenant, onClose, onRemoved, asPage = false }
     onClose();
   };
 
+  useEffect(() => {
+    if (!open || asPage) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, asPage, submitting]);
+
   const suggestedRefund = tenant
     ? String(tenant.advanceBalance ?? tenant.advanceAmount ?? 0)
     : "0";
@@ -68,25 +76,30 @@ export function VacateTenantModal({ tenant, onClose, onRemoved, asPage = false }
     setSubmitting(true);
     setError("");
 
-    const { response, data } = await removeTenant(tenant.tenantId, {
-      advanceRefundEligible,
-      refundAdvance,
-      refundAmount: refundAdvance ? numericRefund : 0,
-      settlementNote,
-      settlementDate: new Date().toISOString().slice(0, 10),
-      noticeGivenDate: noticeGivenDate || null,
-    });
+    try {
+      const { response, data } = await removeTenant(tenant.tenantId, {
+        advanceRefundEligible,
+        refundAdvance,
+        refundAmount: refundAdvance ? numericRefund : 0,
+        settlementNote,
+        settlementDate: new Date().toISOString().slice(0, 10),
+        noticeGivenDate: noticeGivenDate || null,
+      });
 
-    if (!response.ok) {
-      setError((data as { message?: string }).message ?? "Unable to remove tenant.");
+      if (!response.ok) {
+        setError((data as { message?: string }).message ?? "Unable to remove tenant.");
+        setSubmitting(false);
+        return;
+      }
+
+      const removedId = tenant.tenantId;
+      reset();
+      onRemoved(removedId);
+      if (!asPage) onClose();
+    } catch {
+      setError("Network error. Check your connection and try again.");
       setSubmitting(false);
-      return;
     }
-
-    const removedId = tenant.tenantId;
-    reset();
-    onRemoved(removedId);
-    if (!asPage) onClose();
   };
 
   if ((!asPage && !open) || !tenant) return null;
@@ -175,6 +188,7 @@ export function VacateTenantModal({ tenant, onClose, onRemoved, asPage = false }
                     min="0"
                     value={displayRefund}
                     onChange={(e) => setRefundAmount(e.target.value)}
+                    onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
                     disabled={submitting || !refundAdvance}
                     className="w-full bg-transparent text-[13px] text-white outline-none disabled:opacity-40 placeholder:text-white/25"
                   />
@@ -200,6 +214,7 @@ export function VacateTenantModal({ tenant, onClose, onRemoved, asPage = false }
                   onChange={(e) => setSettlementNote(e.target.value)}
                   disabled={submitting}
                   rows={2}
+                  maxLength={500}
                   placeholder="Optional settlement note"
                   className="w-full resize-none rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5 text-[13px] text-white outline-none placeholder:text-white/25"
                 />
@@ -222,7 +237,7 @@ export function VacateTenantModal({ tenant, onClose, onRemoved, asPage = false }
             </label>
 
             {error ? (
-              <p className="rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-[13px] text-red-400">{error}</p>
+              <p role="alert" className="rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-[13px] text-red-400">{error}</p>
             ) : null}
             {submitting ? <ProcessingPill label="Removing tenant…" /> : null}
           </div>

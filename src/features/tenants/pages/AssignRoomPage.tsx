@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -27,16 +27,37 @@ function AssignRoomPageContent() {
 
   const tenant = tenants.find((t) => t.tenantId === params.id) ?? null;
 
+  // "Later" goes to the tenant detail page (server component reads demoRef.records directly).
+  // The global store fix ensures the newly created tenant is visible there.
   const handleClose = () => router.push(`/owner/tenants/${params.id}`);
 
   const handleAssigned = async (updated: TenantRecord) => {
-    void queryClient.invalidateQueries({ queryKey: ["owner-tenants", currentHostelId ?? null] });
+    void queryClient.invalidateQueries({ queryKey: ["owner-tenants"] });
     router.push(`/owner/tenants/${updated.tenantId}`);
   };
 
   const isLoading = hostelLoading || tenantsLoading;
 
   if (isLoading) return <AssignRoomSkeleton />;
+
+  if (!tenant) {
+    return (
+      <div className="space-y-3 pb-8 w-full">
+        <button
+          type="button"
+          onClick={() => router.push("/owner/tenants")}
+          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/50 hover:text-white transition ml-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Tenants
+        </button>
+        <div className="rounded-[10px] border border-red-500/20 bg-red-500/5 p-6 text-center">
+          <p className="text-sm font-medium text-red-400">Tenant not found.</p>
+          <p className="mt-1 text-xs text-white/40">This tenant may not exist or belongs to a different hostel.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3 pb-8 w-full">

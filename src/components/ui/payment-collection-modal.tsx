@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -45,7 +45,15 @@ export function PaymentCollectionModal({
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []); // SSR hydration guard for createPortal
 
-  // Pre-fill amount when tenant changes — intentional derived-state sync
+  // Escape key closes modal
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape" && !submitting) onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open, submitting, onClose]);
+
+  // Pre-fill amount when tenant changes â€” intentional derived-state sync
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (tenant) setAmount(String(tenant.monthlyRent));
@@ -142,7 +150,7 @@ export function PaymentCollectionModal({
           </div>
         </div>
 
-        {/* Scrollable body — flex-1 so footer stays at bottom */}
+        {/* Scrollable body â€” flex-1 so footer stays at bottom */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-none touch-pan-y px-3 pb-2 sm:px-4">
           {/* Tenant info card */}
           {tenant ? (
@@ -159,7 +167,7 @@ export function PaymentCollectionModal({
                       : "Pending"
                   }
                 />
-                <InfoPill label="Rent" value={`Rs ${tenant.monthlyRent.toLocaleString("en-IN")}`} />
+                <InfoPill label="Rent" value={`₹${tenant.monthlyRent.toLocaleString("en-IN")}`} />
                 <InfoPill label="Due" value={formatPaymentDate(tenant.nextDueDate)} />
               </div>
             </div>
@@ -174,6 +182,7 @@ export function PaymentCollectionModal({
                   min="0"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
+                  onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
                   disabled={submitting}
                   placeholder="Enter amount"
                   className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
@@ -184,6 +193,7 @@ export function PaymentCollectionModal({
                 <input
                   type="date"
                   value={paidOnDate}
+                  max={new Date().toISOString().slice(0, 10)}
                   onChange={(e) => setPaidOnDate(e.target.value)}
                   disabled={submitting}
                   className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
@@ -266,6 +276,7 @@ export function PaymentCollectionModal({
                   <button
                     type="button"
                     onClick={() => { setReceiptFile(null); setReceiptPreview(""); }}
+                    aria-label="Remove receipt"
                     className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white shadow-md"
                   >
                     <X className="h-3 w-3" />
@@ -290,7 +301,7 @@ export function PaymentCollectionModal({
           ) : null}
         </div>
 
-        {/* Sticky footer — always visible, never inside scroll area */}
+        {/* Sticky footer â€” always visible, never inside scroll area */}
         <div className="shrink-0 border-t border-white/10 bg-[#0d1525] px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-4">
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button

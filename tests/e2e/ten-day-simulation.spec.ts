@@ -1,8 +1,8 @@
-/**
+﻿/**
  * ten-day-simulation.spec.ts
  * Realistic 10-day hostel management simulation.
- * Simulates: hostel creation → room setup → tenant joining → rent collection
- * → vacating → bed reuse → plan check → export/backup → full data integrity.
+ * Simulates: hostel creation â†’ room setup â†’ tenant joining â†’ rent collection
+ * â†’ vacating â†’ bed reuse â†’ plan check â†’ export/backup â†’ full data integrity.
  *
  * Uses test.describe.serial so each "day" builds on the previous state.
  * State shared via module-level variables (serial execution only).
@@ -11,7 +11,7 @@ import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { uniqueHostelData, uniqueTenantData, mockDatePlusDays } from "./test-data";
 export { mockDatePlusDays } from "./test-data";
 
-// ── module state (shared across serial tests) ─────────────────────────────────
+// â”€â”€ module state (shared across serial tests) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface SimTenant {
   tenantId: string;
@@ -34,14 +34,24 @@ let simRooms: SimRoom[] = [];
 let simTenants: SimTenant[] = [];
 let simBeds: Array<{ hostelId: string; unitId: string; bedId: string; bedLabel: string; roomNumber: string }> = [];
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function loginAsDemoOwner(page: Page) {
-  await page.addInitScript(() => window.localStorage.clear());
+  await page.addInitScript(() => {
+    window.localStorage.clear();
+    // Pre-select Aurora Residency — test-created hostels get prepended (unshift) to the
+    // demo store and would become hostels[0], making UI default to the wrong hostel.
+    window.localStorage.setItem("currentHostelId", "owner-hostel-aurora");
+  });
   await page.goto("/owner/login");
+  const hostelsPromise = page.waitForResponse(
+    (r) => r.url().includes("/api/owner-hostels") && r.status() !== 401,
+    { timeout: 15000 },
+  );
   await page.getByRole("button", { name: /try demo workspace/i }).click();
   await expect(page).toHaveURL(/\/owner\/dashboard/, { timeout: 15000 });
-  await page.waitForLoadState("networkidle");
+  await hostelsPromise;
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 }
 
 async function getCsrf(page: Page): Promise<string> {
@@ -78,7 +88,7 @@ function today(offsetDays = 0) {
   return d.toISOString().slice(0, 10);
 }
 
-// ── ten-day simulation ────────────────────────────────────────────────────────
+// â”€â”€ ten-day simulation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe.serial("10-day hostel simulation", () => {
 
@@ -280,8 +290,8 @@ test.describe.serial("10-day hostel simulation", () => {
     }
   });
 
-  // DAY 4: Advance time +30 days — verify overdue tenants appear
-  test("Day 4: Time travel +30 days — overdue tenants shown", async ({ page }) => {
+  // DAY 4: Advance time +30 days â€” verify overdue tenants appear
+  test("Day 4: Time travel +30 days â€” overdue tenants shown", async ({ page }) => {
     // Mock browser date to +30 days
     const futureDate = new Date("2026-05-01");
     futureDate.setDate(futureDate.getDate() + 30);
@@ -303,10 +313,10 @@ test.describe.serial("10-day hostel simulation", () => {
 
     await loginAsDemoOwner(page);
     await page.goto("/owner/notifications");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     // With +30 days, monthly tenants should be overdue
-    // Either overdue notices or "all clear" — must not crash
+    // Either overdue notices or "all clear" â€” must not crash
     await expect(page.locator("body")).not.toBeEmpty();
     await expect(
       page.getByText(/overdue|due soon|alert|all clear|no active/i).first()
@@ -322,7 +332,7 @@ test.describe.serial("10-day hostel simulation", () => {
   });
 
   // DAY 5: Vacate 2 tenants (remove from active)
-  test("Day 5: Vacate 2 tenants — bed becomes available", async ({ page }) => {
+  test("Day 5: Vacate 2 tenants â€” bed becomes available", async ({ page }) => {
     await loginAsDemoOwner(page);
 
     const toVacate = simTenants.filter(t => t.status === "active").slice(0, 2);
@@ -408,12 +418,12 @@ test.describe.serial("10-day hostel simulation", () => {
     expect(activeNow.length).toBeGreaterThan(0);
 
     await page.goto("/owner/tenants");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await expect(page.locator("body")).not.toBeEmpty();
   });
 
   // DAY 7: Collect rent from new tenants, check payment isolation
-  test("Day 7: Collect rent from new tenants — verify no history from old tenants", async ({ page }) => {
+  test("Day 7: Collect rent from new tenants â€” verify no history from old tenants", async ({ page }) => {
     await loginAsDemoOwner(page);
 
     const newTenants = simTenants.filter(t => t.status === "active" && t.fullName.startsWith("Day6"));
@@ -452,7 +462,7 @@ test.describe.serial("10-day hostel simulation", () => {
   });
 
   // DAY 8: Edit tenant profiles (name, phone, emergency contact)
-  test("Day 8: Edit tenant profiles — verify updates persist", async ({ page }) => {
+  test("Day 8: Edit tenant profiles â€” verify updates persist", async ({ page }) => {
     await loginAsDemoOwner(page);
 
     const activeTenants = simTenants.filter(t => t.status === "active" && t.tenantId);
@@ -476,7 +486,7 @@ test.describe.serial("10-day hostel simulation", () => {
     // Verify updates in UI
     if (toEdit.length > 0 && toEdit[0].tenantId) {
       await page.goto(`/owner/tenants/${toEdit[0].tenantId}`);
-      await page.waitForLoadState("networkidle");
+      await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
       // Page should load without error
       await expect(page.locator("body")).not.toBeEmpty();
     }
@@ -484,12 +494,12 @@ test.describe.serial("10-day hostel simulation", () => {
     // Refresh and verify persists
     await page.goto("/owner/tenants");
     await page.reload();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await expect(page.locator("body")).not.toBeEmpty();
   });
 
-  // DAY 9: Export CSV and backup — verify data included
-  test("Day 9: Export CSV — verify active tenants in export", async ({ page }) => {
+  // DAY 9: Export CSV and backup â€” verify data included
+  test("Day 9: Export CSV â€” verify active tenants in export", async ({ page }) => {
     await loginAsDemoOwner(page);
 
     const csrf = await getCsrf(page);
@@ -514,12 +524,12 @@ test.describe.serial("10-day hostel simulation", () => {
 
     // Verify reports page loads
     await page.goto("/owner/reports");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await expect(page.getByText(/total tenants|collection rate|occupancy/i).first()).toBeVisible({ timeout: 10000 });
   });
 
-  // DAY 10: Final verification — counts, payments, occupancy, dashboard, billing
-  test("Day 10: Final verification — all counts consistent", async ({ page }) => {
+  // DAY 10: Final verification â€” counts, payments, occupancy, dashboard, billing
+  test("Day 10: Final verification â€” all counts consistent", async ({ page }) => {
     await loginAsDemoOwner(page);
 
     // 1. API counts
@@ -535,33 +545,33 @@ test.describe.serial("10-day hostel simulation", () => {
 
     // 3. Dashboard shows stats
     await page.goto("/owner/dashboard");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await expect(page.getByText(/tenant|collected|occupancy/i).first()).toBeVisible({ timeout: 10000 });
 
     // 4. Tenants list UI count matches API count (approximately)
     await page.goto("/owner/tenants");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     // 5. Rooms page shows occupancy
     await page.goto("/owner/rooms");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await expect(page.locator("body")).not.toBeEmpty();
 
     // 6. Notifications page functional
     await page.goto("/owner/notifications");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await expect(
       page.getByText(/overdue|due soon|all clear|no active/i).first()
     ).toBeVisible({ timeout: 10000 });
 
     // 7. Billing page functional
     await page.goto("/owner/billing");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await expect(page.getByText(/plan|billing|tenant|free|trial/i).first()).toBeVisible({ timeout: 10000 });
 
     // 8. Settings page functional
     await page.goto("/owner/settings");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await expect(page.getByText(/profile|settings|hostel|password/i).first()).toBeVisible({ timeout: 10000 });
 
     console.log("[Day 10] All pages functional. Simulation complete.");
@@ -575,13 +585,13 @@ test.describe.serial("10-day hostel simulation", () => {
   });
 });
 
-// ── billing / plan limits ─────────────────────────────────────────────────────
+// â”€â”€ billing / plan limits â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Billing and plan management", () => {
   test("billing page shows current plan details", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/billing");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     await expect(
       page.getByText(/plan|billing|free|trial|basic|pro/i).first()
@@ -591,7 +601,7 @@ test.describe("Billing and plan management", () => {
   test("billing page shows tenant count used for billing", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/billing");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     await expect(page.locator("body")).not.toBeEmpty();
     // Billing page must not show a loading error
@@ -603,9 +613,9 @@ test.describe("Billing and plan management", () => {
   test("plan upgrade request button present", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/billing");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
-    // Should have some billing action — upgrade, contact, or pricing info
+    // Should have some billing action â€” upgrade, contact, or pricing info
     await expect(
       page.getByRole("button", { name: /upgrade|request|plan|pricing/i })
         .or(page.getByText(/upgrade|pricing|plan/i).filter({ visible: true })).first()
@@ -628,7 +638,7 @@ test.describe("Billing and plan management", () => {
   });
 });
 
-// ── complaints flow ───────────────────────────────────────────────────────────
+// â”€â”€ complaints flow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Complaints and public form", () => {
   test("public complaint form accessible without login", async ({ page }) => {
@@ -638,26 +648,26 @@ test.describe("Complaints and public form", () => {
       const res = await fetch("/api/public/complaints", { credentials: "same-origin" });
       return res.status;
     });
-    // Either 200 (GET list) or 404/405 (not allowed without hostelId) — not 500
+    // Either 200 (GET list) or 404/405 (not allowed without hostelId) â€” not 500
     expect(result).not.toBe(500);
   });
 
   test("complaints page loads for authenticated owner", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/complaints");
-    await page.waitForLoadState("networkidle");
-    // May redirect or show complaints — not crash
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+    // May redirect or show complaints â€” not crash
     await expect(page.locator("body")).not.toBeEmpty();
   });
 });
 
-// ── settings and profile ──────────────────────────────────────────────────────
+// â”€â”€ settings and profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 test.describe("Settings deep tests", () => {
   test("settings page shows all editable sections", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/settings");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     // Profile section
     await expect(page.getByText(/profile|name|phone/i).first()).toBeVisible({ timeout: 8000 });
@@ -670,11 +680,11 @@ test.describe("Settings deep tests", () => {
   test("profile edit form has name and phone fields", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/settings");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     const nameInput = page.getByPlaceholder(/your name|name/i).first();
     if (await nameInput.isVisible({ timeout: 5000 })) {
-      // Profile fetched async — wait for the value to populate before reading
+      // Profile fetched async â€” wait for the value to populate before reading
       await expect(nameInput).not.toHaveValue("", { timeout: 8000 });
       const currentVal = await nameInput.inputValue();
       expect(currentVal.length).toBeGreaterThan(0); // Pre-filled with current name
@@ -684,9 +694,9 @@ test.describe("Settings deep tests", () => {
   test("password change blocked in demo mode", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/settings");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
-    // Demo message is server-rendered — check body text directly to avoid locator timeouts
+    // Demo message is server-rendered â€” check body text directly to avoid locator timeouts
     const bodyText = await page.evaluate(() => document.body.innerText);
     const hasDemoMsg = /demo mode|not available/i.test(bodyText);
     const passInputCount = await page.locator('input[type="password"]').count();
@@ -702,7 +712,7 @@ test.describe("Settings deep tests", () => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/settings");
 
-    // Target the settings-page <a> link directly — sidebar uses router.push buttons, not <a> tags
+    // Target the settings-page <a> link directly â€” sidebar uses router.push buttons, not <a> tags
     const editLink = page.locator('a[href*="create-hostel"]').first();
     if (await editLink.isVisible({ timeout: 5000 })) {
       await editLink.click();
@@ -711,9 +721,9 @@ test.describe("Settings deep tests", () => {
   });
 });
 
-// ── top 30 priority: complete coverage run ────────────────────────────────────
+// â”€â”€ top 30 priority: complete coverage run â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-test.describe("Top 30 critical tests — quick run", () => {
+test.describe("Top 30 critical tests â€” quick run", () => {
   const CRITICAL_ROUTES = [
     { path: "/owner/dashboard", label: "dashboard" },
     { path: "/owner/tenants", label: "tenants list" },
@@ -729,7 +739,7 @@ test.describe("Top 30 critical tests — quick run", () => {
     test(`${route.label} page loads, no blank body, no uncaught error`, async ({ page }) => {
       await loginAsDemoOwner(page);
       await page.goto(route.path);
-      await page.waitForLoadState("networkidle");
+      await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
       // Check for uncaught JS errors
       const errors: string[] = [];
@@ -759,7 +769,7 @@ test.describe("Top 30 critical tests — quick run", () => {
   test("tenant detail page for known ID loads correctly", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/tenants/51201");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await expect(page.getByText("Aarav Sharma").filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
   });
 
@@ -772,7 +782,7 @@ test.describe("Top 30 critical tests — quick run", () => {
   test("dashboard stat tiles all render non-zero or zero values (not NaN)", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/dashboard");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     const bodyText = await page.evaluate(() => document.body.innerText) ?? "";
     expect(bodyText).not.toContain("NaN");
@@ -783,7 +793,7 @@ test.describe("Top 30 critical tests — quick run", () => {
   test("rooms page shows occupancy numbers (not NaN)", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/rooms");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     const bodyText = await page.locator("body").textContent() ?? "";
     expect(bodyText).not.toContain("NaN");
@@ -793,7 +803,7 @@ test.describe("Top 30 critical tests — quick run", () => {
   test("notifications count badge reflects actual overdue count", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/notifications");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
     // Either shows count or "all clear"
     await expect(

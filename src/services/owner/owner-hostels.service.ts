@@ -4,8 +4,9 @@ import type { OwnerHostel, OwnerRoom } from "@/types/owner-hostel";
 type OwnerHostelsResponse = { hostels?: OwnerHostel[] };
 type OwnerHostelResponse = { hostel?: OwnerHostel | null };
 
-export async function fetchOwnerHostels() {
-  const response = await fetch("/api/owner-hostels", { cache: "no-store" });
+export async function fetchOwnerHostels({ withInventory = false }: { withInventory?: boolean } = {}) {
+  const url = withInventory ? "/api/owner-hostels?withInventory=true" : "/api/owner-hostels";
+  const response = await fetch(url, { cache: "no-store" });
   const data = (await response.json()) as OwnerHostelsResponse;
   return { response, data };
 }

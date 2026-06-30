@@ -25,8 +25,15 @@ import { mockDatePlusDays, gotoAndWaitForHydration } from "./helpers";
 async function loginDemoOwner(page: Page) {
   await page.addInitScript(() => window.localStorage.clear());
   await page.goto("/owner/login");
+  // Register before click so we catch the owner-hostels response that fires after dashboard loads.
+  // Filter out the initial 401 — the real non-401 response arrives after session is established.
+  const hostelsPromise = page.waitForResponse(
+    (r) => r.url().includes("/api/owner-hostels") && r.status() !== 401,
+    { timeout: 20000 },
+  );
   await page.getByRole("button", { name: /try demo workspace/i }).click();
-  await expect(page).toHaveURL(/\/owner\/dashboard/);
+  await expect(page).toHaveURL(/\/owner\/dashboard/, { timeout: 20000 });
+  await hostelsPromise;
   await page.waitForLoadState("networkidle");
 }
 

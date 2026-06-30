@@ -358,6 +358,7 @@ export function CompleteProfileModal({
                       <input
                         type="date"
                         value={dateOfBirth}
+                        max={new Date().toISOString().slice(0, 10)}
                         onChange={(e) => setDateOfBirth(e.target.value)}
                         disabled={submitting || uploading}
                         className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"

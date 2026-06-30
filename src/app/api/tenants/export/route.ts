@@ -12,9 +12,10 @@ export const dynamic = "force-dynamic";
 function csvCell(value: string | number | undefined | null): string {
   if (value === undefined || value === null) return "";
   const str = String(value);
-  // Neutralize CSV formula injection: prefix =, +, -, @, tab, CR with single quote
+  // Neutralize CSV formula injection: prefix leading =, +, -, @, tab, CR with single quote
   const safe = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
-  if (/[,"\n\r]/.test(safe)) return `"${safe.replace(/"/g, '""')}"`;
+  // Wrap in quotes if value contains comma, quote, newline, or tab (anywhere in string)
+  if (/[,"\n\r\t]/.test(safe)) return `"${safe.replace(/"/g, '""')}"`;
   return safe;
 }
 
@@ -54,7 +55,7 @@ function buildCSV(tenants: TenantRecord[]): string {
       label,
       t.billingCycle ?? "monthly",
       t.idNumber,
-      t.createdAt.slice(0, 10),
+      t.createdAt?.slice(0, 10) ?? "",  // M-23 fix: createdAt may be undefined
     ]
       .map(csvCell)
       .join(",");

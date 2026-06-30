@@ -1,36 +1,41 @@
-/**
+﻿/**
  * error-scenarios.spec.ts
  *
  * Comprehensive error handling test suite.
- * Tests every documented error path — validates correct HTTP status + error message shape.
+ * Tests every documented error path â€” validates correct HTTP status + error message shape.
  *
  * All tests run in demo mode (PLAYWRIGHT_TEST=true) against the in-memory store.
  * Rate-limit tests are NOT included because apiRateLimit is bypassed when
- * PLAYWRIGHT_TEST=true — see ERROR_CATALOG.md §10.
+ * PLAYWRIGHT_TEST=true â€” see ERROR_CATALOG.md Â§10.
  *
  * Test suites:
- *   Suite 1  — Hostel creation errors
- *   Suite 2  — Tenant creation errors
- *   Suite 3  — Room assignment errors
- *   Suite 4  — Payment errors (JSON mode)
- *   Suite 5  — Payment proof upload errors (multipart mode)
- *   Suite 6  — Vacate / Remove errors
- *   Suite 7  — Auth / unauthenticated errors
- *   Suite 8  — Multi-hostel bed capacity scenarios
+ *   Suite 1  â€” Hostel creation errors
+ *   Suite 2  â€” Tenant creation errors
+ *   Suite 3  â€” Room assignment errors
+ *   Suite 4  â€” Payment errors (JSON mode)
+ *   Suite 5  â€” Payment proof upload errors (multipart mode)
+ *   Suite 6  â€” Vacate / Remove errors
+ *   Suite 7  â€” Auth / unauthenticated errors
+ *   Suite 8  â€” Multi-hostel bed capacity scenarios
  */
 
 import { expect, test, type Page } from "@playwright/test";
 import { TINY_PNG_BYTES } from "./test-data";
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Shared helpers
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function loginAsDemoOwner(page: Page): Promise<void> {
   await page.addInitScript(() => window.localStorage.clear());
   await page.goto("/owner/login");
+  const hostelsPromise = page.waitForResponse(
+    (r) => r.url().includes("/api/owner-hostels") && r.status() !== 401,
+    { timeout: 15000 },
+  );
   await page.getByRole("button", { name: /try demo workspace/i }).click();
   await expect(page).toHaveURL(/\/owner\/dashboard/, { timeout: 15_000 });
+  await hostelsPromise;
   await page.waitForLoadState("networkidle");
 }
 
@@ -121,8 +126,8 @@ async function apiDelete(
   );
 }
 
-// ── createTestHostel ──────────────────────────────────────────────────────────
-// Creates a hostel with 2 rooms × 2 beds each.
+// â”€â”€ createTestHostel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Creates a hostel with 2 rooms Ã— 2 beds each.
 // Returns hostelId and the first room's roomNumber + bed IDs for use in tests.
 type TestHostelResult = {
   hostelId: string;
@@ -166,7 +171,7 @@ async function createTestHostel(page: Page): Promise<TestHostelResult> {
   };
 }
 
-// ── createTestTenant ─────────────────────────────────────────────────────────
+// â”€â”€ createTestTenant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Creates a minimal valid tenant. Pass overrides to test specific fields.
 async function createTestTenant(
   page: Page,
@@ -190,14 +195,14 @@ async function createTestTenant(
   return tenant.tenantId!;
 }
 
-// ── cleanupTenant ─────────────────────────────────────────────────────────────
+// â”€â”€ cleanupTenant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function cleanupTenant(page: Page, tenantId: string): Promise<void> {
   await apiPost(page, "/api/tenants/remove", { tenantId });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Helper: assert standard error shape
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function assertErrorResponse(
   result: ApiResult,
   expectedStatus: number,
@@ -214,11 +219,11 @@ function assertErrorResponse(
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Suite 1: Hostel Creation Errors
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 test.describe("Suite 1: Hostel creation errors", () => {
-  test("1.1 — missing hostelName returns 400", async ({ page }) => {
+  test("1.1 â€” missing hostelName returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/owner-hostels", {
       address: "123 Test Street",
@@ -227,7 +232,7 @@ test.describe("Suite 1: Hostel creation errors", () => {
     assertErrorResponse(result, 400, "hostel name");
   });
 
-  test("1.2 — empty hostelName string returns 400", async ({ page }) => {
+  test("1.2 â€” empty hostelName string returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/owner-hostels", {
       hostelName: "",
@@ -237,7 +242,7 @@ test.describe("Suite 1: Hostel creation errors", () => {
     assertErrorResponse(result, 400, "hostel name");
   });
 
-  test("1.3 — missing address returns 400", async ({ page }) => {
+  test("1.3 â€” missing address returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/owner-hostels", {
       hostelName: "No Address Hostel",
@@ -246,7 +251,7 @@ test.describe("Suite 1: Hostel creation errors", () => {
     assertErrorResponse(result, 400, "address");
   });
 
-  test("1.4 — empty address string returns 400", async ({ page }) => {
+  test("1.4 â€” empty address string returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/owner-hostels", {
       hostelName: "Empty Address Hostel",
@@ -256,7 +261,7 @@ test.describe("Suite 1: Hostel creation errors", () => {
     assertErrorResponse(result, 400, "address");
   });
 
-  test("1.5 — empty rooms array returns 400", async ({ page }) => {
+  test("1.5 â€” empty rooms array returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/owner-hostels", {
       hostelName: "No Rooms Hostel",
@@ -268,7 +273,7 @@ test.describe("Suite 1: Hostel creation errors", () => {
     expect(result.status).toBe(400);
   });
 
-  test("1.6 — rooms array absent returns 400", async ({ page }) => {
+  test("1.6 â€” rooms array absent returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/owner-hostels", {
       hostelName: "Absent Rooms Hostel",
@@ -277,7 +282,7 @@ test.describe("Suite 1: Hostel creation errors", () => {
     assertErrorResponse(result, 400);
   });
 
-  test("1.7 — room with bedCount=0 returns 400", async ({ page }) => {
+  test("1.7 â€” room with bedCount=0 returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/owner-hostels", {
       hostelName: "Zero Bed Hostel",
@@ -287,7 +292,7 @@ test.describe("Suite 1: Hostel creation errors", () => {
     assertErrorResponse(result, 400, "room number and capacity");
   });
 
-  test("1.8 — room with missing roomNumber returns 400", async ({ page }) => {
+  test("1.8 â€” room with missing roomNumber returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/owner-hostels", {
       hostelName: "Missing RoomNum Hostel",
@@ -297,7 +302,7 @@ test.describe("Suite 1: Hostel creation errors", () => {
     assertErrorResponse(result, 400, "room number");
   });
 
-  test("1.9 — valid hostel creation succeeds (sanity check)", async ({ page }) => {
+  test("1.9 â€” valid hostel creation succeeds (sanity check)", async ({ page }) => {
     await loginAsDemoOwner(page);
     const seed = String(Date.now()).slice(-6);
     const result = await apiPost(page, "/api/owner-hostels", {
@@ -315,13 +320,13 @@ test.describe("Suite 1: Hostel creation errors", () => {
     expect(hostel.hostelName).toContain(`Sanity Hostel ${seed}`);
   });
 
-  test("1.10 — GET non-existent hostel by id returns 404", async ({ page }) => {
+  test("1.10 â€” GET non-existent hostel by id returns 404", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiGet(page, "/api/owner-hostels/nonexistent-hostel-99999");
     assertErrorResponse(result, 404, "not found");
   });
 
-  test("1.11 — invalid JSON body returns 400", async ({ page }) => {
+  test("1.11 â€” invalid JSON body returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const csrf = await getCsrf(page);
     const result = await page.evaluate(
@@ -344,11 +349,11 @@ test.describe("Suite 1: Hostel creation errors", () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Suite 2: Tenant Creation Errors
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 test.describe("Suite 2: Tenant creation errors", () => {
-  test("2.1 — missing fullName returns 400", async ({ page }) => {
+  test("2.1 â€” missing fullName returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       phone: "9876543210",
@@ -359,7 +364,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "required");
   });
 
-  test("2.2 — empty fullName string returns 400", async ({ page }) => {
+  test("2.2 â€” empty fullName string returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "",
@@ -371,7 +376,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "required");
   });
 
-  test("2.3 — whitespace-only fullName returns 400", async ({ page }) => {
+  test("2.3 â€” whitespace-only fullName returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "   ",
@@ -383,7 +388,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "required");
   });
 
-  test("2.4 — invalid email format returns 400", async ({ page }) => {
+  test("2.4 â€” invalid email format returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "Email Test Tenant",
@@ -396,7 +401,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "email");
   });
 
-  test("2.5 — email missing @ symbol returns 400", async ({ page }) => {
+  test("2.5 â€” email missing @ symbol returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "Bad Email Tenant",
@@ -409,7 +414,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "email");
   });
 
-  test("2.6 — negative monthlyRent returns 400", async ({ page }) => {
+  test("2.6 â€” negative monthlyRent returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "Negative Rent Tenant",
@@ -421,7 +426,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "required");
   });
 
-  test("2.7 — negative rentPaid returns 400", async ({ page }) => {
+  test("2.7 â€” negative rentPaid returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "Negative RentPaid Tenant",
@@ -433,7 +438,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "required");
   });
 
-  test("2.8 — negative advanceAmount returns 400", async ({ page }) => {
+  test("2.8 â€” negative advanceAmount returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "Negative Advance Tenant",
@@ -446,7 +451,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "advance");
   });
 
-  test("2.9 — negative serviceFeeAmount returns 400", async ({ page }) => {
+  test("2.9 â€” negative serviceFeeAmount returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "Negative Fee Tenant",
@@ -459,7 +464,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "advance");
   });
 
-  test("2.10 — monthlyRent > 10,000,000 returns 400", async ({ page }) => {
+  test("2.10 â€” monthlyRent > 10,000,000 returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "Huge Rent Tenant",
@@ -471,7 +476,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "10,000,000");
   });
 
-  test("2.11 — advanceAmount > 10,000,000 returns 400", async ({ page }) => {
+  test("2.11 â€” advanceAmount > 10,000,000 returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "Huge Advance Tenant",
@@ -484,7 +489,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "10,000,000");
   });
 
-  test("2.12 — missing paidOnDate returns 400", async ({ page }) => {
+  test("2.12 â€” missing paidOnDate returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "No Date Tenant",
@@ -495,7 +500,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "required");
   });
 
-  test("2.13 — invalid paidOnDate format (MM-DD-YYYY) returns 400", async ({ page }) => {
+  test("2.13 â€” invalid paidOnDate format (MM-DD-YYYY) returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "Bad Date Format Tenant",
@@ -507,7 +512,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "YYYY-MM-DD");
   });
 
-  test("2.14 — invalid paidOnDate format (text) returns 400", async ({ page }) => {
+  test("2.14 â€” invalid paidOnDate format (text) returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "Text Date Tenant",
@@ -519,7 +524,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "YYYY-MM-DD");
   });
 
-  test("2.15 — invalid dateOfBirth format returns 400", async ({ page }) => {
+  test("2.15 â€” invalid dateOfBirth format returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "Bad DOB Tenant",
@@ -532,7 +537,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     assertErrorResponse(result, 400, "YYYY-MM-DD");
   });
 
-  test("2.16 — billingCycle 'yearly' silently defaults to monthly (no error)", async ({ page }) => {
+  test("2.16 â€” billingCycle 'yearly' silently defaults to monthly (no error)", async ({ page }) => {
     // Per source: any value that is not 'daily' or 'weekly' defaults to 'monthly'
     // The Next.js handler does NOT reject invalid billingCycle values
     await loginAsDemoOwner(page);
@@ -544,7 +549,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
       paidOnDate: "2026-05-01",
       billingCycle: "yearly",
     });
-    // Should succeed — 'yearly' silently coerces to 'monthly'
+    // Should succeed â€” 'yearly' silently coerces to 'monthly'
     expect(result.ok).toBe(true);
     const tenant = result.body.tenant as { tenantId?: string; billingCycle?: string };
     expect(tenant.tenantId).toBeTruthy();
@@ -553,7 +558,7 @@ test.describe("Suite 2: Tenant creation errors", () => {
     await cleanupTenant(page, tenant.tenantId!);
   });
 
-  test("2.17 — valid tenant created (sanity check)", async ({ page }) => {
+  test("2.17 â€” valid tenant created (sanity check)", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants", {
       fullName: "Valid Sanity Tenant",
@@ -572,11 +577,11 @@ test.describe("Suite 2: Tenant creation errors", () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Suite 3: Room Assignment Errors
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 test.describe("Suite 3: Room assignment errors", () => {
-  test("3.1 — missing tenantId returns 400 with hostel/room message", async ({ page }) => {
+  test("3.1 â€” missing tenantId returns 400 with hostel/room message", async ({ page }) => {
     await loginAsDemoOwner(page);
     const { hostelId, room1Number } = await createTestHostel(page);
     const result = await apiPost(page, "/api/tenants/assign-room", {
@@ -587,7 +592,7 @@ test.describe("Suite 3: Room assignment errors", () => {
     assertErrorResponse(result, 400, "hostel");
   });
 
-  test("3.2 — missing hostelId returns 400", async ({ page }) => {
+  test("3.2 â€” missing hostelId returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const { hostelId, room1Number } = await createTestHostel(page);
     const tenantId = await createTestTenant(page, hostelId);
@@ -600,7 +605,7 @@ test.describe("Suite 3: Room assignment errors", () => {
     await cleanupTenant(page, tenantId);
   });
 
-  test("3.3 — missing roomNumber returns 400", async ({ page }) => {
+  test("3.3 â€” missing roomNumber returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const { hostelId } = await createTestHostel(page);
     const tenantId = await createTestTenant(page, hostelId);
@@ -613,7 +618,7 @@ test.describe("Suite 3: Room assignment errors", () => {
     await cleanupTenant(page, tenantId);
   });
 
-  test("3.4 — missing moveInDate returns 400", async ({ page }) => {
+  test("3.4 â€” missing moveInDate returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const { hostelId, room1Number } = await createTestHostel(page);
     const tenantId = await createTestTenant(page, hostelId);
@@ -626,7 +631,7 @@ test.describe("Suite 3: Room assignment errors", () => {
     await cleanupTenant(page, tenantId);
   });
 
-  test("3.5 — non-existent tenantId returns error", async ({ page }) => {
+  test("3.5 â€” non-existent tenantId returns error", async ({ page }) => {
     await loginAsDemoOwner(page);
     const { hostelId, room1Number } = await createTestHostel(page);
     const result = await apiPost(page, "/api/tenants/assign-room", {
@@ -635,14 +640,14 @@ test.describe("Suite 3: Room assignment errors", () => {
       roomNumber: room1Number,
       moveInDate: "2026-05-01",
     });
-    // Demo store throws "Tenant not found." → route returns 400
+    // Demo store throws "Tenant not found." â†’ route returns 400
     expect(result.ok).toBe(false);
     expect(result.status).toBe(400);
     expect(typeof result.body.message).toBe("string");
     expect((result.body.message as string).toLowerCase()).toContain("tenant");
   });
 
-  test("3.6 — non-existent hostelId returns error", async ({ page }) => {
+  test("3.6 â€” non-existent hostelId returns error", async ({ page }) => {
     await loginAsDemoOwner(page);
     const { hostelId } = await createTestHostel(page);
     const tenantId = await createTestTenant(page, hostelId);
@@ -652,14 +657,14 @@ test.describe("Suite 3: Room assignment errors", () => {
       roomNumber: "101",
       moveInDate: "2026-05-01",
     });
-    // Store throws "Hostel room inventory not found." → 400
+    // Store throws "Hostel room inventory not found." â†’ 400
     expect(result.ok).toBe(false);
     expect(result.status).toBe(400);
     expect(typeof result.body.message).toBe("string");
     await cleanupTenant(page, tenantId);
   });
 
-  test("3.7 — non-existent roomNumber returns error", async ({ page }) => {
+  test("3.7 â€” non-existent roomNumber returns error", async ({ page }) => {
     await loginAsDemoOwner(page);
     const { hostelId } = await createTestHostel(page);
     const tenantId = await createTestTenant(page, hostelId);
@@ -669,24 +674,24 @@ test.describe("Suite 3: Room assignment errors", () => {
       roomNumber: "ROOM_DOES_NOT_EXIST_9999",
       moveInDate: "2026-05-01",
     });
-    // Store throws "Selected room was not found." → 400
+    // Store throws "Selected room was not found." â†’ 400
     expect(result.ok).toBe(false);
     expect(result.status).toBe(400);
     expect((result.body.message as string).toLowerCase()).toContain("room");
     await cleanupTenant(page, tenantId);
   });
 
-  test("3.8 — double-bed booking: second tenant on same bed returns 400", async ({ page }) => {
-    // DOCUMENTED BEHAVIOUR (see ERROR_CATALOG.md §3):
+  test("3.8 â€” double-bed booking: second tenant on same bed returns 400", async ({ page }) => {
+    // DOCUMENTED BEHAVIOUR (see ERROR_CATALOG.md Â§3):
     // Demo mode: assignTenantRoom checks occupiedBedIds before assigning.
-    // If bedId is already taken, it throws "Selected bed is not available." → 400.
+    // If bedId is already taken, it throws "Selected bed is not available." â†’ 400.
     // This test creates 2 tenants and attempts to assign both to the SAME bedId.
     await loginAsDemoOwner(page);
     const { hostelId, room1Number, room1BedIds } = await createTestHostel(page);
     expect(room1BedIds.length).toBeGreaterThanOrEqual(1);
     const bedId = room1BedIds[0];
 
-    // Tenant A — assign to room1, bed0
+    // Tenant A â€” assign to room1, bed0
     const tenantAId = await createTestTenant(page, hostelId);
     const assignA = await apiPost(page, "/api/tenants/assign-room", {
       tenantId: tenantAId,
@@ -697,7 +702,7 @@ test.describe("Suite 3: Room assignment errors", () => {
     });
     expect(assignA.ok).toBe(true);
 
-    // Tenant B — try to assign to the SAME bedId
+    // Tenant B â€” try to assign to the SAME bedId
     const tenantBId = await createTestTenant(page, hostelId);
     const assignB = await apiPost(page, "/api/tenants/assign-room", {
       tenantId: tenantBId,
@@ -707,7 +712,7 @@ test.describe("Suite 3: Room assignment errors", () => {
       bedId,
     });
 
-    // The demo store PREVENTS double-booking at bed level → should be 400
+    // The demo store PREVENTS double-booking at bed level â†’ should be 400
     expect(assignB.ok).toBe(false);
     expect(assignB.status).toBe(400);
     expect(typeof assignB.body.message).toBe("string");
@@ -718,7 +723,7 @@ test.describe("Suite 3: Room assignment errors", () => {
     await cleanupTenant(page, tenantBId);
   });
 
-  test("3.9 — assigning same tenant to its current room is idempotent (no error)", async ({ page }) => {
+  test("3.9 â€” assigning same tenant to its current room is idempotent (no error)", async ({ page }) => {
     // The store allows re-assigning to the same hostel/room/bed without error
     await loginAsDemoOwner(page);
     const { hostelId, room1Number, room1BedIds } = await createTestHostel(page);
@@ -741,13 +746,13 @@ test.describe("Suite 3: Room assignment errors", () => {
       moveInDate: "2026-05-01",
       bedId,
     });
-    // Same hostel/room/bed — no error (store equality check passes)
+    // Same hostel/room/bed â€” no error (store equality check passes)
     expect(assign2.ok).toBe(true);
 
     await cleanupTenant(page, tenantId);
   });
 
-  test("3.10 — reassigning to a DIFFERENT room without clearing first returns 400", async ({ page }) => {
+  test("3.10 â€” reassigning to a DIFFERENT room without clearing first returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const { hostelId, room1Number, room2Number, room1BedIds, room2BedIds } = await createTestHostel(page);
     const tenantId = await createTestTenant(page, hostelId);
@@ -778,11 +783,11 @@ test.describe("Suite 3: Room assignment errors", () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Suite 4: Payment Errors (JSON mode)
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 test.describe("Suite 4: Payment errors", () => {
-  test("4.1 — missing tenantId returns 400", async ({ page }) => {
+  test("4.1 â€” missing tenantId returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/pay-rent", {
       amount: 5000,
@@ -792,7 +797,7 @@ test.describe("Suite 4: Payment errors", () => {
     assertErrorResponse(result, 400, "required");
   });
 
-  test("4.2 — empty tenantId returns 400", async ({ page }) => {
+  test("4.2 â€” empty tenantId returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/pay-rent", {
       tenantId: "",
@@ -803,7 +808,7 @@ test.describe("Suite 4: Payment errors", () => {
     assertErrorResponse(result, 400, "required");
   });
 
-  test("4.3 — negative amount returns 400", async ({ page }) => {
+  test("4.3 â€” negative amount returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/pay-rent", {
       tenantId: "51201",
@@ -814,7 +819,7 @@ test.describe("Suite 4: Payment errors", () => {
     assertErrorResponse(result, 400, "required");
   });
 
-  test("4.4 — amount > 10,000,000 returns 400", async ({ page }) => {
+  test("4.4 â€” amount > 10,000,000 returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/pay-rent", {
       tenantId: "51201",
@@ -825,7 +830,7 @@ test.describe("Suite 4: Payment errors", () => {
     assertErrorResponse(result, 400, "10,000,000");
   });
 
-  test("4.5 — amount = 10,000,000 exactly is allowed (boundary)", async ({ page }) => {
+  test("4.5 â€” amount = 10,000,000 exactly is allowed (boundary)", async ({ page }) => {
     // The check is amount > 10_000_000, so exactly 10M should succeed
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/pay-rent", {
@@ -841,7 +846,7 @@ test.describe("Suite 4: Payment errors", () => {
     }
   });
 
-  test("4.6 — amount = 0 is allowed (zero payment edge case)", async ({ page }) => {
+  test("4.6 â€” amount = 0 is allowed (zero payment edge case)", async ({ page }) => {
     // nonnegative() accepts 0; route check is `amount < 0`
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/pay-rent", {
@@ -857,7 +862,7 @@ test.describe("Suite 4: Payment errors", () => {
     }
   });
 
-  test("4.7 — missing paidOnDate returns 400", async ({ page }) => {
+  test("4.7 â€” missing paidOnDate returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/pay-rent", {
       tenantId: "51201",
@@ -867,7 +872,7 @@ test.describe("Suite 4: Payment errors", () => {
     assertErrorResponse(result, 400, "required");
   });
 
-  test("4.8 — invalid paidOnDate format (DD/MM/YYYY) returns 400", async ({ page }) => {
+  test("4.8 â€” invalid paidOnDate format (DD/MM/YYYY) returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/pay-rent", {
       tenantId: "51201",
@@ -878,7 +883,7 @@ test.describe("Suite 4: Payment errors", () => {
     assertErrorResponse(result, 400, "YYYY-MM-DD");
   });
 
-  test("4.9 — invalid paidOnDate format (MM-DD-YYYY) returns 400", async ({ page }) => {
+  test("4.9 â€” invalid paidOnDate format (MM-DD-YYYY) returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/pay-rent", {
       tenantId: "51201",
@@ -889,7 +894,7 @@ test.describe("Suite 4: Payment errors", () => {
     assertErrorResponse(result, 400, "YYYY-MM-DD");
   });
 
-  test("4.10 — missing paymentMethod returns 400", async ({ page }) => {
+  test("4.10 â€” missing paymentMethod returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/pay-rent", {
       tenantId: "51201",
@@ -899,7 +904,7 @@ test.describe("Suite 4: Payment errors", () => {
     assertErrorResponse(result, 400, "required");
   });
 
-  test("4.11 — empty paymentMethod returns 400", async ({ page }) => {
+  test("4.11 â€” empty paymentMethod returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/pay-rent", {
       tenantId: "51201",
@@ -910,7 +915,7 @@ test.describe("Suite 4: Payment errors", () => {
     assertErrorResponse(result, 400, "required");
   });
 
-  test("4.12 — non-existent tenantId returns 400 from demo store", async ({ page }) => {
+  test("4.12 â€” non-existent tenantId returns 400 from demo store", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/pay-rent", {
       tenantId: "00001",
@@ -918,13 +923,13 @@ test.describe("Suite 4: Payment errors", () => {
       paidOnDate: "2026-05-01",
       paymentMethod: "cash",
     });
-    // Store throws "Tenant not found." → 400 (catch block in route)
+    // Store throws "Tenant not found." â†’ 400 (catch block in route)
     expect(result.ok).toBe(false);
     expect(result.status).toBe(400);
     expect((result.body.message as string).toLowerCase()).toContain("tenant");
   });
 
-  test("4.13 — valid payment on demo tenant succeeds (sanity check)", async ({ page }) => {
+  test("4.13 â€” valid payment on demo tenant succeeds (sanity check)", async ({ page }) => {
     await loginAsDemoOwner(page);
     // 51201 is the known demo tenant Aarav Sharma
     const result = await apiPost(page, "/api/tenants/pay-rent", {
@@ -939,18 +944,18 @@ test.describe("Suite 4: Payment errors", () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Suite 5: Payment Proof Upload Errors (multipart/form-data)
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 test.describe("Suite 5: Payment proof upload errors", () => {
-  // ── Synthetic file helpers (defined inside page.evaluate via data passing) ──
+  // â”€â”€ Synthetic file helpers (defined inside page.evaluate via data passing) â”€â”€
   //
   // TINY_PNG_BYTES: 68-byte valid PNG from test-data.ts
   // oversized: repeat TINY_PNG_BYTES to exceed 5 MB
   // fakePng: null bytes with image/png MIME
   // textFile: ASCII text with text/plain MIME
 
-  test("5.1 — oversized proof file (>5MB) returns 400", async ({ page }) => {
+  test("5.1 â€” oversized proof file (>5MB) returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const csrf = await getCsrf(page);
     const tinyPngBase64 = TINY_PNG_BYTES.toString("base64");
@@ -987,7 +992,7 @@ test.describe("Suite 5: Payment proof upload errors", () => {
     assertErrorResponse(result, 400, "too large");
   });
 
-  test("5.2 — text/plain MIME type returns 400 with invalid file type message", async ({ page }) => {
+  test("5.2 â€” text/plain MIME type returns 400 with invalid file type message", async ({ page }) => {
     await loginAsDemoOwner(page);
     const csrf = await getCsrf(page);
 
@@ -1017,13 +1022,13 @@ test.describe("Suite 5: Payment proof upload errors", () => {
     assertErrorResponse(result, 400, "Invalid file type");
   });
 
-  test("5.3 — fake PNG (null bytes, image/png MIME) returns 400 for magic bytes mismatch", async ({ page }) => {
+  test("5.3 â€” fake PNG (null bytes, image/png MIME) returns 400 for magic bytes mismatch", async ({ page }) => {
     await loginAsDemoOwner(page);
     const csrf = await getCsrf(page);
 
     const result = await page.evaluate(
       async ({ csrf }) => {
-        // 100 null bytes with image/png declared — magic bytes won't match PNG
+        // 100 null bytes with image/png declared â€” magic bytes won't match PNG
         const fakeBytes = new Uint8Array(100); // all zeros
         const fakeFile = new File([fakeBytes], "fake.png", { type: "image/png" });
 
@@ -1045,13 +1050,13 @@ test.describe("Suite 5: Payment proof upload errors", () => {
       { csrf },
     );
 
-    // detectMimeFromBytes returns null for null bytes → "File content does not match an allowed format."
+    // detectMimeFromBytes returns null for null bytes â†’ "File content does not match an allowed format."
     assertErrorResponse(result, 400);
     const msg = (result.body.message as string).toLowerCase();
     expect(msg.includes("content") || msg.includes("match") || msg.includes("format")).toBe(true);
   });
 
-  test("5.4 — JPEG bytes declared as image/png returns 400 for extension mismatch", async ({ page }) => {
+  test("5.4 â€” JPEG bytes declared as image/png returns 400 for extension mismatch", async ({ page }) => {
     await loginAsDemoOwner(page);
     const csrf = await getCsrf(page);
 
@@ -1079,13 +1084,13 @@ test.describe("Suite 5: Payment proof upload errors", () => {
       { csrf },
     );
 
-    // detectMimeFromBytes returns "image/jpeg" but file.type is "image/png" → mismatch
+    // detectMimeFromBytes returns "image/jpeg" but file.type is "image/png" â†’ mismatch
     assertErrorResponse(result, 400);
     const msg = (result.body.message as string).toLowerCase();
     expect(msg.includes("extension") || msg.includes("match") || msg.includes("content")).toBe(true);
   });
 
-  test("5.5 — valid tiny PNG proof uploads successfully (sanity check)", async ({ page }) => {
+  test("5.5 â€” valid tiny PNG proof uploads successfully (sanity check)", async ({ page }) => {
     await loginAsDemoOwner(page);
     const csrf = await getCsrf(page);
     const tinyPngBase64 = TINY_PNG_BYTES.toString("base64");
@@ -1117,7 +1122,7 @@ test.describe("Suite 5: Payment proof upload errors", () => {
     expect(result.status).toBe(200);
   });
 
-  test("5.6 — application/pdf with PDF magic bytes succeeds (allowed type)", async ({ page }) => {
+  test("5.6 â€” application/pdf with PDF magic bytes succeeds (allowed type)", async ({ page }) => {
     await loginAsDemoOwner(page);
     const csrf = await getCsrf(page);
 
@@ -1150,11 +1155,11 @@ test.describe("Suite 5: Payment proof upload errors", () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Suite 6: Vacate / Remove Errors
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 test.describe("Suite 6: Vacate/Remove tenant errors", () => {
-  test("6.1 — missing tenantId returns 400", async ({ page }) => {
+  test("6.1 â€” missing tenantId returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/remove", {
       refundAmount: 0,
@@ -1162,7 +1167,7 @@ test.describe("Suite 6: Vacate/Remove tenant errors", () => {
     assertErrorResponse(result, 400, "Tenant ID is required");
   });
 
-  test("6.2 — empty tenantId string returns 400", async ({ page }) => {
+  test("6.2 â€” empty tenantId string returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/remove", {
       tenantId: "",
@@ -1171,7 +1176,7 @@ test.describe("Suite 6: Vacate/Remove tenant errors", () => {
     assertErrorResponse(result, 400, "Tenant ID is required");
   });
 
-  test("6.3 — negative refundAmount returns 400", async ({ page }) => {
+  test("6.3 â€” negative refundAmount returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/remove", {
       tenantId: "51201",
@@ -1180,7 +1185,7 @@ test.describe("Suite 6: Vacate/Remove tenant errors", () => {
     assertErrorResponse(result, 400, "valid amount");
   });
 
-  test("6.4 — refundAmount > 10,000,000 returns 400", async ({ page }) => {
+  test("6.4 â€” refundAmount > 10,000,000 returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/remove", {
       tenantId: "51201",
@@ -1189,19 +1194,19 @@ test.describe("Suite 6: Vacate/Remove tenant errors", () => {
     assertErrorResponse(result, 400, "valid amount");
   });
 
-  test("6.5 — non-existent tenantId returns 400 from demo store", async ({ page }) => {
+  test("6.5 â€” non-existent tenantId returns 400 from demo store", async ({ page }) => {
     await loginAsDemoOwner(page);
     const result = await apiPost(page, "/api/tenants/remove", {
       tenantId: "00000",
       refundAmount: 0,
     });
-    // removeTenantRecord throws "Tenant not found." → catch block → 400
+    // removeTenantRecord throws "Tenant not found." â†’ catch block â†’ 400
     expect(result.ok).toBe(false);
     expect(result.status).toBe(400);
     expect((result.body.message as string).toLowerCase()).toContain("tenant");
   });
 
-  test("6.6 — double-vacate same tenant returns 400 on second call", async ({ page }) => {
+  test("6.6 â€” double-vacate same tenant returns 400 on second call", async ({ page }) => {
     await loginAsDemoOwner(page);
     // Create and then vacate a tenant
     const tenantId = await createTestTenant(page, "owner-hostel-aurora");
@@ -1219,13 +1224,13 @@ test.describe("Suite 6: Vacate/Remove tenant errors", () => {
       refundAmount: 0,
       settlementDate: "2026-06-01",
     });
-    // The record is already gone → "Tenant not found." → 400
+    // The record is already gone â†’ "Tenant not found." â†’ 400
     expect(second.ok).toBe(false);
     expect(second.status).toBe(400);
     expect((second.body.message as string).toLowerCase()).toContain("tenant");
   });
 
-  test("6.7 — valid vacate succeeds and returns tenant in response", async ({ page }) => {
+  test("6.7 â€” valid vacate succeeds and returns tenant in response", async ({ page }) => {
     await loginAsDemoOwner(page);
     const tenantId = await createTestTenant(page, "owner-hostel-aurora");
 
@@ -1244,7 +1249,7 @@ test.describe("Suite 6: Vacate/Remove tenant errors", () => {
     expect(tenant).toBeTruthy();
   });
 
-  test("6.8 — invalid JSON body returns 400", async ({ page }) => {
+  test("6.8 â€” invalid JSON body returns 400", async ({ page }) => {
     await loginAsDemoOwner(page);
     const csrf = await getCsrf(page);
     const result = await page.evaluate(
@@ -1267,15 +1272,15 @@ test.describe("Suite 6: Vacate/Remove tenant errors", () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Suite 7: Auth / Unauthenticated Errors
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe("Suite 7: Auth errors — unauthenticated requests", () => {
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+test.describe("Suite 7: Auth errors â€” unauthenticated requests", () => {
   // All auth tests use `credentials: "omit"` to exclude the session cookie.
   // In PLAYWRIGHT_TEST=true mode, requireOwnerSession returns a demo session
   // when the session cookie IS present. By omitting credentials, we bypass that.
 
-  test("7.1 — GET /api/tenants without session returns 401", async ({ page }) => {
+  test("7.1 â€” GET /api/tenants without session returns 401", async ({ page }) => {
     await page.goto("/owner/login");
     const result = await page.evaluate(async () => {
       const res = await fetch("/api/tenants", { credentials: "omit" });
@@ -1284,7 +1289,7 @@ test.describe("Suite 7: Auth errors — unauthenticated requests", () => {
     assertErrorResponse(result, 401, "Unauthorized");
   });
 
-  test("7.2 — POST /api/tenants without session returns 401", async ({ page }) => {
+  test("7.2 â€” POST /api/tenants without session returns 401", async ({ page }) => {
     await page.goto("/owner/login");
     const result = await page.evaluate(async () => {
       const res = await fetch("/api/tenants", {
@@ -1298,7 +1303,7 @@ test.describe("Suite 7: Auth errors — unauthenticated requests", () => {
     assertErrorResponse(result, 401, "Unauthorized");
   });
 
-  test("7.3 — POST /api/tenants/remove without session returns 401", async ({ page }) => {
+  test("7.3 â€” POST /api/tenants/remove without session returns 401", async ({ page }) => {
     await page.goto("/owner/login");
     const result = await page.evaluate(async () => {
       const res = await fetch("/api/tenants/remove", {
@@ -1312,7 +1317,7 @@ test.describe("Suite 7: Auth errors — unauthenticated requests", () => {
     assertErrorResponse(result, 401, "Unauthorized");
   });
 
-  test("7.4 — POST /api/tenants/assign-room without session returns 401", async ({ page }) => {
+  test("7.4 â€” POST /api/tenants/assign-room without session returns 401", async ({ page }) => {
     await page.goto("/owner/login");
     const result = await page.evaluate(async () => {
       const res = await fetch("/api/tenants/assign-room", {
@@ -1326,7 +1331,7 @@ test.describe("Suite 7: Auth errors — unauthenticated requests", () => {
     assertErrorResponse(result, 401, "Unauthorized");
   });
 
-  test("7.5 — POST /api/tenants/pay-rent without session returns 401", async ({ page }) => {
+  test("7.5 â€” POST /api/tenants/pay-rent without session returns 401", async ({ page }) => {
     await page.goto("/owner/login");
     const result = await page.evaluate(async () => {
       const res = await fetch("/api/tenants/pay-rent", {
@@ -1340,7 +1345,7 @@ test.describe("Suite 7: Auth errors — unauthenticated requests", () => {
     assertErrorResponse(result, 401, "Unauthorized");
   });
 
-  test("7.6 — GET /api/owner-hostels without session returns 401", async ({ page }) => {
+  test("7.6 â€” GET /api/owner-hostels without session returns 401", async ({ page }) => {
     await page.goto("/owner/login");
     const result = await page.evaluate(async () => {
       const res = await fetch("/api/owner-hostels", { credentials: "omit" });
@@ -1349,7 +1354,7 @@ test.describe("Suite 7: Auth errors — unauthenticated requests", () => {
     assertErrorResponse(result, 401, "Unauthorized");
   });
 
-  test("7.7 — POST /api/owner-hostels without session returns 401", async ({ page }) => {
+  test("7.7 â€” POST /api/owner-hostels without session returns 401", async ({ page }) => {
     await page.goto("/owner/login");
     const result = await page.evaluate(async () => {
       const res = await fetch("/api/owner-hostels", {
@@ -1363,7 +1368,7 @@ test.describe("Suite 7: Auth errors — unauthenticated requests", () => {
     assertErrorResponse(result, 401, "Unauthorized");
   });
 
-  test("7.8 — GET /api/owner-hostels/[id] without session returns 401", async ({ page }) => {
+  test("7.8 â€” GET /api/owner-hostels/[id] without session returns 401", async ({ page }) => {
     await page.goto("/owner/login");
     const result = await page.evaluate(async () => {
       const res = await fetch("/api/owner-hostels/owner-hostel-aurora", { credentials: "omit" });
@@ -1372,7 +1377,7 @@ test.describe("Suite 7: Auth errors — unauthenticated requests", () => {
     assertErrorResponse(result, 401, "Unauthorized");
   });
 
-  test("7.9 — PUT /api/owner-hostels/[id] without session returns 401", async ({ page }) => {
+  test("7.9 â€” PUT /api/owner-hostels/[id] without session returns 401", async ({ page }) => {
     await page.goto("/owner/login");
     const result = await page.evaluate(async () => {
       const res = await fetch("/api/owner-hostels/owner-hostel-aurora", {
@@ -1387,14 +1392,14 @@ test.describe("Suite 7: Auth errors — unauthenticated requests", () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Suite 8: Multi-hostel Bed Capacity Scenarios
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 test.describe("Suite 8: Multi-hostel bed capacity scenarios", () => {
-  test("8.1 — fill all beds in one hostel, then assign to a different hostel succeeds", async ({ page }) => {
+  test("8.1 â€” fill all beds in one hostel, then assign to a different hostel succeeds", async ({ page }) => {
     await loginAsDemoOwner(page);
 
-    // Create hostel A with 2 rooms × 2 beds = 4 beds total
+    // Create hostel A with 2 rooms Ã— 2 beds = 4 beds total
     const seedA = `A${String(Date.now()).slice(-5)}`;
     const hostelAResult = await apiPost(page, "/api/owner-hostels", {
       hostelName: `Cap Test Hostel A ${seedA}`,
@@ -1415,7 +1420,7 @@ test.describe("Suite 8: Multi-hostel bed capacity scenarios", () => {
     };
     expect(hostelA.id).toBeTruthy();
 
-    // Create hostel B with 1 room × 2 beds = 2 beds total
+    // Create hostel B with 1 room Ã— 2 beds = 2 beds total
     const seedB = `B${String(Date.now()).slice(-5)}`;
     const hostelBResult = await apiPost(page, "/api/owner-hostels", {
       hostelName: `Cap Test Hostel B ${seedB}`,
@@ -1440,7 +1445,7 @@ test.describe("Suite 8: Multi-hostel bed capacity scenarios", () => {
         hostelABeds.push({ roomNumber: room.roomNumber, bedId: bed.id });
       }
     }
-    expect(hostelABeds.length).toBe(4); // 2 rooms × 2 beds
+    expect(hostelABeds.length).toBe(4); // 2 rooms Ã— 2 beds
 
     // Fill all 4 beds in hostel A
     const hostelATenantIds: string[] = [];
@@ -1460,7 +1465,7 @@ test.describe("Suite 8: Multi-hostel bed capacity scenarios", () => {
       hostelATenantIds.push(tenantId);
     }
 
-    // Verify hostel A is full — all beds should show as occupied
+    // Verify hostel A is full â€” all beds should show as occupied
     const hostelAGet = await apiGet(page, `/api/owner-hostels/${hostelA.id}`);
     expect(hostelAGet.ok).toBe(true);
     const hostelAData = hostelAGet.body.hostel as {
@@ -1475,10 +1480,10 @@ test.describe("Suite 8: Multi-hostel bed capacity scenarios", () => {
       (sum, room) => sum + (room.beds?.length ?? 0),
       0,
     );
-    // All 4 beds are occupied → no free beds remain in the response
+    // All 4 beds are occupied â†’ no free beds remain in the response
     expect(totalBedsInResponse).toBe(0);
 
-    // Assign one tenant to hostel B — should succeed (separate hostel)
+    // Assign one tenant to hostel B â€” should succeed (separate hostel)
     const hostelBRoom = hostelB.rooms[0];
     const hostelBBedId = hostelBRoom.beds?.[0]?.id;
     expect(hostelBBedId).toBeTruthy();
@@ -1492,7 +1497,7 @@ test.describe("Suite 8: Multi-hostel bed capacity scenarios", () => {
     });
     expect(hostelBAssign.ok).toBe(true);
 
-    // Try to assign a 5th tenant to hostel A (all beds full) — should fail
+    // Try to assign a 5th tenant to hostel A (all beds full) â€” should fail
     const overflow = await createTestTenant(page, hostelA.id);
     const overflowRoom = hostelA.rooms[0];
     const overflowBed = overflowRoom.beds?.[0]?.id;
@@ -1515,7 +1520,7 @@ test.describe("Suite 8: Multi-hostel bed capacity scenarios", () => {
     await cleanupTenant(page, overflow);
   });
 
-  test("8.2 — filling one room does not block beds in another room of same hostel", async ({ page }) => {
+  test("8.2 â€” filling one room does not block beds in another room of same hostel", async ({ page }) => {
     await loginAsDemoOwner(page);
 
     const seed = `C${String(Date.now()).slice(-5)}`;
@@ -1584,7 +1589,7 @@ test.describe("Suite 8: Multi-hostel bed capacity scenarios", () => {
     await cleanupTenant(page, overflow);
   });
 
-  test("8.3 — hostel GET after filling all beds shows zero available beds", async ({ page }) => {
+  test("8.3 â€” hostel GET after filling all beds shows zero available beds", async ({ page }) => {
     await loginAsDemoOwner(page);
 
     const seed = `D${String(Date.now()).slice(-5)}`;
@@ -1616,7 +1621,7 @@ test.describe("Suite 8: Multi-hostel bed capacity scenarios", () => {
       tenantIds.push(tid);
     }
 
-    // GET the hostel — verify no available beds are returned
+    // GET the hostel â€” verify no available beds are returned
     const getResult = await apiGet(page, `/api/owner-hostels/${hostel.id}`);
     expect(getResult.ok).toBe(true);
     const hostelData = getResult.body.hostel as {
@@ -1626,13 +1631,13 @@ test.describe("Suite 8: Multi-hostel bed capacity scenarios", () => {
       (sum, r) => sum + (r.beds?.length ?? 0),
       0,
     );
-    // All beds occupied → filter removes them from /api/owner-hostels/[id] response
+    // All beds occupied â†’ filter removes them from /api/owner-hostels/[id] response
     expect(availableBeds).toBe(0);
 
     for (const id of tenantIds) await cleanupTenant(page, id);
   });
 
-  test("8.4 — idempotency key prevents duplicate tenant creation", async ({ page }) => {
+  test("8.4 â€” idempotency key prevents duplicate tenant creation", async ({ page }) => {
     await loginAsDemoOwner(page);
     const csrf = await getCsrf(page);
     const idempotencyKey = `idem-test-${Date.now()}`;
@@ -1666,7 +1671,7 @@ test.describe("Suite 8: Multi-hostel bed capacity scenarios", () => {
     const tenantId = (first.body.tenant as { tenantId?: string }).tenantId;
     expect(tenantId).toBeTruthy();
 
-    // Second request with same key and same payload — should return cached 201
+    // Second request with same key and same payload â€” should return cached 201
     const second = await page.evaluate(
       async ({ csrf, idempotencyKey }) => {
         const res = await fetch("/api/tenants", {
@@ -1699,7 +1704,7 @@ test.describe("Suite 8: Multi-hostel bed capacity scenarios", () => {
     await cleanupTenant(page, tenantId!);
   });
 
-  test("8.5 — idempotency key reused with different payload returns 409", async ({ page }) => {
+  test("8.5 â€” idempotency key reused with different payload returns 409", async ({ page }) => {
     await loginAsDemoOwner(page);
     const csrf = await getCsrf(page);
     const idempotencyKey = `idem-conflict-${Date.now()}`;
@@ -1740,7 +1745,7 @@ test.describe("Suite 8: Multi-hostel bed capacity scenarios", () => {
             "X-Idempotency-Key": idempotencyKey,
           },
           body: JSON.stringify({
-            fullName: "Idem Conflict B — DIFFERENT",
+            fullName: "Idem Conflict B â€” DIFFERENT",
             phone: "9977665544",
             monthlyRent: 6000,
             rentPaid: 6000,

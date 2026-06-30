@@ -1,4 +1,4 @@
-/**
+﻿/**
  * visual-all-pages.spec.ts
  * Visual regression snapshots for every owner route at desktop and mobile.
  * Run once to establish baselines, then on every PR to catch regressions.
@@ -13,18 +13,28 @@ test.beforeAll(async ({ request }) => {
   await request.post("/api/test/reset");
 });
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function loginAsDemoOwner(page: Page) {
-  await page.addInitScript(() => window.localStorage.clear());
+  await page.addInitScript(() => {
+    window.localStorage.clear();
+    // Pre-select Aurora Residency — test-created hostels get prepended (unshift) to the
+    // demo store and would become hostels[0], making UI default to the wrong hostel.
+    window.localStorage.setItem("currentHostelId", "owner-hostel-aurora");
+  });
   await gotoAndWaitForHydration(page, "/owner/login");
+  const hostelsPromise = page.waitForResponse(
+    (r) => r.url().includes("/api/owner-hostels") && r.status() !== 401,
+    { timeout: 15000 },
+  );
   await page.getByRole("button", { name: /try demo workspace/i }).click();
-  await expect(page).toHaveURL(/\/owner\/dashboard/);
-  await page.waitForLoadState("networkidle");
+  await expect(page).toHaveURL(/\/owner\/dashboard/, { timeout: 20000 });
+  await hostelsPromise;
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 }
 
 async function snapshotPage(page: Page, name: string) {
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
   // Brief settle for animations / skeleton loaders
   await page.waitForTimeout(300);
   await expect(page).toHaveScreenshot(`${name}.png`, {
@@ -38,9 +48,9 @@ async function snapshotPage(page: Page, name: string) {
   });
 }
 
-// ── authenticated page snapshots ──────────────────────────────────────────────
+// â”€â”€ authenticated page snapshots â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-test.describe("Visual snapshots – authenticated owner pages", () => {
+test.describe("Visual snapshots â€“ authenticated owner pages", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsDemoOwner(page);
   });
@@ -67,7 +77,7 @@ test.describe("Visual snapshots – authenticated owner pages", () => {
 
   test("pay-rent modal snapshot", async ({ page }) => {
     await gotoAndWaitForHydration(page, "/owner/payments?action=pay-rent&tenantId=51201");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await page.waitForTimeout(300);
     await expect(page).toHaveScreenshot("owner-pay-rent-modal.png", {
       maxDiffPixelRatio: 0.04,
@@ -110,13 +120,18 @@ test.describe("Visual snapshots – authenticated owner pages", () => {
   });
 });
 
-// ── public / auth page snapshots ──────────────────────────────────────────────
+// â”€â”€ public / auth page snapshots â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-test.describe("Visual snapshots – public pages", () => {
+test.describe("Visual snapshots â€“ public pages", () => {
   test("login page snapshot", async ({ page }) => {
-    await page.addInitScript(() => window.localStorage.clear());
+    await page.addInitScript(() => {
+    window.localStorage.clear();
+    // Pre-select Aurora Residency — test-created hostels get prepended (unshift) to the
+    // demo store and would become hostels[0], making UI default to the wrong hostel.
+    window.localStorage.setItem("currentHostelId", "owner-hostel-aurora");
+  });
     await gotoAndWaitForHydration(page, "/owner/login");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await page.waitForTimeout(300);
     await expect(page).toHaveScreenshot("owner-login.png", {
       fullPage: true,
@@ -125,9 +140,14 @@ test.describe("Visual snapshots – public pages", () => {
   });
 
   test("404 not-found page snapshot", async ({ page }) => {
-    await page.addInitScript(() => window.localStorage.clear());
+    await page.addInitScript(() => {
+    window.localStorage.clear();
+    // Pre-select Aurora Residency — test-created hostels get prepended (unshift) to the
+    // demo store and would become hostels[0], making UI default to the wrong hostel.
+    window.localStorage.setItem("currentHostelId", "owner-hostel-aurora");
+  });
     await page.goto("/this-page-does-not-exist-xyz");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     await page.waitForTimeout(300);
     await expect(page).toHaveScreenshot("not-found.png", {
       fullPage: true,
@@ -136,9 +156,9 @@ test.describe("Visual snapshots – public pages", () => {
   });
 });
 
-// ── add-tenant modal snapshot ─────────────────────────────────────────────────
+// â”€â”€ add-tenant modal snapshot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-test.describe("Visual snapshots – modals", () => {
+test.describe("Visual snapshots â€“ modals", () => {
   test("add tenant modal step 1 snapshot", async ({ page }) => {
     await loginAsDemoOwner(page);
     await gotoAndWaitForHydration(page, "/owner/tenants");

@@ -51,17 +51,22 @@ export function TenantRoomAssignmentModal({
 
     const load = async () => {
       setLoading(true);
-      const { data } = await fetchOwnerHostels();
-      const nextHostels = (data.hostels ?? []).map(mapHostelInventory);
-      const preferredHostel = nextHostels.find((item) => item.hostelId === preferredAssignment?.hostelId) ?? nextHostels[0];
-      setHostels(nextHostels);
-      setHostelId(preferredHostel?.hostelId ?? "");
-      setRoomNumber("");
-      setSharingType("");
-      setBedId("");
-      setMoveInDate(new Date().toISOString().slice(0, 10));
-      setStep(1);
-      setLoading(false);
+      try {
+        const { data } = await fetchOwnerHostels({ withInventory: true });
+        const nextHostels = (data.hostels ?? []).map(mapHostelInventory);
+        const preferredHostel = nextHostels.find((item) => item.hostelId === preferredAssignment?.hostelId) ?? nextHostels[0];
+        setHostels(nextHostels);
+        setHostelId(preferredHostel?.hostelId ?? "");
+        setRoomNumber("");
+        setSharingType("");
+        setBedId("");
+        setMoveInDate(new Date().toISOString().slice(0, 10));
+        setStep(1);
+      } catch {
+        setError("Failed to load hostels. Check your connection and try again.");
+      } finally {
+        setLoading(false);
+      }
     };
 
     void load();
@@ -77,7 +82,17 @@ export function TenantRoomAssignmentModal({
   const availableBeds = selectedRoom ? selectedRoom.capacity - selectedRoom.occupied : 0;
   const availableRooms = selectedHostel?.rooms.filter((room) => room.occupied < room.capacity) ?? [];
 
-  if ((!asPage && !open) || !tenant) return null;
+  if (!asPage && !open) return null;
+  // In page mode, show a loading skeleton until the tenant is hydrated from cache
+  if (!tenant) {
+    return (
+      <div className="rounded-[10px] bg-[#0d1117] border border-white/[0.07] p-6 space-y-3 animate-pulse">
+        <div className="h-5 w-40 rounded bg-white/10" />
+        <div className="h-4 w-64 rounded bg-white/10" />
+        <div className="h-4 w-48 rounded bg-white/10" />
+      </div>
+    );
+  }
 
   const handleAssign = async () => {
     if (!hostelId || !roomNumber || !selectedRoom) {
@@ -97,34 +112,39 @@ export function TenantRoomAssignmentModal({
     setSaving(true);
     setError("");
 
-    const { response, data } = await assignTenantRoom({
-      tenantId: tenant.tenantId,
-      hostelId,
-      unitId: selectedRoom?.unitId,
-      roomNumber,
-      sharingType,
-      moveInDate,
-      propertyType: selectedHostel?.type,
-      bedId: isResidence ? undefined : bedId,
-      bedLabel: isResidence ? undefined : selectedRoom?.beds?.find((bed) => bed.id === bedId)?.label,
-      tenantRecord: tenant,
-    });
+    try {
+      const { response, data } = await assignTenantRoom({
+        tenantId: tenant.tenantId,
+        hostelId,
+        unitId: selectedRoom?.unitId,
+        roomNumber,
+        sharingType,
+        moveInDate,
+        propertyType: selectedHostel?.type,
+        bedId: isResidence ? undefined : bedId,
+        bedLabel: isResidence ? undefined : selectedRoom?.beds?.find((bed) => bed.id === bedId)?.label,
+        tenantRecord: tenant,
+      });
 
-    if (!response.ok) {
-      setError(data.message ?? "Unable to assign room.");
+      if (!response.ok) {
+        setError(data.message ?? "Unable to assign room.");
+        setSaving(false);
+        return;
+      }
+
+      onAssigned(data.tenant as TenantRecord);
       setSaving(false);
-      return;
+      setHostelId("");
+      setRoomNumber("");
+      setSharingType("");
+      setBedId("");
+      setMoveInDate("");
+      setStep(1);
+      onClose();
+    } catch {
+      setError("Network error. Check your connection and try again.");
+      setSaving(false);
     }
-
-    onAssigned(data.tenant as TenantRecord);
-    setSaving(false);
-    setHostelId("");
-    setRoomNumber("");
-    setSharingType("");
-    setBedId("");
-    setMoveInDate("");
-    setStep(1);
-    onClose();
   };
 
   const handleNext = () => {
@@ -175,7 +195,7 @@ export function TenantRoomAssignmentModal({
               </div>
             </div>
             {!asPage && (
-              <Button variant="ghost" disabled={saving} className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={onClose}>
+              <Button variant="ghost" disabled={saving} aria-label="Close" className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={onClose}>
                 <X className="h-4 w-4" />
               </Button>
             )}
@@ -281,6 +301,7 @@ export function TenantRoomAssignmentModal({
                       <input
                         type="date"
                         value={moveInDate}
+                        max={new Date().toISOString().slice(0, 10)}
                         onChange={(event) => setMoveInDate(event.target.value)}
                         disabled={saving}
                         className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 pl-11 text-sm text-white outline-none transition focus:border-[#38bdf8]/40 [color-scheme:dark] [&::-webkit-datetime-edit]:text-white [&::-webkit-datetime-edit-fields-wrapper]:text-white"
@@ -317,7 +338,7 @@ export function TenantRoomAssignmentModal({
           )}
         </div>
 
-        {error ? <p className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</p> : null}
+        {error ? <p role="alert" className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</p> : null}
         {saving ? <ProcessingPill label="Assigning room and updating tenant record" className="mt-4" /> : null}
 
         <div className={asPage
@@ -325,7 +346,7 @@ export function TenantRoomAssignmentModal({
           : "mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
         }>
           <Button variant="secondary" disabled={saving} onClick={step === 1 ? onClose : () => { setStep(1); setError(""); }} className="rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white">
-            {step === 1 ? (asPage ? "Cancel" : "Later") : "Back"}
+            {step === 1 ? "Later" : "Back"}
           </Button>
           <Button disabled={saving} loading={saving && step === 2} onClick={step === 1 ? handleNext : handleAssign} className="rounded-2xl bg-[linear-gradient(90deg,#1d4ed8_0%,#2563eb_100%)] text-white hover:text-white hover:brightness-110">
             {step === 1 ? "Next: Review" : saving ? "Assigning..." : isResidence ? "Assign Unit" : "Assign Room"}

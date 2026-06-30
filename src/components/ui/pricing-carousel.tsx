@@ -371,17 +371,19 @@ export function PricingCarousel({
           type="button"
           onClick={() => scrollTo(Math.max(0, activeIdx - 1))}
           disabled={activeIdx === 0}
+          aria-label="Previous plan"
           className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/8 text-white/50 disabled:opacity-25 hover:bg-white/15"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
 
         <div className="flex items-center gap-1.5">
-          {PRICING_PLANS.map((_, i) => (
+          {PRICING_PLANS.map((plan, i) => (
             <button
               key={i}
               type="button"
               onClick={() => scrollTo(i)}
+              aria-label={`View ${plan.title} plan`}
               className={cn(
                 "rounded-full transition-all",
                 i === activeIdx ? "h-2 w-5 bg-[#f7bf53]" : "h-2 w-2 bg-white/20 hover:bg-white/40",
@@ -401,6 +403,7 @@ export function PricingCarousel({
             type="button"
             onClick={() => scrollTo(Math.min(PRICING_PLANS.length - 1, activeIdx + 1))}
             disabled={activeIdx === PRICING_PLANS.length - 1}
+            aria-label="Next plan"
             className={cn(
               "relative inline-flex h-7 w-7 items-center justify-center rounded-full transition-all duration-300 disabled:opacity-25",
               showArrowGlow && showSwipeHint && activeIdx < PRICING_PLANS.length - 1

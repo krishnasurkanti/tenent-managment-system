@@ -1,4 +1,4 @@
-/**
+﻿/**
  * navigation.spec.ts
  * Verifies all owner routes load without errors, redirects work,
  * 404 handling is correct, and nav links function.
@@ -12,11 +12,23 @@ function visibleText(page: Page, text: string | RegExp) {
 }
 
 async function loginAsDemoOwner(page: Page) {
-  await page.addInitScript(() => window.localStorage.clear());
+  await page.addInitScript(() => {
+    window.localStorage.clear();
+    // Pre-select Aurora Residency — test-created hostels get prepended (unshift) to the
+    // demo store and would become hostels[0], making UI default to the wrong hostel.
+    window.localStorage.setItem("currentHostelId", "owner-hostel-aurora");
+  });
   await page.goto("/owner/login");
+  // Register before click so we catch the owner-hostels response that fires after dashboard loads
+  const hostelsPromise = page.waitForResponse(
+    (r) => r.url().includes("/api/owner-hostels") && r.status() !== 401,
+    { timeout: 15000 },
+  );
   await page.getByRole("button", { name: /try demo workspace/i }).click();
-  await expect(page).toHaveURL(/\/owner\/dashboard/);
-  await page.waitForLoadState("networkidle");
+  await expect(page).toHaveURL(/\/owner\/dashboard/, { timeout: 15000 });
+  await hostelsPromise; // ensures hostel context is populated before returning
+  // cap networkidle — dev server compile can hang indefinitely
+  await page.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
 }
 
 // ── auth redirects ────────────────────────────────────────────────────────────
@@ -52,8 +64,8 @@ test.describe("Auth redirects", () => {
 
   test("demo login button lands on dashboard", async ({ page }) => {
     await loginAsDemoOwner(page);
-    await expect(page).toHaveURL(/\/owner\/dashboard/);
-    await expect(visibleText(page, "Aurora Residency")).toBeVisible();
+    await expect(page).toHaveURL(/\/owner\/dashboard/, { timeout: 5000 }); // loginAsDemoOwner already waited
+    await expect(visibleText(page, "Aurora Residency")).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -202,8 +214,9 @@ test.describe("Rooms filter and view params", () => {
   test("/owner/payments?filter=due shows due tenants", async ({ page }) => {
     await loginAsDemoOwner(page);
     await page.goto("/owner/payments?filter=due");
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
 
-    await expect(page.getByRole("main")).toBeVisible();
+    await expect(page.getByRole("main")).toBeVisible({ timeout: 10000 });
   });
 });
 

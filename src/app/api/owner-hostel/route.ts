@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getOwnerHostel, saveOwnerHostel, updateOwnerHostel } from "@/data/ownerHostelStore";
 import type { OwnerRoom } from "@/types/owner-hostel";
 import { requireOwnerSession } from "@/lib/session-mode";
@@ -41,7 +41,7 @@ async function saveOrUpdateHostel(request: Request, mode: "create" | "update") {
   const session = await requireOwnerSession();
   if (!session) return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
 
-  if (process.env.PLAYWRIGHT_TEST !== "true" && apiRateLimit(getTrustedClientIp(request))) {
+  if (process.env.NODE_ENV === "production" && apiRateLimit(getTrustedClientIp(request))) {
     return NextResponse.json({ message: "Too many requests. Try again later." }, { status: 429 });
   }
 

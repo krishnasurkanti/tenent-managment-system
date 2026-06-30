@@ -186,8 +186,8 @@ function TenantRentSearchContent({ tenants, hideButton }: { tenants: TenantRecor
       return;
     }
 
-    if (Number.isNaN(numericAmount) || numericAmount < 0) {
-      setError("Enter a valid paid amount greater than or equal to 0.");
+    if (Number.isNaN(numericAmount) || numericAmount <= 0) {
+      setError("Enter a valid paid amount greater than 0.");
       return;
     }
 
