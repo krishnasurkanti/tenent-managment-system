@@ -359,11 +359,8 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    contain: layout size;
+    contain: strict;
     touch-action: pan-y;
-    /* Force compositing layer so iOS Safari respects overflow:hidden for animated children */
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
   }
 
   /* Desktop: shell becomes horizontal (sidebar + main) */

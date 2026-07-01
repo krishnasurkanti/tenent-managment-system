@@ -22,10 +22,10 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
       {/* app-shell: 100dvh, overflow hidden, flex-col on mobile, flex-row on desktop */}
       <div className="app-shell relative bg-[linear-gradient(180deg,var(--bg-primary)_0%,#0f1a2e_50%,#0b1220_100%)] lg:flex-row">
 
-        {/* Ambient glow — overflow-hidden ensures composited animated children stay clipped on iOS Safari */}
-        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-          <div className="absolute left-[-6rem] top-[-4rem] h-64 w-64 rounded-full bg-[radial-gradient(circle,var(--glow-accent)_0%,transparent_70%)] blur-3xl animate-[panel-glow_9s_ease-in-out_infinite]" />
-          <div className="absolute right-[-5rem] top-20 h-72 w-72 rounded-full bg-[radial-gradient(circle,var(--glow-brand)_0%,transparent_72%)] blur-3xl animate-[panel-glow_11s_ease-in-out_infinite]" />
+        {/* Ambient glow — inset(0) clip-path clips composited/animated layers in all browsers/orientations */}
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden [clip-path:inset(0)]">
+          <div className="absolute left-0 top-0 h-64 w-64 rounded-full bg-[radial-gradient(circle,var(--glow-accent)_0%,transparent_70%)] blur-3xl animate-[panel-glow_9s_ease-in-out_infinite]" />
+          <div className="absolute right-0 top-20 h-72 w-72 rounded-full bg-[radial-gradient(circle,var(--glow-brand)_0%,transparent_72%)] blur-3xl animate-[panel-glow_11s_ease-in-out_infinite]" />
         </div>
 
         {/* Sidebar — slides in on mobile, static on desktop */}
