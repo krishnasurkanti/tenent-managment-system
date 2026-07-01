@@ -22,8 +22,8 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
       {/* app-shell: 100dvh, overflow hidden, flex-col on mobile, flex-row on desktop */}
       <div className="app-shell relative bg-[linear-gradient(180deg,var(--bg-primary)_0%,#0f1a2e_50%,#0b1220_100%)] lg:flex-row">
 
-        {/* Ambient glow — pointer-events-none so it never blocks interaction */}
-        <div className="pointer-events-none absolute inset-0 z-0">
+        {/* Ambient glow — overflow-hidden ensures composited animated children stay clipped on iOS Safari */}
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
           <div className="absolute left-[-6rem] top-[-4rem] h-64 w-64 rounded-full bg-[radial-gradient(circle,var(--glow-accent)_0%,transparent_70%)] blur-3xl animate-[panel-glow_9s_ease-in-out_infinite]" />
           <div className="absolute right-[-5rem] top-20 h-72 w-72 rounded-full bg-[radial-gradient(circle,var(--glow-brand)_0%,transparent_72%)] blur-3xl animate-[panel-glow_11s_ease-in-out_infinite]" />
         </div>
