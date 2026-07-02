@@ -66,8 +66,8 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
 function OwnerTopbarFallback() {
   return (
     <div
-      className="border-b border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.84)_100%)] px-3 py-2 backdrop-blur-2xl md:px-4 xl:px-5"
-      style={{ height: "var(--topbar-h)" }}
+      className="border-b border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.84)_100%)] px-3 pb-2 backdrop-blur-2xl md:px-4 xl:px-5"
+      style={{ paddingTop: "max(8px, env(safe-area-inset-top, 0px))", minHeight: "var(--topbar-h)" }}
     >
       <div className="flex h-full items-center justify-between gap-3">
         <div className="flex items-center gap-2">

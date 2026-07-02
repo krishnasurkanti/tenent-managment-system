@@ -377,7 +377,10 @@
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    height: var(--topbar-h);
+    /* min-height: with viewport-fit:cover the topbar background extends behind
+       the status bar; the <header> inside gets padding-top:safe-area so its
+       content stays below the status bar. The wrapper must not clip that growth. */
+    min-height: var(--topbar-h);
   }
 
   /* ── Sidebar ── */

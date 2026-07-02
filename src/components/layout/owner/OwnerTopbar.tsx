@@ -62,7 +62,7 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 isolate flex w-full max-w-full min-w-0 items-center justify-between gap-2 overflow-hidden border-b border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.84)_100%)] px-3 py-1.5 text-white backdrop-blur-2xl md:px-4 xl:px-5">
+    <header className="sticky top-0 z-50 isolate flex w-full max-w-full min-w-0 items-center justify-between gap-2 overflow-hidden border-b border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.84)_100%)] px-3 pb-1.5 pt-[max(6px,env(safe-area-inset-top,0px))] text-white backdrop-blur-2xl md:px-4 xl:px-5">
       <div className="flex min-w-0 items-center gap-1.5">
         {/* Mobile: menu button */}
         <button
@@ -167,7 +167,7 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         </Link>
 
         <Link href="/owner/settings" className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-1 shadow-[0_10px_24px_rgba(2,6,23,0.18)]">
-          <div className="flex h-7.5 w-7.5 items-center justify-center rounded-full bg-[linear-gradient(180deg,var(--cta)_0%,var(--cta-strong)_100%)] text-[11px] font-semibold text-[#1c1400] shadow-[0_12px_22px_rgba(249,193,42,0.25)]">
+          <div suppressHydrationWarning className="flex h-7.5 w-7.5 items-center justify-center rounded-full bg-[linear-gradient(180deg,var(--cta)_0%,var(--cta-strong)_100%)] text-[11px] font-semibold text-[#1c1400] shadow-[0_12px_22px_rgba(249,193,42,0.25)]">
             {avatarInitial}
           </div>
         </Link>

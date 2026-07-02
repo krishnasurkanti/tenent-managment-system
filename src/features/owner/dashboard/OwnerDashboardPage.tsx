@@ -244,8 +244,11 @@ function DashboardContent({
       {/* ── DESKTOP LAYOUT (unchanged) ── */}
       <section className="hidden gap-3 lg:grid">
         <div className="nestiq-grid-bg relative overflow-hidden rounded-[22px] border border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.24),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(245,158,11,0.16),transparent_26%),linear-gradient(180deg,#111114_0%,#18181c_100%)] p-3 sm:p-4 text-white shadow-[0_28px_70px_rgba(0,0,0,0.38)]">
-          <div className="pointer-events-none absolute -right-12 top-0 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(129,140,248,0.24)_0%,rgba(255,255,255,0)_70%)] blur-2xl animate-[dashboard-glow_8s_ease-in-out_infinite]" />
-          <div className="pointer-events-none absolute bottom-[-6rem] left-[-3rem] h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(245,158,11,0.18)_0%,rgba(245,158,11,0)_70%)] blur-3xl" />
+          {/* clip-path clips blur compositing layers in all browsers — overflow-hidden alone doesn't on iOS Safari */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden [clip-path:inset(0_round_22px)]">
+            <div className="absolute -right-12 top-0 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(129,140,248,0.24)_0%,rgba(255,255,255,0)_70%)] blur-2xl animate-[dashboard-glow_8s_ease-in-out_infinite]" />
+            <div className="absolute bottom-[-6rem] left-[-3rem] h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(245,158,11,0.18)_0%,rgba(245,158,11,0)_70%)] blur-3xl" />
+          </div>
           <div className="relative grid items-start gap-4 xl:grid-cols-[1.15fr_0.85fr]">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-100/70">Owner dashboard</p>
