@@ -47,6 +47,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      {/* Blocking browser-detect: stamps is-ios-safari / is-chrome-android etc on <html>
+          before first paint so CSS selectors work without flash of wrong layout. */}
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var ua=navigator.userAgent,h=document.documentElement,iOS=/iP(hone|ad|od)/.test(ua)||(/Mac/.test(ua)&&navigator.maxTouchPoints>1),and=/Android/.test(ua),ff=/Firefox/.test(ua),ch=/Chrome/.test(ua)&&!ff,desk=matchMedia('(hover:hover) and (pointer:fine)').matches;h.classList.toggle('is-ios-safari',iOS&&!desk);h.classList.toggle('is-chrome-android',and&&ch);h.classList.toggle('is-firefox-android',and&&ff);h.classList.toggle('is-firefox-desktop',ff&&desk);h.classList.toggle('is-safari-desktop',!iOS&&/Safari/.test(ua)&&!ch&&desk);h.classList.toggle('is-desktop',desk);})();` }} />
+      </head>
       <body className={`${dmSans.variable} ${syne.variable} font-sans antialiased`}>
         <ThemeProvider>
           <QueryProvider>

@@ -45,7 +45,7 @@ export function OwnerMobileNav() {
                   active ? "stroke-[2.2]" : "stroke-[1.8]",
                 )}
               />
-              <span className="max-w-full truncate leading-none">{item.label}</span>
+              <span className="nav-label max-w-full truncate leading-none">{item.label}</span>
             </Link>
           );
         })}

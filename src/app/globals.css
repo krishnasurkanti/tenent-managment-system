@@ -158,6 +158,8 @@
     color-scheme: light;
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
+    /* Reserve scrollbar gutter — prevents 100% child from jumping when scrollbar appears */
+    scrollbar-gutter: stable;
   }
 
   html[data-theme="dark"] {
@@ -349,10 +351,11 @@
 
   /* ── App shell: locks height to viewport, no page-level scroll ── */
   .app-shell {
-    width: 100dvw;
-    max-width: 100dvw;
-    inline-size: 100dvw;
-    max-inline-size: 100dvw;
+    /* 100% not 100dvw — dvw includes scrollbar gutter on desktop (~15px overflow) */
+    width: 100%;
+    max-width: 100%;
+    inline-size: 100%;
+    max-inline-size: 100%;
     min-width: 0;
     height: 100dvh;
     max-height: 100dvh;
@@ -361,6 +364,25 @@
     overflow: hidden;
     contain: strict;
     touch-action: pan-y;
+  }
+
+  /* ── iOS Safari: pin shell to viewport — kills rubber-band horizontal bleed ──
+     @supports (-webkit-touch-callout) is iOS/iPadOS-only, safe feature gate.
+     position:fixed+inset:0 removes body from scroll ancestor chain entirely.    */
+  @supports (-webkit-touch-callout: none) {
+    .app-shell {
+      position: fixed;
+      inset: 0;
+      /* expose side notch safe-areas in landscape orientation */
+      padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+    }
+  }
+
+  /* ── Safari: fill-available fallback for pre-dvh Safari (< 15.4) ── */
+  @supports not (height: 100dvh) {
+    .app-shell {
+      height: -webkit-fill-available;
+    }
   }
 
   /* Desktop: shell becomes horizontal (sidebar + main) */
@@ -864,5 +886,29 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BROWSER-SPECIFIC FIXES
+   Layout/containment only — no visual change to colors or typography.
+───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Landscape phones: topbar + nav too tall for ~360px height ── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .app-topbar {
+    min-height: 40px !important;
+    padding-block: 2px !important;
+  }
+  /* nav-label class stamped on nav item text in OwnerMobileNav.tsx */
+  .nav-label {
+    display: none;
+  }
+}
+
+/* ── Firefox: solid backdrop fallback when backdrop-filter unsupported ── */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .app-topbar header {
+    background: rgba(13, 15, 26, 0.98) !important;
   }
 }
