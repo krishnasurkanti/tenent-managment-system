@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 
 export type BrowserFlags = {
   isIosSafari: boolean;
@@ -11,6 +11,16 @@ export type BrowserFlags = {
   isDesktop: boolean;
   /** true on any mobile browser (iOS Safari OR Chrome/Firefox Android) */
   isMobile: boolean;
+};
+
+const SERVER_FLAGS: BrowserFlags = {
+  isIosSafari:      false,
+  isChromeAndroid:  false,
+  isFirefoxAndroid: false,
+  isFirefoxDesktop: false,
+  isSafariDesktop:  false,
+  isDesktop:        false,
+  isMobile:         false,
 };
 
 function readFlags(): BrowserFlags {
@@ -30,31 +40,21 @@ function readFlags(): BrowserFlags {
   };
 }
 
-const SERVER_FLAGS: BrowserFlags = {
-  isIosSafari:      false,
-  isChromeAndroid:  false,
-  isFirefoxAndroid: false,
-  isFirefoxDesktop: false,
-  isSafariDesktop:  false,
-  isDesktop:        false,
-  isMobile:         false,
-};
-
-// Classes stamped by the blocking script in layout.tsx don't change at runtime,
-// so subscribe is a no-op — useSyncExternalStore still handles SSR correctly.
-const noop = () => () => {};
-
 /**
- * Returns browser flags derived from the blocking detection script in layout.tsx.
- * Safe to call during SSR (returns all-false until hydration).
+ * Returns browser flags from the blocking detection script in layout.tsx.
+ *
+ * SSR + first client render = all-false (no hydration mismatch).
+ * After hydration = real values from the <html> class list.
  *
  * @example
  * const { isIosSafari, isMobile } = useBrowser();
  */
 export function useBrowser(): BrowserFlags {
-  return useSyncExternalStore(
-    noop,
-    readFlags,
-    () => SERVER_FLAGS,
-  );
+  const [flags, setFlags] = useState<BrowserFlags>(SERVER_FLAGS);
+
+  useEffect(() => {
+    setFlags(readFlags());
+  }, []);
+
+  return flags;
 }
