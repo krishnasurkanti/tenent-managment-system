@@ -366,16 +366,15 @@
     touch-action: pan-y;
   }
 
-  /* ── iOS Safari: pin shell to viewport — kills rubber-band horizontal bleed ──
-     @supports (-webkit-touch-callout) is iOS/iPadOS-only, safe feature gate.
-     position:fixed+inset:0 removes body from scroll ancestor chain entirely.    */
-  @supports (-webkit-touch-callout: none) {
-    .app-shell {
-      position: fixed;
-      inset: 0;
-      /* expose side notch safe-areas in landscape orientation */
-      padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
-    }
+  /* ── iOS Safari only: pin shell to viewport — kills rubber-band horizontal bleed ──
+     Uses JS-stamped .is-ios-safari class (set by beforeInteractive script in layout.tsx).
+     NOT @supports(-webkit-touch-callout) — Chrome Android also supports that property
+     and would incorrectly get position:fixed applied.                                   */
+  .is-ios-safari .app-shell {
+    position: fixed;
+    inset: 0;
+    /* expose side notch safe-areas in landscape orientation */
+    padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
   }
 
   /* ── Safari: fill-available fallback for pre-dvh Safari (< 15.4) ── */
