@@ -1,19 +1,12 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { OwnerMobileNav } from "@/components/layout/owner/OwnerMobileNav";
+import { OwnerSidebar } from "@/components/layout/owner/OwnerSidebar";
 import { OwnerTopbar } from "@/components/layout/owner/OwnerTopbar";
 import { HostelContextProvider } from "@/store/hostel-context";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-
-// Desktop sidebar: large component (icons, profile, nav links) — lazy load on mobile
-// so it doesn't block the initial JS parse on phones where it's only a drawer.
-const OwnerSidebar = dynamic(
-  () => import("@/components/layout/owner/OwnerSidebar").then((m) => ({ default: m.OwnerSidebar })),
-  { ssr: false, loading: () => null },
-);
 
 export function OwnerShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -35,7 +28,6 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
           <div className="absolute right-0 top-20 h-72 w-72 rounded-full bg-[radial-gradient(circle,var(--glow-brand)_0%,transparent_72%)] blur-3xl animate-[panel-glow_11s_ease-in-out_infinite]" />
         </div>
 
-        {/* Sidebar — dynamic import skips SSR + lazy-parses the module on client */}
         <OwnerSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         {/* Main column: topbar + scroll area */}
