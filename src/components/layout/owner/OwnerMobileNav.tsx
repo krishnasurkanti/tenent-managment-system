@@ -21,7 +21,7 @@ export function OwnerMobileNav() {
       xl:hidden — replaced by sidebar on wide screens.
     */
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 max-w-full border-t border-white/[0.07] bg-[rgba(9,9,11,0.94)] backdrop-blur-xl xl:hidden"
+      className="owner-mobile-nav fixed inset-x-0 bottom-0 z-50 max-w-full border-t border-white/[0.07] bg-[rgba(9,9,11,0.94)] backdrop-blur-xl xl:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="mx-auto grid w-full max-w-sm grid-cols-4 gap-0.5 px-2 py-1.5">

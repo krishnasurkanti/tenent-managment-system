@@ -900,6 +900,10 @@
     min-height: 40px !important;
     padding-block: 2px !important;
   }
+  /* owner-mobile-nav class on <nav> root in OwnerMobileNav.tsx */
+  .owner-mobile-nav {
+    min-height: unset !important;
+  }
   /* nav-label class stamped on nav item text in OwnerMobileNav.tsx */
   .nav-label {
     display: none;
