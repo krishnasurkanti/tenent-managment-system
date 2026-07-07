@@ -385,7 +385,7 @@ export function TenantFormModal({
 
           {/* Step pills — fixed, never scrolls */}
           <div className="relative shrink-0 overflow-x-auto border-b border-white/8 px-4 py-2.5 sm:px-5" style={{ scrollbarWidth: "none" }}>
-            <div className="flex gap-2" style={{ WebkitOverflowScrolling: "touch" }}>
+            <div className="flex gap-2">
               <StepPill label="1. Personal" active={step === 1} done={step > 1} onClick={step > 1 ? () => { setStep(1); setError(""); } : undefined} />
               <StepPill label="2. Emergency" active={step === 2} done={step > 2} onClick={step > 2 ? () => { setStep(2); setError(""); } : undefined} />
               <StepPill label="3. Payment" active={step === 3} done={step > 3} onClick={step > 3 ? () => { setStep(3); setError(""); } : undefined} />
@@ -400,7 +400,7 @@ export function TenantFormModal({
               ? "relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pb-4 pt-3 sm:px-5"
               : "relative min-h-0 flex-1 overflow-x-hidden overflow-y-scroll px-4 pb-4 pt-3 sm:px-5"
             }
-            style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" }}
+            style={{ touchAction: "pan-y", overscrollBehavior: "contain" }}
           >
             <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
 

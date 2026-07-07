@@ -140,7 +140,7 @@ export function VacateTenantModal({ tenant, onClose, onRemoved, asPage = false }
             ? "px-4 pb-4 sm:px-5"
             : "min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-5"
           }
-          {...(!asPage && { style: { WebkitOverflowScrolling: "touch", touchAction: "pan-y" } })}
+          {...(!asPage && { style: { touchAction: "pan-y" } })}
         >
           <div className="space-y-3">
 

@@ -326,8 +326,8 @@
     to   { opacity: 1; }
   }
   @keyframes page-slide-up {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0);   }
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
   @keyframes shimmer-sweep {
     0%   { transform: translateX(-120%); }
@@ -427,19 +427,13 @@
     max-width: 100%;
     inline-size: 100%;
     max-inline-size: 100%;
-    overflow-x: clip;
+    overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: none;
     scrollbar-gutter: stable;
     touch-action: pan-y;
     /* Horizontal scroll in explicit overflow containers (tables) */
     & .overflow-x-auto { touch-action: pan-x pan-y pinch-zoom; }
-  }
-
-  @supports not (overflow: clip) {
-    .app-scroll {
-      overflow-x: hidden;
-    }
   }
 
   .app-scroll > *,

@@ -705,7 +705,7 @@ export default function HomePage() {
             marginBottom: 24, padding: 5,
             background: "rgba(255,255,255,.025)", border: "1px solid rgba(255,255,255,.07)",
             borderRadius: 12, maxWidth: 640, marginLeft: "auto", marginRight: "auto",
-            overflowX: "auto" as const, WebkitOverflowScrolling: "touch" as const,
+            overflowX: "auto" as const,
           }}>
             {([
               ["problem", "Problem", "4", "rgba(239,68,68,.18)", "#fca5a5"],
@@ -872,7 +872,6 @@ export default function HomePage() {
               <div ref={carouselRef} className="lp-carousel" style={{
                 display: "flex", gap: 12, overflowX: "auto" as const,
                 scrollSnapType: "x mandatory", scrollBehavior: "smooth", padding: "4px 0",
-                WebkitOverflowScrolling: "touch" as const,
               }}>
                 {[
                   { n: "01", title: "Owner setup", dur: "2:14", bullets: ["Create a hostel in under 60 sec","Add floors, rooms & beds","Set rent, deposit & sharing"] },

@@ -203,7 +203,7 @@ export function TenantRoomAssignmentModal({
         </div>
 
         {/* Body */}
-        <div className={asPage ? "px-3 pb-4 sm:px-4" : "min-h-0 flex-1 overflow-y-auto px-3 pb-4 sm:px-4"} {...(!asPage && { style: { WebkitOverflowScrolling: "touch", touchAction: "pan-y" } })}>
+        <div className={asPage ? "px-3 pb-4 sm:px-4" : "min-h-0 flex-1 overflow-y-auto px-3 pb-4 sm:px-4"} {...(!asPage && { style: { touchAction: "pan-y" } })}>
         <div>
           {loading ? (
             <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-5">

@@ -130,7 +130,7 @@ export function RemoveTenantSearch({ tenants }: { tenants: TenantRecord[] }) {
             </div>
 
             {/* Scrollable body */}
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-5" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-5" style={{ touchAction: "pan-y" }}>
               <div className="space-y-3">
 
                 {/* Search */}

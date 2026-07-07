@@ -289,7 +289,7 @@ export function CompleteProfileModal({
         </div>
 
         {/* Body */}
-        <div className={asPage ? "px-4 pb-4 sm:px-5" : "max-h-[62dvh] overflow-y-auto px-4 pb-4 sm:px-5 sm:max-h-[70dvh]"} {...(!asPage && { style: { WebkitOverflowScrolling: "touch", touchAction: "pan-y" } })}>
+        <div className={asPage ? "px-4 pb-4 sm:px-5" : "max-h-[62dvh] overflow-y-auto px-4 pb-4 sm:px-5 sm:max-h-[70dvh]"} {...(!asPage && { style: { touchAction: "pan-y" } })}>
           <div className="space-y-5 pb-2">
 
             {/* ── Personal ── */}
