@@ -10,7 +10,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import { fetchOwnerHostels } from "@/services/owner/owner-hostels.service";
 import type { OwnerHostel } from "@/types/owner-hostel";
 
@@ -31,8 +30,6 @@ type HostelContextValue = {
 const HostelContext = createContext<HostelContextValue | null>(null);
 
 export function HostelContextProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const pathname = usePathname();
   const [hostels, setHostels] = useState<OwnerHostel[]>([]);
   const [currentHostelId, setCurrentHostelId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,20 +80,6 @@ export function HostelContextProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     void refreshHostels();
   }, [refreshHostels]); // runs once on mount
-
-  useEffect(() => {
-    if (loading) {
-      return;
-    }
-
-    if (hostels.length && pathname === "/owner/create-hostel") {
-      const mode = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("mode") : null;
-
-      if (mode !== "edit") {
-        return;
-      }
-    }
-  }, [hostels, loading, pathname, router]);
 
   const selectHostel = useCallback((hostelId: string) => {
     setIsSwitching(true);

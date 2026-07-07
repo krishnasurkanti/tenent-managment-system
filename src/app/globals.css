@@ -402,16 +402,6 @@
     min-height: var(--topbar-h);
   }
 
-  /* ── Sidebar ── */
-  .app-sidebar {
-    flex-shrink: 0;
-    width: var(--sidebar-w);
-    height: 100vh;
-    height: 100dvh;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-
   /* ── Main content column: takes remaining space, stacks topbar + scroll area ── */
   .app-main-col {
     flex: 1 1 auto;
@@ -535,12 +525,6 @@
   .page-enter {
     animation: page-slide-up var(--motion-medium) var(--ease-enter) both;
   }
-
-  /* ─── LEGACY ALIASES (for components not yet migrated) ────────────────── */
-  .smart-scroll-shell  { composes: app-shell from global; }
-  .smart-scroll-header { composes: app-topbar from global; }
-  .smart-scroll-area   { composes: app-scroll app-scroll-fade from global; }
-  .app-page-frame      { composes: app-page page-enter from global; }
 
   /* ── Nestiq / brand panels (unchanged, used across many components) ── */
   .nestiq-panel {
@@ -913,8 +897,7 @@
 }
 
 /* ── iOS Safari: pin shell so rubber-band scroll can't expose overflow ──
-   .is-ios-safari class stamped by browser-detect script (layout.tsx Script tag).
-   If the script is absent this selector never matches — safe to keep.          */
+   .is-ios-safari class stamped by browser-detect script in layout.tsx.         */
 .is-ios-safari .app-shell {
   position: fixed;
   inset: 0;

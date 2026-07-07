@@ -96,7 +96,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Mobile tab nav — replaces sidebar on small screens */}
-        <nav className="grid grid-cols-6 gap-1 border-b border-[color:var(--border)] bg-[color:var(--surface-soft)] p-1 lg:hidden">
+        <nav className="grid grid-cols-7 gap-1 border-b border-[color:var(--border)] bg-[color:var(--surface-soft)] p-1 lg:hidden">
           {nav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
