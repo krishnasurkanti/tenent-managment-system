@@ -152,7 +152,7 @@
   /* ── Root: clip prevents ANY horizontal scroll, no scroll surface created ── */
   html {
     max-width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
     scroll-behavior: smooth;
     overscroll-behavior: none;
     color-scheme: light;
@@ -170,10 +170,18 @@
   body {
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;
+    min-height: 100%;
+    overflow-x: clip;
     overscroll-behavior: none;
     user-select: none;
     -webkit-user-select: none;
+  }
+
+  @supports not (overflow: clip) {
+    html,
+    body {
+      overflow-x: hidden;
+    }
   }
 
   /* Allow text selection inside interactive fields */
@@ -196,6 +204,7 @@
 
   body {
     position: relative;
+    min-height: 100vh;
     min-height: 100dvh;
     /* Simplified background: 2 subtle gradients instead of 5 — faster paint */
     background:
@@ -357,24 +366,13 @@
     inline-size: 100%;
     max-inline-size: 100%;
     min-width: 0;
+    height: 100vh;
     height: 100dvh;
-    max-height: 100dvh;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    contain: strict;
     touch-action: pan-y;
-  }
-
-  /* ── iOS Safari only: pin shell to viewport — kills rubber-band horizontal bleed ──
-     Uses JS-stamped .is-ios-safari class (set by beforeInteractive script in layout.tsx).
-     NOT @supports(-webkit-touch-callout) — Chrome Android also supports that property
-     and would incorrectly get position:fixed applied.                                   */
-  .is-ios-safari .app-shell {
-    position: fixed;
-    inset: 0;
-    /* expose side notch safe-areas in landscape orientation */
-    padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
   }
 
   /* ── Safari: fill-available fallback for pre-dvh Safari (< 15.4) ── */
@@ -408,8 +406,8 @@
   .app-sidebar {
     flex-shrink: 0;
     width: var(--sidebar-w);
+    height: 100vh;
     height: 100dvh;
-    max-height: 100dvh;
     overflow-y: auto;
     overscroll-behavior: contain;
   }
@@ -889,29 +887,43 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   BROWSER-SPECIFIC FIXES
-   Layout/containment only — no visual change to colors or typography.
+   LAYOUT ADJUSTMENTS
+   Pure CSS — no browser detection JS required.
 ───────────────────────────────────────────────────────────────────────────── */
 
-/* ── Landscape phones: topbar + nav too tall for ~360px height ── */
+/* ── Landscape phones: 48px topbar + 62px nav = 110px of ~360px — reclaim space ── */
 @media (max-height: 500px) and (orientation: landscape) {
   .app-topbar {
     min-height: 40px !important;
     padding-block: 2px !important;
   }
-  /* owner-mobile-nav class on <nav> root in OwnerMobileNav.tsx */
   .owner-mobile-nav {
     min-height: unset !important;
   }
-  /* nav-label class stamped on nav item text in OwnerMobileNav.tsx */
   .nav-label {
     display: none;
   }
 }
 
-/* ── Firefox: solid backdrop fallback when backdrop-filter unsupported ── */
+/* ── Backdrop-filter fallback: solid bg when browser has no blur support ── */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .app-topbar header {
     background: rgba(13, 15, 26, 0.98) !important;
+  }
+}
+
+/* ── iOS Safari: pin shell so rubber-band scroll can't expose overflow ──
+   .is-ios-safari class stamped by browser-detect script (layout.tsx Script tag).
+   If the script is absent this selector never matches — safe to keep.          */
+.is-ios-safari .app-shell {
+  position: fixed;
+  inset: 0;
+  padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+}
+
+/* ── Safari: fill-available fallback for pre-dvh Safari (< 15.4) ── */
+@supports not (height: 100dvh) {
+  .app-shell {
+    height: -webkit-fill-available;
   }
 }

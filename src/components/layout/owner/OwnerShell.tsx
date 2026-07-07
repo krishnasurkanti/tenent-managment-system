@@ -32,11 +32,14 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
 
         {/* Main column: topbar + scroll area */}
         <div className="app-main-col relative z-10">
-          <Suspense fallback={<OwnerTopbarFallback />}>
-            <div className="app-topbar">
+          {/* app-topbar wrapper is OUTSIDE Suspense so sticky/z-50/min-height
+              are always in the DOM — OwnerTopbar uses useSearchParams which
+              suspends during SSR; only the inner content shows the fallback */}
+          <div className="app-topbar">
+            <Suspense fallback={<OwnerTopbarFallback />}>
               <OwnerTopbar onOpenSidebar={() => setSidebarOpen(true)} />
-            </div>
-          </Suspense>
+            </Suspense>
+          </div>
 
           {/*
             app-scroll: the ONLY scrolling element.
