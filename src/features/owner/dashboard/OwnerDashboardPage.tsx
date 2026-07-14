@@ -117,15 +117,15 @@ function DashboardContent({
   ], [collectionRate, paymentHealthScore, paid.length, attentionCount, urgentShare, isResidence, availableBeds, expectedRevenue]);
 
   return (
-    <div className={`space-y-3 transition-opacity lg:space-y-3 ${isSwitching ? "opacity-70" : "opacity-100"}`}>
+    <div className={`space-y-5 transition-opacity lg:space-y-4 ${isSwitching ? "opacity-70" : "opacity-100"}`}>
 
       <DashboardAlertBanner alertItems={alertItems} />
 
       {/* ── MOBILE LAYOUT ── */}
-      <section className="grid gap-3 lg:hidden">
+      <section className="grid gap-4 lg:hidden">
 
         {/* 1. Action Tiles */}
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 gap-3">
           <ActionTile href="/owner/payments" icon={CreditCard} label="Pay Rent" note="Record collection" variant="mobile" />
           <ActionTile href="/owner/payments" icon={ReceiptText} label="Due List" note={`${dueSoon.length} due soon`} variant="mobile" tone="neutral" />
           <ActionTile href="/owner/notifications" icon={AlertTriangle} label="Overdue" note={`${overdue.length} need action`} variant="mobile" tone="danger" />
@@ -268,7 +268,7 @@ function DashboardContent({
                 <DesktopMetric icon={DoorOpen} label="At Risk" value={String(attentionCount)} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-3">
               <ActionTile href="/owner/tenants?action=add-tenant" icon={Users} label="Add Tenant" note="New check-in" variant="desktop" />
               <ActionTile href="/owner/payments" icon={CreditCard} label="Pay Rent" note="Collect rent" variant="desktop" />
               <ActionTile href="/owner/rooms?view=available" icon={DoorOpen} label="Available" note={isResidence ? "Vacant units" : "Open beds"} variant="desktop" />
@@ -536,13 +536,21 @@ function DashboardAlertBanner({
   const scrollToCard = useCallback((idx: number) => {
     const el = scrollRef.current;
     if (!el || totalCards === 0) return;
-    el.scrollTo({ left: (el.scrollWidth / totalCards) * idx, behavior: "smooth" });
+    const child = el.children[idx] as HTMLElement | undefined;
+    if (child) el.scrollTo({ left: child.offsetLeft - 16, behavior: "smooth" });
   }, [totalCards]);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el || totalCards === 0) return;
-    setActiveIdx(Math.round(el.scrollLeft / (el.scrollWidth / totalCards)));
+    const children = Array.from(el.children) as HTMLElement[];
+    const sl = el.scrollLeft;
+    let closest = 0, minDist = Infinity;
+    children.forEach((c, i) => {
+      const d = Math.abs(c.offsetLeft - 16 - sl);
+      if (d < minDist) { minDist = d; closest = i; }
+    });
+    setActiveIdx(closest);
     lastInteractionRef.current = Date.now();
   }, [totalCards]);
 
@@ -569,12 +577,12 @@ function DashboardAlertBanner({
   };
 
   return (
-    <div className="w-full">
+    <div className="-mx-4">
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex snap-x snap-mandatory overflow-x-auto gap-3"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        className="flex snap-x snap-mandatory overflow-x-auto gap-3 pl-4 pr-4"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none", scrollPaddingLeft: "1rem" }}
       >
         {cards.map((card, i) => {
           if (card.kind === "alert") {
@@ -583,7 +591,7 @@ function DashboardAlertBanner({
             const cfg  = TONE_CONFIG[tone];
             const icon = tone === "red" ? "🚨" : tone === "orange" ? "⏰" : "📅";
             return (
-              <div key={tenant.tenantId} className={`snap-center shrink-0 ${CARD_W} rounded-[16px] border ${cfg.border} bg-[rgba(255,255,255,0.04)] p-3.5 flex flex-col gap-3`}>
+              <div key={tenant.tenantId} className={`snap-start shrink-0 ${CARD_W} rounded-[16px] border ${cfg.border} bg-[rgba(255,255,255,0.04)] p-3.5 flex flex-col gap-3`}>
                 <div className="flex items-start gap-3">
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg ${cfg.iconBg}`}>{icon}</div>
                   <div className="min-w-0 flex-1">
@@ -614,7 +622,7 @@ function DashboardAlertBanner({
 
           if (card.kind === "upcoming") {
             return (
-              <div key={`up-${i}`} className={`snap-center shrink-0 ${CARD_W} rounded-[16px] border border-[rgba(99,102,241,0.2)] bg-[rgba(99,102,241,0.04)] p-3.5 flex flex-col gap-3`}>
+              <div key={`up-${i}`} className={`snap-start shrink-0 ${CARD_W} rounded-[16px] border border-[rgba(99,102,241,0.2)] bg-[rgba(99,102,241,0.04)] p-3.5 flex flex-col gap-3`}>
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(99,102,241,0.15)] text-lg">{card.icon}</div>
                   <div className="min-w-0 flex-1">
@@ -632,7 +640,7 @@ function DashboardAlertBanner({
 
           /* kind === "seemore" */
           return (
-            <div key="seemore" className={`snap-center shrink-0 ${CARD_W} rounded-[16px] border border-white/8 bg-[rgba(255,255,255,0.03)] flex flex-col items-center justify-center gap-2.5 p-6 text-center`}>
+            <div key="seemore" className={`snap-start shrink-0 ${CARD_W} rounded-[16px] border border-white/8 bg-[rgba(255,255,255,0.03)] flex flex-col items-center justify-center gap-2.5 p-6 text-center`}>
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/8 text-xl">🔔</div>
               <p className="text-[14px] font-semibold text-white">+{card.count} more alert{card.count > 1 ? "s" : ""}</p>
               <p className="text-[11px] text-white/40">View all pending collections</p>
@@ -645,7 +653,7 @@ function DashboardAlertBanner({
       </div>
 
       {totalCards > 1 && (
-        <div className="mt-2.5 flex items-center justify-center gap-1.5">
+        <div className="mt-2.5 flex items-center justify-center gap-1.5 px-4">
           {cards.map((_, i) => (
             <button
               key={i}
@@ -677,7 +685,7 @@ function LoadingState() {
           ))}
         </div>
         {/* Action tiles skeleton */}
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonBlock key={i} className="h-[72px] rounded-[12px]" />
           ))}
@@ -710,7 +718,7 @@ function LoadingState() {
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-3">
               {Array.from({ length: 4 }).map((_, i) => (
                 <SkeletonBlock key={i} className="h-20 rounded-[8px]" />
               ))}

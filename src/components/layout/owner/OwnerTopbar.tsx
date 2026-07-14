@@ -62,7 +62,7 @@ export function OwnerTopbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 isolate flex w-full max-w-full min-w-0 items-center justify-between gap-2 overflow-hidden border-b border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.84)_100%)] px-3 pb-1.5 pt-[max(6px,env(safe-area-inset-top,0px))] text-white backdrop-blur-2xl md:px-4 xl:px-5">
+    <header className="isolate flex w-full max-w-full min-w-0 items-center justify-between gap-2 overflow-hidden border-b border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.84)_100%)] px-3 pb-1.5 pt-[max(6px,env(safe-area-inset-top,0px))] text-white backdrop-blur-2xl md:px-4 xl:px-5">
       <div className="flex min-w-0 items-center gap-1.5">
         {/* Mobile: menu button */}
         <button
