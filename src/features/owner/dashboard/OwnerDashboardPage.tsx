@@ -439,7 +439,7 @@ function ActionTile({
         </div>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-[color:var(--fg-primary)]">{label}</p>
-          <p className="mt-0.5 text-[11px] text-[color:var(--fg-secondary)]">{note}</p>
+          <p className="mt-0.5 truncate text-[11px] text-[color:var(--fg-secondary)]">{note}</p>
         </div>
       </div>
       <ArrowRight className="h-3.5 w-3.5 shrink-0 text-white/25" />
@@ -577,11 +577,11 @@ function DashboardAlertBanner({
   };
 
   return (
-    <div className="-mx-4">
+    <div className="w-full">
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex snap-x snap-mandatory overflow-x-auto gap-3 pl-4 pr-4"
+        className="flex snap-x snap-mandatory overflow-x-auto gap-3"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none", scrollPaddingLeft: "1rem" }}
       >
         {cards.map((card, i) => {
