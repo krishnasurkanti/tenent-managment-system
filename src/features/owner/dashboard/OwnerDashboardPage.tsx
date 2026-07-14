@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle, ArrowRight, BedDouble, CalendarClock, CreditCard,
-  DoorOpen, ReceiptText, Sofa, TrendingUp, Users,
+  DoorOpen, ReceiptText, Sofa, TrendingUp, Users, X,
 } from "lucide-react";
 import { useHostelContext } from "@/store/hostel-context";
 import { Card } from "@/components/ui/card";
@@ -99,6 +99,11 @@ function DashboardContent({
     [tenants],
   );
 
+  const alertItems = useMemo(
+    () => allDueItems.filter(({ status }) => status.tone !== "green"),
+    [allDueItems],
+  );
+
   const recentDueItems = allDueItems.slice(0, activityVisible);
   const hasMore = activityVisible < allDueItems.length;
 
@@ -114,7 +119,7 @@ function DashboardContent({
   return (
     <div className={`space-y-3 transition-opacity lg:space-y-3 ${isSwitching ? "opacity-70" : "opacity-100"}`}>
 
-      <DashboardAlertBanner overdueCount={overdue.length} dueSoonCount={dueSoon.length} />
+      <DashboardAlertBanner alertItems={alertItems} />
 
       {/* ── MOBILE LAYOUT ── */}
       <section className="grid gap-3 lg:hidden">
@@ -473,139 +478,157 @@ function SnapshotRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-type AlertItem = {
-  icon: string;
-  iconBg: string;
-  title: string;
-  desc: string;
-  cta: string | null;
-  ctaHref: string | null;
-  ctaStyle: string;
-};
+const MAX_ALERT_CARDS = 5;
 
-const STATIC_ALERTS: AlertItem[] = [
-  {
-    icon: "💳",
-    iconBg: "bg-[rgba(99,102,241,0.18)]",
-    title: "Online rent collection — coming soon",
-    desc: "Tenants pay directly from their phones. Zero manual follow-up.",
-    cta: null, ctaHref: null, ctaStyle: "",
-  },
-  {
-    icon: "🔔",
-    iconBg: "bg-[rgba(99,102,241,0.18)]",
-    title: "Automated payment reminders",
-    desc: "Auto-notify tenants before their due date. Reduce late payments.",
-    cta: null, ctaHref: null, ctaStyle: "",
-  },
-  {
-    icon: "📋",
-    iconBg: "bg-[rgba(99,102,241,0.18)]",
-    title: "Tenant portal — coming soon",
-    desc: "Tenants view receipts, agreements and raise maintenance requests.",
-    cta: null, ctaHref: null, ctaStyle: "",
-  },
-  {
-    icon: "📊",
-    iconBg: "bg-[rgba(99,102,241,0.18)]",
-    title: "Multi-hostel analytics — upcoming",
-    desc: "Unified collection and occupancy view across all your hostels.",
-    cta: null, ctaHref: null, ctaStyle: "",
-  },
-];
+const TONE_CONFIG = {
+  red:    { border: "border-red-500/30",    iconBg: "bg-red-500/15",    badge: "bg-red-500/15 text-red-400",    badgeLabel: "CRITICAL", collectClass: "border-red-500/30 bg-red-500/12 text-red-400 hover:bg-red-500/22" },
+  orange: { border: "border-amber-500/30",  iconBg: "bg-amber-500/15",  badge: "bg-amber-500/15 text-amber-400", badgeLabel: "DUE SOON", collectClass: "border-amber-500/30 bg-amber-500/12 text-amber-400 hover:bg-amber-500/22" },
+  yellow: { border: "border-yellow-500/25", iconBg: "bg-yellow-500/12", badge: "bg-yellow-500/12 text-yellow-400", badgeLabel: "UPCOMING", collectClass: "border-yellow-500/25 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/18" },
+} as const;
 
 function DashboardAlertBanner({
-  overdueCount,
-  dueSoonCount,
+  alertItems,
 }: {
-  overdueCount: number;
-  dueSoonCount: number;
+  alertItems: Array<{ tenant: TenantRecord; status: ReturnType<typeof getDueStatus> }>;
 }) {
-  const [idx, setIdx] = useState(0);
-  const [fading, setFading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const lastInteractionRef = useRef(0);
 
-  const items = useMemo<AlertItem[]>(() => {
-    const dynamic: AlertItem[] = [];
-    if (overdueCount > 0)
-      dynamic.push({
-        icon: "⚠️",
-        iconBg: "bg-[rgba(239,68,68,0.18)]",
-        title: `${overdueCount} tenant${overdueCount > 1 ? "s" : ""} overdue`,
-        desc: "Collect pending rent to keep your cash flow on track.",
-        cta: "Collect now →",
-        ctaHref: "/owner/notifications",
-        ctaStyle: "text-red-400",
-      });
-    if (dueSoonCount > 0)
-      dynamic.push({
-        icon: "📅",
-        iconBg: "bg-[rgba(251,191,36,0.18)]",
-        title: `${dueSoonCount} tenant${dueSoonCount > 1 ? "s" : ""} due soon`,
-        desc: "Send a reminder before the due date passes.",
-        cta: "View list →",
-        ctaHref: "/owner/payments",
-        ctaStyle: "text-amber-400",
-      });
-    return [...dynamic, ...STATIC_ALERTS];
-  }, [overdueCount, dueSoonCount]);
+  const [dismissed, setDismissed] = useState<Set<string>>(() => {
+    try {
+      const raw = typeof window !== "undefined" ? localStorage.getItem("dash_dismissed_v1") : null;
+      return new Set<string>(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch { return new Set<string>(); }
+  });
+
+  const active = useMemo(
+    () => alertItems.filter(({ tenant }) => !dismissed.has(tenant.tenantId)),
+    [alertItems, dismissed],
+  );
+
+  const visible = active.slice(0, MAX_ALERT_CARDS);
+  const extraCount = active.length - visible.length;
+  const totalCards = visible.length + (extraCount > 0 ? 1 : 0);
+
+  const scrollToCard = useCallback((idx: number) => {
+    const el = scrollRef.current;
+    if (!el || totalCards === 0) return;
+    el.scrollTo({ left: (el.scrollWidth / totalCards) * idx, behavior: "smooth" });
+  }, [totalCards]);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || totalCards === 0) return;
+    setActiveIdx(Math.round(el.scrollLeft / (el.scrollWidth / totalCards)));
+    lastInteractionRef.current = Date.now();
+  }, [totalCards]);
 
   useEffect(() => {
-    if (items.length <= 1) return;
+    if (totalCards <= 1) return;
     const t = setInterval(() => {
-      setFading(true);
-      setTimeout(() => {
-        setIdx((i) => (i + 1) % items.length);
-        setFading(false);
-      }, 180);
+      if (Date.now() - lastInteractionRef.current < 3000) return;
+      setActiveIdx((prev) => {
+        const next = (prev + 1) % totalCards;
+        scrollToCard(next);
+        return next;
+      });
     }, 4500);
     return () => clearInterval(t);
-  }, [items.length]);
+  }, [totalCards, scrollToCard]);
 
-  const current = items[idx % items.length];
-  if (!current) return null;
+  const dismiss = (tenantId: string) => {
+    setDismissed((prev) => {
+      const next = new Set(prev);
+      next.add(tenantId);
+      try { localStorage.setItem("dash_dismissed_v1", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
+
+  if (visible.length === 0) return null;
 
   return (
-    <div className="rounded-[16px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.05)_0%,rgba(99,102,241,0.06)_100%)] p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
-      <div className="flex items-start gap-3">
-        {/* Icon */}
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl ${current.iconBg}`}>
-          {current.icon}
-        </div>
-
-        {/* Content */}
-        <div
-          className="min-w-0 flex-1"
-          style={{ opacity: fading ? 0 : 1, transition: "opacity 180ms ease" }}
-        >
-          <p className="text-[13px] font-semibold leading-snug text-white">{current.title}</p>
-          <p className="mt-0.5 text-[11px] leading-relaxed text-white/50">{current.desc}</p>
-          {current.cta && current.ctaHref && (
-            <Link
-              href={current.ctaHref}
-              className={`mt-1.5 inline-block text-[12px] font-semibold ${current.ctaStyle}`}
+    <div className="w-full">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex snap-x snap-mandatory overflow-x-auto gap-3"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        {visible.map(({ tenant, status }) => {
+          const tone = (status.tone === "red" ? "red" : status.tone === "orange" ? "orange" : "yellow") as keyof typeof TONE_CONFIG;
+          const cfg = TONE_CONFIG[tone];
+          const icon = tone === "red" ? "🚨" : tone === "orange" ? "⏰" : "📅";
+          return (
+            <div
+              key={tenant.tenantId}
+              className={`snap-center shrink-0 w-[min(calc(100vw-2rem),340px)] rounded-[16px] border ${cfg.border} bg-[rgba(255,255,255,0.04)] p-3.5 flex flex-col gap-3`}
             >
-              {current.cta}
-            </Link>
-          )}
-        </div>
+              <div className="flex items-start gap-3">
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg ${cfg.iconBg}`}>
+                  {icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-bold tracking-[0.12em] ${cfg.badge}`}>
+                    {cfg.badgeLabel}
+                  </span>
+                  <p className="mt-0.5 text-[13px] font-semibold leading-snug text-white">{tenant.fullName}</p>
+                  <p className="text-[11px] text-white/50">
+                    Room {tenant.assignment?.roomNumber ?? "—"} · ₹{tenant.monthlyRent.toLocaleString("en-IN")} · {status.label}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Link
+                  href={`/owner/payments?action=pay-rent&tenantId=${tenant.tenantId}`}
+                  className={`flex-1 inline-flex items-center justify-center rounded-xl border py-2 text-[12px] font-semibold transition ${cfg.collectClass}`}
+                >
+                  Collect ₹{tenant.monthlyRent.toLocaleString("en-IN")}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => dismiss(tenant.tenantId)}
+                  aria-label="Dismiss"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/35 transition hover:bg-white/8 hover:text-white/60"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
 
-        {/* Dot nav */}
-        {items.length > 1 && (
-          <div className="flex shrink-0 items-center gap-1 self-center">
-            {items.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => { setFading(false); setIdx(i); }}
-                aria-label={`Item ${i + 1}`}
-                className={`rounded-full transition-all duration-300 ${
-                  i === idx ? "h-1.5 w-4 bg-white/55" : "h-1.5 w-1.5 bg-white/18 hover:bg-white/35"
-                }`}
-              />
-            ))}
+        {extraCount > 0 && (
+          <div className="snap-center shrink-0 w-[min(calc(100vw-2rem),340px)] rounded-[16px] border border-white/8 bg-[rgba(255,255,255,0.03)] flex flex-col items-center justify-center gap-2.5 p-6 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/8 text-xl">🔔</div>
+            <p className="text-[14px] font-semibold text-white">+{extraCount} more alert{extraCount > 1 ? "s" : ""}</p>
+            <p className="text-[11px] text-white/40">View all pending collections</p>
+            <Link
+              href="/owner/notifications"
+              className="mt-1 inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/8 px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-white/14"
+            >
+              See all alerts →
+            </Link>
           </div>
         )}
       </div>
+
+      {totalCards > 1 && (
+        <div className="mt-2.5 flex items-center justify-center gap-1.5">
+          {Array.from({ length: totalCards }).map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => { lastInteractionRef.current = Date.now(); scrollToCard(i); setActiveIdx(i); }}
+              aria-label={`Alert ${i + 1}`}
+              className={`rounded-full transition-all duration-300 ${
+                i === activeIdx ? "h-1.5 w-5 bg-white/55" : "h-1.5 w-1.5 bg-white/18 hover:bg-white/35"
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
