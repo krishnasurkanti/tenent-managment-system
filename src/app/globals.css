@@ -530,6 +530,7 @@
   .nestiq-stat {
     border: 1px solid rgba(255, 255, 255, 0.07);
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, rgba(255, 255, 255, 0.025) 100%);
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
   }
 
@@ -895,6 +896,7 @@
 .is-ios-safari .app-shell {
   position: fixed;
   inset: 0;
+  z-index: 1;
   padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
 }
 

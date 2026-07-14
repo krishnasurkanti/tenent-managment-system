@@ -108,7 +108,7 @@ function TrialModal({ open, initialPlan, onClose }: { open: boolean; initialPlan
       onClick={(e) => e.target === e.currentTarget && onClose()}
       style={{
         position: "fixed", inset: 0, background: "rgba(5,5,8,.82)",
-        backdropFilter: "blur(10px)", zIndex: 200,
+        backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", zIndex: 200,
         display: "flex", alignItems: "center", justifyContent: "center", padding: 18,
       }}
     >
@@ -339,7 +339,7 @@ export default function HomePage() {
       {/* NAV */}
       <nav style={{
         position: "sticky", top: 0, zIndex: 60,
-        background: "rgba(9,9,11,.88)", backdropFilter: "blur(20px)",
+        background: "rgba(9,9,11,.88)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,.07)",
       }}>
         <div style={{
@@ -408,7 +408,7 @@ export default function HomePage() {
 
         {navOpen && (
           <div style={{
-            background: "rgba(9,9,11,.98)", backdropFilter: "blur(20px)",
+            background: "rgba(9,9,11,.98)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
             borderBottom: "1px solid rgba(255,255,255,.07)",
             padding: "14px 20px", display: "flex", flexDirection: "column", gap: 12,
           }}>
@@ -528,7 +528,7 @@ export default function HomePage() {
                 <div key={text} style={{
                   position: "absolute", display: "inline-flex", alignItems: "center", gap: 5,
                   padding: "5px 10px", borderRadius: 999, fontSize: 10, fontWeight: 700,
-                  backdropFilter: "blur(12px)", whiteSpace: "nowrap" as const,
+                  backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", whiteSpace: "nowrap" as const,
                   boxShadow: "0 6px 20px rgba(0,0,0,.4)", zIndex: 5,
                   background: c.bg, border: `1px solid ${c.border}`, color: c.color, ...style,
                 }}>
@@ -544,7 +544,7 @@ export default function HomePage() {
               zIndex: 6, width: 165, borderRadius: 10,
               background: "rgba(13,13,18,.92)", border: "1px solid rgba(99,102,241,.5)",
               boxShadow: "0 0 0 1px rgba(129,140,248,.15) inset, 0 12px 38px rgba(99,102,241,.4)",
-              padding: 10, backdropFilter: "blur(20px)",
+              padding: 10, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
             }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                 <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".18em", textTransform: "uppercase" as const, color: "#c7d2fe" }}>Live OS</span>

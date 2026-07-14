@@ -135,7 +135,7 @@ export function PricingCarousel({
       <div
         ref={scrollRef}
         className="flex snap-x snap-mandatory overflow-x-auto scrollbar-hide gap-3 pb-2 px-4 sm:px-0"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none", scrollPaddingLeft: "1rem" }}
       >
         {PRICING_PLANS.map((plan) => {
           const isCurrentPlan = plan.id === currentPlanId;
@@ -150,7 +150,7 @@ export function PricingCarousel({
             <div
               key={plan.id}
               className={cn(
-                "snap-center shrink-0 w-[min(calc(100vw-4rem),300px)] sm:w-[260px] rounded-[20px] border p-4 flex flex-col gap-3 transition-all duration-200",
+                "snap-start shrink-0 w-[min(calc(100vw-4rem),300px)] sm:w-[260px] rounded-[20px] border p-4 flex flex-col gap-3 transition-all duration-200",
                 TONE_MAP[plan.id],
                 isCurrentPlan && ACTIVE_RING[plan.id],
               )}
