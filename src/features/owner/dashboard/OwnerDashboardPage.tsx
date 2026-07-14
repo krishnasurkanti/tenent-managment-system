@@ -114,7 +114,7 @@ function DashboardContent({
   return (
     <div className={`space-y-3 transition-opacity lg:space-y-3 ${isSwitching ? "opacity-70" : "opacity-100"}`}>
 
-      <DashboardTicker overdueCount={overdue.length} dueSoonCount={dueSoon.length} />
+      <DashboardAlertBanner overdueCount={overdue.length} dueSoonCount={dueSoon.length} />
 
       {/* ── MOBILE LAYOUT ── */}
       <section className="grid gap-3 lg:hidden">
@@ -473,40 +473,138 @@ function SnapshotRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function DashboardTicker({
+type AlertItem = {
+  icon: string;
+  iconBg: string;
+  title: string;
+  desc: string;
+  cta: string | null;
+  ctaHref: string | null;
+  ctaStyle: string;
+};
+
+const STATIC_ALERTS: AlertItem[] = [
+  {
+    icon: "💳",
+    iconBg: "bg-[rgba(99,102,241,0.18)]",
+    title: "Online rent collection — coming soon",
+    desc: "Tenants pay directly from their phones. Zero manual follow-up.",
+    cta: null, ctaHref: null, ctaStyle: "",
+  },
+  {
+    icon: "🔔",
+    iconBg: "bg-[rgba(99,102,241,0.18)]",
+    title: "Automated payment reminders",
+    desc: "Auto-notify tenants before their due date. Reduce late payments.",
+    cta: null, ctaHref: null, ctaStyle: "",
+  },
+  {
+    icon: "📋",
+    iconBg: "bg-[rgba(99,102,241,0.18)]",
+    title: "Tenant portal — coming soon",
+    desc: "Tenants view receipts, agreements and raise maintenance requests.",
+    cta: null, ctaHref: null, ctaStyle: "",
+  },
+  {
+    icon: "📊",
+    iconBg: "bg-[rgba(99,102,241,0.18)]",
+    title: "Multi-hostel analytics — upcoming",
+    desc: "Unified collection and occupancy view across all your hostels.",
+    cta: null, ctaHref: null, ctaStyle: "",
+  },
+];
+
+function DashboardAlertBanner({
   overdueCount,
   dueSoonCount,
 }: {
   overdueCount: number;
   dueSoonCount: number;
 }) {
-  const dynamicItems: string[] = [
-    ...(overdueCount > 0 ? [`⚠ ${overdueCount} tenant${overdueCount > 1 ? "s" : ""} overdue — collect now`] : []),
-    ...(dueSoonCount > 0 ? [`📅 ${dueSoonCount} due soon`] : []),
-  ];
-  const staticItems = [
-    "Online rent collection — coming soon",
-    "Tenant portal access — coming soon",
-    "Automated payment reminders — upcoming",
-    "Multi-hostel analytics — upcoming",
-    "Maintenance request tracking — upcoming",
-  ];
-  const items = [...dynamicItems, ...staticItems];
-  const doubled = [...items, ...items];
-  const duration = `${items.length * 5}s`;
+  const [idx, setIdx] = useState(0);
+  const [fading, setFading] = useState(false);
+
+  const items = useMemo<AlertItem[]>(() => {
+    const dynamic: AlertItem[] = [];
+    if (overdueCount > 0)
+      dynamic.push({
+        icon: "⚠️",
+        iconBg: "bg-[rgba(239,68,68,0.18)]",
+        title: `${overdueCount} tenant${overdueCount > 1 ? "s" : ""} overdue`,
+        desc: "Collect pending rent to keep your cash flow on track.",
+        cta: "Collect now →",
+        ctaHref: "/owner/notifications",
+        ctaStyle: "text-red-400",
+      });
+    if (dueSoonCount > 0)
+      dynamic.push({
+        icon: "📅",
+        iconBg: "bg-[rgba(251,191,36,0.18)]",
+        title: `${dueSoonCount} tenant${dueSoonCount > 1 ? "s" : ""} due soon`,
+        desc: "Send a reminder before the due date passes.",
+        cta: "View list →",
+        ctaHref: "/owner/payments",
+        ctaStyle: "text-amber-400",
+      });
+    return [...dynamic, ...STATIC_ALERTS];
+  }, [overdueCount, dueSoonCount]);
+
+  useEffect(() => {
+    if (items.length <= 1) return;
+    const t = setInterval(() => {
+      setFading(true);
+      setTimeout(() => {
+        setIdx((i) => (i + 1) % items.length);
+        setFading(false);
+      }, 180);
+    }, 4500);
+    return () => clearInterval(t);
+  }, [items.length]);
+
+  const current = items[idx % items.length];
+  if (!current) return null;
 
   return (
-    <div className="overflow-hidden rounded-[10px] border border-white/8 bg-[linear-gradient(90deg,rgba(99,102,241,0.06),rgba(249,193,42,0.04),rgba(99,102,241,0.06))]">
-      <div
-        className="flex whitespace-nowrap will-change-transform"
-        style={{ animation: `ticker ${duration} linear infinite` }}
-      >
-        {doubled.map((item, i) => (
-          <span key={i} className="inline-flex items-center gap-2 px-4 py-2 text-[11px] font-medium text-white/45">
-            {item}
-            <span className="text-white/15 text-[8px]">●</span>
-          </span>
-        ))}
+    <div className="rounded-[16px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.05)_0%,rgba(99,102,241,0.06)_100%)] p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+      <div className="flex items-start gap-3">
+        {/* Icon */}
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl ${current.iconBg}`}>
+          {current.icon}
+        </div>
+
+        {/* Content */}
+        <div
+          className="min-w-0 flex-1"
+          style={{ opacity: fading ? 0 : 1, transition: "opacity 180ms ease" }}
+        >
+          <p className="text-[13px] font-semibold leading-snug text-white">{current.title}</p>
+          <p className="mt-0.5 text-[11px] leading-relaxed text-white/50">{current.desc}</p>
+          {current.cta && current.ctaHref && (
+            <Link
+              href={current.ctaHref}
+              className={`mt-1.5 inline-block text-[12px] font-semibold ${current.ctaStyle}`}
+            >
+              {current.cta}
+            </Link>
+          )}
+        </div>
+
+        {/* Dot nav */}
+        {items.length > 1 && (
+          <div className="flex shrink-0 items-center gap-1 self-center">
+            {items.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => { setFading(false); setIdx(i); }}
+                aria-label={`Item ${i + 1}`}
+                className={`rounded-full transition-all duration-300 ${
+                  i === idx ? "h-1.5 w-4 bg-white/55" : "h-1.5 w-1.5 bg-white/18 hover:bg-white/35"
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

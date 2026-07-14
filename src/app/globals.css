@@ -349,10 +349,6 @@
     0%, 100% { transform: translateY(0);  }
     50%       { transform: translateY(4px); }
   }
-  @keyframes ticker {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-50%); }
-  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
