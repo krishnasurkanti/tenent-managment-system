@@ -478,13 +478,26 @@ function SnapshotRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const MAX_ALERT_CARDS = 5;
+const CARD_W = "w-[min(calc(100vw-2rem),300px)] sm:w-[300px]";
 
 const TONE_CONFIG = {
   red:    { border: "border-red-500/30",    iconBg: "bg-red-500/15",    badge: "bg-red-500/15 text-red-400",    badgeLabel: "CRITICAL", collectClass: "border-red-500/30 bg-red-500/12 text-red-400 hover:bg-red-500/22" },
   orange: { border: "border-amber-500/30",  iconBg: "bg-amber-500/15",  badge: "bg-amber-500/15 text-amber-400", badgeLabel: "DUE SOON", collectClass: "border-amber-500/30 bg-amber-500/12 text-amber-400 hover:bg-amber-500/22" },
   yellow: { border: "border-yellow-500/25", iconBg: "bg-yellow-500/12", badge: "bg-yellow-500/12 text-yellow-400", badgeLabel: "UPCOMING", collectClass: "border-yellow-500/25 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/18" },
 } as const;
+
+const UPCOMING_FILL = [
+  { icon: "💳", title: "Online rent payments", desc: "Collect rent digitally — tenants pay from their phone.", badge: "COMING SOON" },
+  { icon: "💬", title: "WhatsApp notifications", desc: "Auto-send payment reminders via WhatsApp.", badge: "COMING SOON" },
+  { icon: "📧", title: "Gmail notifications", desc: "Email receipts and due-date reminders automatically.", badge: "COMING SOON" },
+  { icon: "📋", title: "Tenant portal", desc: "Tenants view receipts and raise maintenance requests.", badge: "COMING SOON" },
+  { icon: "📊", title: "Analytics dashboard", desc: "Unified occupancy and collection view across hostels.", badge: "COMING SOON" },
+];
+
+type AlertCard  = { kind: "alert";    tenant: TenantRecord; status: ReturnType<typeof getDueStatus> };
+type FillCard   = { kind: "upcoming"; icon: string; title: string; desc: string; badge: string };
+type SeeMoreCard = { kind: "seemore"; count: number };
+type BannerCard = AlertCard | FillCard | SeeMoreCard;
 
 function DashboardAlertBanner({
   alertItems,
@@ -507,9 +520,18 @@ function DashboardAlertBanner({
     [alertItems, dismissed],
   );
 
-  const visible = active.slice(0, MAX_ALERT_CARDS);
-  const extraCount = active.length - visible.length;
-  const totalCards = visible.length + (extraCount > 0 ? 1 : 0);
+  const cards = useMemo<BannerCard[]>(() => {
+    const alerts = active.slice(0, 5);
+    const extra  = active.length - alerts.length;
+    const fill   = extra > 0 ? [] : UPCOMING_FILL.slice(0, 5 - alerts.length);
+    return [
+      ...alerts.map((a): AlertCard   => ({ kind: "alert",   ...a })),
+      ...fill.map((f):  FillCard     => ({ kind: "upcoming", ...f })),
+      ...(extra > 0 ? [{ kind: "seemore" as const, count: extra }] : []),
+    ];
+  }, [active]);
+
+  const totalCards = cards.length;
 
   const scrollToCard = useCallback((idx: number) => {
     const el = scrollRef.current;
@@ -546,8 +568,6 @@ function DashboardAlertBanner({
     });
   };
 
-  if (visible.length === 0) return null;
-
   return (
     <div className="w-full">
       <div
@@ -556,75 +576,83 @@ function DashboardAlertBanner({
         className="flex snap-x snap-mandatory overflow-x-auto gap-3"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {visible.map(({ tenant, status }) => {
-          const tone = (status.tone === "red" ? "red" : status.tone === "orange" ? "orange" : "yellow") as keyof typeof TONE_CONFIG;
-          const cfg = TONE_CONFIG[tone];
-          const icon = tone === "red" ? "🚨" : tone === "orange" ? "⏰" : "📅";
+        {cards.map((card, i) => {
+          if (card.kind === "alert") {
+            const { tenant, status } = card;
+            const tone = (status.tone === "red" ? "red" : status.tone === "orange" ? "orange" : "yellow") as keyof typeof TONE_CONFIG;
+            const cfg  = TONE_CONFIG[tone];
+            const icon = tone === "red" ? "🚨" : tone === "orange" ? "⏰" : "📅";
+            return (
+              <div key={tenant.tenantId} className={`snap-center shrink-0 ${CARD_W} rounded-[16px] border ${cfg.border} bg-[rgba(255,255,255,0.04)] p-3.5 flex flex-col gap-3`}>
+                <div className="flex items-start gap-3">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg ${cfg.iconBg}`}>{icon}</div>
+                  <div className="min-w-0 flex-1">
+                    <span className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-bold tracking-[0.12em] ${cfg.badge}`}>{cfg.badgeLabel}</span>
+                    <p className="mt-0.5 text-[13px] font-semibold leading-snug text-white">{tenant.fullName}</p>
+                    <p className="text-[11px] text-white/50">Room {tenant.assignment?.roomNumber ?? "—"} · ₹{tenant.monthlyRent.toLocaleString("en-IN")} · {status.label}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Link
+                    href={`/owner/payments?action=pay-rent&tenantId=${tenant.tenantId}`}
+                    className={`flex-1 inline-flex items-center justify-center rounded-xl border py-2 text-[12px] font-semibold transition ${cfg.collectClass}`}
+                  >
+                    Collect ₹{tenant.monthlyRent.toLocaleString("en-IN")}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => dismiss(tenant.tenantId)}
+                    aria-label="Dismiss"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/35 transition hover:bg-white/8 hover:text-white/60"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
+          if (card.kind === "upcoming") {
+            return (
+              <div key={`up-${i}`} className={`snap-center shrink-0 ${CARD_W} rounded-[16px] border border-[rgba(99,102,241,0.2)] bg-[rgba(99,102,241,0.04)] p-3.5 flex flex-col gap-3`}>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(99,102,241,0.15)] text-lg">{card.icon}</div>
+                  <div className="min-w-0 flex-1">
+                    <span className="inline-block rounded-full bg-[rgba(99,102,241,0.15)] px-2 py-0.5 text-[9px] font-bold tracking-[0.12em] text-[#a5b4fc]">{card.badge}</span>
+                    <p className="mt-0.5 text-[13px] font-semibold leading-snug text-white">{card.title}</p>
+                    <p className="text-[11px] text-white/45">{card.desc}</p>
+                  </div>
+                </div>
+                <div className="mt-auto rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-center text-[11px] text-white/30">
+                  Feature in development
+                </div>
+              </div>
+            );
+          }
+
+          /* kind === "seemore" */
           return (
-            <div
-              key={tenant.tenantId}
-              className={`snap-center shrink-0 w-[min(calc(100vw-2rem),340px)] rounded-[16px] border ${cfg.border} bg-[rgba(255,255,255,0.04)] p-3.5 flex flex-col gap-3`}
-            >
-              <div className="flex items-start gap-3">
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg ${cfg.iconBg}`}>
-                  {icon}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-bold tracking-[0.12em] ${cfg.badge}`}>
-                    {cfg.badgeLabel}
-                  </span>
-                  <p className="mt-0.5 text-[13px] font-semibold leading-snug text-white">{tenant.fullName}</p>
-                  <p className="text-[11px] text-white/50">
-                    Room {tenant.assignment?.roomNumber ?? "—"} · ₹{tenant.monthlyRent.toLocaleString("en-IN")} · {status.label}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Link
-                  href={`/owner/payments?action=pay-rent&tenantId=${tenant.tenantId}`}
-                  className={`flex-1 inline-flex items-center justify-center rounded-xl border py-2 text-[12px] font-semibold transition ${cfg.collectClass}`}
-                >
-                  Collect ₹{tenant.monthlyRent.toLocaleString("en-IN")}
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => dismiss(tenant.tenantId)}
-                  aria-label="Dismiss"
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/35 transition hover:bg-white/8 hover:text-white/60"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
+            <div key="seemore" className={`snap-center shrink-0 ${CARD_W} rounded-[16px] border border-white/8 bg-[rgba(255,255,255,0.03)] flex flex-col items-center justify-center gap-2.5 p-6 text-center`}>
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/8 text-xl">🔔</div>
+              <p className="text-[14px] font-semibold text-white">+{card.count} more alert{card.count > 1 ? "s" : ""}</p>
+              <p className="text-[11px] text-white/40">View all pending collections</p>
+              <Link href="/owner/notifications" className="mt-1 inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/8 px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-white/14">
+                See all alerts →
+              </Link>
             </div>
           );
         })}
-
-        {extraCount > 0 && (
-          <div className="snap-center shrink-0 w-[min(calc(100vw-2rem),340px)] rounded-[16px] border border-white/8 bg-[rgba(255,255,255,0.03)] flex flex-col items-center justify-center gap-2.5 p-6 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/8 text-xl">🔔</div>
-            <p className="text-[14px] font-semibold text-white">+{extraCount} more alert{extraCount > 1 ? "s" : ""}</p>
-            <p className="text-[11px] text-white/40">View all pending collections</p>
-            <Link
-              href="/owner/notifications"
-              className="mt-1 inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/8 px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-white/14"
-            >
-              See all alerts →
-            </Link>
-          </div>
-        )}
       </div>
 
       {totalCards > 1 && (
         <div className="mt-2.5 flex items-center justify-center gap-1.5">
-          {Array.from({ length: totalCards }).map((_, i) => (
+          {cards.map((_, i) => (
             <button
               key={i}
               type="button"
               onClick={() => { lastInteractionRef.current = Date.now(); scrollToCard(i); setActiveIdx(i); }}
-              aria-label={`Alert ${i + 1}`}
-              className={`rounded-full transition-all duration-300 ${
-                i === activeIdx ? "h-1.5 w-5 bg-white/55" : "h-1.5 w-1.5 bg-white/18 hover:bg-white/35"
-              }`}
+              aria-label={`Card ${i + 1}`}
+              className={`rounded-full transition-all duration-300 ${i === activeIdx ? "h-1.5 w-5 bg-white/55" : "h-1.5 w-1.5 bg-white/18 hover:bg-white/35"}`}
             />
           ))}
         </div>
@@ -637,34 +665,29 @@ function LoadingState() {
   return (
     <div className="space-y-3">
       <section className="grid gap-3 lg:hidden">
-        <Card className="p-4">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-3 py-1.5 text-[11px] font-semibold text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]">
-            <span className="h-2 w-2 rounded-full bg-[var(--cta)] animate-[status-breathe_1s_ease-in-out_infinite]" />
-            Preparing dashboard
-          </div>
-          <SkeletonBlock className="mt-4 h-4 w-24" />
-          <SkeletonBlock className="mt-2 h-7 w-44" />
-          <div className="mt-4 grid grid-cols-[1.5fr_1fr] gap-2.5">
-            <SkeletonBlock className="h-24 rounded-[8px]" />
-            <div className="grid gap-2">
-              <SkeletonBlock className="h-11 rounded-[6px]" />
-              <SkeletonBlock className="h-11 rounded-[6px]" />
-            </div>
-          </div>
-          <div className="mt-2.5 grid grid-cols-3 gap-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <SkeletonBlock key={i} className="h-10 rounded-[6px]" />
-            ))}
-          </div>
-        </Card>
-        <div className="grid grid-cols-2 gap-2.5">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <SkeletonBlock key={i} className="h-20 rounded-[8px]" />
+        {/* Alert banner skeleton */}
+        <div className="flex gap-3 overflow-hidden">
+          <SkeletonBlock className={`h-[112px] shrink-0 rounded-[16px] ${CARD_W}`} />
+          <SkeletonBlock className={`h-[112px] shrink-0 rounded-[16px] opacity-40 ${CARD_W}`} />
+        </div>
+        {/* Dot skeleton */}
+        <div className="flex items-center justify-center gap-1.5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonBlock key={i} className={`h-1.5 rounded-full ${i === 0 ? "w-5" : "w-1.5"}`} />
           ))}
         </div>
+        {/* Action tiles skeleton */}
+        <div className="grid grid-cols-2 gap-2.5">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonBlock key={i} className="h-[72px] rounded-[12px]" />
+          ))}
+        </div>
+        {/* Snapshot skeleton */}
+        <SkeletonBlock className="h-52 rounded-[16px]" />
+        {/* Recent activity skeleton */}
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonBlock key={i} className="h-16 rounded-[8px]" />
+            <SkeletonBlock key={i} className="h-[60px] rounded-[12px]" />
           ))}
         </div>
       </section>
