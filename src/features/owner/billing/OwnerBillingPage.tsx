@@ -84,10 +84,10 @@ export default function OwnerBillingPage() {
   }
 
   const currentPlanLabel = getPlanLabel(data.planId);
-  const trialDaysLeft = Math.max(
-    0,
-    Math.ceil((new Date(data.dueDate).getTime() - billingClock) / (1000 * 60 * 60 * 24)),
-  );
+  const trialDaysLeft =
+    data.dueDate && !Number.isNaN(new Date(data.dueDate).getTime())
+      ? Math.max(0, Math.ceil((new Date(data.dueDate).getTime() - billingClock) / (1000 * 60 * 60 * 24)))
+      : null;
 
   const handlePlanRequest = async (planId: PlanId) => {
     if (!currentHostel?.id) return;
@@ -123,8 +123,12 @@ export default function OwnerBillingPage() {
         <span className="text-[12px] text-white/50">
           Rs {data.payableAmount.toLocaleString("en-IN")}/mo
         </span>
-        <span className="text-white/20">·</span>
-        <span className="text-[12px] text-white/50">{trialDaysLeft}d to billing</span>
+        {trialDaysLeft !== null && (
+          <>
+            <span className="text-white/20">·</span>
+            <span className="text-[12px] text-white/50">{trialDaysLeft}d to billing</span>
+          </>
+        )}
       </div>
 
       {/* Invoice payment section */}
@@ -190,6 +194,84 @@ export default function OwnerBillingPage() {
           {error}
         </div>
       ) : null}
+
+      <TenantPortalPricing />
+    </div>
+  );
+}
+
+function TenantPortalPricing() {
+  const tiers = [
+    {
+      name: "Basic",
+      price: "Free",
+      priceNote: "always",
+      color: "border-white/10 bg-white/[0.03]",
+      badge: null,
+      features: [
+        "View payment history",
+        "Download rent receipts",
+        "View room assignment",
+        "Contact hostel owner",
+      ],
+    },
+    {
+      name: "Plus",
+      price: "₹49",
+      priceNote: "/ tenant / month",
+      color: "border-[rgba(99,102,241,0.25)] bg-[rgba(99,102,241,0.05)]",
+      badge: "Coming soon",
+      features: [
+        "Digital rent agreement storage",
+        "Maintenance request submission",
+        "Move-out notice filing",
+        "Document uploads",
+        "Payment reminders via SMS",
+      ],
+    },
+  ] as const;
+
+  return (
+    <div className="rounded-[14px] border border-white/8 bg-white/[0.02] px-4 py-4">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(99,102,241,0.3)] bg-[rgba(99,102,241,0.1)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#a5b4fc]">
+          <Sparkles className="h-3 w-3" />
+          Tenant Portal
+        </span>
+        <span className="text-[11px] text-white/35">Give your tenants app access</span>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {tiers.map((tier) => (
+          <div key={tier.name} className={`rounded-[12px] border p-3.5 ${tier.color}`}>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">Tenant</p>
+                <p className="text-base font-bold text-white">{tier.name}</p>
+              </div>
+              {tier.badge ? (
+                <span className="rounded-full border border-[rgba(99,102,241,0.3)] bg-[rgba(99,102,241,0.12)] px-2 py-0.5 text-[10px] font-semibold text-[#a5b4fc]">
+                  {tier.badge}
+                </span>
+              ) : null}
+            </div>
+            <div className="mt-1.5">
+              <span className="text-lg font-bold text-white">{tier.price}</span>
+              <span className="ml-1 text-[11px] text-white/40">{tier.priceNote}</span>
+            </div>
+            <ul className="mt-2.5 space-y-1">
+              {tier.features.map((f) => (
+                <li key={f} className="flex items-start gap-1.5 text-[11px] text-white/55">
+                  <span className="mt-0.5 h-3 w-3 shrink-0 text-[#4ade80]">✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-center text-[10px] text-white/25">
+        Tenant portal pricing is separate from hostel owner plans · Billed per active tenant
+      </p>
     </div>
   );
 }

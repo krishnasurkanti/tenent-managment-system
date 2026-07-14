@@ -15,7 +15,6 @@ import { ownerStatusClass } from "@/components/ui/owner-theme";
 import { formatPaymentDate, getDueStatus } from "@/utils/payment";
 import { getHostelOccupancySummary } from "@/utils/hostel-occupancy";
 import { TenantRentSearch } from "@/features/payments/components/TenantRentSearch";
-import { OnboardingChecklist } from "./OnboardingChecklist";
 import type { OwnerHostel } from "@/types/owner-hostel";
 import type { TenantRecord } from "@/types/tenant";
 
@@ -115,7 +114,7 @@ function DashboardContent({
   return (
     <div className={`space-y-3 transition-opacity lg:space-y-3 ${isSwitching ? "opacity-70" : "opacity-100"}`}>
 
-      <OnboardingChecklist hostel={hostel} tenants={tenants} />
+      <DashboardTicker overdueCount={overdue.length} dueSoonCount={dueSoon.length} />
 
       {/* ── MOBILE LAYOUT ── */}
       <section className="grid gap-3 lg:hidden">
@@ -470,6 +469,45 @@ function SnapshotRow({ label, value }: { label: string; value: string }) {
     <div className="flex min-w-0 items-center justify-between gap-2 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
       <span className="min-w-0 truncate text-sm text-[color:var(--fg-secondary)]">{label}</span>
       <span className="shrink-0 text-sm font-semibold text-white">{value}</span>
+    </div>
+  );
+}
+
+function DashboardTicker({
+  overdueCount,
+  dueSoonCount,
+}: {
+  overdueCount: number;
+  dueSoonCount: number;
+}) {
+  const dynamicItems: string[] = [
+    ...(overdueCount > 0 ? [`⚠ ${overdueCount} tenant${overdueCount > 1 ? "s" : ""} overdue — collect now`] : []),
+    ...(dueSoonCount > 0 ? [`📅 ${dueSoonCount} due soon`] : []),
+  ];
+  const staticItems = [
+    "Online rent collection — coming soon",
+    "Tenant portal access — coming soon",
+    "Automated payment reminders — upcoming",
+    "Multi-hostel analytics — upcoming",
+    "Maintenance request tracking — upcoming",
+  ];
+  const items = [...dynamicItems, ...staticItems];
+  const doubled = [...items, ...items];
+  const duration = `${items.length * 5}s`;
+
+  return (
+    <div className="overflow-hidden rounded-[10px] border border-white/8 bg-[linear-gradient(90deg,rgba(99,102,241,0.06),rgba(249,193,42,0.04),rgba(99,102,241,0.06))]">
+      <div
+        className="flex whitespace-nowrap will-change-transform"
+        style={{ animation: `ticker ${duration} linear infinite` }}
+      >
+        {doubled.map((item, i) => (
+          <span key={i} className="inline-flex items-center gap-2 px-4 py-2 text-[11px] font-medium text-white/45">
+            {item}
+            <span className="text-white/15 text-[8px]">●</span>
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
