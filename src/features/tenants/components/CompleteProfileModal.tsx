@@ -2,19 +2,8 @@
 
 import { useRef, useState } from "react";
 import {
-  AlertCircle,
-  Briefcase,
-  CalendarDays,
-  CreditCard,
-  FileText,
-  IdCard,
-  Mail,
-  Phone,
-  Search,
-  Upload,
-  User,
-  UserCircle,
-  X,
+  AlertCircle, Briefcase, CalendarDays, CreditCard, FileText, IdCard,
+  Mail, Phone, Search, Upload, User, UserCircle, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -46,6 +35,13 @@ const RELATIONS: { value: EmergencyRelation; label: string }[] = [
   { value: "friend", label: "Friend" },
   { value: "other", label: "Other" },
 ];
+
+// Shared token classes
+const LABEL = "mb-1.5 block text-[12px] font-semibold text-[color:var(--fg-secondary)]";
+const SECTION = "mb-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-tertiary)]";
+const INPUT = "w-full bg-transparent text-[13px] text-[color:var(--fg-primary)] outline-none placeholder:text-[color:var(--fg-tertiary)]";
+const shell = (err?: string) =>
+  `flex items-center gap-2 rounded-[var(--radius-md)] border bg-[color:var(--surface-soft)] px-3 py-2.5 ${err ? "border-[color:var(--error)]" : "border-[color:var(--border-strong)]"}`;
 
 function normalizePhone(v: string) {
   return v.replace(/\D/g, "").replace(/^91/, "").slice(0, 10);
@@ -173,7 +169,6 @@ export function CompleteProfileModal({
     if (submitting || uploading) return;
     setError("");
 
-    // ── Client-side validation ────────────────────────────────────────────────
     const fe: Record<string, string> = {};
     const phoneDigits = normalizePhone(phone);
     if (phone && phoneDigits.length !== 10) fe.phone = "Phone must be 10 digits.";
@@ -186,7 +181,6 @@ export function CompleteProfileModal({
     if (Object.keys(fe).length > 0) { setFieldErrors(fe); return; }
     setFieldErrors({});
 
-    // ── Upload all files first ────────────────────────────────────────────────
     let tenantPhotoUrl = tenant.tenantPhotoUrl;
     let idPhotoUrl = tenant.idPhotoUrl;
     let finalAgreementUrls = existingAgreementUrls;
@@ -211,7 +205,6 @@ export function CompleteProfileModal({
       setUploading(false);
     }
 
-    // ── Save profile ──────────────────────────────────────────────────────────
     setSubmitting(true);
     try {
       const payload: Record<string, unknown> = {
@@ -252,117 +245,77 @@ export function CompleteProfileModal({
     }
   };
 
+  const busy = submitting || uploading;
+
   return (
     <div
       {...(!asPage && { role: "dialog", "aria-modal": "true" })}
       aria-labelledby="complete-profile-title"
-      className={asPage
-        ? "w-full"
-        : "fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4 sm:py-4"
-      }
-      {...(!asPage && { style: { background: "rgba(2,6,23,0.80)", backdropFilter: "blur(6px)" } })}
+      className={asPage ? "w-full" : "fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4 sm:py-4"}
+      {...(!asPage && { style: { background: "var(--overlay)", backdropFilter: "blur(6px)" } })}
     >
       <Card className={asPage
-        ? "flex w-full flex-col overflow-hidden rounded-[10px] border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0"
-        : "flex w-full flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] sm:w-[min(calc(100vw-2rem),38rem)] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
+        ? "flex w-full flex-col overflow-hidden rounded-[var(--radius-lg)] border-[color:var(--border)] p-0"
+        : "flex w-full flex-col overflow-hidden rounded-t-[var(--radius-xl)] border-[color:var(--border)] p-0 shadow-[var(--shadow-5)] sm:w-[min(calc(100vw-2rem),38rem)] sm:rounded-[var(--radius-xl)]"
       }>
         {/* Header */}
         <div className="relative shrink-0 px-4 pb-3 pt-4 sm:px-5 sm:pt-5">
-          <div className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(90deg,rgba(249,115,22,0.1)_0%,rgba(168,85,247,0.05)_100%)]" />
-          <div className="relative flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <p id="complete-profile-title" className="text-base font-semibold text-white">Complete Profile</p>
-              <p className="mt-0.5 text-[11px] text-white/45">{tenant.fullName} · Fill in missing details</p>
+              <p id="complete-profile-title" className="text-base font-semibold text-[color:var(--fg-primary)]">Complete Profile</p>
+              <p className="mt-0.5 text-[11px] text-[color:var(--fg-tertiary)]">{tenant.fullName} · Fill in missing details</p>
             </div>
             {!asPage && (
-              <Button
-                variant="ghost"
-                disabled={submitting || uploading}
-                aria-label="Close"
-                onClick={onClose}
-                className="rounded-2xl px-3 text-white/60 hover:text-white"
-              >
+              <button type="button" disabled={busy} aria-label="Close" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-[color:var(--fg-tertiary)] hover:bg-[color:var(--muted)] hover:text-[color:var(--fg-primary)]">
                 <X className="h-4 w-4" />
-              </Button>
+              </button>
             )}
           </div>
         </div>
 
         {/* Body */}
         <div className={asPage ? "px-4 pb-4 sm:px-5" : "max-h-[62dvh] overflow-y-auto px-4 pb-4 sm:px-5 sm:max-h-[70dvh]"} {...(!asPage && { style: { touchAction: "pan-y" } })}>
-          <div className="space-y-5 pb-2">
+          <div className="flex flex-col gap-5 pb-2">
 
             {/* ── Personal ── */}
             <section>
-              <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">Personal</p>
-              <div className="space-y-2.5">
+              <p className={SECTION}>Personal</p>
+              <div className="flex flex-col gap-2.5">
                 <div className="grid gap-2.5 sm:grid-cols-2">
-                  {/* Phone */}
                   <label className="block">
-                    <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Phone</span>
-                    <div className={`flex items-center gap-2 rounded-2xl border bg-white/[0.06] px-3 py-2.5 ${fieldErrors.phone ? "border-red-500/70" : "border-white/12"}`}>
-                      <Phone className="h-4 w-4 shrink-0 text-emerald-500" />
-                      <span className="text-[13px] font-medium text-white/50">+91</span>
-                      <input
-                        value={fmtPhone(phone)}
-                        onChange={(e) => { setPhone(normalizePhone(e.target.value)); if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: "" })); }}
-                        disabled={submitting || uploading}
-                        type="tel"
-                        inputMode="tel"
-                        placeholder="98765 43210"
-                        className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                      />
+                    <span className={LABEL}>Phone</span>
+                    <div className={shell(fieldErrors.phone)}>
+                      <Phone className="h-4 w-4 shrink-0 text-[color:var(--success)]" />
+                      <span className="text-[13px] font-medium text-[color:var(--fg-tertiary)]">+91</span>
+                      <input value={fmtPhone(phone)} onChange={(e) => { setPhone(normalizePhone(e.target.value)); if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: "" })); }} disabled={busy} type="tel" inputMode="tel" placeholder="98765 43210" className={INPUT} />
                     </div>
-                    {fieldErrors.phone ? <p className="mt-1 text-[11px] font-medium text-red-400">{fieldErrors.phone}</p> : null}
+                    {fieldErrors.phone ? <p className="mt-1 text-[11px] font-medium text-[color:var(--error)]">{fieldErrors.phone}</p> : null}
                   </label>
 
-                  {/* Email */}
                   <label className="block">
-                    <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Email</span>
-                    <div className={`flex items-center gap-2 rounded-2xl border bg-white/[0.06] px-3 py-2.5 ${fieldErrors.email ? "border-red-500/70" : "border-white/12"}`}>
-                      <Mail className="h-4 w-4 shrink-0 text-sky-400" />
-                      <input
-                        value={email}
-                        onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: "" })); }}
-                        disabled={submitting || uploading}
-                        type="email"
-                        placeholder="tenant@email.com"
-                        className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                      />
+                    <span className={LABEL}>Email</span>
+                    <div className={shell(fieldErrors.email)}>
+                      <Mail className="h-4 w-4 shrink-0 text-[color:var(--info)]" />
+                      <input value={email} onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: "" })); }} disabled={busy} type="email" placeholder="tenant@email.com" className={INPUT} />
                     </div>
-                    {fieldErrors.email ? <p className="mt-1 text-[11px] font-medium text-red-400">{fieldErrors.email}</p> : null}
+                    {fieldErrors.email ? <p className="mt-1 text-[11px] font-medium text-[color:var(--error)]">{fieldErrors.email}</p> : null}
                   </label>
                 </div>
 
                 <div className="grid gap-2.5 sm:grid-cols-2">
-                  {/* Father name */}
                   <label className="block">
-                    <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Father / Mother Name</span>
-                    <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
-                      <User className="h-4 w-4 shrink-0 text-white/30" />
-                      <input
-                        value={fatherName}
-                        onChange={(e) => setFatherName(e.target.value)}
-                        disabled={submitting || uploading}
-                        placeholder="Parent name"
-                        className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                      />
+                    <span className={LABEL}>Father / Mother Name</span>
+                    <div className={shell()}>
+                      <User className="h-4 w-4 shrink-0 text-[color:var(--fg-tertiary)]" />
+                      <input value={fatherName} onChange={(e) => setFatherName(e.target.value)} disabled={busy} placeholder="Parent name" className={INPUT} />
                     </div>
                   </label>
 
-                  {/* Date of birth */}
                   <label className="block">
-                    <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Date of Birth</span>
-                    <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
-                      <CalendarDays className="h-4 w-4 shrink-0 text-white/30" />
-                      <input
-                        type="date"
-                        value={dateOfBirth}
-                        max={new Date().toISOString().slice(0, 10)}
-                        onChange={(e) => setDateOfBirth(e.target.value)}
-                        disabled={submitting || uploading}
-                        className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
-                      />
+                    <span className={LABEL}>Date of Birth</span>
+                    <div className={shell()}>
+                      <CalendarDays className="h-4 w-4 shrink-0 text-[color:var(--fg-tertiary)]" />
+                      <input type="date" value={dateOfBirth} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDateOfBirth(e.target.value)} disabled={busy} className={`${INPUT} [color-scheme:dark]`} />
                     </div>
                   </label>
                 </div>
@@ -371,39 +324,24 @@ export function CompleteProfileModal({
 
             {/* ── Occupation ── */}
             <section>
-              <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">Occupation</p>
+              <p className={SECTION}>Occupation</p>
               <div className="grid gap-2.5 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Occupation Type</span>
-                  <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
-                    <Briefcase className="h-4 w-4 shrink-0 text-violet-400" />
-                    <select
-                      value={occupation}
-                      onChange={(e) => setOccupation(e.target.value as OccupationType | "")}
-                      disabled={submitting || uploading}
-                      className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
-                    >
+                  <span className={LABEL}>Occupation Type</span>
+                  <div className={shell()}>
+                    <Briefcase className="h-4 w-4 shrink-0 text-[color:var(--accent)]" />
+                    <select value={occupation} onChange={(e) => setOccupation(e.target.value as OccupationType | "")} disabled={busy} className={`${INPUT} [color-scheme:dark] [&>option]:bg-[color:var(--bg-elevated)]`}>
                       <option value="">Select…</option>
-                      {OCCUPATIONS.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
+                      {OCCUPATIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </div>
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-semibold text-white/70">
-                    {occupation === "student" ? "College / School" : "Company / Workplace"}
-                  </span>
-                  <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
-                    <Briefcase className="h-4 w-4 shrink-0 text-white/30" />
-                    <input
-                      value={workplaceName}
-                      onChange={(e) => setWorkplaceName(e.target.value)}
-                      disabled={submitting || uploading}
-                      placeholder={occupation === "student" ? "JNTU Hyderabad" : "Company name"}
-                      className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                    />
+                  <span className={LABEL}>{occupation === "student" ? "College / School" : "Company / Workplace"}</span>
+                  <div className={shell()}>
+                    <Briefcase className="h-4 w-4 shrink-0 text-[color:var(--fg-tertiary)]" />
+                    <input value={workplaceName} onChange={(e) => setWorkplaceName(e.target.value)} disabled={busy} placeholder={occupation === "student" ? "JNTU Hyderabad" : "Company name"} className={INPUT} />
                   </div>
                 </label>
               </div>
@@ -411,225 +349,97 @@ export function CompleteProfileModal({
 
             {/* ── Documents ── */}
             <section>
-              <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">Documents &amp; Photos</p>
-              <div className="space-y-2.5">
-                {/* ID type */}
+              <p className={SECTION}>Documents &amp; Photos</p>
+              <div className="flex flex-col gap-2.5">
                 <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Government ID Type</span>
-                  <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
-                    <IdCard className="h-4 w-4 shrink-0 text-amber-400" />
-                    <select
-                      value={idType}
-                      onChange={(e) => setIdType(e.target.value as IdType | "")}
-                      disabled={submitting || uploading}
-                      className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
-                    >
+                  <span className={LABEL}>Government ID Type</span>
+                  <div className={shell()}>
+                    <IdCard className="h-4 w-4 shrink-0 text-[color:var(--warning)]" />
+                    <select value={idType} onChange={(e) => setIdType(e.target.value as IdType | "")} disabled={busy} className={`${INPUT} [color-scheme:dark] [&>option]:bg-[color:var(--bg-elevated)]`}>
                       <option value="">Select ID type…</option>
-                      {ID_TYPES.map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
+                      {ID_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                   </div>
                 </label>
 
-                {/* Photo uploads side by side */}
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   {/* Tenant photo */}
                   <div>
-                    <p className="mb-1.5 text-[12px] font-semibold text-white/70">Tenant Photo</p>
-                    <input
-                      ref={tenantPhotoRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => pickPhoto(e, setTenantPhotoFile, setTenantPhotoPreview)}
-                    />
+                    <p className={LABEL}>Tenant Photo</p>
+                    <input ref={tenantPhotoRef} type="file" accept="image/*" className="hidden" onChange={(e) => pickPhoto(e, setTenantPhotoFile, setTenantPhotoPreview)} />
                     {tenantPhotoPreview ? (
                       <div className="relative w-fit">
-                        <img
-                          src={tenantPhotoPreview}
-                          alt="Tenant"
-                          className="h-24 w-24 rounded-2xl border border-white/10 object-cover"
-                        />
-                        <button
-                          type="button"
-                          disabled={submitting || uploading}
-                          onClick={() => { setTenantPhotoFile(null); setTenantPhotoPreview(""); }}
-                          className="absolute -right-2 -top-2 rounded-full border border-white/20 bg-[#1a1a1f] p-1 text-white/60 hover:text-white"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={submitting || uploading}
-                          onClick={() => tenantPhotoRef.current?.click()}
-                          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.04] py-1.5 text-[11px] font-medium text-white/50 hover:bg-white/[0.07] transition"
-                        >
-                          <Upload className="h-3 w-3" />
-                          Change
-                        </button>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={tenantPhotoPreview} alt="Tenant" className="h-24 w-24 rounded-[var(--radius-md)] border border-[color:var(--border)] object-cover" />
+                        <RemoveBtn disabled={busy} onClick={() => { setTenantPhotoFile(null); setTenantPhotoPreview(""); }} />
+                        <ChangeBtn disabled={busy} onClick={() => tenantPhotoRef.current?.click()} />
                       </div>
                     ) : (
-                      <button
-                        type="button"
-                        disabled={submitting || uploading}
-                        onClick={() => tenantPhotoRef.current?.click()}
-                        className="flex h-24 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.03] text-white/30 transition hover:border-white/25 hover:bg-white/[0.05]"
-                      >
-                        <UserCircle className="h-7 w-7" />
-                        <span className="text-[11px] font-medium">Upload photo</span>
-                      </button>
+                      <UploadBox disabled={busy} onClick={() => tenantPhotoRef.current?.click()} icon={<UserCircle className="h-7 w-7" />} label="Upload photo" />
                     )}
                   </div>
 
                   {/* ID photo */}
                   <div>
-                    <p className="mb-1.5 text-[12px] font-semibold text-white/70">
-                      {idType ? ID_TYPES.find((t) => t.value === idType)?.label ?? "Govt ID" : "Govt ID"} Photo
-                    </p>
-                    <input
-                      ref={idPhotoRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => pickPhoto(e, setIdPhotoFile, setIdPhotoPreview)}
-                    />
+                    <p className={LABEL}>{idType ? ID_TYPES.find((t) => t.value === idType)?.label ?? "Govt ID" : "Govt ID"} Photo</p>
+                    <input ref={idPhotoRef} type="file" accept="image/*" className="hidden" onChange={(e) => pickPhoto(e, setIdPhotoFile, setIdPhotoPreview)} />
                     {idPhotoPreview ? (
                       <div className="relative">
-                        <img
-                          src={idPhotoPreview}
-                          alt="ID"
-                          className="h-24 w-full rounded-2xl border border-white/10 object-cover"
-                        />
-                        <button
-                          type="button"
-                          disabled={submitting || uploading}
-                          onClick={() => { setIdPhotoFile(null); setIdPhotoPreview(""); }}
-                          className="absolute -right-2 -top-2 rounded-full border border-white/20 bg-[#1a1a1f] p-1 text-white/60 hover:text-white"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={submitting || uploading}
-                          onClick={() => idPhotoRef.current?.click()}
-                          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.04] py-1.5 text-[11px] font-medium text-white/50 hover:bg-white/[0.07] transition"
-                        >
-                          <Upload className="h-3 w-3" />
-                          Change
-                        </button>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={idPhotoPreview} alt="ID" className="h-24 w-full rounded-[var(--radius-md)] border border-[color:var(--border)] object-cover" />
+                        <RemoveBtn disabled={busy} onClick={() => { setIdPhotoFile(null); setIdPhotoPreview(""); }} />
+                        <ChangeBtn disabled={busy} onClick={() => idPhotoRef.current?.click()} />
                       </div>
                     ) : (
-                      <button
-                        type="button"
-                        disabled={submitting || uploading}
-                        onClick={() => idPhotoRef.current?.click()}
-                        className="flex h-24 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.03] text-white/30 transition hover:border-white/25 hover:bg-white/[0.05]"
-                      >
-                        <CreditCard className="h-7 w-7" />
-                        <span className="text-[11px] font-medium">Upload ID photo</span>
-                      </button>
+                      <UploadBox disabled={busy} onClick={() => idPhotoRef.current?.click()} icon={<CreditCard className="h-7 w-7" />} label="Upload ID photo" />
                     )}
                   </div>
                 </div>
 
-                {/* Signed agreement — multi-file */}
-                <div className="mt-2.5 space-y-2">
+                {/* Signed agreement */}
+                <div className="mt-2.5 flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-[12px] font-semibold text-white/70">
-                      Signed Agreement <span className="font-normal text-white/35">(optional)</span>
-                    </p>
+                    <p className={LABEL + " mb-0"}>Signed Agreement <span className="font-normal text-[color:var(--fg-tertiary)]">(optional)</span></p>
                     {totalAgreementCount > 0 && !hasAgreementPdf && totalAgreementCount < 4 && (
-                      <button
-                        type="button"
-                        disabled={submitting || uploading}
-                        onClick={() => agreementRef.current?.click()}
-                        className="text-[11px] font-medium text-blue-400 hover:text-blue-300 disabled:opacity-40"
-                      >
-                        + Add
-                      </button>
+                      <button type="button" disabled={busy} onClick={() => agreementRef.current?.click()} className="text-[11px] font-medium text-[color:var(--accent)] hover:brightness-110 disabled:opacity-40">+ Add</button>
                     )}
                   </div>
-                  <input
-                    ref={agreementRef}
-                    type="file"
-                    multiple
-                    accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
-                    className="hidden"
-                    onChange={pickAgreementFiles}
-                  />
+                  <input ref={agreementRef} type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,application/pdf" className="hidden" onChange={pickAgreementFiles} />
                   {totalAgreementCount === 0 ? (
-                    <button
-                      type="button"
-                      disabled={submitting || uploading}
-                      onClick={() => agreementRef.current?.click()}
-                      className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-500/25 bg-blue-500/[0.03] text-blue-400/50 transition hover:border-blue-500/40 hover:bg-blue-500/[0.07] hover:text-blue-400 disabled:opacity-40"
-                    >
+                    <button type="button" disabled={busy} onClick={() => agreementRef.current?.click()} className="flex h-14 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[color:color-mix(in_srgb,var(--brand)_25%,transparent)] bg-[color:var(--brand-soft)] text-[color:var(--accent)] transition hover:brightness-110 disabled:opacity-40">
                       <FileText className="h-4 w-4" />
                       <span className="text-[11px] font-medium">Upload signed agreement</span>
                     </button>
                   ) : hasAgreementPdf ? (
-                    <div className="flex items-center justify-between rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <FileText className="h-4 w-4 shrink-0 text-blue-400" />
-                        <a
-                          href={existingAgreementUrls[0] ?? "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[12px] text-white/70 truncate hover:text-blue-300"
-                        >
+                    <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-3 py-2.5">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <FileText className="h-4 w-4 shrink-0 text-[color:var(--accent)]" />
+                        <a href={existingAgreementUrls[0] ?? "#"} target="_blank" rel="noopener noreferrer" className="truncate text-[12px] text-[color:var(--fg-secondary)] hover:text-[color:var(--accent)]">
                           {agreementFiles[0]?.name ?? "Agreement (PDF)"}
                         </a>
                       </div>
-                      <button
-                        type="button"
-                        disabled={submitting || uploading}
-                        onClick={() => { setExistingAgreementUrls([]); setAgreementFiles([]); setAgreementFilePreviews([]); }}
-                        className="ml-2 shrink-0 rounded-full p-1 text-white/40 hover:text-red-400"
-                      >
+                      <button type="button" disabled={busy} onClick={() => { setExistingAgreementUrls([]); setAgreementFiles([]); setAgreementFilePreviews([]); }} className="ml-2 shrink-0 rounded-full p-1 text-[color:var(--fg-tertiary)] hover:text-[color:var(--error)]">
                         <X className="h-3 w-3" />
                       </button>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
-                      {/* Existing server images */}
                       {existingAgreementUrls.map((url, i) => (
                         <div key={`ex-${i}`} className="relative">
-                          <img src={url} alt={`Agreement ${i + 1}`} className="h-20 w-full rounded-xl object-cover border border-white/12" />
-                          <button
-                            type="button"
-                            disabled={submitting || uploading}
-                            onClick={() => setExistingAgreementUrls((prev) => prev.filter((_, idx) => idx !== i))}
-                            className="absolute -right-1.5 -top-1.5 rounded-full bg-red-500 p-0.5 text-white shadow-md disabled:opacity-40"
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </button>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={url} alt={`Agreement ${i + 1}`} className="h-20 w-full rounded-[var(--radius-sm)] border border-[color:var(--border-strong)] object-cover" />
+                          <SmallRemove disabled={busy} onClick={() => setExistingAgreementUrls((prev) => prev.filter((_, idx) => idx !== i))} />
                         </div>
                       ))}
-                      {/* New file previews */}
                       {agreementFilePreviews.map((preview, i) => (
                         <div key={`new-${i}`} className="relative">
-                          <img src={preview} alt={`New ${i + 1}`} className="h-20 w-full rounded-xl object-cover border border-white/12" />
-                          <button
-                            type="button"
-                            disabled={submitting || uploading}
-                            onClick={() => {
-                              setAgreementFiles((prev) => prev.filter((_, idx) => idx !== i));
-                              setAgreementFilePreviews((prev) => prev.filter((_, idx) => idx !== i));
-                            }}
-                            className="absolute -right-1.5 -top-1.5 rounded-full bg-red-500 p-0.5 text-white shadow-md disabled:opacity-40"
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </button>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={preview} alt={`New ${i + 1}`} className="h-20 w-full rounded-[var(--radius-sm)] border border-[color:var(--border-strong)] object-cover" />
+                          <SmallRemove disabled={busy} onClick={() => { setAgreementFiles((prev) => prev.filter((_, idx) => idx !== i)); setAgreementFilePreviews((prev) => prev.filter((_, idx) => idx !== i)); }} />
                         </div>
                       ))}
                       {totalAgreementCount < 4 && (
-                        <button
-                          type="button"
-                          disabled={submitting || uploading}
-                          onClick={() => agreementRef.current?.click()}
-                          className="flex h-20 w-full flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-white/15 bg-white/[0.02] text-white/30 transition hover:border-blue-500/30 hover:text-blue-400 disabled:opacity-40"
-                        >
+                        <button type="button" disabled={busy} onClick={() => agreementRef.current?.click()} className="flex h-20 w-full flex-col items-center justify-center gap-1 rounded-[var(--radius-sm)] border border-dashed border-[color:var(--border)] bg-[color:var(--surface-soft)] text-[color:var(--fg-tertiary)] transition hover:text-[color:var(--accent)] disabled:opacity-40">
                           <Upload className="h-4 w-4" />
                           <span className="text-[10px]">Add</span>
                         </button>
@@ -642,45 +452,23 @@ export function CompleteProfileModal({
 
             {/* ── Emergency Contact ── */}
             <section>
-              <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">Emergency Contact</p>
-              <div className="space-y-2.5">
-
-                {/* Quick-fill from existing tenant */}
+              <p className={SECTION}>Emergency Contact</p>
+              <div className="flex flex-col gap-2.5">
                 {(allTenants?.length ?? 0) > 0 && (
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-2.5 space-y-2">
-                    <p className="text-[11px] text-white/40">Find existing tenant to auto-fill</p>
+                  <div className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-2.5">
+                    <p className="text-[11px] text-[color:var(--fg-tertiary)]">Find existing tenant to auto-fill</p>
                     <div className="relative">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
-                      <input
-                        value={ecSearch}
-                        onChange={(e) => setEcSearch(e.target.value)}
-                        disabled={submitting || uploading}
-                        placeholder="Name, phone, or room…"
-                        className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-2 pl-9 pr-3 text-[12px] text-white outline-none placeholder:text-white/25"
-                      />
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[color:var(--fg-tertiary)]" />
+                      <input value={ecSearch} onChange={(e) => setEcSearch(e.target.value)} disabled={busy} placeholder="Name, phone, or room…" className="w-full rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] py-2 pl-9 pr-3 text-[12px] text-[color:var(--fg-primary)] outline-none placeholder:text-[color:var(--fg-tertiary)]" />
                     </div>
                     {ecSearchResults.length > 0 && (
-                      <div className="space-y-1">
+                      <div className="flex flex-col gap-1">
                         {ecSearchResults.map((t) => (
-                          <button
-                            key={t.tenantId}
-                            type="button"
-                            disabled={submitting || uploading}
-                            onClick={() => {
-                              setEmergencyName(t.fullName);
-                              setEmergencyPhone(t.phone);
-                              setEcSearch("");
-                            }}
-                            className="flex w-full items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-left transition hover:bg-white/[0.09]"
-                          >
-                            <User className="h-3.5 w-3.5 shrink-0 text-white/35" />
-                            <span className="flex-1 truncate text-[12px] font-medium text-white">{t.fullName}</span>
-                            {t.phone ? <span className="shrink-0 text-[11px] text-white/40">{t.phone}</span> : null}
-                            {t.assignment?.roomNumber ? (
-                              <span className="shrink-0 rounded-full bg-white/[0.08] px-2 py-0.5 text-[10px] text-white/40">
-                                Rm {t.assignment.roomNumber}
-                              </span>
-                            ) : null}
+                          <button key={t.tenantId} type="button" disabled={busy} onClick={() => { setEmergencyName(t.fullName); setEmergencyPhone(t.phone); setEcSearch(""); }} className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2 text-left transition hover:bg-[color:var(--surface-strong)]">
+                            <User className="h-3.5 w-3.5 shrink-0 text-[color:var(--fg-tertiary)]" />
+                            <span className="flex-1 truncate text-[12px] font-medium text-[color:var(--fg-primary)]">{t.fullName}</span>
+                            {t.phone ? <span className="shrink-0 text-[11px] text-[color:var(--fg-tertiary)]">{t.phone}</span> : null}
+                            {t.assignment?.roomNumber ? <span className="shrink-0 rounded-full bg-[color:var(--muted)] px-2 py-0.5 text-[10px] text-[color:var(--fg-tertiary)]">Rm {t.assignment.roomNumber}</span> : null}
                           </button>
                         ))}
                       </div>
@@ -690,62 +478,40 @@ export function CompleteProfileModal({
 
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   <label className="block">
-                    <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Name</span>
-                    <div className={`flex items-center gap-2 rounded-2xl border bg-white/[0.06] px-3 py-2.5 ${fieldErrors.emergencyName ? "border-red-500/70" : "border-white/12"}`}>
-                      <User className="h-4 w-4 shrink-0 text-red-400" />
-                      <input
-                        value={emergencyName}
-                        onChange={(e) => { setEmergencyName(e.target.value); if (fieldErrors.emergencyName) setFieldErrors((p) => ({ ...p, emergencyName: "" })); }}
-                        disabled={submitting || uploading}
-                        placeholder="Contact name"
-                        className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                      />
+                    <span className={LABEL}>Name</span>
+                    <div className={shell(fieldErrors.emergencyName)}>
+                      <User className="h-4 w-4 shrink-0 text-[color:var(--error)]" />
+                      <input value={emergencyName} onChange={(e) => { setEmergencyName(e.target.value); if (fieldErrors.emergencyName) setFieldErrors((p) => ({ ...p, emergencyName: "" })); }} disabled={busy} placeholder="Contact name" className={INPUT} />
                     </div>
-                    {fieldErrors.emergencyName ? <p className="mt-1 text-[11px] font-medium text-red-400">{fieldErrors.emergencyName}</p> : null}
+                    {fieldErrors.emergencyName ? <p className="mt-1 text-[11px] font-medium text-[color:var(--error)]">{fieldErrors.emergencyName}</p> : null}
                   </label>
 
                   <label className="block">
-                    <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Relation</span>
-                    <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
-                      <User className="h-4 w-4 shrink-0 text-white/30" />
-                      <select
-                        value={emergencyRelation}
-                        onChange={(e) => setEmergencyRelation(e.target.value as EmergencyRelation | "")}
-                        disabled={submitting || uploading}
-                        className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
-                      >
+                    <span className={LABEL}>Relation</span>
+                    <div className={shell()}>
+                      <User className="h-4 w-4 shrink-0 text-[color:var(--fg-tertiary)]" />
+                      <select value={emergencyRelation} onChange={(e) => setEmergencyRelation(e.target.value as EmergencyRelation | "")} disabled={busy} className={`${INPUT} [color-scheme:dark] [&>option]:bg-[color:var(--bg-elevated)]`}>
                         <option value="">Select…</option>
-                        {RELATIONS.map((r) => (
-                          <option key={r.value} value={r.value}>{r.label}</option>
-                        ))}
+                        {RELATIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                       </select>
                     </div>
                   </label>
                 </div>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Phone</span>
-                  <div className={`flex items-center gap-2 rounded-2xl border bg-white/[0.06] px-3 py-2.5 ${fieldErrors.emergencyPhone ? "border-red-500/70" : "border-white/12"}`}>
-                    <Phone className="h-4 w-4 shrink-0 text-white/30" />
-                    <span className="text-[13px] font-medium text-white/50">+91</span>
-                    <input
-                      value={fmtPhone(emergencyPhone)}
-                      onChange={(e) => { setEmergencyPhone(normalizePhone(e.target.value)); if (fieldErrors.emergencyPhone) setFieldErrors((p) => ({ ...p, emergencyPhone: "" })); }}
-                      disabled={submitting || uploading}
-                      type="tel"
-                      inputMode="tel"
-                      placeholder="98765 43210"
-                      className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                    />
+                  <span className={LABEL}>Phone</span>
+                  <div className={shell(fieldErrors.emergencyPhone)}>
+                    <Phone className="h-4 w-4 shrink-0 text-[color:var(--fg-tertiary)]" />
+                    <span className="text-[13px] font-medium text-[color:var(--fg-tertiary)]">+91</span>
+                    <input value={fmtPhone(emergencyPhone)} onChange={(e) => { setEmergencyPhone(normalizePhone(e.target.value)); if (fieldErrors.emergencyPhone) setFieldErrors((p) => ({ ...p, emergencyPhone: "" })); }} disabled={busy} type="tel" inputMode="tel" placeholder="98765 43210" className={INPUT} />
                   </div>
-                  {fieldErrors.emergencyPhone ? <p className="mt-1 text-[11px] font-medium text-red-400">{fieldErrors.emergencyPhone}</p> : null}
+                  {fieldErrors.emergencyPhone ? <p className="mt-1 text-[11px] font-medium text-[color:var(--error)]">{fieldErrors.emergencyPhone}</p> : null}
                 </label>
               </div>
             </section>
 
-            {/* Error + processing */}
             {error ? (
-              <div className="flex items-start gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
+              <div className="flex items-start gap-2 rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--error)_35%,transparent)] bg-[color:var(--error-soft)] px-3 py-2.5 text-sm font-medium text-[color:var(--error)]">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>
@@ -753,24 +519,12 @@ export function CompleteProfileModal({
             {uploading ? <ProcessingPill label="Uploading documents…" /> : null}
             {submitting ? <ProcessingPill label="Saving profile…" /> : null}
 
-            {/* Action buttons */}
             <div className={asPage
-              ? "sticky bottom-0 z-10 -mx-4 sm:-mx-5 flex flex-col-reverse gap-3 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:flex-row sm:px-5"
-              : "flex flex-col-reverse gap-3 border-t border-white/10 pt-3 sm:flex-row"
+              ? "sticky bottom-0 z-10 -mx-4 flex flex-col-reverse gap-2 border-t border-[color:var(--border)] bg-[color:var(--bg-surface)] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:-mx-5 sm:flex-row sm:px-5"
+              : "flex flex-col-reverse gap-2 border-t border-[color:var(--border)] pt-3 sm:flex-row"
             }>
-              <Button
-                variant="secondary"
-                onClick={onClose}
-                disabled={submitting || uploading}
-                className="w-full rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white sm:flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => void handleSave()}
-                disabled={submitting || uploading}
-                className="w-full rounded-2xl bg-[linear-gradient(90deg,#c2410c_0%,#ea580c_100%)] text-white shadow-[0_10px_24px_rgba(194,65,12,0.3)] sm:flex-1"
-              >
+              <Button variant="secondary" fullWidth onClick={onClose} disabled={busy} className="sm:flex-1">Cancel</Button>
+              <Button fullWidth onClick={() => void handleSave()} disabled={busy} className="sm:flex-1">
                 {uploading ? "Uploading…" : submitting ? "Saving…" : "Save Profile"}
               </Button>
             </div>
@@ -778,5 +532,38 @@ export function CompleteProfileModal({
         </div>
       </Card>
     </div>
+  );
+}
+
+function RemoveBtn({ disabled, onClick }: { disabled: boolean; onClick: () => void }) {
+  return (
+    <button type="button" disabled={disabled} onClick={onClick} className="absolute -right-2 -top-2 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--bg-elevated)] p-1 text-[color:var(--fg-tertiary)] hover:text-[color:var(--fg-primary)]">
+      <X className="h-3 w-3" />
+    </button>
+  );
+}
+
+function ChangeBtn({ disabled, onClick }: { disabled: boolean; onClick: () => void }) {
+  return (
+    <button type="button" disabled={disabled} onClick={onClick} className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-[var(--radius-sm)] border border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] py-1.5 text-[11px] font-medium text-[color:var(--fg-secondary)] transition hover:bg-[color:var(--surface-strong)]">
+      <Upload className="h-3 w-3" /> Change
+    </button>
+  );
+}
+
+function SmallRemove({ disabled, onClick }: { disabled: boolean; onClick: () => void }) {
+  return (
+    <button type="button" disabled={disabled} onClick={onClick} className="absolute -right-1.5 -top-1.5 rounded-full bg-[color:var(--error)] p-0.5 text-white shadow-md disabled:opacity-40">
+      <X className="h-2.5 w-2.5" />
+    </button>
+  );
+}
+
+function UploadBox({ disabled, onClick, icon, label }: { disabled: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button type="button" disabled={disabled} onClick={onClick} className="flex h-24 w-full flex-col items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] text-[color:var(--fg-tertiary)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-strong)]">
+      {icon}
+      <span className="text-[11px] font-medium">{label}</span>
+    </button>
   );
 }
