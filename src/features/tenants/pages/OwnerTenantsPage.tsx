@@ -1,24 +1,23 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, Download, LogOut, Plus, Search, UserCheck, UserRound, Wallet, Zap } from "lucide-react";
+import { AlertTriangle, Download, LogOut, Plus, UserCheck, UserRound, Wallet, Zap } from "lucide-react";
 import { TenantAvatar } from "@/components/ui/tenant-avatar";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { StatCard } from "@/components/ui/stat-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SearchInput } from "@/components/ui/form/search-input";
+import { StatusBadge } from "@/components/ui/data/status-badge";
+import { DataTable, type Column } from "@/components/ui/data/data-table";
 import { ProcessingPill } from "@/components/ui/processing-pill";
 import { SkeletonBlock, SkeletonStatCard, SkeletonTableRow } from "@/components/ui/skeleton";
 import { useHostelContext } from "@/store/hostel-context";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
-import {
-  ownerHeroCardClass,
-  ownerMetricToneClass,
-  ownerPanelClass,
-  ownerSubtlePanelClass,
-  ownerTableHeadClass,
-} from "@/components/ui/owner-theme";
 import { formatPaymentDate, getDueStatus, fmtTenantId } from "@/utils/payment";
 import { type TenantRecord } from "@/types/tenant";
 
@@ -31,6 +30,8 @@ const RemoveTenantSearch = dynamic(
   { ssr: false },
 );
 
+const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
 export default function OwnerTenantsPage() {
   return (
     <Suspense fallback={<LoadingState />}>
@@ -41,7 +42,7 @@ export default function OwnerTenantsPage() {
 
 function OwnerTenantsPageContent() {
   const router = useRouter();
-const searchParams = useSearchParams();
+  const searchParams = useSearchParams();
   const { currentHostel, currentHostelId, loading: hostelLoading, isSwitching } = useHostelContext();
   const { tenants: allTenants, loading: tenantLoading } = useOwnerTenants(currentHostelId);
 
@@ -51,18 +52,14 @@ const searchParams = useSearchParams();
 
   const tenants = useMemo(() => {
     if (!currentHostel) return [];
-
-    const scopedExisting = allTenants
+    return allTenants
       .filter((t) => t.hostelId === currentHostel.id || t.assignment?.hostelId === currentHostel.id)
       .map((t) => tenantOverrides[t.tenantId] ?? t);
-
-    return scopedExisting;
   }, [allTenants, currentHostel, tenantOverrides]);
 
   const filteredTenants = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return tenants;
-
     return tenants.filter((t) => {
       const room = t.assignment?.roomNumber?.toLowerCase() ?? "";
       return (
@@ -83,15 +80,11 @@ const searchParams = useSearchParams();
   const overdueCount = filteredTenants.filter((t) => getDueStatus(t.nextDueDate).tone === "red").length;
   const assignedCount = filteredTenants.filter((t) => t.assignment).length;
 
-  const openPayment = useCallback((tenant: TenantRecord) => {
-    setPaymentTenant(tenant);
-  }, []);
-
+  const openPayment = useCallback((tenant: TenantRecord) => setPaymentTenant(tenant), []);
   const handlePaymentSuccess = useCallback((updated: TenantRecord) => {
     setTenantOverrides((prev) => ({ ...prev, [updated.tenantId]: updated }));
     setPaymentTenant(null);
   }, []);
-
 
   const mobileListRef = useRef<HTMLDivElement>(null);
   const [mobileScrollMargin, setMobileScrollMargin] = useState(0);
@@ -99,12 +92,13 @@ const searchParams = useSearchParams();
     if (mobileListRef.current) setMobileScrollMargin(mobileListRef.current.offsetTop);
   }, []);
 
-  // Disable virtualizer on desktop (lg = 1024px+) â€” with many tenants the unconditional
-  // useWindowVirtualizer causes "Maximum update depth exceeded" on wide viewports.
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  // Virtualizer only on mobile — unconditional useWindowVirtualizer on wide
+  // viewports triggered "Maximum update depth exceeded" with many tenants.
+  const [isMobileViewport, setIsMobileViewport] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches,
+  );
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1023px)");
-    setIsMobileViewport(mq.matches);
     const handler = (e: MediaQueryListEvent) => setIsMobileViewport(e.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
@@ -112,178 +106,214 @@ const searchParams = useSearchParams();
 
   const mobileVirtualizer = useWindowVirtualizer({
     count: filteredTenants.length,
-    estimateSize: () => 116,
+    estimateSize: () => 150,
     overscan: 3,
     scrollMargin: mobileScrollMargin,
     enabled: isMobileViewport,
   });
 
+  const columns = useMemo<Column<TenantRecord>[]>(() => [
+    {
+      key: "id",
+      header: "ID",
+      render: (t) => <span className="font-semibold text-[color:var(--fg-secondary)]">{fmtTenantId(t.tenantId)}</span>,
+    },
+    {
+      key: "name",
+      header: "Name",
+      render: (t) => (
+        <div className="flex items-center gap-2">
+          <Link href={`/owner/tenants/${t.tenantId}`} className="font-medium text-[color:var(--fg-primary)] hover:text-[color:var(--accent-electric)]">
+            {t.fullName}
+          </Link>
+          {t.pendingBalance && t.pendingBalance.amount > 0 ? (
+            <span className="inline-flex items-center rounded-full border border-[color:var(--warning)] bg-[color:var(--warning-soft)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--warning)]">
+              Bal {inr(t.pendingBalance.amount)}
+            </span>
+          ) : null}
+          {hasMissingInfo(t) ? <MissingInfoBadge onClick={() => router.push(`/owner/tenants/${t.tenantId}/complete-profile`)} /> : null}
+        </div>
+      ),
+    },
+    {
+      key: "contact",
+      header: "Contact",
+      render: (t) => (
+        <div>
+          <p className="text-[color:var(--fg-primary)]">{t.phone}</p>
+          <p className="mt-0.5 text-[11px] text-[color:var(--fg-secondary)]">{t.email}</p>
+        </div>
+      ),
+    },
+    { key: "room", header: "Room", render: (t) => (t.assignment ? `Room ${t.assignment.roomNumber}` : "Pending") },
+    { key: "rent", header: "Rent", render: (t) => inr(t.monthlyRent) },
+    { key: "due", header: "Next Due", render: (t) => formatPaymentDate(t.nextDueDate) },
+    {
+      key: "action",
+      header: "Action",
+      align: "right",
+      render: (t) => {
+        const status = getDueStatus(t.nextDueDate, t.billingCycle);
+        const isPaid = !["red", "orange", "yellow"].includes(status.tone);
+        return (
+          <div className="flex items-center justify-end gap-2">
+            <CollectAction tone={status.tone} isPaid={isPaid} onClick={() => openPayment(t)} />
+            <button
+              type="button"
+              onClick={() => router.push(`/owner/tenants/${t.tenantId}/vacate`)}
+              title="Vacate tenant"
+              className="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--error)_40%,transparent)] bg-[color:var(--error-soft)] px-2.5 text-[11px] font-semibold text-[color:var(--error)] hover:brightness-110"
+            >
+              <LogOut size={13} /> Vacate
+            </button>
+          </div>
+        );
+      },
+    },
+  ], [router, openPayment]);
+
   if (hostelLoading || tenantLoading) return <LoadingState />;
 
   if (!currentHostel) {
     return (
-      <Card className="rounded-[10px] p-3 sm:p-4 text-center">
-        <p className="text-sm font-semibold text-white">No hostel selected.</p>
-        <Link
-          href="/owner/create-hostel"
-          className="mt-3 inline-flex min-h-11 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-4 text-sm font-semibold text-white shadow-[0_14px_32px_rgba(37,99,235,0.22)]"
-        >
-          Create Hostel
-        </Link>
+      <Card className="p-6 text-center">
+        <EmptyState
+          title="No hostel selected"
+          description="Create a hostel to start managing tenants."
+          action={
+            <Button onClick={() => router.push("/owner/create-hostel")}>Create Hostel</Button>
+          }
+        />
       </Card>
     );
   }
 
   return (
-    <div className={`space-y-3 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
-      {/* â”€â”€ Mobile view â”€â”€ */}
-      <section className="space-y-3 lg:hidden">
-        <Card className={`${ownerHeroCardClass} rounded-[10px] p-4`}>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h1 className="text-xl font-semibold text-white">Tenants</h1>
-              <p className="mt-1 text-xs text-[color:var(--fg-secondary)]">{currentHostel.hostelName}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => router.push("/owner/tenants/quick-add")}
-                className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-amber-500/40 bg-amber-500/10 px-3 text-[12px] font-semibold text-amber-300"
-              >
-                <Zap className="mr-1 h-3.5 w-3.5" />
-                Quick
-              </button>
-              <button
-                type="button"
-                onClick={() => router.push("/owner/tenants/new")}
-                className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-3 text-sm font-semibold text-white shadow-[0_14px_32px_rgba(37,99,235,0.22)]"
-              >
-                <Plus className="mr-1 h-4 w-4" />
-                Add
-              </button>
-            </div>
+    <div className={`flex flex-col gap-4 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
+      {/* ── Header ── */}
+      <header className="flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Tenant directory</p>
+            <h1 className="font-display mt-0.5 text-[clamp(1.35rem,4.5vw,1.75rem)] font-bold text-[color:var(--fg-primary)]">Tenants</h1>
+            <p className="truncate text-[length:var(--text-sm-size)] text-[color:var(--fg-secondary)]">{currentHostel.hostelName}</p>
           </div>
-          <div className="mt-3">
-            <RemoveTenantSearch tenants={tenants} />
+          <div className="flex shrink-0 items-center gap-2">
+            <a
+              href={`/api/tenants/export?hostelId=${encodeURIComponent(currentHostel.id)}`}
+              download
+              className="hidden min-h-11 items-center gap-1.5 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 text-[12px] font-semibold text-[color:var(--fg-primary)] hover:bg-[color:var(--surface-strong)] lg:inline-flex"
+            >
+              <Download size={14} /> Export
+            </a>
+            <button
+              type="button"
+              onClick={() => router.push("/owner/tenants/quick-add")}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--warning)_45%,transparent)] bg-[color:var(--warning-soft)] px-3 text-[12px] font-semibold text-[color:var(--warning)]"
+            >
+              <Zap size={14} /> Quick
+            </button>
+            <Button size="medium" onClick={() => router.push("/owner/tenants/new")}>
+              <Plus size={16} /> Add
+            </Button>
           </div>
+        </div>
+        <RemoveTenantSearch tenants={tenants} />
+        <SearchInput value={searchQuery} onValueChange={setSearchQuery} placeholder="Search name, room, contact…" />
+      </header>
 
-          {/* Mobile search */}
-          <div className="relative mt-3">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search name, room, contactâ€¦"
-              className="w-full rounded-2xl border border-white/12 bg-white/[0.05] px-3 py-2.5 pl-9 text-sm text-white outline-none placeholder:text-white/30 focus:border-white/20"
-            />
-          </div>
+      {/* ── Summary ── */}
+      {!searchQuery ? (
+        <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          <StatCard icon={<UserRound size={14} />} label="Total" value={filteredTenants.length} />
+          <StatCard icon={<Wallet size={14} />} label="Due soon" value={dueSoonCount} tone={dueSoonCount ? "warning" : "plain"} />
+          <StatCard icon={<Wallet size={14} />} label="Overdue" value={overdueCount} tone={overdueCount ? "danger" : "plain"} />
+          <StatCard icon={<UserCheck size={14} />} label="Assigned" value={assignedCount} tone={assignedCount ? "success" : "plain"} />
+        </section>
+      ) : null}
 
-          {!searchQuery && (
-            <div className="mt-3 grid grid-cols-2 gap-2.5">
-              <SummaryTile icon={UserRound} label="Total Tenants" value={String(filteredTenants.length)} />
-              <SummaryTile icon={Wallet} label="Due soon" value={String(dueSoonCount)} tone={dueSoonCount > 0 ? "warning" : "default"} />
-              <SummaryTile icon={Wallet} label="Overdue" value={String(overdueCount)} tone={overdueCount > 0 ? "danger" : "default"} />
-              <SummaryTile icon={UserCheck} label="Assigned" value={String(assignedCount)} tone="success" />
-            </div>
-          )}
-        </Card>
-
+      {/* ── Mobile: virtualized card list ── */}
+      <section className="lg:hidden">
         {filteredTenants.length === 0 ? (
-          <Card className={`${ownerPanelClass} rounded-[10px] p-6 text-center`}>
-            {searchQuery ? (
-              <>
-                <Search className="mx-auto mb-3 h-8 w-8 text-white/20" />
-                <p className="text-sm font-semibold text-white/70">No tenants matched &ldquo;{searchQuery}&rdquo;</p>
-                <p className="mt-1 text-xs text-[color:var(--fg-secondary)]">Try a different name, phone number, or room.</p>
-              </>
-            ) : (
-              <>
-                <UserRound className="mx-auto mb-3 h-8 w-8 text-white/20" />
-                <p className="text-sm font-semibold text-white/70">No tenants yet</p>
-                <p className="mt-1 text-xs text-[color:var(--fg-secondary)]">Add your first tenant to start tracking rent and room assignments.</p>
-                <button
-                  onClick={() => router.push("/owner/tenants/new")}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[color:var(--cta-strong)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add tenant
-                </button>
-              </>
-            )}
+          <Card>
+            <EmptyState
+              icon={<UserRound size={28} />}
+              title={searchQuery ? "No matches" : "No tenants yet"}
+              description={searchQuery ? "Try a different name, phone, or room." : "Add your first tenant to start tracking rent."}
+              action={!searchQuery ? <Button onClick={() => router.push("/owner/tenants/new")}><Plus size={16} /> Add tenant</Button> : undefined}
+            />
           </Card>
         ) : (
-          <div
-            ref={mobileListRef}
-            style={{
-              height: `${mobileVirtualizer.getTotalSize()}px`,
-              position: "relative",
-            }}
-          >
-            {mobileVirtualizer.getVirtualItems().map((virtualItem) => {
-              const tenant = filteredTenants[virtualItem.index];
+          <div ref={mobileListRef} style={{ height: `${mobileVirtualizer.getTotalSize()}px`, position: "relative" }}>
+            {mobileVirtualizer.getVirtualItems().map((vi) => {
+              const tenant = filteredTenants[vi.index];
               const status = getDueStatus(tenant.nextDueDate, tenant.billingCycle);
-              const isPaid = status.tone !== "red" && status.tone !== "orange" && status.tone !== "yellow";
-
+              const isPaid = !["red", "orange", "yellow"].includes(status.tone);
               return (
                 <div
-                  key={virtualItem.key}
-                  data-index={virtualItem.index}
+                  key={vi.key}
+                  data-index={vi.index}
                   ref={mobileVirtualizer.measureElement}
                   style={{
                     position: "absolute",
                     top: 0,
                     left: 0,
                     width: "100%",
-                    transform: `translateY(${virtualItem.start - mobileVirtualizer.options.scrollMargin}px)`,
-                    paddingBottom: "10px",
+                    transform: `translateY(${vi.start - mobileVirtualizer.options.scrollMargin}px)`,
+                    paddingBottom: 10,
                   }}
                 >
-                  <div className={`rounded-[8px] px-3 py-3 ${ownerPanelClass}`}>
-                    <div className="grid grid-cols-[auto_1fr_auto] gap-3">
+                  <div className="rounded-[var(--radius-lg)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-3 shadow-[var(--shadow-1)]">
+                    <div className="flex items-start gap-3">
                       <TenantAvatar tenantId={tenant.tenantId} size="sm" readOnly />
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <Link href={`/owner/tenants/${tenant.tenantId}`} className="block">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="truncate text-sm font-semibold text-white">{tenant.fullName}</p>
-                            <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--fg-secondary)]">
-                              #{fmtTenantId(tenant.tenantId)}
-                            </span>
-                            {tenant.pendingBalance && tenant.pendingBalance.amount > 0 && (
-                              <span className="inline-flex items-center rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400">
-                                Balance â‚¹{tenant.pendingBalance.amount.toLocaleString("en-IN")}
-                              </span>
-                            )}
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <p className="truncate text-[length:var(--text-sm-size)] font-semibold text-[color:var(--fg-primary)]">{tenant.fullName}</p>
+                            <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-1.5 py-0.5 text-[10px] font-semibold text-[color:var(--fg-secondary)]">#{fmtTenantId(tenant.tenantId)}</span>
+                            {tenant.pendingBalance && tenant.pendingBalance.amount > 0 ? (
+                              <span className="rounded-full border border-[color:var(--warning)] bg-[color:var(--warning-soft)] px-1.5 py-0.5 text-[10px] font-semibold text-[color:var(--warning)]">Bal {inr(tenant.pendingBalance.amount)}</span>
+                            ) : null}
                           </div>
-                          <p className="mt-1 truncate text-[11px] text-[color:var(--fg-secondary)]">
-                            {tenant.assignment ? `Room ${tenant.assignment.roomNumber}` : "Pending assignment"} / {tenant.phone}
+                          <p className="mt-0.5 truncate text-[11px] text-[color:var(--fg-secondary)]">
+                            {tenant.assignment ? `Room ${tenant.assignment.roomNumber}` : "Pending assignment"} · {tenant.phone}
                           </p>
-                          <div className="mt-2 grid grid-cols-2 gap-2">
-                            <MiniInfo label="Rent" value={`₹${tenant.monthlyRent.toLocaleString("en-IN")}`} />
-                            <MiniInfo label="Next Due" value={formatPaymentDate(tenant.nextDueDate)} />
-                          </div>
                         </Link>
-                        {hasMissingInfo(tenant) && (
-                          <button
-                            type="button"
-                            onClick={() => router.push(`/owner/tenants/${tenant.tenantId}/complete-profile`)}
-                            className="mt-1 inline-flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400 hover:bg-orange-500/20 transition"
-                          >
-                            <AlertTriangle className="h-2.5 w-2.5" />
-                            Missing info
-                          </button>
-                        )}
+                        {hasMissingInfo(tenant) ? (
+                          <div className="mt-1">
+                            <MissingInfoBadge onClick={() => router.push(`/owner/tenants/${tenant.tenantId}/complete-profile`)} />
+                          </div>
+                        ) : null}
                       </div>
-                      <ActionButton tone={status.tone} isPaid={isPaid} onClick={() => openPayment(tenant)} />
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-[length:var(--text-sm-size)] font-bold tabular-nums text-[color:var(--fg-primary)]">{inr(tenant.monthlyRent)}</span>
+                        <span className="text-[10px] text-[color:var(--fg-tertiary)]">{formatPaymentDate(tenant.nextDueDate)}</span>
+                      </div>
                     </div>
-                    {/* Vacate button â€” full width, below card content */}
-                    <button
-                      type="button"
-                      onClick={() => router.push(`/owner/tenants/${tenant.tenantId}/vacate`)}
-                      className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/[0.07] py-2 text-[11px] font-semibold text-red-400 transition hover:bg-red-500/15 active:scale-[0.98]"
-                    >
-                      <LogOut className="h-3 w-3" />
-                      Vacate
-                    </button>
+                    <div className="mt-3 flex gap-2">
+                      {isPaid ? (
+                        <div className="flex-1"><StatusBadge status="paid">Paid</StatusBadge></div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openPayment(tenant)}
+                          className={`flex-1 rounded-[var(--radius-md)] py-2 text-[12px] font-semibold ${
+                            status.tone === "red"
+                              ? "border border-[color:var(--error)] bg-[color:var(--error-soft)] text-[color:var(--error)]"
+                              : "border border-[color:var(--warning)] bg-[color:var(--warning-soft)] text-[color:var(--warning)]"
+                          }`}
+                        >
+                          {status.tone === "red" ? "Pay Now" : `Collect ${inr(tenant.monthlyRent)}`}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/owner/tenants/${tenant.tenantId}/vacate`)}
+                        className="inline-flex items-center gap-1 rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--error)_35%,transparent)] px-3 text-[11px] font-semibold text-[color:var(--error)] hover:bg-[color:var(--error-soft)]"
+                      >
+                        <LogOut size={13} /> Vacate
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -292,196 +322,37 @@ const searchParams = useSearchParams();
         )}
       </section>
 
-      {/* â”€â”€ Desktop view â”€â”€ */}
-      <section className="hidden space-y-4 lg:block">
-        <div className={`${ownerHeroCardClass} px-4 py-4 sm:px-5`}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[color:var(--fg-secondary)]">Tenants</p>
-              <h1 className="mt-1 text-[1.35rem] font-semibold tracking-tight text-white sm:text-[1.55rem]">Tenant Directory</h1>
-              <p className="mt-1 text-[12px] text-[color:var(--fg-secondary)]">Showing tenants for {currentHostel.hostelName} only.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <a
-                href={`/api/tenants/export?hostelId=${encodeURIComponent(currentHostel.id)}`}
-                download
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-2xl border border-white/12 bg-white/[0.06] px-4 text-[12px] font-semibold text-white transition hover:bg-white/[0.1]"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Export CSV
-              </a>
-              <button
-                type="button"
-                onClick={() => router.push("/owner/tenants/quick-add")}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 text-[12px] font-semibold text-amber-300 transition hover:bg-amber-500/15"
-              >
-                <Zap className="h-3.5 w-3.5" />
-                Quick Add
-              </button>
-              <button
-                type="button"
-                onClick={() => router.push("/owner/tenants/new")}
-                className="inline-flex min-h-11 min-w-[164px] items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-5 py-2.5 text-[12px] font-semibold text-white shadow-[0_14px_32px_rgba(37,99,235,0.22)]"
-              >
-                Add New Tenant
-              </button>
-              <div className="w-[160px]">
-                <RemoveTenantSearch tenants={tenants} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryTile icon={UserRound} label="Total Tenants" value={String(filteredTenants.length)} />
-          <SummaryTile icon={Wallet} label="Due Soon" value={String(dueSoonCount)} tone={dueSoonCount > 0 ? "warning" : "default"} />
-          <SummaryTile icon={Wallet} label="Overdue" value={String(overdueCount)} tone={overdueCount > 0 ? "danger" : "default"} />
-          <SummaryTile icon={UserCheck} label="Assigned" value={String(assignedCount)} tone="success" />
-        </div>
-
-        <Card className={`rounded-[10px] ${ownerPanelClass}`}>
-          {/* Search bar */}
-          <div className="border-b border-[color:var(--border)] px-4 py-3">
-            <div className="relative max-w-sm">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name, room, contactâ€¦"
-                className="w-full rounded-2xl border border-white/12 bg-white/[0.05] px-3 py-2.5 pl-9 text-[13px] text-white outline-none placeholder:text-white/30 focus:border-white/20 focus:bg-white/[0.07]"
-              />
-            </div>
-          </div>
-
-          {/* Table â€” horizontal scroll only, page handles vertical */}
-          <div className="overflow-x-auto touch-action-pan-x">
-            <table className="min-w-[520px] text-left text-[13px]">
-              <thead className={ownerTableHeadClass}>
-                <tr>
-                  <th className="px-3 py-2.5 font-medium">Tenant ID</th>
-                  <th className="px-3 py-2.5 font-medium">Name</th>
-                  <th className="px-3 py-2.5 font-medium">Contact</th>
-                  <th className="px-3 py-2.5 font-medium">Room</th>
-                  <th className="px-3 py-2.5 font-medium">Monthly Rent</th>
-                  <th className="px-3 py-2.5 font-medium">Next Due</th>
-                  <th className="px-3 py-2.5 font-medium">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTenants.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-3 py-7 text-center text-sm text-[color:var(--fg-secondary)]">
-                      {searchQuery ? "No tenants matched that search." : "No tenants created yet for this hostel."}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredTenants.map((tenant) => {
-                    const status = getDueStatus(tenant.nextDueDate, tenant.billingCycle);
-                    const isPaid = status.tone !== "red" && status.tone !== "orange" && status.tone !== "yellow";
-
-                    return (
-                      <tr key={tenant.tenantId} className="border-t border-[color:var(--border)] transition hover:bg-white/[0.02]">
-                        <td className="px-3 py-3 font-semibold text-[color:var(--fg-secondary)]">{fmtTenantId(tenant.tenantId)}</td>
-                        <td className="px-3 py-3">
-                          <div className="flex items-center gap-2">
-                            <Link href={`/owner/tenants/${tenant.tenantId}`} className="font-medium text-white transition hover:text-[var(--accent-electric)]">
-                              {tenant.fullName}
-                            </Link>
-                            {tenant.pendingBalance && tenant.pendingBalance.amount > 0 && (
-                              <span className="inline-flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400">
-                                Balance â‚¹{tenant.pendingBalance.amount.toLocaleString("en-IN")}
-                              </span>
-                            )}
-                            {hasMissingInfo(tenant) && (
-                              <button
-                                type="button"
-                                onClick={() => router.push(`/owner/tenants/${tenant.tenantId}/complete-profile`)}
-                                className="inline-flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-400 hover:bg-orange-500/20 transition"
-                              >
-                                <AlertTriangle className="h-2.5 w-2.5" />
-                                Missing info
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-3 py-3">
-                          <p className="text-[color:var(--fg-primary)]">{tenant.phone}</p>
-                          <p className="mt-0.5 text-[11px] text-[color:var(--fg-secondary)]">{tenant.email}</p>
-                        </td>
-                        <td className="px-3 py-3 text-[color:var(--fg-primary)]">
-                          {tenant.assignment ? `Room ${tenant.assignment.roomNumber}` : "Pending"}
-                        </td>
-                        <td className="px-3 py-3 text-[color:var(--fg-primary)]">â‚¹{tenant.monthlyRent.toLocaleString("en-IN")}</td>
-                        <td className="px-3 py-3 text-[color:var(--fg-primary)]">{formatPaymentDate(tenant.nextDueDate)}</td>
-                        <td className="px-3 py-3">
-                          <div className="flex items-center gap-2">
-                            <ActionButton
-                              tone={status.tone}
-                              isPaid={isPaid}
-                              onClick={() => openPayment(tenant)}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => router.push(`/owner/tenants/${tenant.tenantId}/vacate`)}
-                              className="inline-flex min-h-10 items-center gap-1 rounded-xl border border-red-500/30 bg-red-500/[0.07] px-2.5 text-[11px] font-semibold text-red-400 transition hover:bg-red-500/15"
-                              title="Vacate tenant"
-                            >
-                              <LogOut className="h-3.5 w-3.5" />
-                              Vacate
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+      {/* ── Desktop: table ── */}
+      <section className="hidden lg:block">
+        <DataTable
+          columns={columns}
+          rows={filteredTenants}
+          getRowKey={(t) => t.tenantId}
+          emptyLabel={searchQuery ? "No tenants matched that search." : "No tenants created yet for this hostel."}
+        />
       </section>
 
-      {/* Payment modal â€” quick overlay action, stays as modal */}
       <PaymentCollectionModal
         open={!!paymentTenant}
         tenant={paymentTenant}
         onClose={() => setPaymentTenant(null)}
         onSuccess={handlePaymentSuccess}
       />
-
     </div>
   );
 }
 
-// â”€â”€ Action button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-function ActionButton({
-  tone,
-  isPaid,
-  onClick,
-}: {
-  tone: string;
-  isPaid: boolean;
-  onClick: () => void;
-}) {
-  if (isPaid) {
-    return (
-      <span className="inline-flex min-h-10 items-center rounded-xl border border-[#4ade80]/40 bg-[#22c55e]/10 px-3 text-[11px] font-semibold text-[#4ade80]">
-        Paid
-      </span>
-    );
-  }
-
+function CollectAction({ tone, isPaid, onClick }: { tone: string; isPaid: boolean; onClick: () => void }) {
+  if (isPaid) return <StatusBadge status="paid">Paid</StatusBadge>;
   const isOverdue = tone === "red";
-
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex min-h-10 items-center rounded-xl px-3 text-[11px] font-semibold transition hover:brightness-110 active:scale-95 ${
+      className={`inline-flex min-h-9 items-center rounded-[var(--radius-md)] px-3 text-[11px] font-semibold hover:brightness-110 active:scale-95 ${
         isOverdue
-          ? "border border-[#ef4444]/50 bg-[#dc2626]/15 text-[#ff7070] hover:bg-[#dc2626]/25"
-          : "border border-[#facc15]/50 bg-[#facc15]/10 text-[#fde047] hover:bg-[#facc15]/20"
+          ? "border border-[color:var(--error)] bg-[color:var(--error-soft)] text-[color:var(--error)]"
+          : "border border-[color:var(--warning)] bg-[color:var(--warning-soft)] text-[color:var(--warning)]"
       }`}
     >
       {isOverdue ? "Pay Now" : "Collect Rent"}
@@ -489,96 +360,48 @@ function ActionButton({
   );
 }
 
-// â”€â”€ Missing info helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function MissingInfoBadge({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1 rounded-full border border-[color:var(--warning)] bg-[color:var(--warning-soft)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--warning)] hover:brightness-110"
+    >
+      <AlertTriangle size={11} /> Missing info
+    </button>
+  );
+}
 
 function hasMissingInfo(tenant: TenantRecord) {
   return !tenant.phone || !tenant.idType || !tenant.idPhotoUrl;
 }
 
-// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-function SummaryTile({
-  icon: Icon,
-  label,
-  value,
-  tone = "default",
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  tone?: "default" | "warning" | "danger" | "success";
-}) {
-  return (
-    <Card className={`rounded-[8px] border p-3 ${ownerMetricToneClass(tone)}`}>
-      <div className="flex items-start gap-2.5">
-        <div className="rounded-xl bg-black/10 p-2 ring-1 ring-white/8">
-          <Icon className="h-4 w-4" />
-        </div>
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-80">{label}</p>
-          <p className="mt-1 text-[1.15rem] font-semibold leading-none">{value}</p>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function MiniInfo({ label, value }: { label: string; value: string }) {
-  return (
-    <div className={`rounded-2xl px-2.5 py-2 ${ownerSubtlePanelClass}`}>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--fg-secondary)]">{label}</p>
-      <p className="mt-1 text-[11px] font-semibold text-white">{value}</p>
-    </div>
-  );
-}
-
 function LoadingState() {
   return (
-    <div className="space-y-4">
-      {/* Header skeleton */}
-      <SkeletonBlock className="h-24 rounded-[10px]" />
-
-      {/* Stat cards skeleton */}
-      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="flex flex-col gap-4">
+      <SkeletonBlock className="h-20 rounded-[var(--radius-lg)]" />
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <SkeletonStatCard key={i} />
         ))}
       </div>
-
-      {/* Table skeleton */}
-      <div className="overflow-hidden rounded-[10px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(30,41,59,0.94)_0%,rgba(15,23,42,0.98)_100%)]">
-        {/* Search bar skeleton */}
-        <div className="border-b border-white/[0.06] px-4 py-3">
-          <SkeletonBlock className="h-10 w-64 rounded-2xl" />
-        </div>
-
-        {/* Table rows */}
-        <div className="hidden overflow-x-auto touch-action-pan-x lg:block">
-          <table className="min-w-[520px]">
-            <thead>
-              <tr className="bg-white/[0.03]">
-                {["Tenant ID", "Name", "Contact", "Room", "Monthly Rent", "Next Due", "Action"].map((col) => (
-                  <th key={col} className="px-3 py-2.5 text-left">
-                    <SkeletonBlock className="h-3 w-16 rounded-full" />
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <SkeletonTableRow key={i} />
+      <div className="hidden overflow-hidden rounded-[var(--radius-lg)] border border-[color:var(--border)] lg:block">
+        <table className="min-w-[520px]">
+          <thead>
+            <tr className="bg-[color:var(--surface-soft)]">
+              {["ID", "Name", "Contact", "Room", "Rent", "Next Due", "Action"].map((c) => (
+                <th key={c} className="px-3 py-2.5 text-left"><SkeletonBlock className="h-3 w-16 rounded-full" /></th>
               ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile skeleton rows */}
-        <div className="space-y-2.5 p-4 lg:hidden">
-          <ProcessingPill label="Preparing tenant directory" />
-          {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonBlock key={i} className="h-28 rounded-[8px]" />
-          ))}
-        </div>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: 5 }).map((_, i) => <SkeletonTableRow key={i} />)}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex flex-col gap-2.5 lg:hidden">
+        <ProcessingPill label="Preparing tenant directory" />
+        {Array.from({ length: 3 }).map((_, i) => <SkeletonBlock key={i} className="h-32 rounded-[var(--radius-lg)]" />)}
       </div>
     </div>
   );
