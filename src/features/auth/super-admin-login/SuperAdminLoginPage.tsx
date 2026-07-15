@@ -3,6 +3,8 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, Lock, ServerCog, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TextInput } from "@/components/ui/form/text-input";
 import { csrfFetch } from "@/lib/csrf-client";
 
 export default function SuperAdminLoginPage() {
@@ -48,93 +50,56 @@ export default function SuperAdminLoginPage() {
   };
 
   return (
-    <main className="min-h-dvh bg-[#090912] text-white [background-image:radial-gradient(circle_at_center,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:18px_18px]">
-      {/* Sticky top bar */}
-      <header className="sticky top-0 z-50 flex min-h-[52px] items-center justify-end gap-3 border-b border-white/8 bg-[rgba(9,9,11,0.88)] px-4 py-2.5 backdrop-blur-xl sm:px-6">
-        <a
-          href="/owner/login"
-          className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#f2bb4d]/55 bg-[#1d1a19]/80 px-3.5 py-2 text-xs font-semibold text-[#ffd26a]"
-        >
-          <User className="h-4 w-4" />
-          Owner Login
+    <main className="nestiq-grid-bg min-h-dvh bg-[color:var(--bg-primary)] text-[color:var(--fg-primary)]">
+      <header className="sticky top-0 z-50 flex min-h-[52px] items-center justify-end gap-3 border-b border-[color:var(--border)] bg-[color:var(--bg-primary)]/85 px-4 py-2.5 backdrop-blur-xl sm:px-6">
+        <a href="/owner/login" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-3.5 py-2 text-xs font-semibold text-[color:var(--fg-secondary)] hover:text-[color:var(--fg-primary)]">
+          <User className="h-4 w-4" /> Owner Login
         </a>
       </header>
 
-      {/* Centered card */}
-      <div className="flex min-h-[calc(100dvh-52px)] items-center justify-center py-3 sm:py-4 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+      <div className="flex min-h-[calc(100dvh-52px)] items-center justify-center py-4 pb-[calc(2rem+env(safe-area-inset-bottom))]">
         <div className="w-[min(calc(100vw-2rem),420px)]">
-          <div className="rounded-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-4">
-
+          <div className="rounded-[var(--radius-xl)] border border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(18,22,38,0.95)_0%,rgba(12,14,26,0.98)_100%)] p-4 shadow-[var(--shadow-4)] backdrop-blur-xl">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#ffcc4d_0%,#d9941c_100%)] text-[#18120a] shadow-[0_12px_28px_rgba(245,177,52,0.22)]">
-                <ServerCog className="h-5.5 w-5.5" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[linear-gradient(135deg,var(--cta),var(--cta-strong))] text-white">
+                <ServerCog className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-bold leading-none text-[#f6f0e8]">Super Admin</p>
-                <p className="mt-0.5 text-xs leading-none text-[#f6c44f]">Control Panel</p>
+                <p className="text-sm font-bold leading-none text-[color:var(--fg-primary)]">Super Admin</p>
+                <p className="mt-0.5 text-xs leading-none text-[color:var(--accent)]">Control Panel</p>
               </div>
             </div>
 
             <div className="mt-5">
-              <h1 className="text-[1.55rem] font-bold tracking-[-0.04em] text-[#f7f0e8]">Admin Login</h1>
-              <p className="mt-1 text-sm text-white/38">Restricted access. Authorized personnel only.</p>
+              <h1 className="font-display text-[1.55rem] font-bold tracking-[-0.02em] text-[color:var(--fg-primary)]">Admin login</h1>
+              <p className="mt-1 text-sm text-[color:var(--fg-secondary)]">Restricted access. Authorized personnel only.</p>
             </div>
 
-            <form onSubmit={handleLogin} className="mt-5 space-y-3">
-              <label className="block">
-                <div className="relative">
-                  <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(event) => setUsername(event.target.value)}
-                    disabled={loading}
-                    placeholder="Username"
-                    autoComplete="username"
-                    className="w-full rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 pl-10 text-sm text-[#f7f0e8] outline-none transition placeholder:text-white/28 focus:border-[#f2bb4d]/60 focus:bg-white/[0.05]"
-                  />
-                </div>
-              </label>
-
-              <label className="block">
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    disabled={loading}
-                    placeholder="Password"
-                    autoComplete="current-password"
-                    className="w-full rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 pl-10 pr-12 text-sm text-[#f7f0e8] outline-none transition placeholder:text-white/28 focus:border-[#f2bb4d]/60 focus:bg-white/[0.05]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((s) => !s)}
-                    disabled={loading}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="absolute right-3 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            <form onSubmit={handleLogin} className="mt-5 flex flex-col gap-3">
+              <TextInput type="text" value={username} onChange={(e) => setUsername(e.target.value)} disabled={loading} placeholder="Username" autoComplete="username" leadingIcon={<User size={16} />} />
+              <TextInput
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                placeholder="Password"
+                autoComplete="current-password"
+                leadingIcon={<Lock size={16} />}
+                trailingIcon={
+                  <button type="button" onClick={() => setShowPassword((s) => !s)} disabled={loading} aria-label={showPassword ? "Hide password" : "Show password"} className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--fg-tertiary)] hover:bg-[color:var(--muted)] hover:text-[color:var(--fg-primary)]">
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
-                </div>
-              </label>
+                }
+              />
 
               {error ? (
-                <div role="alert" className="rounded-2xl border border-[#cf4637] bg-[#3a1718]/85 px-4 py-3 text-sm text-[#ffb7ae]">
-                  {error}
-                </div>
+                <div role="alert" className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--error)_40%,transparent)] bg-[color:var(--error-soft)] px-4 py-3 text-sm text-[color:var(--error)]">{error}</div>
               ) : null}
 
               <div className="pt-1">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(90deg,#b86f18_0%,#efaf2f_42%,#ffd95f_100%)] px-5 text-base font-bold text-[#1b1207] shadow-[0_10px_24px_rgba(240,175,47,0.22)] transition hover:brightness-105 disabled:opacity-60"
-                >
-                  {loading ? "Verifying..." : "Login"}
-                  {!loading ? <ArrowRight className="h-4 w-4" /> : null}
-                </button>
+                <Button type="submit" fullWidth disabled={loading} loading={loading} className="min-h-[50px] text-base">
+                  {loading ? "Verifying…" : <>Login <ArrowRight size={16} /></>}
+                </Button>
               </div>
             </form>
           </div>
