@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { OwnerPageHero } from "@/components/ui/owner-page";
 
 type Advisor = {
   key: string;
@@ -321,19 +320,17 @@ export default function OwnerCouncilPage() {
   };
 
   return (
-    <div className="space-y-4 text-white">
-      <OwnerPageHero
-        eyebrow="LLM Council"
-        title="Council workspace"
-        description="Run high-stakes owner decisions through five thinking lenses, peer review, and a chairman verdict."
-        badge={<span className="inline-flex rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-100">Built for Katha</span>}
-        actions={
-          <Button onClick={() => setLastRunAt(new Date())} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Run Council
-          </Button>
-        }
-      />
+    <div className="flex flex-col gap-4">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">LLM Council</p>
+          <h1 className="font-display mt-0.5 text-[clamp(1.35rem,4.5vw,1.75rem)] font-bold text-[color:var(--fg-primary)]">Council workspace</h1>
+          <p className="text-[length:var(--text-sm-size)] text-[color:var(--fg-secondary)]">Run high-stakes decisions through five lenses, peer review, and a chairman verdict.</p>
+        </div>
+        <Button onClick={() => setLastRunAt(new Date())} className="shrink-0">
+          <RefreshCw size={16} /> Run Council
+        </Button>
+      </header>
 
       <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <Card className="p-4">
