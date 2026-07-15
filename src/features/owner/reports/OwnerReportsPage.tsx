@@ -1,27 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Download, FileBarChart2, TrendingUp, Users, Wallet } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { OwnerPageHero, OwnerQuickStat } from "@/components/ui/owner-page";
-import { ownerPanelClass } from "@/components/ui/owner-theme";
+import { StatCard } from "@/components/ui/stat-card";
 import { useHostelContext } from "@/store/hostel-context";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
 import { getDueStatus } from "@/utils/payment";
 import type { FinanceLedgerEntry } from "@/types/finance-ledger";
 
+const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
 export default function OwnerReportsPage() {
   const { currentHostel, currentHostelId } = useHostelContext();
   const { tenants: allTenants, loading } = useOwnerTenants(currentHostelId);
   const [ledgerEntries, setLedgerEntries] = useState<FinanceLedgerEntry[]>([]);
-  const downloadRef = useRef<HTMLAnchorElement>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- clear/replace ledger when hostel changes */
   useEffect(() => {
     if (!currentHostelId) {
       setLedgerEntries([]);
       return;
     }
-
     let cancelled = false;
     void fetch(`/api/finance-ledger?hostelId=${encodeURIComponent(currentHostelId)}`, { cache: "no-store" })
       .then((response) => response.ok ? response.json() : { entries: [] })
@@ -31,13 +31,11 @@ export default function OwnerReportsPage() {
       .catch(() => {
         if (!cancelled) setLedgerEntries([]);
       });
-
     return () => { cancelled = true; };
   }, [currentHostelId]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  const tenants = currentHostel
-    ? allTenants.filter((t) => t.assignment?.hostelId === currentHostel.id)
-    : [];
+  const tenants = currentHostel ? allTenants.filter((t) => t.assignment?.hostelId === currentHostel.id) : [];
 
   const overdueCount = tenants.filter((t) => getDueStatus(t.nextDueDate).tone === "red").length;
   const dueSoonCount = tenants.filter((t) => {
@@ -51,152 +49,106 @@ export default function OwnerReportsPage() {
     .filter((t) => getDueStatus(t.nextDueDate).tone === "green")
     .reduce((sum, t) => sum + t.rentPaid, 0);
   const collectionRate = totalRent > 0 ? Math.round((collectedRent / totalRent) * 100) : 0;
-  const advanceCollected = ledgerEntries
-    .filter((entry) => entry.type === "advance_collected")
-    .reduce((sum, entry) => sum + entry.amount, 0);
-  const serviceFeeCollected = ledgerEntries
-    .filter((entry) => entry.type === "service_fee_collected")
-    .reduce((sum, entry) => sum + entry.amount, 0);
-  const advanceRefunded = ledgerEntries
-    .filter((entry) => entry.type === "advance_refund")
-    .reduce((sum, entry) => sum + entry.amount, 0);
-  // O-20 fix: advance is a refundable liability, not income — exclude it from gross income
+  const advanceCollected = ledgerEntries.filter((e) => e.type === "advance_collected").reduce((s, e) => s + e.amount, 0);
+  const serviceFeeCollected = ledgerEntries.filter((e) => e.type === "service_fee_collected").reduce((s, e) => s + e.amount, 0);
+  const advanceRefunded = ledgerEntries.filter((e) => e.type === "advance_refund").reduce((s, e) => s + e.amount, 0);
+  // O-20: advance is a refundable liability, not income — exclude from gross income
   const grossIncome = collectedRent + serviceFeeCollected;
   const netAfterRefunds = grossIncome - advanceRefunded;
 
-  const exportHref = currentHostelId
-    ? `/api/tenants/export?hostelId=${encodeURIComponent(currentHostelId)}`
-    : "/api/tenants/export";
+  const exportHref = currentHostelId ? `/api/tenants/export?hostelId=${encodeURIComponent(currentHostelId)}` : "/api/tenants/export";
 
   return (
-    <div className="space-y-3">
-      <OwnerPageHero
-        eyebrow="Reports"
-        title="Reports centre"
-        description="Occupancy, payment collection, and tenant summaries for your hostel."
-        badge={
-          <span className="inline-flex rounded-full border border-[rgba(99,102,241,0.3)] bg-[rgba(99,102,241,0.14)] px-3 py-1 text-[11px] font-semibold text-[var(--accent)]">
-            {loading ? "Loading…" : `${tenants.length} tenants`}
-          </span>
-        }
-      />
+    <div className="flex flex-col gap-4">
+      {/* ── Header ── */}
+      <header className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Reports</p>
+          <h1 className="font-display mt-0.5 text-[clamp(1.35rem,4.5vw,1.75rem)] font-bold text-[color:var(--fg-primary)]">Reports centre</h1>
+          <p className="text-[length:var(--text-sm-size)] text-[color:var(--fg-secondary)]">Occupancy, collection, and tenant summaries.</p>
+        </div>
+        <span className="mt-1 shrink-0 rounded-full border border-[color:color-mix(in_srgb,var(--brand)_35%,transparent)] bg-[color:var(--brand-soft)] px-3 py-1 text-[11px] font-semibold text-[color:var(--accent)]">
+          {loading ? "Loading…" : `${tenants.length} tenants`}
+        </span>
+      </header>
 
-      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-        <OwnerQuickStat label="Total Tenants" value={loading ? "—" : String(tenants.length)} helper="In current hostel" />
-        <OwnerQuickStat label="Assigned" value={loading ? "—" : String(assignedCount)} helper="With room assignment" />
-        <OwnerQuickStat label="Collection Rate" value={loading ? "—" : `${collectionRate}%`} helper="Paid vs expected" />
-        <OwnerQuickStat label="Overdue" value={loading ? "—" : String(overdueCount)} helper="Past due date" />
-      </div>
+      {/* ── Summary ── */}
+      <section className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
+        <StatCard label="Total tenants" value={loading ? "—" : tenants.length} helper="Current hostel" />
+        <StatCard label="Assigned" value={loading ? "—" : assignedCount} helper="With room" tone={assignedCount ? "success" : "plain"} />
+        <StatCard label="Collection rate" value={loading ? "—" : `${collectionRate}%`} helper="Paid vs expected" />
+        <StatCard label="Overdue" value={loading ? "—" : overdueCount} helper="Past due date" tone={overdueCount ? "danger" : "plain"} />
+      </section>
 
       {!loading && tenants.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Card className={`p-4 ${ownerPanelClass}`}>
-            <div className="mb-3 flex items-center gap-2">
-              <div className="rounded-xl bg-[color:var(--brand-soft)] p-2 text-[#9edcff]">
-                <Wallet className="h-4 w-4" />
-              </div>
-              <p className="text-sm font-semibold text-white">Payment Summary</p>
-            </div>
-            <div className="space-y-2">
-              <SummaryRow label="Expected monthly" value={`₹${totalRent.toLocaleString("en-IN")}`} />
-              <SummaryRow label="Collected this cycle" value={`₹${collectedRent.toLocaleString("en-IN")}`} color="green" />
-              <SummaryRow label="Paid on time" value={`${paidCount} tenants`} color="green" />
-              <SummaryRow label="Due soon" value={`${dueSoonCount} tenants`} color="yellow" />
-              <SummaryRow label="Overdue" value={`${overdueCount} tenants`} color="red" />
-            </div>
-          </Card>
+        <section className="grid gap-3 sm:grid-cols-2">
+          <ReportCard icon={<Wallet size={16} />} title="Payment summary">
+            <SummaryRow label="Expected monthly" value={inr(totalRent)} />
+            <SummaryRow label="Collected this cycle" value={inr(collectedRent)} color="green" />
+            <SummaryRow label="Paid on time" value={`${paidCount} tenants`} color="green" />
+            <SummaryRow label="Due soon" value={`${dueSoonCount} tenants`} color="yellow" />
+            <SummaryRow label="Overdue" value={`${overdueCount} tenants`} color="red" />
+          </ReportCard>
 
-          <Card className={`p-4 ${ownerPanelClass}`}>
-            <div className="mb-3 flex items-center gap-2">
-              <div className="rounded-xl bg-[color:var(--brand-soft)] p-2 text-[#9edcff]">
-                <FileBarChart2 className="h-4 w-4" />
-              </div>
-              <p className="text-sm font-semibold text-white">Advance & Service Ledger</p>
-            </div>
-            <div className="space-y-2">
-              <SummaryRow label="Advance collected" value={`₹${advanceCollected.toLocaleString("en-IN")}`} color="green" />
-              <SummaryRow label="Service fee collected" value={`₹${serviceFeeCollected.toLocaleString("en-IN")}`} color="green" />
-              <SummaryRow label="Advance refund debit" value={`₹${advanceRefunded.toLocaleString("en-IN")}`} color={advanceRefunded > 0 ? "red" : "default"} />
-              <SummaryRow label="Net after refunds" value={`₹${netAfterRefunds.toLocaleString("en-IN")}`} color={netAfterRefunds >= 0 ? "green" : "red"} />
-            </div>
-          </Card>
+          <ReportCard icon={<FileBarChart2 size={16} />} title="Advance & service ledger">
+            <SummaryRow label="Advance collected" value={inr(advanceCollected)} color="green" />
+            <SummaryRow label="Service fee collected" value={inr(serviceFeeCollected)} color="green" />
+            <SummaryRow label="Advance refund debit" value={inr(advanceRefunded)} color={advanceRefunded > 0 ? "red" : "default"} />
+            <SummaryRow label="Net after refunds" value={inr(netAfterRefunds)} color={netAfterRefunds >= 0 ? "green" : "red"} />
+          </ReportCard>
 
-          <Card className={`p-4 ${ownerPanelClass}`}>
-            <div className="mb-3 flex items-center gap-2">
-              <div className="rounded-xl bg-[color:var(--brand-soft)] p-2 text-[#9edcff]">
-                <Users className="h-4 w-4" />
-              </div>
-              <p className="text-sm font-semibold text-white">Occupancy Summary</p>
-            </div>
-            <div className="space-y-2">
-              <SummaryRow label="Total tenants" value={String(tenants.length)} />
-              <SummaryRow label="Assigned to rooms" value={String(assignedCount)} color="green" />
-              <SummaryRow label="Awaiting assignment" value={String(tenants.length - assignedCount)} />
-            </div>
-          </Card>
-        </div>
+          <ReportCard icon={<Users size={16} />} title="Occupancy summary">
+            <SummaryRow label="Total tenants" value={String(tenants.length)} />
+            <SummaryRow label="Assigned to rooms" value={String(assignedCount)} color="green" />
+            <SummaryRow label="Awaiting assignment" value={String(tenants.length - assignedCount)} />
+          </ReportCard>
+        </section>
       ) : null}
 
-      <Card className={`p-4 ${ownerPanelClass}`}>
+      <ReportCard icon={<FileBarChart2 size={16} />} title="Export tenant data">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <div className="rounded-xl bg-[color:var(--brand-soft)] p-2 text-[#9edcff]">
-              <FileBarChart2 className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-white">Export Tenant Data</p>
-              <p className="mt-0.5 text-[11px] text-[color:var(--fg-secondary)]">
-                Download all tenant records as a CSV file — name, contact, room, rent, and status.
-              </p>
-            </div>
-          </div>
+          <p className="text-[11px] text-[color:var(--fg-secondary)]">
+            Download all tenant records as CSV — name, contact, room, rent, and status.
+          </p>
           <a
-            ref={downloadRef}
             href={exportHref}
             download
-            className="inline-flex min-h-10 items-center gap-2 rounded-2xl bg-[linear-gradient(180deg,#2563eb_0%,#1d4ed8_100%)] px-4 text-[13px] font-semibold text-white shadow-[0_14px_32px_rgba(37,99,235,0.22)] transition hover:brightness-110 sm:shrink-0"
+            className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-[var(--radius-md)] bg-[linear-gradient(90deg,var(--cta),var(--cta-strong))] px-4 text-[13px] font-semibold text-white shadow-[var(--shadow-brand)] hover:brightness-110"
           >
-            <Download className="h-4 w-4" />
-            Download CSV
+            <Download size={16} /> Download CSV
           </a>
         </div>
-      </Card>
+      </ReportCard>
 
-      <Card className={`p-4 ${ownerPanelClass}`}>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="rounded-xl bg-[color:var(--brand-soft)] p-2 text-[#9edcff]">
-            <TrendingUp className="h-4 w-4" />
-          </div>
-          <p className="text-sm font-semibold text-white">More reports</p>
-        </div>
+      <ReportCard icon={<TrendingUp size={16} />} title="More reports">
         <p className="text-[12px] text-[color:var(--fg-secondary)]">
           Detailed payment history, occupancy trends, and income forecasts are coming in a future update.
         </p>
-      </Card>
+      </ReportCard>
     </div>
   );
 }
 
-function SummaryRow({
-  label,
-  value,
-  color = "default",
-}: {
-  label: string;
-  value: string;
-  color?: "default" | "green" | "yellow" | "red";
-}) {
-  const valueColor =
-    color === "green"
-      ? "text-emerald-400"
-      : color === "yellow"
-        ? "text-amber-400"
-        : color === "red"
-          ? "text-red-400"
-          : "text-white";
-
+function ReportCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
+    <Card className="p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-[color:var(--brand-soft)] text-[color:var(--accent-electric)]">{icon}</span>
+        <p className="text-[length:var(--text-sm-size)] font-semibold text-[color:var(--fg-primary)]">{title}</p>
+      </div>
+      <div className="flex flex-col gap-2">{children}</div>
+    </Card>
+  );
+}
+
+function SummaryRow({ label, value, color = "default" }: { label: string; value: string; color?: "default" | "green" | "yellow" | "red" }) {
+  const valueColor =
+    color === "green" ? "text-[color:var(--success)]"
+      : color === "yellow" ? "text-[color:var(--warning)]"
+        : color === "red" ? "text-[color:var(--error)]"
+          : "text-[color:var(--fg-primary)]";
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
       <span className="text-[12px] text-[color:var(--fg-secondary)]">{label}</span>
       <span className={`text-[12px] font-semibold ${valueColor}`}>{value}</span>
     </div>
