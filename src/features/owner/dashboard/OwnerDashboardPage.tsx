@@ -1,22 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  AlertTriangle, ArrowRight, BedDouble, CalendarClock, CreditCard,
-  DoorOpen, ReceiptText, Sofa, TrendingUp, Users, X,
+  AlertTriangle, ArrowRight, CreditCard, DoorOpen,
+  ReceiptText, UserPlus, X,
 } from "lucide-react";
 import { useHostelContext } from "@/store/hostel-context";
 import { Card } from "@/components/ui/card";
 import { SkeletonBlock } from "@/components/ui/skeleton";
+import { StatCard } from "@/components/ui/stat-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { CardCarousel } from "@/components/ui/data/card-carousel";
+import { AlertCard } from "@/components/ui/data/alert-card";
+import { StatusBadge } from "@/components/ui/data/status-badge";
 import { useOwnerTenants } from "@/hooks/use-owner-tenants";
-import { ownerStatusClass } from "@/components/ui/owner-theme";
 import { formatPaymentDate, getDueStatus } from "@/utils/payment";
 import { getHostelOccupancySummary } from "@/utils/hostel-occupancy";
 import { TenantRentSearch } from "@/features/payments/components/TenantRentSearch";
 import type { OwnerHostel } from "@/types/owner-hostel";
 import type { TenantRecord } from "@/types/tenant";
+
+const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 export default function OwnerDashboardPage() {
   const router = useRouter();
@@ -45,7 +51,7 @@ function DashboardContent({
   allTenants: TenantRecord[];
   isSwitching: boolean;
 }) {
-  const [activityVisible, setActivityVisible] = useState(4);
+  const [activityVisible, setActivityVisible] = useState(5);
 
   const tenants = useMemo(
     () => allTenants.filter((t) => t.assignment?.hostelId === hostel.id),
@@ -53,11 +59,8 @@ function DashboardContent({
   );
 
   const isResidence = hostel.type === "RESIDENCE";
-
   const occupancy = useMemo(() => getHostelOccupancySummary(hostel, tenants), [hostel, tenants]);
-
   const { totalRooms, totalBeds } = occupancy;
-  const occupiedBeds = isResidence ? occupancy.occupiedUnits : occupancy.occupiedBeds;
   const availableBeds = isResidence ? occupancy.vacantUnits : occupancy.vacantBeds;
 
   const { dueSoon, overdue, paid } = useMemo(() => {
@@ -74,23 +77,18 @@ function DashboardContent({
   }, [tenants]);
 
   const { totalCollected, dueAmount, overdueAmount, expectedRevenue } = useMemo(() => ({
-    // only count rentPaid for tenants whose nextDueDate is still in the future —
-    // overdue/due-today tenants have not paid for the current cycle
     totalCollected: paid.reduce((sum, t) => sum + t.rentPaid, 0),
     dueAmount: dueSoon.reduce((sum, t) => sum + t.monthlyRent, 0),
     overdueAmount: overdue.reduce((sum, t) => sum + t.monthlyRent, 0),
     expectedRevenue: tenants.reduce((sum, t) => sum + t.monthlyRent, 0),
   }), [tenants, dueSoon, overdue, paid]);
 
-  const { occupancyPercent, collectionRate, paymentHealthScore, attentionCount, urgentShare } = useMemo(() => {
+  const { occupancyPercent, collectionRate } = useMemo(() => {
     const capacityBase = isResidence ? totalRooms : totalBeds;
     const occ = capacityBase > 0 ? Math.round((tenants.length / capacityBase) * 100) : 0;
     const cr = expectedRevenue > 0 ? Math.round((totalCollected / expectedRevenue) * 100) : 0;
-    const phs = Math.max(0, Math.min(100, Math.round(occ * 0.4 + cr * 0.6 - overdue.length * 4)));
-    const ac = dueSoon.length + overdue.length;
-    const us = tenants.length > 0 ? Math.round((ac / tenants.length) * 100) : 0;
-    return { occupancyPercent: occ, collectionRate: cr, paymentHealthScore: phs, attentionCount: ac, urgentShare: us };
-  }, [isResidence, totalRooms, totalBeds, tenants.length, expectedRevenue, totalCollected, overdue.length, dueSoon.length]);
+    return { occupancyPercent: occ, collectionRate: cr };
+  }, [isResidence, totalRooms, totalBeds, tenants.length, expectedRevenue, totalCollected]);
 
   const allDueItems = useMemo(
     () => tenants
@@ -107,233 +105,122 @@ function DashboardContent({
   const recentDueItems = allDueItems.slice(0, activityVisible);
   const hasMore = activityVisible < allDueItems.length;
 
-  const snapshotRows = useMemo(() => [
-    { label: "Collection rate", value: `${collectionRate}%` },
-    { label: "Payment health", value: `${paymentHealthScore}/100` },
-    { label: "Paid on track", value: String(paid.length) },
-    { label: "Needs attention", value: `${attentionCount} (${urgentShare}%)` },
-    { label: isResidence ? "Vacant units" : "Vacant beds", value: String(availableBeds) },
-    { label: "Monthly expected", value: `₹${expectedRevenue.toLocaleString("en-IN")}` },
-  ], [collectionRate, paymentHealthScore, paid.length, attentionCount, urgentShare, isResidence, availableBeds, expectedRevenue]);
-
   return (
-    <div className={`space-y-5 transition-opacity lg:space-y-4 ${isSwitching ? "opacity-70" : "opacity-100"}`}>
+    <div className={`flex flex-col gap-5 transition-opacity ${isSwitching ? "opacity-70" : "opacity-100"}`}>
+      {/* ── Header ── */}
+      <header className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">
+            Owner dashboard
+          </p>
+          <h1 className="font-display mt-0.5 truncate text-[clamp(1.35rem,4.5vw,2rem)] font-bold text-[color:var(--fg-primary)]">
+            {hostel.hostelName}
+          </h1>
+          <p className="mt-0.5 truncate text-[length:var(--text-sm-size)] text-[color:var(--fg-secondary)]">
+            {hostel.address}
+          </p>
+        </div>
+        <span className="mt-1 shrink-0 rounded-full border border-[color:color-mix(in_srgb,var(--brand)_35%,transparent)] bg-[color:var(--brand-soft)] px-3 py-1 text-[11px] font-semibold text-[color:var(--accent)]">
+          {occupancyPercent}% full
+        </span>
+      </header>
 
+      {/* ── Alert carousel ── */}
       <DashboardAlertBanner alertItems={alertItems} />
 
-      {/* ── MOBILE LAYOUT ── */}
-      <section className="grid gap-4 lg:hidden">
-
-        {/* 1. Action Tiles */}
-        <div className="grid grid-cols-2 gap-3">
-          <ActionTile href="/owner/payments" icon={CreditCard} label="Pay Rent" note="Record collection" variant="mobile" />
-          <ActionTile href="/owner/payments" icon={ReceiptText} label="Due List" note={`${dueSoon.length} due soon`} variant="mobile" tone="neutral" />
-          <ActionTile href="/owner/notifications" icon={AlertTriangle} label="Overdue" note={`${overdue.length} need action`} variant="mobile" tone="danger" />
-          <ActionTile href="/owner/payments" icon={Users} label="History" note="Latest payments" variant="mobile" />
+      {/* ── Rent collection hero ── */}
+      <Card className="border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.22),transparent_38%),linear-gradient(160deg,#111114_0%,#0b0b16_100%)] p-4">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">
+              Collected this cycle
+            </p>
+            <p className="font-display mt-1 text-[clamp(1.6rem,7vw,2.25rem)] font-bold leading-none text-[color:var(--success)]">
+              {inr(totalCollected)}
+            </p>
+          </div>
+          <p className="shrink-0 text-right text-[length:var(--text-xs-size)] text-[color:var(--fg-secondary)]">
+            of {inr(expectedRevenue)}
+            <br />
+            <span className="font-semibold text-[color:var(--fg-primary)]">{collectionRate}%</span>
+          </p>
         </div>
+        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-[color:var(--surface-strong)]">
+          <div
+            className="h-full rounded-full bg-[linear-gradient(90deg,#16a34a,#22c55e)] transition-[width] duration-[var(--duration-slow)]"
+            style={{ width: `${Math.min(100, collectionRate)}%` }}
+          />
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2.5">
+          <StatCard label="Due" value={inr(dueAmount)} helper={`${dueSoon.length} tenants`} tone={dueSoon.length ? "warning" : "plain"} />
+          <StatCard label="Overdue" value={inr(overdueAmount)} helper={`${overdue.length} tenants`} tone={overdue.length ? "danger" : "plain"} />
+          <StatCard label={isResidence ? "Vacant units" : "Vacant beds"} value={availableBeds} helper={`${totalRooms} rooms`} />
+        </div>
+      </Card>
 
-        {/* 3. Today's Snapshot */}
-        <Card className="nestiq-grid-bg overflow-hidden border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.22),transparent_34%),linear-gradient(160deg,#111114_0%,#09090b_62%,#131324_100%)] p-0 shadow-[0_18px_46px_rgba(0,0,0,0.34)]">
+      {/* ── Quick actions ── */}
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <ActionTile href="/owner/tenants?action=add-tenant" icon={UserPlus} label="Add Tenant" note="New check-in" />
+        <ActionTile href="/owner/payments?action=pay-rent" icon={CreditCard} label="Collect Rent" note="Record payment" />
+        <ActionTile href="/owner/rooms" icon={DoorOpen} label="Rooms" note={`${availableBeds} available`} />
+        <ActionTile href="/owner/notifications" icon={AlertTriangle} label="Alerts" note={`${overdue.length} overdue`} tone={overdue.length ? "danger" : "default"} />
+      </section>
 
-          {/* header */}
-          <div className="flex items-start justify-between gap-3 px-3 pt-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Today&apos;s Snapshot</p>
-              <h1 className="font-display mt-1 text-xl font-bold text-white">{hostel.hostelName}</h1>
-              <p className="mt-0.5 truncate text-xs text-[color:var(--fg-secondary)]">{hostel.address}</p>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="rounded-full border border-[rgba(99,102,241,0.3)] bg-[rgba(99,102,241,0.14)] px-2.5 py-1 text-[10px] font-semibold text-[var(--accent)]">
-                {occupancyPercent}% full
-              </span>
-            </div>
-          </div>
-
-          {/* collected | due | overdue — flat 3-col */}
-          <div className="mt-3 grid grid-cols-3 divide-x divide-white/8 border-y border-white/8">
-            <div className="px-3 py-2.5">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">Collected</p>
-              <p className="mt-1 text-base font-semibold leading-none text-[#22c55e]">
-                ₹{totalCollected.toLocaleString("en-IN")}
-              </p>
-              <p className="mt-1 text-[9px] text-[color:var(--fg-secondary)]">{collectionRate}% of expected</p>
-            </div>
-            <div className="px-3 py-2.5">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-amber-400/70">Due</p>
-              <p className="mt-1 text-base font-semibold leading-none text-amber-400">
-                ₹{dueAmount.toLocaleString("en-IN")}
-              </p>
-              <p className="mt-1 text-[9px] text-[color:var(--fg-secondary)]">{dueSoon.length} tenants</p>
-            </div>
-            <div className="px-3 py-2.5">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-red-400/70">Overdue</p>
-              <p className="mt-1 text-base font-semibold leading-none text-red-400">
-                ₹{overdueAmount.toLocaleString("en-IN")}
-              </p>
-              <p className="mt-1 text-[9px] text-[color:var(--fg-secondary)]">{overdue.length} tenants</p>
-            </div>
-          </div>
-
-          {/* beds | free | rooms */}
-          <div className="grid grid-cols-3 gap-2 px-3 pt-2.5">
-            <CompactMetric icon={BedDouble} label={isResidence ? "Units" : "Beds"} value={String(isResidence ? totalRooms : totalBeds)} />
-            <CompactMetric icon={Sofa} label="Free" value={String(availableBeds)} />
-            <CompactMetric icon={DoorOpen} label="Rooms" value={String(totalRooms)} />
-          </div>
-
-          {/* need action — only shown when > 0 */}
-          {attentionCount > 0 && (
-            <div className="px-3 pb-3 pt-2">
-              <CompactInlineStat icon={CalendarClock} label="Need action" value={String(attentionCount)} color="amber" />
-            </div>
-          )}
-        </Card>
-
-        {/* 4. Recent Activity */}
-        <Card className="p-3 shadow-[0_10px_24px_rgba(15,23,42,0.12)]">
-          <div className="mb-2.5 flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">Recent Activity</p>
-              <h2 className="font-display text-sm font-semibold text-white">Next actions</h2>
-            </div>
-            <Link href="/owner/payments?filter=due" className="text-[11px] font-semibold text-[var(--accent)]">
-              View all →
-            </Link>
-          </div>
-          <div className="space-y-2">
-            {recentDueItems.length === 0 ? (
-              <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-4 text-center text-sm text-[color:var(--fg-secondary)]">
-                No dues yet for this hostel.
-              </div>
-            ) : (
-              recentDueItems.map(({ tenant, status }) => (
-                <div key={tenant.tenantId} className="flex items-center gap-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
-                  <div className="h-9 w-9 shrink-0 rounded-full bg-[linear-gradient(135deg,#6366f1,#4f46e5)] flex items-center justify-center text-xs font-bold text-white uppercase">
-                    {tenant.fullName.slice(0, 1)}
-                  </div>
-                  <Link href={`/owner/tenants/${tenant.tenantId}`} className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">{tenant.fullName}</p>
-                    <p className="truncate text-[11px] text-[color:var(--fg-secondary)]">
-                      Room {tenant.assignment?.roomNumber ?? "-"} · {formatPaymentDate(tenant.nextDueDate)}
-                    </p>
+      {/* ── Needs attention ── */}
+      <section className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-[length:var(--text-lg-size)] font-semibold text-[color:var(--fg-primary)]">
+            Needs attention
+          </h2>
+          <Link href="/owner/payments?filter=due" className="text-[length:var(--text-xs-size)] font-semibold text-[color:var(--accent)]">
+            View all →
+          </Link>
+        </div>
+        {recentDueItems.length === 0 ? (
+          <Card>
+            <EmptyState icon={<ReceiptText size={28} />} title="Nothing due" description="No pending collections for this hostel right now." />
+          </Card>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {recentDueItems.map(({ tenant, status }) => (
+              <div
+                key={tenant.tenantId}
+                className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2.5 shadow-[var(--shadow-1)]"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#6366f1,#4f46e5)] text-xs font-bold uppercase text-white">
+                  {tenant.fullName.slice(0, 1)}
+                </span>
+                <Link href={`/owner/tenants/${tenant.tenantId}`} className="min-w-0 flex-1">
+                  <p className="truncate text-[length:var(--text-sm-size)] font-semibold text-[color:var(--fg-primary)]">
+                    {tenant.fullName}
+                  </p>
+                  <p className="truncate text-[length:var(--text-xs-size)] text-[color:var(--fg-secondary)]">
+                    Room {tenant.assignment?.roomNumber ?? "—"} · {formatPaymentDate(tenant.nextDueDate)}
+                  </p>
+                </Link>
+                {status.tone !== "green" ? (
+                  <Link
+                    href={`/owner/payments?action=pay-rent&tenantId=${tenant.tenantId}`}
+                    className="inline-flex h-8 shrink-0 items-center gap-1 rounded-[var(--radius-md)] bg-[linear-gradient(90deg,var(--cta),var(--cta-strong))] px-3 text-[11px] font-semibold text-white shadow-[var(--shadow-brand)]"
+                  >
+                    Collect <ArrowRight size={13} />
                   </Link>
-                  {status.tone !== "green" ? (
-                    <Link
-                      href={`/owner/payments?action=pay-rent&tenantId=${tenant.tenantId}`}
-                      className="inline-flex h-8 shrink-0 items-center justify-center rounded-xl border border-[rgba(99,102,241,0.4)] bg-[linear-gradient(180deg,#6366f1_0%,#4f46e5_100%)] px-3 text-[11px] font-semibold text-white shadow-[0_10px_22px_rgba(99,102,241,0.24)]"
-                    >
-                      Collect
-                    </Link>
-                  ) : (
-                    <span className="inline-flex h-8 shrink-0 items-center justify-center rounded-xl border border-[rgba(34,197,94,0.3)] bg-[rgba(34,197,94,0.1)] px-3 text-[11px] font-semibold text-[#22c55e]">
-                      ✓ Paid
-                    </span>
-                  )}
-                </div>
-              ))
-            )}
-            {hasMore && (
+                ) : (
+                  <StatusBadge status="paid">Paid</StatusBadge>
+                )}
+              </div>
+            ))}
+            {hasMore ? (
               <button
                 type="button"
                 onClick={() => setActivityVisible((v) => v + 8)}
-                className="w-full rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] py-2 text-[11px] font-semibold text-[color:var(--fg-secondary)] transition hover:bg-[color:var(--surface-strong)] hover:text-[color:var(--fg-primary)]"
+                className="w-full rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] py-2 text-[length:var(--text-xs-size)] font-semibold text-[color:var(--fg-secondary)] hover:bg-[color:var(--surface-strong)] hover:text-[color:var(--fg-primary)]"
               >
                 Load more ({allDueItems.length - activityVisible} remaining)
               </button>
-            )}
+            ) : null}
           </div>
-        </Card>
-      </section>
-
-      {/* ── DESKTOP LAYOUT (unchanged) ── */}
-      <section className="hidden gap-3 lg:grid">
-        <div className="nestiq-grid-bg relative overflow-hidden rounded-[22px] border border-white/8 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.24),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(245,158,11,0.16),transparent_26%),linear-gradient(180deg,#111114_0%,#18181c_100%)] p-3 sm:p-4 text-white shadow-[0_28px_70px_rgba(0,0,0,0.38)]">
-          {/* clip-path clips blur compositing layers in all browsers — overflow-hidden alone doesn't on iOS Safari */}
-          <div className="pointer-events-none absolute inset-0 overflow-hidden [clip-path:inset(0_round_22px)]">
-            <div className="absolute -right-12 top-0 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(129,140,248,0.24)_0%,rgba(255,255,255,0)_70%)] blur-2xl animate-[dashboard-glow_8s_ease-in-out_infinite]" />
-            <div className="absolute bottom-[-6rem] left-[-3rem] h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(245,158,11,0.18)_0%,rgba(245,158,11,0)_70%)] blur-3xl" />
-          </div>
-          <div className="relative grid items-start gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-100/70">Owner dashboard</p>
-              <h1 className="font-display mt-1.5 max-w-2xl text-[clamp(1.5rem,8vw,2rem)] font-bold leading-tight text-white xl:text-[2.25rem]">{hostel.hostelName}</h1>
-              <p className="mt-2 max-w-xl text-[13px] leading-5 text-zinc-300">{hostel.address}</p>
-              <div className="mt-4 inline-flex items-center rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur">
-                {paymentHealthScore}/100 health score • {attentionCount} collections need attention
-              </div>
-              <div className="mt-4 grid gap-2.5 sm:grid-cols-4">
-                <DesktopMetric icon={CreditCard} label="Collected" value={`₹${totalCollected.toLocaleString("en-IN")}`} />
-                <DesktopMetric icon={TrendingUp} label="Collection Rate" value={`${collectionRate}%`} />
-                <DesktopMetric icon={Users} label={isResidence ? "Occupied Units" : "Occupied"} value={String(occupiedBeds)} />
-                <DesktopMetric icon={DoorOpen} label="At Risk" value={String(attentionCount)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <ActionTile href="/owner/tenants?action=add-tenant" icon={Users} label="Add Tenant" note="New check-in" variant="desktop" />
-              <ActionTile href="/owner/payments" icon={CreditCard} label="Pay Rent" note="Collect rent" variant="desktop" />
-              <ActionTile href="/owner/rooms?view=available" icon={DoorOpen} label="Available" note={isResidence ? "Vacant units" : "Open beds"} variant="desktop" />
-              <ActionTile href="/owner/notifications" icon={AlertTriangle} label="Alerts" note={`${overdue.length} overdue`} variant="desktop" />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-3 xl:grid-cols-[1.15fr_0.85fr]">
-          <Card className="overflow-hidden">
-            <div className="border-b border-[color:var(--border)] px-4 py-2.5">
-              <h2 className="font-display text-[15px] font-semibold text-white">Upcoming dues</h2>
-            </div>
-            <div className="overflow-x-auto touch-action-pan-x">
-              <table className="min-w-[520px] text-left text-[13px]">
-                <thead className="bg-[color:var(--surface-strong)] text-[color:var(--fg-secondary)]">
-                  <tr>
-                    <th className="px-4 py-2.5 font-medium">Tenant</th>
-                    <th className="px-4 py-2.5 font-medium">Room</th>
-                    <th className="px-4 py-2.5 font-medium">Due</th>
-                    <th className="px-4 py-2.5 font-medium">Status</th>
-                    <th className="px-4 py-2.5 font-medium text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentDueItems.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-5 text-center text-[color:var(--fg-secondary)]">No upcoming dues.</td>
-                    </tr>
-                  ) : (
-                    recentDueItems.map(({ tenant, status }) => (
-                      <tr key={tenant.tenantId} className="border-t border-[color:var(--border)]">
-                        <td className="px-4 py-2.5 font-medium text-white">{tenant.fullName}</td>
-                        <td className="px-4 py-2.5 text-[color:var(--fg-secondary)]">{tenant.assignment?.roomNumber ?? "-"}</td>
-                        <td className="px-4 py-2.5 text-[color:var(--fg-secondary)]">{formatPaymentDate(tenant.nextDueDate)}</td>
-                        <td className="px-4 py-2.5"><span className={ownerStatusClass(status.tone)}>{status.label}</span></td>
-                        <td className="px-4 py-2.5 text-right">
-                          {status.tone !== "green" ? (
-                            <Link
-                              href={`/owner/payments?action=pay-rent&tenantId=${tenant.tenantId}`}
-                              className="inline-flex min-h-8 items-center justify-center gap-1 rounded-xl border border-[rgba(99,102,241,0.4)] bg-[linear-gradient(180deg,#6366f1_0%,#4f46e5_100%)] px-3 text-[11px] font-semibold text-white shadow-[0_10px_22px_rgba(99,102,241,0.24)]"
-                            >
-                              Collect <ArrowRight className="h-3.5 w-3.5" />
-                            </Link>
-                          ) : (
-                            <span className="text-[11px] font-semibold text-[color:var(--fg-secondary)]">Paid</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-
-          <Card className="p-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--fg-secondary)]">Performance snapshot</p>
-            <div className="mt-2.5 grid gap-2.5">
-              {snapshotRows.map((row) => (
-                <SnapshotRow key={row.label} label={row.label} value={row.value} />
-              ))}
-            </div>
-          </Card>
-        </div>
+        )}
       </section>
 
       <TenantRentSearch tenants={tenants} hideButton />
@@ -341,178 +228,64 @@ function DashboardContent({
   );
 }
 
-
-
-
-function CompactMetric({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="nestiq-stat flex flex-col items-center gap-1 rounded-[10px] px-2 py-2.5">
-      <Icon className="h-3.5 w-3.5 text-[color:var(--fg-secondary)]" />
-      <p className="text-xs font-semibold leading-none text-white">{value}</p>
-      <p className="text-[9px] font-medium uppercase tracking-[0.1em] text-[color:var(--fg-secondary)]">{label}</p>
-    </div>
-  );
-}
-
-function CompactInlineStat({
-  icon: Icon,
-  label,
-  value,
-  color,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  color: "indigo" | "amber";
-}) {
-  const iconColor = color === "indigo" ? "text-[var(--accent)]" : "text-amber-400";
-  const valColor = color === "indigo" ? "text-white" : "text-amber-300";
-  return (
-    <div className="nestiq-stat flex items-center gap-2 rounded-[10px] px-2.5 py-2">
-      <div className={`rounded-lg bg-white/8 p-1.5 ${iconColor}`}>
-        <Icon className="h-3 w-3" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-white/50">{label}</p>
-        <p className={`text-xs font-semibold leading-none ${valColor}`}>{value}</p>
-      </div>
-    </div>
-  );
-}
-
-// ── Shared sub-components ──────────────────────────────────────────────
-
 function ActionTile({
   href,
   icon: Icon,
   label,
   note,
-  variant,
-  tone = "neutral",
+  tone = "default",
 }: {
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ size?: number }>;
   label: string;
   note: string;
-  variant: "mobile" | "desktop";
-  tone?: "neutral" | "danger";
+  tone?: "default" | "danger";
 }) {
-  if (variant === "desktop") {
-    return (
-      <Link
-        href={href}
-        className="rounded-[8px] border border-white/12 bg-white/10 px-3 py-2.5 text-white shadow-[0_14px_30px_rgba(8,18,37,0.1)] backdrop-blur transition hover:-translate-y-1 hover:bg-white/14"
-      >
-        <div className="flex items-start gap-3">
-          <div className="rounded-2xl bg-white/12 p-2 text-sky-200 ring-1 ring-white/10">
-            <Icon className="h-4 w-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[15px] font-semibold text-white">{label}</p>
-            <p className="mt-0.5 text-[10px] text-blue-100/78">{note}</p>
-          </div>
-        </div>
-      </Link>
-    );
-  }
-
-  const iconBg = tone === "danger"
-    ? "bg-[rgba(239,68,68,0.15)] text-red-400"
-    : "bg-[color:var(--brand-soft)] text-[color:var(--accent-electric)]";
-
+  const iconClass =
+    tone === "danger"
+      ? "bg-[color:var(--error-soft)] text-[color:var(--error)]"
+      : "bg-[color:var(--brand-soft)] text-[color:var(--accent-electric)]";
   return (
     <Link
       href={href}
-      className="flex items-center justify-between rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 shadow-[0_10px_24px_rgba(2,6,23,0.16)] transition hover:-translate-y-0.5"
+      className="flex flex-col gap-2 rounded-[var(--radius-lg)] border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-3 shadow-[var(--shadow-1)] transition hover:-translate-y-0.5 hover:border-[color:var(--border-strong)]"
     >
-      <div className="flex items-center gap-3">
-        <div className={`rounded-[10px] p-2.5 ${iconBg}`}>
-          <Icon className="h-4 w-4" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-[color:var(--fg-primary)]">{label}</p>
-          <p className="mt-0.5 truncate text-[11px] text-[color:var(--fg-secondary)]">{note}</p>
-        </div>
-      </div>
-      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-white/25" />
+      <span className={`flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] ${iconClass}`}>
+        <Icon size={17} />
+      </span>
+      <span className="text-[length:var(--text-sm-size)] font-semibold text-[color:var(--fg-primary)]">{label}</span>
+      <span className="truncate text-[length:var(--text-xs-size)] text-[color:var(--fg-secondary)]">{note}</span>
     </Link>
   );
 }
 
-function DesktopMetric({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="nestiq-stat rounded-[18px] px-3.5 py-3 shadow-[0_16px_34px_rgba(8,18,37,0.12)]">
-      <div className="flex items-center gap-2">
-        <div className="rounded-xl bg-white/10 p-1.5 text-indigo-200 ring-1 ring-white/8">
-          <Icon className="h-4 w-4" />
-        </div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/65">{label}</p>
-      </div>
-      <p className="mt-2 text-xl font-semibold leading-none text-white sm:text-2xl">{value}</p>
-    </div>
-  );
-}
-
-function SnapshotRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex min-w-0 items-center justify-between gap-2 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
-      <span className="min-w-0 truncate text-sm text-[color:var(--fg-secondary)]">{label}</span>
-      <span className="shrink-0 text-sm font-semibold text-white">{value}</span>
-    </div>
-  );
-}
-
-const CARD_W = "w-[min(calc(100vw-2rem),300px)] sm:w-[300px]";
-
-const TONE_CONFIG = {
-  red:    { border: "border-red-500/30",    iconBg: "bg-red-500/15",    badge: "bg-red-500/15 text-red-400",    badgeLabel: "CRITICAL", collectClass: "border-red-500/30 bg-red-500/12 text-red-400 hover:bg-red-500/22" },
-  orange: { border: "border-amber-500/30",  iconBg: "bg-amber-500/15",  badge: "bg-amber-500/15 text-amber-400", badgeLabel: "DUE SOON", collectClass: "border-amber-500/30 bg-amber-500/12 text-amber-400 hover:bg-amber-500/22" },
-  yellow: { border: "border-yellow-500/25", iconBg: "bg-yellow-500/12", badge: "bg-yellow-500/12 text-yellow-400", badgeLabel: "UPCOMING", collectClass: "border-yellow-500/25 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/18" },
-} as const;
+// ── Alert carousel — preserves dismiss + see-more + upcoming-fill logic ──────
 
 const UPCOMING_FILL = [
-  { icon: "💳", title: "Online rent payments", desc: "Collect rent digitally — tenants pay from their phone.", badge: "COMING SOON" },
-  { icon: "💬", title: "WhatsApp notifications", desc: "Auto-send payment reminders via WhatsApp.", badge: "COMING SOON" },
-  { icon: "📧", title: "Gmail notifications", desc: "Email receipts and due-date reminders automatically.", badge: "COMING SOON" },
-  { icon: "📋", title: "Tenant portal", desc: "Tenants view receipts and raise maintenance requests.", badge: "COMING SOON" },
-  { icon: "📊", title: "Analytics dashboard", desc: "Unified occupancy and collection view across hostels.", badge: "COMING SOON" },
+  { icon: "💳", title: "Online rent payments", desc: "Collect rent digitally — tenants pay from their phone." },
+  { icon: "💬", title: "WhatsApp notifications", desc: "Auto-send payment reminders via WhatsApp." },
+  { icon: "📧", title: "Gmail notifications", desc: "Email receipts and due-date reminders automatically." },
+  { icon: "📋", title: "Tenant portal", desc: "Tenants view receipts and raise maintenance requests." },
+  { icon: "📊", title: "Analytics dashboard", desc: "Unified occupancy and collection view across hostels." },
 ];
 
-type AlertCard  = { kind: "alert";    tenant: TenantRecord; status: ReturnType<typeof getDueStatus> };
-type FillCard   = { kind: "upcoming"; icon: string; title: string; desc: string; badge: string };
-type SeeMoreCard = { kind: "seemore"; count: number };
-type BannerCard = AlertCard | FillCard | SeeMoreCard;
+type BannerAlert = { kind: "alert"; tenant: TenantRecord; status: ReturnType<typeof getDueStatus> };
+type BannerFill = { kind: "upcoming"; icon: string; title: string; desc: string };
+type BannerSeeMore = { kind: "seemore"; count: number };
+type BannerCard = BannerAlert | BannerFill | BannerSeeMore;
 
 function DashboardAlertBanner({
   alertItems,
 }: {
   alertItems: Array<{ tenant: TenantRecord; status: ReturnType<typeof getDueStatus> }>;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeIdx, setActiveIdx] = useState(0);
-  const lastInteractionRef = useRef(0);
-
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try {
       const raw = typeof window !== "undefined" ? localStorage.getItem("dash_dismissed_v1") : null;
       return new Set<string>(raw ? (JSON.parse(raw) as string[]) : []);
-    } catch { return new Set<string>(); }
+    } catch {
+      return new Set<string>();
+    }
   });
 
   const active = useMemo(
@@ -522,236 +295,124 @@ function DashboardAlertBanner({
 
   const cards = useMemo<BannerCard[]>(() => {
     const alerts = active.slice(0, 5);
-    const extra  = active.length - alerts.length;
-    const fill   = extra > 0 ? [] : UPCOMING_FILL.slice(0, 5 - alerts.length);
+    const extra = active.length - alerts.length;
+    const fill = extra > 0 ? [] : UPCOMING_FILL.slice(0, 5 - alerts.length);
     return [
-      ...alerts.map((a): AlertCard   => ({ kind: "alert",   ...a })),
-      ...fill.map((f):  FillCard     => ({ kind: "upcoming", ...f })),
+      ...alerts.map((a): BannerAlert => ({ kind: "alert", ...a })),
+      ...fill.map((f): BannerFill => ({ kind: "upcoming", ...f })),
       ...(extra > 0 ? [{ kind: "seemore" as const, count: extra }] : []),
     ];
   }, [active]);
-
-  const totalCards = cards.length;
-
-  const scrollToCard = useCallback((idx: number) => {
-    const el = scrollRef.current;
-    if (!el || totalCards === 0) return;
-    const child = el.children[idx] as HTMLElement | undefined;
-    if (child) el.scrollTo({ left: child.offsetLeft - 16, behavior: "smooth" });
-  }, [totalCards]);
-
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el || totalCards === 0) return;
-    const children = Array.from(el.children) as HTMLElement[];
-    const sl = el.scrollLeft;
-    let closest = 0, minDist = Infinity;
-    children.forEach((c, i) => {
-      const d = Math.abs(c.offsetLeft - 16 - sl);
-      if (d < minDist) { minDist = d; closest = i; }
-    });
-    setActiveIdx(closest);
-    lastInteractionRef.current = Date.now();
-  }, [totalCards]);
-
-  useEffect(() => {
-    if (totalCards <= 1) return;
-    const t = setInterval(() => {
-      if (Date.now() - lastInteractionRef.current < 3000) return;
-      setActiveIdx((prev) => {
-        const next = (prev + 1) % totalCards;
-        scrollToCard(next);
-        return next;
-      });
-    }, 4500);
-    return () => clearInterval(t);
-  }, [totalCards, scrollToCard]);
 
   const dismiss = (tenantId: string) => {
     setDismissed((prev) => {
       const next = new Set(prev);
       next.add(tenantId);
-      try { localStorage.setItem("dash_dismissed_v1", JSON.stringify([...next])); } catch {}
+      try {
+        localStorage.setItem("dash_dismissed_v1", JSON.stringify([...next]));
+      } catch {}
       return next;
     });
   };
 
+  if (cards.length === 0) return null;
+
   return (
-    <div className="w-full">
-      <div
-        ref={scrollRef}
-        onScroll={handleScroll}
-        className="flex snap-x snap-mandatory overflow-x-auto gap-3"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none", scrollPaddingLeft: "1rem" }}
-      >
-        {cards.map((card, i) => {
-          if (card.kind === "alert") {
-            const { tenant, status } = card;
-            const tone = (status.tone === "red" ? "red" : status.tone === "orange" ? "orange" : "yellow") as keyof typeof TONE_CONFIG;
-            const cfg  = TONE_CONFIG[tone];
-            const icon = tone === "red" ? "🚨" : tone === "orange" ? "⏰" : "📅";
-            return (
-              <div key={tenant.tenantId} className={`snap-start shrink-0 ${CARD_W} rounded-[16px] border ${cfg.border} bg-[rgba(255,255,255,0.04)] p-3.5 flex flex-col gap-3`}>
-                <div className="flex items-start gap-3">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg ${cfg.iconBg}`}>{icon}</div>
-                  <div className="min-w-0 flex-1">
-                    <span className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-bold tracking-[0.12em] ${cfg.badge}`}>{cfg.badgeLabel}</span>
-                    <p className="mt-0.5 text-[13px] font-semibold leading-snug text-white">{tenant.fullName}</p>
-                    <p className="text-[11px] text-white/50">Room {tenant.assignment?.roomNumber ?? "—"} · ₹{tenant.monthlyRent.toLocaleString("en-IN")} · {status.label}</p>
-                  </div>
-                </div>
+    <CardCarousel ariaLabel="Rent alerts" autoAdvanceMs={4500} className="-mt-1">
+      {cards.map((card, i) => {
+        if (card.kind === "alert") {
+          const { tenant, status } = card;
+          const tone = status.tone === "red" ? "critical" : status.tone === "orange" ? "warning" : "upcoming";
+          return (
+            <AlertCard
+              key={tenant.tenantId}
+              tone={tone}
+              title={tenant.fullName}
+              message={`Room ${tenant.assignment?.roomNumber ?? "—"} · ${status.label}`}
+              amountLabel={inr(tenant.monthlyRent)}
+              action={
                 <div className="flex gap-2">
                   <Link
                     href={`/owner/payments?action=pay-rent&tenantId=${tenant.tenantId}`}
-                    className={`flex-1 inline-flex items-center justify-center rounded-xl border py-2 text-[12px] font-semibold transition ${cfg.collectClass}`}
+                    className="inline-flex flex-1 items-center justify-center rounded-[var(--radius-md)] border border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] py-1.5 text-[12px] font-semibold text-[color:var(--fg-primary)] hover:bg-[color:var(--surface-strong)]"
                   >
-                    Collect ₹{tenant.monthlyRent.toLocaleString("en-IN")}
+                    Collect {inr(tenant.monthlyRent)}
                   </Link>
                   <button
                     type="button"
                     onClick={() => dismiss(tenant.tenantId)}
-                    aria-label="Dismiss"
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/35 transition hover:bg-white/8 hover:text-white/60"
+                    aria-label={`Dismiss alert for ${tenant.fullName}`}
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[color:var(--border)] text-[color:var(--fg-tertiary)] hover:text-[color:var(--fg-primary)]"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X size={14} />
                   </button>
                 </div>
-              </div>
-            );
-          }
-
-          if (card.kind === "upcoming") {
-            return (
-              <div key={`up-${i}`} className={`snap-start shrink-0 ${CARD_W} rounded-[16px] border border-[rgba(99,102,241,0.2)] bg-[rgba(99,102,241,0.04)] p-3.5 flex flex-col gap-3`}>
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(99,102,241,0.15)] text-lg">{card.icon}</div>
-                  <div className="min-w-0 flex-1">
-                    <span className="inline-block rounded-full bg-[rgba(99,102,241,0.15)] px-2 py-0.5 text-[9px] font-bold tracking-[0.12em] text-[#a5b4fc]">{card.badge}</span>
-                    <p className="mt-0.5 text-[13px] font-semibold leading-snug text-white">{card.title}</p>
-                    <p className="text-[11px] text-white/45">{card.desc}</p>
-                  </div>
-                </div>
-                <div className="mt-auto rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-center text-[11px] text-white/30">
-                  Feature in development
-                </div>
-              </div>
-            );
-          }
-
-          /* kind === "seemore" */
+              }
+            />
+          );
+        }
+        if (card.kind === "upcoming") {
           return (
-            <div key="seemore" className={`snap-start shrink-0 ${CARD_W} rounded-[16px] border border-white/8 bg-[rgba(255,255,255,0.03)] flex flex-col items-center justify-center gap-2.5 p-6 text-center`}>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/8 text-xl">🔔</div>
-              <p className="text-[14px] font-semibold text-white">+{card.count} more alert{card.count > 1 ? "s" : ""}</p>
-              <p className="text-[11px] text-white/40">View all pending collections</p>
-              <Link href="/owner/notifications" className="mt-1 inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/8 px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-white/14">
+            <AlertCard
+              key={`up-${i}`}
+              tone="upcoming"
+              title={`${card.icon}  ${card.title}`}
+              message={card.desc}
+              action={
+                <span className="block rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] py-1.5 text-center text-[11px] text-[color:var(--fg-tertiary)]">
+                  Coming soon
+                </span>
+              }
+            />
+          );
+        }
+        return (
+          <AlertCard
+            key="seemore"
+            tone="upcoming"
+            title={`+${card.count} more alert${card.count > 1 ? "s" : ""}`}
+            message="View all pending collections"
+            action={
+              <Link
+                href="/owner/notifications"
+                className="block rounded-[var(--radius-md)] border border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] py-1.5 text-center text-[12px] font-semibold text-[color:var(--fg-primary)] hover:bg-[color:var(--surface-strong)]"
+              >
                 See all alerts →
               </Link>
-            </div>
-          );
-        })}
-      </div>
-
-      {totalCards > 1 && (
-        <div className="mt-2.5 flex items-center justify-center gap-1.5 px-4">
-          {cards.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => { lastInteractionRef.current = Date.now(); scrollToCard(i); setActiveIdx(i); }}
-              aria-label={`Card ${i + 1}`}
-              className={`rounded-full transition-all duration-300 ${i === activeIdx ? "h-1.5 w-5 bg-white/55" : "h-1.5 w-1.5 bg-white/18 hover:bg-white/35"}`}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+            }
+          />
+        );
+      })}
+    </CardCarousel>
   );
 }
 
 function LoadingState() {
   return (
-    <div className="space-y-3">
-      <section className="grid gap-3 lg:hidden">
-        {/* Alert banner skeleton */}
-        <div className="flex gap-3 overflow-hidden">
-          <SkeletonBlock className={`h-[112px] shrink-0 rounded-[16px] ${CARD_W}`} />
-          <SkeletonBlock className={`h-[112px] shrink-0 rounded-[16px] opacity-40 ${CARD_W}`} />
+    <div className="flex flex-col gap-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1">
+          <SkeletonBlock className="h-3 w-24" />
+          <SkeletonBlock className="mt-2 h-8 w-56" />
+          <SkeletonBlock className="mt-2 h-3.5 w-40" />
         </div>
-        {/* Dot skeleton */}
-        <div className="flex items-center justify-center gap-1.5">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <SkeletonBlock key={i} className={`h-1.5 rounded-full ${i === 0 ? "w-5" : "w-1.5"}`} />
-          ))}
-        </div>
-        {/* Action tiles skeleton */}
-        <div className="grid grid-cols-2 gap-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <SkeletonBlock key={i} className="h-[72px] rounded-[12px]" />
-          ))}
-        </div>
-        {/* Snapshot skeleton */}
-        <SkeletonBlock className="h-52 rounded-[16px]" />
-        {/* Recent activity skeleton */}
-        <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonBlock key={i} className="h-[60px] rounded-[12px]" />
-          ))}
-        </div>
-      </section>
-
-      <section className="hidden gap-3 lg:grid">
-        <div className="rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-3 sm:p-4">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-3 py-1.5 text-[11px] font-semibold text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]">
-            <span className="h-2 w-2 rounded-full bg-[var(--cta)] animate-[status-breathe_1s_ease-in-out_infinite]" />
-            Preparing dashboard
-          </div>
-          <div className="mt-4 grid items-start gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-            <div>
-              <SkeletonBlock className="h-3 w-20" />
-              <SkeletonBlock className="mt-2 h-10 w-72" />
-              <SkeletonBlock className="mt-2 h-3.5 w-56" />
-              <SkeletonBlock className="mt-3 h-6 w-64 rounded-full" />
-              <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <SkeletonBlock key={i} className="h-20 rounded-[8px]" />
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <SkeletonBlock key={i} className="h-20 rounded-[8px]" />
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="grid gap-3 xl:grid-cols-[1.15fr_0.85fr]">
-          <Card className="overflow-hidden">
-            <div className="border-b border-[color:var(--border)] px-4 py-2.5">
-              <SkeletonBlock className="h-4 w-32" />
-            </div>
-            <div className="space-y-0">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex gap-4 border-t border-[color:var(--border)] px-4 py-3">
-                  <SkeletonBlock className="h-4 w-28" />
-                  <SkeletonBlock className="h-4 w-12" />
-                  <SkeletonBlock className="h-4 w-20" />
-                  <SkeletonBlock className="h-4 w-16" />
-                  <SkeletonBlock className="ml-auto h-4 w-16" />
-                </div>
-              ))}
-            </div>
-          </Card>
-          <Card className="p-3.5">
-            <SkeletonBlock className="h-3 w-28" />
-            <div className="mt-2.5 space-y-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <SkeletonBlock key={i} className="h-10 rounded-[8px]" />
-              ))}
-            </div>
-          </Card>
-        </div>
-      </section>
+        <SkeletonBlock className="h-6 w-16 rounded-full" />
+      </div>
+      <div className="flex gap-3 overflow-hidden">
+        <SkeletonBlock className="h-[120px] w-72 shrink-0 rounded-[var(--radius-lg)]" />
+        <SkeletonBlock className="h-[120px] w-72 shrink-0 rounded-[var(--radius-lg)] opacity-40" />
+      </div>
+      <SkeletonBlock className="h-44 rounded-[var(--radius-lg)]" />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <SkeletonBlock key={i} className="h-24 rounded-[var(--radius-lg)]" />
+        ))}
+      </div>
+      <div className="flex flex-col gap-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <SkeletonBlock key={i} className="h-14 rounded-[var(--radius-lg)]" />
+        ))}
+      </div>
     </div>
   );
 }
