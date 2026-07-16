@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users2, X } from "lucide-react";
+import { Users2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
+import { Modal } from "@/components/ui/overlay/modal";
+import { TextInput } from "@/components/ui/form/text-input";
 import { updateTenantFamilyMembers } from "@/services/tenants/tenants.service";
 import type { TenantFamilyMember, TenantRecord } from "@/types/tenant";
 
@@ -39,8 +39,7 @@ export function TenantFamilyMembersModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  useLockBodyScroll(open);
-
+  /* eslint-disable react-hooks/set-state-in-effect -- sync tenant props into form state when the modal opens */
   useEffect(() => {
     if (!open || !tenant) return;
     if (tenant.familyMembers && tenant.familyMembers.length > 0) {
@@ -55,10 +54,9 @@ export function TenantFamilyMembersModal({
     }
     setError("");
   }, [open, tenant]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  if (!open || !tenant) {
-    return null;
-  }
+  if (!open || !tenant) return null;
 
   const handleSave = async () => {
     const cleaned = members
@@ -69,23 +67,13 @@ export function TenantFamilyMembersModal({
       }))
       .filter((member) => member.name || member.relation || member.age !== undefined);
 
-    if (cleaned.length === 0) {
-      setError("Add at least one family member.");
-      return;
-    }
+    if (cleaned.length === 0) return setError("Add at least one family member.");
 
     const hasInvalid = cleaned.some(
       (member) => !member.name || !member.relation || (member.age !== undefined && (!Number.isFinite(member.age) || member.age < 0)),
     );
-
-    if (hasInvalid) {
-      setError("Each family member needs name and relation. Age must be valid.");
-      return;
-    }
-
-    if (saving) {
-      return;
-    }
+    if (hasInvalid) return setError("Each family member needs name and relation. Age must be valid.");
+    if (saving) return;
 
     setSaving(true);
     setError("");
@@ -105,108 +93,65 @@ export function TenantFamilyMembersModal({
     onSaved(data.tenant);
   };
 
+  const patch = (id: string, key: keyof FamilyMemberForm, value: string) =>
+    setMembers((current) => current.map((entry) => (entry.id === id ? { ...entry, [key]: value } : entry)));
+
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="family-members-modal-title"
-      className="fixed inset-0 z-50 overflow-y-auto overscroll-none touch-pan-y bg-slate-950/40 px-3 py-3 sm:px-4 sm:py-4"
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="lg"
+      title="Family members"
+      description="Add family details for a residence tenant before assigning the unit."
+      footer={
+        <div className="flex flex-col-reverse gap-2 sm:flex-row">
+          <Button variant="secondary" fullWidth onClick={onClose} disabled={saving} className="sm:flex-1">Later</Button>
+          <Button fullWidth onClick={handleSave} loading={saving} className="sm:flex-1">
+            {saving ? "Saving…" : "Save and Continue"}
+          </Button>
+        </div>
+      }
     >
-      <div className="flex min-h-full items-center justify-center">
-        <Card className="max-h-[90dvh] w-[min(calc(100vw-2rem),42rem)] overflow-y-auto border-slate-100 bg-white p-0 shadow-[0_28px_70px_rgba(15,23,42,0.14)]">
-          <div className="flex items-start justify-between gap-4 px-4 pb-2 pt-4 sm:px-5 sm:pt-5">
-            <div>
-              <div id="family-members-modal-title" className="inline-flex items-center gap-2 rounded-[var(--radius-pill)] bg-white/72 px-3 py-1.5 text-[13px] font-semibold text-slate-700 shadow-sm">
-                <span className="rounded-[8px] bg-blue-600 p-1 text-white">
-                  <Users2 className="h-3.5 w-3.5" />
-                </span>
-                Family Members
-              </div>
-              <p className="mt-2 text-[11px] leading-5 text-slate-500">
-                Add family details for residence tenant before assigning the unit.
-              </p>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-[color:var(--fg-secondary)]">
+            <span className="flex h-6 w-6 items-center justify-center rounded-[var(--radius-sm)] bg-[color:var(--cta)] text-white"><Users2 size={13} /></span>
+            Members
+          </span>
+          <Button variant="secondary" size="small" disabled={saving} onClick={() => setMembers((c) => [...c, createFamilyMember()])}>
+            Add Member
+          </Button>
+        </div>
+
+        {members.map((member, index) => (
+          <div key={member.id} className="rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-2.5">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-[11px] font-semibold text-[color:var(--fg-secondary)]">Member {index + 1}</p>
+              {members.length > 1 ? (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => setMembers((c) => c.filter((entry) => entry.id !== member.id))}
+                  className="text-[11px] font-semibold text-[color:var(--error)]"
+                >
+                  Remove
+                </button>
+              ) : null}
             </div>
-            <Button variant="ghost" disabled={saving} aria-label="Close" className="rounded-[var(--radius-pill)] px-3 text-slate-500" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="space-y-3 px-4 pb-4 sm:px-5 sm:pb-5">
-            <div className="flex items-center justify-end">
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={saving}
-                onClick={() => setMembers((current) => [...current, createFamilyMember()])}
-                className="h-8 rounded-xl px-3 text-[11px]"
-              >
-                Add Member
-              </Button>
-            </div>
-            {members.map((member, index) => (
-              <div key={member.id} className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <p className="text-[11px] font-semibold text-slate-600">Member {index + 1}</p>
-                  {members.length > 1 ? (
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={() => setMembers((current) => current.filter((entry) => entry.id !== member.id))}
-                      className="text-[11px] font-semibold text-[color:var(--error)]"
-                    >
-                      Remove
-                    </button>
-                  ) : null}
-                </div>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  <input
-                    value={member.name}
-                    onChange={(event) =>
-                      setMembers((current) => current.map((entry) => (entry.id === member.id ? { ...entry, name: event.target.value } : entry)))
-                    }
-                    disabled={saving}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-700 outline-none"
-                    placeholder="Name"
-                  />
-                  <input
-                    value={member.relation}
-                    onChange={(event) =>
-                      setMembers((current) =>
-                        current.map((entry) => (entry.id === member.id ? { ...entry, relation: event.target.value } : entry)),
-                      )
-                    }
-                    disabled={saving}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-700 outline-none"
-                    placeholder="Relation"
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    value={member.age}
-                    onChange={(event) =>
-                      setMembers((current) => current.map((entry) => (entry.id === member.id ? { ...entry, age: event.target.value } : entry)))
-                    }
-                    disabled={saving}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-700 outline-none"
-                    placeholder="Age (optional)"
-                  />
-                </div>
-              </div>
-            ))}
-
-            {error ? <div role="alert" className="rounded-2xl border border-[color:var(--error)] bg-[color:var(--error-soft)] px-3 py-2.5 text-sm font-medium text-[color:var(--error)]">{error}</div> : null}
-
-            <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
-              <Button variant="secondary" onClick={onClose} disabled={saving} className="w-full rounded-2xl border-slate-200 bg-white text-slate-700 shadow-sm sm:flex-1">
-                Later
-              </Button>
-              <Button onClick={handleSave} disabled={saving} loading={saving} className="w-full rounded-2xl sm:flex-1">
-                {saving ? "Saving..." : "Save and Continue"}
-              </Button>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <TextInput value={member.name} onChange={(e) => patch(member.id, "name", e.target.value)} disabled={saving} placeholder="Name" />
+              <TextInput value={member.relation} onChange={(e) => patch(member.id, "relation", e.target.value)} disabled={saving} placeholder="Relation" />
+              <TextInput value={member.age} onChange={(e) => patch(member.id, "age", e.target.value.replace(/\D/g, ""))} inputMode="numeric" disabled={saving} placeholder="Age (optional)" />
             </div>
           </div>
-        </Card>
+        ))}
+
+        {error ? (
+          <div role="alert" className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--error)_35%,transparent)] bg-[color:var(--error-soft)] px-3 py-2.5 text-sm font-medium text-[color:var(--error)]">
+            {error}
+          </div>
+        ) : null}
       </div>
-    </div>
+    </Modal>
   );
 }

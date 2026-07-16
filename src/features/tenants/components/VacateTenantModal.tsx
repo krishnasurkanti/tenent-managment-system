@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { BottomSheet } from "@/components/ui/overlay/bottom-sheet";
+import { FormField } from "@/components/ui/form/field";
+import { AmountInput } from "@/components/ui/form/amount-input";
+import { TextInput } from "@/components/ui/form/text-input";
+import { Textarea } from "@/components/ui/form/textarea";
 import { ProcessingPill } from "@/components/ui/processing-pill";
-import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { removeTenant } from "@/services/tenants/tenants.service";
 import { fmtTenantId } from "@/utils/payment";
 import type { TenantRecord } from "@/types/tenant";
@@ -30,8 +34,6 @@ export function VacateTenantModal({ tenant, onClose, onRemoved, asPage = false }
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  useLockBodyScroll(asPage ? false : open);
-
   const reset = () => {
     setAdvanceRefundEligible(false);
     setRefundAdvance(false);
@@ -49,22 +51,12 @@ export function VacateTenantModal({ tenant, onClose, onRemoved, asPage = false }
     onClose();
   };
 
-  useEffect(() => {
-    if (!open || asPage) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, asPage, submitting]);
-
-  const suggestedRefund = tenant
-    ? String(tenant.advanceBalance ?? tenant.advanceAmount ?? 0)
-    : "0";
+  const suggestedRefund = tenant ? String(tenant.advanceBalance ?? tenant.advanceAmount ?? 0) : "0";
   const displayRefund = refundAmount === "" ? suggestedRefund : refundAmount;
 
   const handleRemove = async () => {
     if (!tenant) return;
-    if (!confirmed) { setError("Please check the confirmation box first."); return; }
+    if (!confirmed) return setError("Please check the confirmation box first.");
     if (submitting) return;
 
     const numericRefund = Number(displayRefund);
@@ -104,171 +96,140 @@ export function VacateTenantModal({ tenant, onClose, onRemoved, asPage = false }
 
   if ((!asPage && !open) || !tenant) return null;
 
-  /* ── wrapper ────────────────────────────────────────────────────────────── */
-  return (
-    <div
-      {...(!asPage && { role: "dialog", "aria-modal": "true", "aria-labelledby": "vacate-modal-title" })}
-      className={asPage
-        ? "w-full"
-        : "fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4 sm:py-4"
-      }
-      {...(!asPage && { style: { background: "rgba(2,6,23,0.82)", backdropFilter: "blur(6px)" } })}
-    >
-      <Card className={asPage
-        ? "flex w-full flex-col overflow-hidden rounded-[10px] border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0"
-        : "flex w-full max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl rounded-b-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] sm:w-[min(calc(100vw-2rem),40rem)] sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
-      }>
-
-        {/* Header */}
-        <div className="relative shrink-0 px-4 pb-3 pt-4 sm:px-5 sm:pt-5">
-          <div className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(90deg,rgba(239,68,68,0.12)_0%,rgba(220,38,38,0.05)_100%)]" />
-          <div className="relative">
-            <div id="vacate-modal-title" className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[13px] font-semibold text-red-400">
-              <LogOut className="h-3.5 w-3.5" />
-              Vacate Tenant
-            </div>
-            <p className="mt-2 text-[13px] font-semibold text-white">{tenant.fullName}</p>
-            <p className="text-[11px] text-white/45">
-              #{fmtTenantId(tenant.tenantId)} · Room {tenant.assignment?.roomNumber ?? "Unassigned"}
-            </p>
-          </div>
-        </div>
-
-        {/* Body — scrollable only in modal mode; page handles its own scroll */}
-        <div
-          className={asPage
-            ? "px-4 pb-4 sm:px-5"
-            : "min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-5"
-          }
-          {...(!asPage && { style: { touchAction: "pan-y" } })}
-        >
-          <div className="space-y-3">
-
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
-              <p className="text-[11px] text-white/40">
-                Removing frees the room/bed for a new tenant. Payment history is preserved.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 space-y-3">
-              <p className="text-[12px] font-semibold text-white/70">Vacating settlement</p>
-              <p className="text-[11px] text-white/40">
-                Suggested refundable advance: ₹{(tenant.advanceBalance ?? tenant.advanceAmount ?? 0).toLocaleString("en-IN")}
-              </p>
-
-              <div className="grid gap-2 sm:grid-cols-2">
-                <label className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={advanceRefundEligible}
-                    onChange={(e) => setAdvanceRefundEligible(e.target.checked)}
-                    disabled={submitting}
-                    className="mt-0.5 h-4 w-4 accent-emerald-500"
-                  />
-                  <span className="text-[12px] text-white/70">Advance refund eligible?</span>
-                </label>
-                <label className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={refundAdvance}
-                    onChange={(e) => setRefundAdvance(e.target.checked)}
-                    disabled={submitting}
-                    className="mt-0.5 h-4 w-4 accent-emerald-500"
-                  />
-                  <span className="text-[12px] text-white/70">Refund advance?</span>
-                </label>
-              </div>
-
-              <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Refund amount</span>
-                <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5">
-                  <span className="text-[13px] text-white/40">₹</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={displayRefund}
-                    onChange={(e) => setRefundAmount(e.target.value)}
-                    onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
-                    disabled={submitting || !refundAdvance}
-                    className="w-full bg-transparent text-[13px] text-white outline-none disabled:opacity-40 placeholder:text-white/25"
-                  />
-                </div>
-              </label>
-
-              <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Notice given date</span>
-                <span className="mb-1.5 block text-[11px] text-white/35">Date tenant was informed of vacating (e.g. 30 days ago)</span>
-                <input
-                  type="date"
-                  value={noticeGivenDate}
-                  onChange={(e) => setNoticeGivenDate(e.target.value)}
-                  disabled={submitting}
-                  className="w-full rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5 text-[13px] text-white outline-none [color-scheme:dark] [&::-webkit-datetime-edit]:text-white"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-white/70">Note (optional)</span>
-                <textarea
-                  value={settlementNote}
-                  onChange={(e) => setSettlementNote(e.target.value)}
-                  disabled={submitting}
-                  rows={2}
-                  maxLength={500}
-                  placeholder="Optional settlement note"
-                  className="w-full resize-none rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-2.5 text-[13px] text-white outline-none placeholder:text-white/25"
-                />
-              </label>
-            </div>
-
-            {/* Confirmation checkbox */}
-            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/[0.08] p-3 text-[12px]">
-              <input
-                type="checkbox"
-                checked={confirmed}
-                onChange={(e) => setConfirmed(e.target.checked)}
-                disabled={submitting}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-red-500"
-                data-testid="vacate-confirm-checkbox"
-              />
-              <span className="text-red-300">
-                I understand <strong>{tenant.fullName}</strong> will be permanently removed. This cannot be undone.
-              </span>
-            </label>
-
-            {error ? (
-              <p role="alert" className="rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-[13px] text-red-400">{error}</p>
-            ) : null}
-            {submitting ? <ProcessingPill label="Removing tenant…" /> : null}
-          </div>
-        </div>
-
-        {/* Footer — sticky when asPage so it always visible without internal scroll */}
-        <div className={asPage
-          ? "sticky bottom-0 z-10 mt-4 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5 flex flex-col-reverse gap-3 sm:flex-row"
-          : "shrink-0 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5"
-        }>
-          <div className={asPage ? "contents" : "flex flex-col-reverse gap-3 sm:flex-row"}>
-            <Button
-              variant="secondary"
-              disabled={submitting}
-              onClick={handleClose}
-              className="w-full rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white sm:flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={submitting || !confirmed}
-              onClick={() => void handleRemove()}
-              data-testid="vacate-submit-btn"
-              className="w-full rounded-2xl bg-[linear-gradient(90deg,#b91c1c_0%,#dc2626_100%)] text-white shadow-[0_10px_24px_rgba(185,28,28,0.3)] hover:brightness-110 disabled:opacity-50 sm:flex-1"
-            >
-              {submitting ? "Removing…" : "Vacate & Remove"}
-            </Button>
-          </div>
-        </div>
-
-      </Card>
+  const header = (
+    <div className="mb-1">
+      <span className="inline-flex items-center gap-2 rounded-full border border-[color:color-mix(in_srgb,var(--error)_35%,transparent)] bg-[color:var(--error-soft)] px-3 py-1.5 text-[13px] font-semibold text-[color:var(--error)]">
+        <LogOut size={14} /> Vacate tenant
+      </span>
+      <p className="mt-2 text-[13px] font-semibold text-[color:var(--fg-primary)]">{tenant.fullName}</p>
+      <p className="text-[11px] text-[color:var(--fg-tertiary)]">
+        #{fmtTenantId(tenant.tenantId)} · Room {tenant.assignment?.roomNumber ?? "Unassigned"}
+      </p>
     </div>
+  );
+
+  const body = (
+    <div className="flex flex-col gap-3">
+      <div className="rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
+        <p className="text-[11px] text-[color:var(--fg-tertiary)]">
+          Removing frees the room/bed for a new tenant. Payment history is preserved.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-3">
+        <p className="text-[12px] font-semibold text-[color:var(--fg-secondary)]">Vacating settlement</p>
+        <p className="text-[11px] text-[color:var(--fg-tertiary)]">
+          Suggested refundable advance: ₹{(tenant.advanceBalance ?? tenant.advanceAmount ?? 0).toLocaleString("en-IN")}
+        </p>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <CheckRow label="Advance refund eligible?" checked={advanceRefundEligible} disabled={submitting} onChange={setAdvanceRefundEligible} />
+          <CheckRow label="Refund advance?" checked={refundAdvance} disabled={submitting} onChange={setRefundAdvance} />
+        </div>
+
+        <FormField label="Refund amount">
+          {({ id }) => (
+            <AmountInput
+              id={id}
+              value={displayRefund}
+              onChange={(e) => setRefundAmount(e.target.value.replace(/[^\d.]/g, ""))}
+              disabled={submitting || !refundAdvance}
+            />
+          )}
+        </FormField>
+
+        <FormField label="Notice given date" helper="Date tenant was informed of vacating">
+          {({ id }) => (
+            <TextInput id={id} type="date" value={noticeGivenDate} onChange={(e) => setNoticeGivenDate(e.target.value)} disabled={submitting} className="[color-scheme:dark]" />
+          )}
+        </FormField>
+
+        <FormField label="Note (optional)">
+          {({ id }) => (
+            <Textarea id={id} value={settlementNote} onChange={(e) => setSettlementNote(e.target.value)} disabled={submitting} rows={2} maxLength={500} placeholder="Optional settlement note" />
+          )}
+        </FormField>
+      </div>
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--error)_35%,transparent)] bg-[color:var(--error-soft)] p-3 text-[12px]">
+        <input
+          type="checkbox"
+          checked={confirmed}
+          onChange={(e) => setConfirmed(e.target.checked)}
+          disabled={submitting}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-[color:var(--error)]"
+          data-testid="vacate-confirm-checkbox"
+        />
+        <span className="text-[color:var(--error)]">
+          I understand <strong>{tenant.fullName}</strong> will be permanently removed. This cannot be undone.
+        </span>
+      </label>
+
+      {error ? (
+        <p role="alert" className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--error)_35%,transparent)] bg-[color:var(--error-soft)] px-3 py-2.5 text-[13px] text-[color:var(--error)]">{error}</p>
+      ) : null}
+      {submitting ? <ProcessingPill label="Removing tenant…" /> : null}
+    </div>
+  );
+
+  const footer = (
+    <div className="flex flex-col-reverse gap-2 sm:flex-row">
+      <Button variant="secondary" fullWidth disabled={submitting} onClick={handleClose} className="sm:flex-1">
+        Cancel
+      </Button>
+      <Button
+        fullWidth
+        disabled={submitting || !confirmed}
+        onClick={() => void handleRemove()}
+        data-testid="vacate-submit-btn"
+        className="bg-[linear-gradient(90deg,#b91c1c_0%,#dc2626_100%)] sm:flex-1"
+      >
+        {submitting ? "Removing…" : "Vacate & Remove"}
+      </Button>
+    </div>
+  );
+
+  if (asPage) {
+    return (
+      <Card className="p-4">
+        {header}
+        <div className="mt-3">{body}</div>
+        <div className="sticky bottom-0 z-10 mt-4 border-t border-[color:var(--border)] bg-[color:var(--bg-primary)] pb-[max(12px,env(safe-area-inset-bottom))] pt-3">
+          {footer}
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <BottomSheet open={open} onClose={handleClose} footer={footer}>
+      {header}
+      {body}
+    </BottomSheet>
+  );
+}
+
+function CheckRow({
+  label,
+  checked,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  disabled: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-2 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        disabled={disabled}
+        className="mt-0.5 h-4 w-4 accent-[color:var(--success)]"
+      />
+      <span className="text-[12px] text-[color:var(--fg-secondary)]">{label}</span>
+    </label>
   );
 }

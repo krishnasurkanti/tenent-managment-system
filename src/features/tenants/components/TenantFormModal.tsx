@@ -73,6 +73,11 @@ const RELATION_LABELS: Record<Exclude<EmergencyRelation, "">, string> = {
   other: "Other",
 };
 
+// Shared token classes
+const SELECT_CLASS =
+  "w-full appearance-none rounded-[var(--radius-md)] border border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] py-3 pl-10 pr-4 text-[13px] text-[color:var(--fg-primary)] outline-none [color-scheme:dark] [&>option]:bg-[color:var(--bg-elevated)]";
+const INPUT_CLASS = "w-full bg-transparent text-[13px] text-[color:var(--fg-primary)] outline-none placeholder:text-[color:var(--fg-tertiary)]";
+
 function createFamilyMember(): FamilyMemberForm {
   return { id: `fm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: "", relation: "", age: "" };
 }
@@ -180,9 +185,7 @@ export function TenantFormModal({
     Number(form.rentPaid || 0) + Number(form.advanceAmount || 0) + Number(form.serviceFeeAmount || 0);
   const firstPaymentEntered = firstPaymentTotal > 0;
 
-  // Step numbers — Docs and Room steps removed; flow: Personal→Emergency→Payment→[Family]→Save
   const familyStep: TenantStep = 4;
-
 
   useLockBodyScroll(asPage ? false : open);
 
@@ -200,7 +203,6 @@ export function TenantFormModal({
     setEcSearch("");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, open]);
-
 
   if (!asPage && !open) return null;
 
@@ -236,7 +238,6 @@ export function TenantFormModal({
     if (file.size > 5 * 1024 * 1024) { setError("File too large. Max 5 MB."); return; }
     setError("");
     setFile(file);
-    // HEIC/HEIF can't be previewed in browsers — show filename badge instead
     if (/heic|heif/i.test(file.type) || /\.heic$|\.heif$/i.test(file.name)) {
       setPreview("__name__:" + file.name);
       return;
@@ -324,7 +325,6 @@ export function TenantFormModal({
       return;
     }
 
-    // Family members (RESIDENCE)
     if (isResidence) {
       const validMembers = familyMembers
         .filter((m) => m.name.trim() && m.relation.trim())
@@ -334,10 +334,8 @@ export function TenantFormModal({
       }
     }
 
-
     resetFormState();
-    // onClose is intentionally NOT called here — onCreated handles navigation (e.g., to assign-room page).
-    // Calling onClose after onCreated would overwrite the navigation pushed by onCreated.
+    // onClose intentionally NOT called — onCreated handles navigation.
     onCreated(created);
   };
 
@@ -353,38 +351,40 @@ export function TenantFormModal({
         : "fixed inset-0 z-50 flex items-stretch justify-center overflow-hidden animate-[fade-in_var(--motion-medium)_var(--ease-enter)] sm:items-center sm:px-4 sm:py-4"
       }
       style={asPage
-        /* Constrain form height so content scrolls internally and footer always stays visible.
-           calc: viewport - topbar (48px) - back-button row + gaps (~3.5rem) */
         ? { maxHeight: "calc(100dvh - var(--topbar-h) - 3.5rem)" }
-        : { background: "rgba(2,6,23,0.76)", backdropFilter: "blur(6px)" }}
+        : { background: "var(--overlay)", backdropFilter: "blur(6px)" }}
     >
       <Card className={asPage
-        ? "flex min-h-0 flex-1 flex-col rounded-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0"
-        : "flex w-full h-full flex-col overflow-hidden rounded-none border-white/8 bg-[linear-gradient(180deg,#111114_0%,#09090b_100%)] p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.5)] animate-[float-up_var(--motion-medium)_var(--ease-enter)] sm:w-[min(calc(100vw-2rem),42rem)] sm:h-auto sm:max-h-[88dvh] sm:rounded-2xl sm:shadow-[0_40px_100px_rgba(0,0,0,0.6)]"
+        ? "flex min-h-0 flex-1 flex-col rounded-none border-[color:var(--border)] p-0"
+        : "flex h-full w-full flex-col overflow-hidden rounded-none border-[color:var(--border)] p-0 shadow-[var(--shadow-5)] sm:h-auto sm:max-h-[88dvh] sm:w-[min(calc(100vw-2rem),42rem)] sm:rounded-[var(--radius-xl)]"
       }>
         <div className={asPage ? "relative flex min-h-0 flex-1 flex-col" : "relative flex min-h-0 flex-1 flex-col overflow-hidden"}>
-          <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(90deg,rgba(99,102,241,0.14)_0%,rgba(245,158,11,0.06)_100%)]" />
-
           {/* Header */}
           <div className="relative flex items-start justify-between gap-4 px-4 pb-2 pt-4 sm:px-5 sm:pt-5">
             <div>
-              <div id="tenant-form-modal-title" className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-[13px] font-semibold text-white/70">
-                <span className="rounded-[8px] bg-[var(--accent-strong)] p-1 text-white">
+              <div id="tenant-form-modal-title" className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-1.5 text-[13px] font-semibold text-[color:var(--fg-secondary)]">
+                <span className="rounded-[var(--radius-sm)] bg-[color:var(--accent-strong)] p-1 text-white">
                   <User className="h-3.5 w-3.5" />
                 </span>
                 Add Tenant
               </div>
-              <p className="mt-2 text-[11px] leading-5 text-white/45">Only name is required. Add other details now or later.</p>
+              <p className="mt-2 text-[11px] leading-5 text-[color:var(--fg-tertiary)]">Only name is required. Add other details now or later.</p>
             </div>
             {!asPage && (
-              <Button variant="ghost" disabled={submitting} aria-label="Close" className="rounded-2xl px-3 text-white/60 hover:text-white" onClick={handleClose}>
+              <button
+                type="button"
+                disabled={submitting}
+                aria-label="Close"
+                onClick={handleClose}
+                className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-[color:var(--fg-tertiary)] hover:bg-[color:var(--muted)] hover:text-[color:var(--fg-primary)]"
+              >
                 <X className="h-4 w-4" />
-              </Button>
+              </button>
             )}
           </div>
 
-          {/* Step pills — fixed, never scrolls */}
-          <div className="relative shrink-0 overflow-x-auto border-b border-white/8 px-4 py-2.5 sm:px-5" style={{ scrollbarWidth: "none" }}>
+          {/* Step pills */}
+          <div className="relative shrink-0 overflow-x-auto border-b border-[color:var(--border)] px-4 py-2.5 sm:px-5" style={{ scrollbarWidth: "none" }}>
             <div className="flex gap-2">
               <StepPill label="1. Personal" active={step === 1} done={step > 1} onClick={step > 1 ? () => { setStep(1); setError(""); } : undefined} />
               <StepPill label="2. Emergency" active={step === 2} done={step > 2} onClick={step > 2 ? () => { setStep(2); setError(""); } : undefined} />
@@ -396,13 +396,10 @@ export function TenantFormModal({
           {/* Scrollable content */}
           <div
             ref={scrollRef}
-            className={asPage
-              ? "relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pb-4 pt-3 sm:px-5"
-              : "relative min-h-0 flex-1 overflow-x-hidden overflow-y-scroll px-4 pb-4 pt-3 sm:px-5"
-            }
+            className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pb-4 pt-3 sm:px-5"
             style={{ touchAction: "pan-y", overscrollBehavior: "contain" }}
           >
-            <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
+            <div className="flex flex-col gap-4 rounded-[var(--radius-lg)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-3 sm:p-4">
 
               {/* ── Step 1: Details ── */}
               {step === 1 ? (
@@ -411,88 +408,47 @@ export function TenantFormModal({
 
                   <div className="grid gap-3">
                     <Field label="Full Name *">
-                      <InputShell icon={<User className="h-4 w-4 text-[var(--accent)]" />}>
-                        <input
-                          value={form.fullName}
-                          onChange={(e) => setField("fullName", e.target.value)}
-                          disabled={submitting}
-                          placeholder="Enter full name"
-                          className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                        />
+                      <InputShell icon={<User className="h-4 w-4 text-[color:var(--accent)]" />}>
+                        <input value={form.fullName} onChange={(e) => setField("fullName", e.target.value)} disabled={submitting} placeholder="Enter full name" className={INPUT_CLASS} />
                       </InputShell>
                     </Field>
 
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Field label="Father / Mother Name">
-                        <InputShell icon={<UserCheck className="h-4 w-4 text-purple-400" />}>
-                          <input
-                            value={form.fatherName}
-                            onChange={(e) => setField("fatherName", e.target.value)}
-                            disabled={submitting}
-                            placeholder="Parent name (optional)"
-                            className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                          />
+                        <InputShell icon={<UserCheck className="h-4 w-4 text-[color:var(--accent)]" />}>
+                          <input value={form.fatherName} onChange={(e) => setField("fatherName", e.target.value)} disabled={submitting} placeholder="Parent name (optional)" className={INPUT_CLASS} />
                         </InputShell>
                       </Field>
 
                       <Field label="Date of Birth">
-                        <InputShell icon={<CalendarDays className="h-4 w-4 text-sky-400" />}>
-                          <input
-                            type="date"
-                            value={form.dateOfBirth}
-                            max={new Date().toISOString().slice(0, 10)}
-                            onChange={(e) => setField("dateOfBirth", e.target.value)}
-                            disabled={submitting}
-                            className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
-                          />
+                        <InputShell icon={<CalendarDays className="h-4 w-4 text-[color:var(--info)]" />}>
+                          <input type="date" value={form.dateOfBirth} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setField("dateOfBirth", e.target.value)} disabled={submitting} className={`${INPUT_CLASS} [color-scheme:dark]`} />
                         </InputShell>
                       </Field>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Field label="Phone">
-                        <InputShell icon={<Phone className="h-4 w-4 text-emerald-500" />}>
-                          <span className="text-[13px] font-medium text-white/50">+91</span>
-                          <input
-                            value={formatPhoneDisplay(form.phone)}
-                            onChange={(e) => setField("phone", normalizePhone(e.target.value))}
-                            disabled={submitting}
-                            type="tel"
-                            inputMode="tel"
-                            autoComplete="tel"
-                            placeholder="98765 43210"
-                            className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                          />
+                        <InputShell icon={<Phone className="h-4 w-4 text-[color:var(--success)]" />}>
+                          <span className="text-[13px] font-medium text-[color:var(--fg-tertiary)]">+91</span>
+                          <input value={formatPhoneDisplay(form.phone)} onChange={(e) => setField("phone", normalizePhone(e.target.value))} disabled={submitting} type="tel" inputMode="tel" autoComplete="tel" placeholder="98765 43210" className={INPUT_CLASS} />
                         </InputShell>
                       </Field>
 
                       <Field label="Email">
-                        <InputShell icon={<Mail className="h-4 w-4 text-amber-400" />}>
-                          <input
-                            type="email"
-                            value={form.email}
-                            onChange={(e) => setField("email", e.target.value)}
-                            disabled={submitting}
-                            placeholder="email@example.com"
-                            className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                          />
+                        <InputShell icon={<Mail className="h-4 w-4 text-[color:var(--warning)]" />}>
+                          <input type="email" value={form.email} onChange={(e) => setField("email", e.target.value)} disabled={submitting} placeholder="email@example.com" className={INPUT_CLASS} />
                         </InputShell>
                       </Field>
                     </div>
                   </div>
 
-                  {/* Occupation & ID Type — Occupation is nth(0), ID Type is nth(1) */}
-                  <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                    <p className="text-[12px] font-semibold text-white/60">ID &amp; Occupation <span className="font-normal text-white/35">(optional)</span></p>
+                  <div className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-3">
+                    <p className="text-[12px] font-semibold text-[color:var(--fg-secondary)]">ID &amp; Occupation <span className="font-normal text-[color:var(--fg-tertiary)]">(optional)</span></p>
                     <Field label="Occupation">
                       <div className="relative">
-                        <Briefcase className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber-400" />
-                        <select
-                          value={form.occupation}
-                          onChange={(e) => { setField("occupation", e.target.value as OccupationType); setField("workplaceName", ""); }}
-                          disabled={submitting}
-                          className="w-full appearance-none rounded-2xl border border-white/12 bg-white/[0.06] py-3 pl-10 pr-4 text-[13px] text-white outline-none [color-scheme:dark]"
-                        >
+                        <Briefcase className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--warning)]" />
+                        <select value={form.occupation} onChange={(e) => { setField("occupation", e.target.value as OccupationType); setField("workplaceName", ""); }} disabled={submitting} className={SELECT_CLASS}>
                           <option value="">Select…</option>
                           {(Object.entries(OCCUPATION_LABELS) as [Exclude<OccupationType, "">, string][]).map(([val, label]) => (
                             <option key={val} value={val}>{label}</option>
@@ -502,26 +458,15 @@ export function TenantFormModal({
                     </Field>
                     {form.occupation ? (
                       <Field label={form.occupation === "student" ? "Institute Name" : "Company / Business Name"}>
-                        <InputShell icon={<Building2 className="h-4 w-4 text-sky-400" />}>
-                          <input
-                            value={form.workplaceName}
-                            onChange={(e) => setField("workplaceName", e.target.value)}
-                            disabled={submitting}
-                            placeholder={WORKPLACE_PLACEHOLDER[form.occupation as Exclude<OccupationType, "">]}
-                            className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                          />
+                        <InputShell icon={<Building2 className="h-4 w-4 text-[color:var(--info)]" />}>
+                          <input value={form.workplaceName} onChange={(e) => setField("workplaceName", e.target.value)} disabled={submitting} placeholder={WORKPLACE_PLACEHOLDER[form.occupation as Exclude<OccupationType, "">]} className={INPUT_CLASS} />
                         </InputShell>
                       </Field>
                     ) : null}
                     <Field label="ID Type">
                       <div className="relative">
-                        <FileBadge2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--accent)]" />
-                        <select
-                          value={form.idType}
-                          onChange={(e) => setField("idType", e.target.value as IdType)}
-                          disabled={submitting}
-                          className="w-full appearance-none rounded-2xl border border-white/12 bg-white/[0.06] py-3 pl-10 pr-4 text-[13px] text-white outline-none [color-scheme:dark]"
-                        >
+                        <FileBadge2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--accent)]" />
+                        <select value={form.idType} onChange={(e) => setField("idType", e.target.value as IdType)} disabled={submitting} className={SELECT_CLASS}>
                           <option value="">Select ID type…</option>
                           {(Object.entries(ID_TYPE_LABELS) as [Exclude<IdType, "">, string][]).map(([val, label]) => (
                             <option key={val} value={val}>{label}</option>
@@ -531,20 +476,12 @@ export function TenantFormModal({
                     </Field>
                     {form.idType ? (
                       <Field label="ID Number">
-                        <InputShell icon={<CreditCard className="h-4 w-4 text-[var(--accent)]" />}>
-                          <input
-                            value={form.idNumber}
-                            onChange={(e) => setField("idNumber", e.target.value)}
-                            disabled={submitting}
-                            placeholder={form.idType === "pan" ? "e.g. ABCDE1234F" : form.idType === "aadhar" ? "e.g. 1234 5678 9012" : "Enter ID number"}
-                            className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                          />
+                        <InputShell icon={<CreditCard className="h-4 w-4 text-[color:var(--accent)]" />}>
+                          <input value={form.idNumber} onChange={(e) => setField("idNumber", e.target.value)} disabled={submitting} placeholder={form.idType === "pan" ? "e.g. ABCDE1234F" : form.idType === "aadhar" ? "e.g. 1234 5678 9012" : "Enter ID number"} className={INPUT_CLASS} />
                         </InputShell>
                       </Field>
                     ) : null}
                   </div>
-
-                  {/* Emergency Contact intentionally removed from step 1 — collected in step 2 */}
                 </>
               ) : null}
 
@@ -554,40 +491,26 @@ export function TenantFormModal({
                   <SectionHead title="Emergency Contact" subtitle="Fully optional — skip now, add later via Edit Tenant." />
 
                   {(allTenants?.length ?? 0) > 0 && (
-                    <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-3 space-y-2">
-                      <p className="text-[11px] text-white/40">Find existing tenant to auto-fill</p>
+                    <div className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-3">
+                      <p className="text-[11px] text-[color:var(--fg-tertiary)]">Find existing tenant to auto-fill</p>
                       <div className="relative">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
-                        <input
-                          value={ecSearch}
-                          onChange={(e) => setEcSearch(e.target.value)}
-                          disabled={submitting}
-                          placeholder="Name, phone, or room number…"
-                          className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-2.5 pl-9 pr-3 text-[12px] text-white outline-none placeholder:text-white/25"
-                        />
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[color:var(--fg-tertiary)]" />
+                        <input value={ecSearch} onChange={(e) => setEcSearch(e.target.value)} disabled={submitting} placeholder="Name, phone, or room number…" className="w-full rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] py-2.5 pl-9 pr-3 text-[12px] text-[color:var(--fg-primary)] outline-none placeholder:text-[color:var(--fg-tertiary)]" />
                       </div>
                       {ecSearchResults.length > 0 && (
-                        <div className="space-y-1">
+                        <div className="flex flex-col gap-1">
                           {ecSearchResults.map((t) => (
                             <button
                               key={t.tenantId}
                               type="button"
                               disabled={submitting}
-                              onClick={() => {
-                                setField("emergencyContactName", t.fullName);
-                                setField("emergencyContactPhone", t.phone);
-                                setEcSearch("");
-                              }}
-                              className="flex w-full items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-left transition hover:bg-white/[0.09]"
+                              onClick={() => { setField("emergencyContactName", t.fullName); setField("emergencyContactPhone", t.phone); setEcSearch(""); }}
+                              className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2 text-left transition hover:bg-[color:var(--surface-strong)]"
                             >
-                              <User className="h-3.5 w-3.5 shrink-0 text-white/35" />
-                              <span className="flex-1 truncate text-[12px] font-medium text-white">{t.fullName}</span>
-                              {t.phone ? <span className="shrink-0 text-[11px] text-white/40">{t.phone}</span> : null}
-                              {t.assignment?.roomNumber ? (
-                                <span className="shrink-0 rounded-full bg-white/[0.08] px-2 py-0.5 text-[10px] text-white/40">
-                                  Rm {t.assignment.roomNumber}
-                                </span>
-                              ) : null}
+                              <User className="h-3.5 w-3.5 shrink-0 text-[color:var(--fg-tertiary)]" />
+                              <span className="flex-1 truncate text-[12px] font-medium text-[color:var(--fg-primary)]">{t.fullName}</span>
+                              {t.phone ? <span className="shrink-0 text-[11px] text-[color:var(--fg-tertiary)]">{t.phone}</span> : null}
+                              {t.assignment?.roomNumber ? <span className="shrink-0 rounded-full bg-[color:var(--muted)] px-2 py-0.5 text-[10px] text-[color:var(--fg-tertiary)]">Rm {t.assignment.roomNumber}</span> : null}
                             </button>
                           ))}
                         </div>
@@ -595,28 +518,17 @@ export function TenantFormModal({
                     </div>
                   )}
 
-                  <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                  <div className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-3">
                     <Field label="Contact Name">
-                      <InputShell icon={<ShieldAlert className="h-4 w-4 text-amber-400" />}>
-                        <input
-                          value={form.emergencyContactName}
-                          onChange={(e) => setField("emergencyContactName", e.target.value)}
-                          disabled={submitting}
-                          placeholder="Name of emergency contact"
-                          className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                        />
+                      <InputShell icon={<ShieldAlert className="h-4 w-4 text-[color:var(--warning)]" />}>
+                        <input value={form.emergencyContactName} onChange={(e) => setField("emergencyContactName", e.target.value)} disabled={submitting} placeholder="Name of emergency contact" className={INPUT_CLASS} />
                       </InputShell>
                     </Field>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Field label="Relation">
                         <div className="relative">
-                          <Users className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-purple-400" />
-                          <select
-                            value={form.emergencyContactRelation}
-                            onChange={(e) => setField("emergencyContactRelation", e.target.value as EmergencyRelation)}
-                            disabled={submitting}
-                            className="w-full appearance-none rounded-2xl border border-white/12 bg-white/[0.06] py-3 pl-10 pr-4 text-[13px] text-white outline-none [color-scheme:dark]"
-                          >
+                          <Users className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--accent)]" />
+                          <select value={form.emergencyContactRelation} onChange={(e) => setField("emergencyContactRelation", e.target.value as EmergencyRelation)} disabled={submitting} className={SELECT_CLASS}>
                             <option value="">Relation…</option>
                             {(Object.entries(RELATION_LABELS) as [Exclude<EmergencyRelation, "">, string][]).map(([val, label]) => (
                               <option key={val} value={val}>{label}</option>
@@ -625,17 +537,9 @@ export function TenantFormModal({
                         </div>
                       </Field>
                       <Field label="Phone">
-                        <InputShell icon={<Phone className="h-4 w-4 text-emerald-500" />}>
-                          <span className="text-[13px] font-medium text-white/50">+91</span>
-                          <input
-                            value={formatPhoneDisplay(form.emergencyContactPhone)}
-                            onChange={(e) => setField("emergencyContactPhone", normalizePhone(e.target.value))}
-                            disabled={submitting}
-                            type="tel"
-                            inputMode="tel"
-                            placeholder="98765 43210"
-                            className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                          />
+                        <InputShell icon={<Phone className="h-4 w-4 text-[color:var(--success)]" />}>
+                          <span className="text-[13px] font-medium text-[color:var(--fg-tertiary)]">+91</span>
+                          <input value={formatPhoneDisplay(form.emergencyContactPhone)} onChange={(e) => setField("emergencyContactPhone", normalizePhone(e.target.value))} disabled={submitting} type="tel" inputMode="tel" placeholder="98765 43210" className={INPUT_CLASS} />
                         </InputShell>
                       </Field>
                     </div>
@@ -649,111 +553,66 @@ export function TenantFormModal({
                   <SectionHead title="Payment Details" subtitle="Track rent, refundable advance, and one-time service fee separately." />
 
                   <div className="grid gap-2 md:grid-cols-[1.1fr_0.9fr]">
-                    <div className="rounded-2xl border border-[rgba(99,102,241,0.26)] bg-[rgba(99,102,241,0.09)] p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-200/70">First due preview</p>
-                      <p className="mt-1 text-sm font-semibold text-white">{duePreview}</p>
-                      <p className="mt-1 text-[11px] text-indigo-100/60">
+                    <div className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--brand)_26%,transparent)] bg-[color:var(--brand-soft)] p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--accent)]">First due preview</p>
+                      <p className="mt-1 text-sm font-semibold text-[color:var(--fg-primary)]">{duePreview}</p>
+                      <p className="mt-1 text-[11px] text-[color:var(--fg-secondary)]">
                         {billingCycle === "monthly" ? "One month from joining." : billingCycle === "weekly" ? "7 days from joining." : "Next day from joining."}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55">Rent coverage</p>
-                      <p className="mt-1 text-sm font-semibold text-white">{paymentCoverage}% of first cycle</p>
-                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/8">
+                    <div className="rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">Rent coverage</p>
+                      <p className="mt-1 text-sm font-semibold text-[color:var(--fg-primary)]">{paymentCoverage}% of first cycle</p>
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-[color:var(--surface-strong)]">
                         <div className="h-full rounded-full bg-[linear-gradient(90deg,#22c55e_0%,#6366f1_100%)] transition-[width] duration-300" style={{ width: `${paymentCoverage}%` }} />
                       </div>
                     </div>
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-2">
-                    <Field label={billingCycle === "daily" ? "Daily Rate" : billingCycle === "weekly" ? "Weekly Rate" : "Monthly Rent *"}>
-                      <InputShell icon={<IndianRupee className="h-4 w-4 text-[var(--accent)]" />}>
-                        <span className="text-[13px] font-semibold text-white/55">₹</span>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.monthlyRent}
-                          onChange={(e) => setField("monthlyRent", e.target.value)}
-                          onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
-                          disabled={submitting}
-                          placeholder="Enter amount"
-                          className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                        />
-                      </InputShell>
-                    </Field>
-
-                    <Field label="Rent Collected">
-                      <InputShell icon={<CreditCard className="h-4 w-4 text-[var(--accent)]" />}>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.rentPaid}
-                          onChange={(e) => setField("rentPaid", e.target.value)}
-                          onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
-                          disabled={submitting}
-                          placeholder="Rent amount collected"
-                          className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                        />
-                      </InputShell>
-                    </Field>
-
-                    <Field label="Refundable Advance">
-                      <InputShell icon={<IndianRupee className="h-4 w-4 text-emerald-400" />}>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.advanceAmount}
-                          onChange={(e) => setField("advanceAmount", e.target.value)}
-                          onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
-                          disabled={submitting}
-                          placeholder="0 if not collected"
-                          className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                        />
-                      </InputShell>
-                    </Field>
-
-                    <Field label="One-time Service Fee">
-                      <InputShell icon={<Receipt className="h-4 w-4 text-amber-400" />}>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.serviceFeeAmount}
-                          onChange={(e) => setField("serviceFeeAmount", e.target.value)}
-                          onKeyDown={(e) => { if (["e","E","+","-"].includes(e.key)) e.preventDefault(); }}
-                          disabled={submitting}
-                          placeholder="0 if not collected"
-                          className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25"
-                        />
-                      </InputShell>
-                    </Field>
+                    {([
+                      ["monthlyRent", billingCycle === "daily" ? "Daily Rate" : billingCycle === "weekly" ? "Weekly Rate" : "Monthly Rent *", <IndianRupee key="i" className="h-4 w-4 text-[color:var(--accent)]" />, "Enter amount", true],
+                      ["rentPaid", "Rent Collected", <CreditCard key="i" className="h-4 w-4 text-[color:var(--accent)]" />, "Rent amount collected", false],
+                      ["advanceAmount", "Refundable Advance", <IndianRupee key="i" className="h-4 w-4 text-[color:var(--success)]" />, "0 if not collected", false],
+                      ["serviceFeeAmount", "One-time Service Fee", <Receipt key="i" className="h-4 w-4 text-[color:var(--warning)]" />, "0 if not collected", false],
+                    ] as const).map(([key, label, icon, placeholder, showRupee]) => (
+                      <Field key={key} label={label}>
+                        <InputShell icon={icon}>
+                          {showRupee ? <span className="text-[13px] font-semibold text-[color:var(--fg-tertiary)]">₹</span> : null}
+                          <input
+                            type="number"
+                            min="0"
+                            value={form[key]}
+                            onChange={(e) => setField(key, e.target.value)}
+                            onKeyDown={(e) => { if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault(); }}
+                            disabled={submitting}
+                            placeholder={placeholder}
+                            className={INPUT_CLASS}
+                          />
+                        </InputShell>
+                      </Field>
+                    ))}
 
                     <Field label="Joining / Billing Date *">
-                      <InputShell icon={<CalendarDays className="h-4 w-4 text-sky-500" />}>
-                        <input
-                          type="date"
-                          value={form.paidOnDate}
-                          max={new Date().toISOString().slice(0, 10)}
-                          onChange={(e) => setField("paidOnDate", e.target.value)}
-                          disabled={submitting}
-                          className="w-full bg-transparent text-[13px] text-white outline-none [color-scheme:dark]"
-                        />
+                      <InputShell icon={<CalendarDays className="h-4 w-4 text-[color:var(--info)]" />}>
+                        <input type="date" value={form.paidOnDate} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setField("paidOnDate", e.target.value)} disabled={submitting} className={`${INPUT_CLASS} [color-scheme:dark]`} />
                       </InputShell>
                     </Field>
                   </div>
 
-                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-3">
+                  <div className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--success)_20%,transparent)] bg-[color:var(--success-soft)] p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300/70">First Payment Total</p>
-                        <p className="mt-1 text-[11px] text-white/45">Rent collected + advance + service fee</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--success)]">First Payment Total</p>
+                        <p className="mt-1 text-[11px] text-[color:var(--fg-tertiary)]">Rent collected + advance + service fee</p>
                       </div>
-                      <p className="text-base font-semibold text-white">₹{firstPaymentTotal.toLocaleString("en-IN")}</p>
+                      <p className="text-base font-semibold text-[color:var(--fg-primary)]">₹{firstPaymentTotal.toLocaleString("en-IN")}</p>
                     </div>
                   </div>
 
                   <div>
-                    <span className="mb-2 block text-[12px] font-semibold text-white/70">Billing Cycle</span>
-                    <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-white/12 bg-white/[0.04] p-1.5 sm:grid-cols-3">
+                    <span className="mb-2 block text-[12px] font-semibold text-[color:var(--fg-secondary)]">Billing Cycle</span>
+                    <div className="grid grid-cols-2 gap-1.5 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-1.5 sm:grid-cols-3">
                       {(["monthly", "weekly", "daily"] as const).map((cycle) => {
                         const labels = { monthly: "Monthly", weekly: "Weekly", daily: "Daily" };
                         const hints = { monthly: "Calendar month", weekly: "7 days", daily: "Per night" };
@@ -764,59 +623,42 @@ export function TenantFormModal({
                             type="button"
                             disabled={submitting}
                             onClick={() => setBillingCycle(cycle)}
-                            className={`flex flex-col items-center rounded-xl px-2 py-2 text-[11px] font-semibold transition ${
-                              active
-                                ? cycle === "monthly" ? "bg-blue-600 text-white shadow-sm"
-                                  : cycle === "weekly" ? "bg-emerald-600 text-white shadow-sm"
-                                  : "bg-amber-500 text-white shadow-sm"
-                                : "text-white/50 hover:bg-white/[0.06]"
+                            className={`flex flex-col items-center rounded-[var(--radius-sm)] px-2 py-2 text-[11px] font-semibold transition ${
+                              active ? "bg-[color:var(--cta)] text-white" : "text-[color:var(--fg-tertiary)] hover:bg-[color:var(--surface-strong)]"
                             }`}
                           >
                             {labels[cycle]}
-                            <span className={`mt-0.5 text-[9px] font-medium ${active ? "text-white/75" : "text-white/30"}`}>{hints[cycle]}</span>
+                            <span className={`mt-0.5 text-[9px] font-medium ${active ? "text-white/75" : "text-[color:var(--fg-tertiary)]"}`}>{hints[cycle]}</span>
                           </button>
                         );
                       })}
                     </div>
                     {billingCycle !== "monthly" ? (
-                      <p className="mt-2 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-400">
+                      <p className="mt-2 inline-flex rounded-full border border-[color:color-mix(in_srgb,var(--success)_30%,transparent)] bg-[color:var(--success-soft)] px-2.5 py-1 text-[11px] font-medium text-[color:var(--success)]">
                         {billingCycle === "daily" ? "Daily tenants are free — not counted in plan limit." : "Weekly tenants are free — not counted in plan limit."}
                       </p>
                     ) : null}
                   </div>
 
                   {firstPaymentEntered ? (
-                    <div className="space-y-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-3">
-                      <p className="text-[12px] font-semibold text-emerald-300/80">
-                        <Receipt className="inline h-3.5 w-3.5 mr-1 -mt-0.5" />
-                        Payment Receipt / Screenshot <span className="font-normal text-white/35">(optional)</span>
+                    <div className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--success)_20%,transparent)] bg-[color:var(--success-soft)] p-3">
+                      <p className="text-[12px] font-semibold text-[color:var(--success)]">
+                        <Receipt className="mr-1 -mt-0.5 inline h-3.5 w-3.5" />
+                        Payment Receipt / Screenshot <span className="font-normal text-[color:var(--fg-tertiary)]">(optional)</span>
                       </p>
-                      <input
-                        ref={receiptInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,application/pdf"
-                        className="hidden"
-                        onChange={(e) => pickFile(e, setReceiptFile, setReceiptPreview)}
-                      />
+                      <input ref={receiptInputRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="hidden" onChange={(e) => pickFile(e, setReceiptFile, setReceiptPreview)} />
                       {receiptPreview ? (
                         <div className="relative inline-block">
                           {receiptFile?.type === "application/pdf" ? (
-                            <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3">
-                              <Receipt className="h-5 w-5 text-emerald-400" />
-                              <span className="text-[13px] text-white/70 truncate max-w-[180px]">{receiptFile.name}</span>
+                            <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-4 py-3">
+                              <Receipt className="h-5 w-5 text-[color:var(--success)]" />
+                              <span className="max-w-[180px] truncate text-[13px] text-[color:var(--fg-secondary)]">{receiptFile.name}</span>
                             </div>
                           ) : (
-                            <img
-                              src={receiptPreview}
-                              alt="Receipt preview"
-                              className="h-32 w-full max-w-xs rounded-2xl object-cover border border-white/12"
-                            />
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={receiptPreview} alt="Receipt preview" className="h-32 w-full max-w-xs rounded-[var(--radius-md)] border border-[color:var(--border-strong)] object-cover" />
                           )}
-                          <button
-                            type="button"
-                            onClick={() => { setReceiptFile(null); setReceiptPreview(""); }}
-                            className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white shadow-md"
-                          >
+                          <button type="button" onClick={() => { setReceiptFile(null); setReceiptPreview(""); }} className="absolute -right-2 -top-2 rounded-full bg-[color:var(--error)] p-1 text-white shadow-md">
                             <X className="h-3 w-3" />
                           </button>
                         </div>
@@ -824,7 +666,7 @@ export function TenantFormModal({
                         <button
                           type="button"
                           onClick={() => receiptInputRef.current?.click()}
-                          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-emerald-500/30 bg-emerald-500/[0.04] py-4 text-emerald-400/60 transition hover:border-emerald-500/50 hover:bg-emerald-500/[0.08] hover:text-emerald-400"
+                          className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[color:color-mix(in_srgb,var(--success)_30%,transparent)] bg-[color:var(--success-soft)] py-4 text-[color:var(--success)] transition hover:brightness-110"
                         >
                           <Upload className="h-4 w-4" />
                           <span className="text-[12px] font-medium">Upload receipt or screenshot</span>
@@ -835,41 +677,36 @@ export function TenantFormModal({
                 </>
               ) : null}
 
-              {/* ── Step 5 (RESIDENCE): Family Members ── */}
+              {/* ── Step 4 (RESIDENCE): Family Members ── */}
               {step === familyStep && isResidence ? (
                 <>
                   <SectionHead title="Family Members" subtitle="Add people living in this unit. Fully optional — add or update anytime." />
 
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2">
                     {familyMembers.map((member, index) => (
-                      <div key={member.id} className="rounded-2xl border border-white/12 bg-white/[0.06] p-3">
+                      <div key={member.id} className="rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-3">
                         <div className="mb-2 flex items-center justify-between">
-                          <span className="text-[12px] font-semibold text-white/60">Member {index + 1}</span>
+                          <span className="text-[12px] font-semibold text-[color:var(--fg-secondary)]">Member {index + 1}</span>
                           {familyMembers.length > 1 ? (
-                            <button
-                              type="button"
-                              onClick={() => setFamilyMembers((cur) => cur.filter((m) => m.id !== member.id))}
-                              disabled={submitting}
-                              className="rounded-full p-1 text-white/30 hover:bg-red-500/15 hover:text-red-400"
-                            >
+                            <button type="button" onClick={() => setFamilyMembers((cur) => cur.filter((m) => m.id !== member.id))} disabled={submitting} className="rounded-full p-1 text-[color:var(--fg-tertiary)] hover:bg-[color:var(--error-soft)] hover:text-[color:var(--error)]">
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           ) : null}
                         </div>
                         <div className="grid gap-2 sm:grid-cols-3">
                           <Field label="Name">
-                            <InputShell icon={<User className="h-4 w-4 text-[var(--accent)]" />}>
-                              <input value={member.name} onChange={(e) => updateFamilyMember(member.id, "name", e.target.value)} disabled={submitting} placeholder="Full name" className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25" />
+                            <InputShell icon={<User className="h-4 w-4 text-[color:var(--accent)]" />}>
+                              <input value={member.name} onChange={(e) => updateFamilyMember(member.id, "name", e.target.value)} disabled={submitting} placeholder="Full name" className={INPUT_CLASS} />
                             </InputShell>
                           </Field>
                           <Field label="Relation">
-                            <InputShell icon={<Users className="h-4 w-4 text-purple-500" />}>
-                              <input value={member.relation} onChange={(e) => updateFamilyMember(member.id, "relation", e.target.value)} disabled={submitting} placeholder="e.g. Spouse" className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25" />
+                            <InputShell icon={<Users className="h-4 w-4 text-[color:var(--accent)]" />}>
+                              <input value={member.relation} onChange={(e) => updateFamilyMember(member.id, "relation", e.target.value)} disabled={submitting} placeholder="e.g. Spouse" className={INPUT_CLASS} />
                             </InputShell>
                           </Field>
                           <Field label="Age">
-                            <InputShell icon={<CalendarDays className="h-4 w-4 text-amber-500" />}>
-                              <input type="number" min="0" max="120" value={member.age} onChange={(e) => updateFamilyMember(member.id, "age", e.target.value)} disabled={submitting} placeholder="Age" className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/25" />
+                            <InputShell icon={<CalendarDays className="h-4 w-4 text-[color:var(--warning)]" />}>
+                              <input type="number" min="0" max="120" value={member.age} onChange={(e) => updateFamilyMember(member.id, "age", e.target.value)} disabled={submitting} placeholder="Age" className={INPUT_CLASS} />
                             </InputShell>
                           </Field>
                         </div>
@@ -881,60 +718,40 @@ export function TenantFormModal({
                     type="button"
                     onClick={() => setFamilyMembers((cur) => [...cur, createFamilyMember()])}
                     disabled={submitting}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-500/40 bg-blue-600/10 px-3 py-2.5 text-[13px] font-medium text-blue-400 transition hover:bg-blue-600/15"
+                    className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[color:color-mix(in_srgb,var(--brand)_40%,transparent)] bg-[color:var(--brand-soft)] px-3 py-2.5 text-[13px] font-medium text-[color:var(--accent)] transition hover:brightness-110"
                   >
                     <Plus className="h-4 w-4" />
                     Add Member
                   </button>
                 </>
               ) : null}
-
-
             </div>
           </div>
 
-          {/* Footer — always visible at bottom; content scrolls above it */}
-          <div className="shrink-0 border-t border-white/10 bg-[#09090b] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5">
-            {/* Error and processing */}
+          {/* Footer */}
+          <div className="shrink-0 border-t border-[color:var(--border)] bg-[color:var(--bg-primary)] px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5">
             {error ? (
-              <div role="alert" className="mb-3 flex items-start gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-300">
+              <div role="alert" className="mb-3 flex items-start gap-2 rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--error)_35%,transparent)] bg-[color:var(--error-soft)] px-3 py-2.5 text-sm font-medium text-[color:var(--error)]">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>
             ) : null}
             {submitting ? <div className="mb-3"><ProcessingPill label="Creating tenant…" /></div> : null}
 
-            {/* Action buttons */}
-            <div className="flex flex-col-reverse gap-3 sm:flex-row">
-              <Button
-                variant="secondary"
-                onClick={step === 1 ? handleClose : () => { setStep((s) => (s - 1) as TenantStep); setError(""); }}
-                disabled={submitting}
-                className="w-full rounded-2xl border-white/12 bg-white/[0.05] text-white/70 hover:text-white sm:flex-1"
-              >
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <Button variant="secondary" fullWidth onClick={step === 1 ? handleClose : () => { setStep((s) => (s - 1) as TenantStep); setError(""); }} disabled={submitting} className="sm:flex-1">
                 {step === 1 ? "Cancel" : "Back"}
               </Button>
 
-              {step === 1 ? (
-                <Button disabled={submitting} onClick={handleNextFromDetails} className="w-full rounded-2xl sm:flex-1">
-                  Continue
-                </Button>
-              ) : null}
-
-              {step === 2 ? (
-                <Button disabled={submitting} onClick={handleNextFromEmergency} className="w-full rounded-2xl sm:flex-1">
-                  Continue to Payment
-                </Button>
-              ) : null}
-
+              {step === 1 ? <Button fullWidth disabled={submitting} onClick={handleNextFromDetails} className="sm:flex-1">Continue</Button> : null}
+              {step === 2 ? <Button fullWidth disabled={submitting} onClick={handleNextFromEmergency} className="sm:flex-1">Continue to Payment</Button> : null}
               {step === 3 ? (
-                <Button onClick={isResidence ? handleNextFromPayment : handleSubmit} disabled={submitting} loading={!isResidence && submitting} className="w-full rounded-2xl sm:flex-1">
+                <Button fullWidth onClick={isResidence ? handleNextFromPayment : handleSubmit} disabled={submitting} loading={!isResidence && submitting} className="sm:flex-1">
                   {submitting && !isResidence ? "Saving…" : isResidence ? "Next: Family" : "Save Tenant"}
                 </Button>
               ) : null}
-
               {step === familyStep && isResidence ? (
-                <Button onClick={handleNextFromFamily} disabled={submitting} loading={submitting} className="w-full rounded-2xl sm:flex-1">
+                <Button fullWidth onClick={handleNextFromFamily} disabled={submitting} loading={submitting} className="sm:flex-1">
                   {submitting ? "Saving…" : "Save Tenant"}
                 </Button>
               ) : null}
@@ -949,32 +766,30 @@ export function TenantFormModal({
 function SectionHead({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <div>
-      <h3 className="font-display text-[15px] font-semibold text-white">{title}</h3>
-      <p className="mt-1 text-[11px] text-white/45">{subtitle}</p>
+      <h3 className="font-display text-[15px] font-semibold text-[color:var(--fg-primary)]">{title}</h3>
+      <p className="mt-1 text-[11px] text-[color:var(--fg-tertiary)]">{subtitle}</p>
     </div>
   );
 }
 
-// X-06 fix: done step pills are <button> so keyboard users can navigate back
+// X-06: done step pills are <button> so keyboard users can navigate back
 function StepPill({ label, active, done, onClick }: { label: string; active: boolean; done: boolean; onClick?: () => void }) {
   const cls = `inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-semibold ${
-    active ? "border border-blue-500/60 bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)]"
-      : done ? "border border-emerald-500/40 bg-emerald-500/15 text-emerald-400 cursor-pointer hover:bg-emerald-500/25 transition"
-      : "border border-white/12 bg-white/[0.05] text-white/40"
+    active
+      ? "border border-[color:color-mix(in_srgb,var(--brand)_60%,transparent)] bg-[color:var(--cta)] text-white"
+      : done
+        ? "cursor-pointer border border-[color:color-mix(in_srgb,var(--success)_40%,transparent)] bg-[color:var(--success-soft)] text-[color:var(--success)] transition hover:brightness-110"
+        : "border border-[color:var(--border)] bg-[color:var(--surface-soft)] text-[color:var(--fg-tertiary)]"
   }`;
   if (done && onClick) {
-    return (
-      <button type="button" className={cls} onClick={onClick}>
-        {label}
-      </button>
-    );
+    return <button type="button" className={cls} onClick={onClick}>{label}</button>;
   }
   return <span className={cls}>{label}</span>;
 }
 
 function InputShell({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.06] px-3 py-3">
+    <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-3 py-3">
       <span className="shrink-0">{icon}</span>
       {children}
     </div>
@@ -984,9 +799,8 @@ function InputShell({ icon, children }: { icon: React.ReactNode; children: React
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[12px] font-semibold text-white/70">{label}</span>
+      <span className="mb-1.5 block text-[12px] font-semibold text-[color:var(--fg-secondary)]">{label}</span>
       {children}
     </label>
   );
 }
-

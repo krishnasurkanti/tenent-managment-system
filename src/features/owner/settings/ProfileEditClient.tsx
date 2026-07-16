@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { KeyRound, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { FormField } from "@/components/ui/form/field";
+import { TextInput } from "@/components/ui/form/text-input";
 import { csrfFetch } from "@/lib/csrf-client";
-import { ownerInputClass, ownerPanelClass } from "@/components/ui/owner-theme";
 
 type OwnerProfile = {
   name: string;
@@ -96,122 +97,72 @@ export function ProfileEditClient({ isDemo }: { isDemo: boolean }) {
   };
 
   return (
-    <div className="space-y-3">
-      <Card className={`p-4 ${ownerPanelClass}`}>
-        <div className="mb-4 flex items-center gap-2">
-          <div className="rounded-xl bg-[color:var(--brand-soft)] p-2 text-[#9edcff]">
-            <UserCircle className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">
-              Account
-            </p>
-            <p className="text-sm font-semibold text-white">Owner Profile</p>
-          </div>
+    <div className="flex flex-col gap-3">
+      {/* Account */}
+      <Card className="p-4">
+        <SectionHead icon={<UserCircle size={16} />} eyebrow="Account" title="Owner profile" />
+        {profile ? <p className="mb-3 text-[11px] text-[color:var(--fg-secondary)]">{profile.email}</p> : null}
+
+        <div className="flex flex-col gap-3">
+          <FormField label="Name" error={error && !name.trim() ? error : undefined}>
+            {({ id }) => (
+              <TextInput id={id} value={name} onChange={(e) => setName(e.target.value)} disabled={saving} placeholder="Your name" />
+            )}
+          </FormField>
+          <FormField label="Phone">
+            {({ id }) => (
+              <TextInput id={id} value={phone} onChange={(e) => setPhone(e.target.value)} disabled={saving} placeholder="Phone number (optional)" />
+            )}
+          </FormField>
         </div>
 
-        {profile ? (
-          <p className="mb-3 text-[11px] text-[color:var(--fg-secondary)]">{profile.email}</p>
-        ) : null}
+        {error && name.trim() ? <p className="mt-3 text-xs text-[color:var(--error)]">{error}</p> : null}
+        {message ? <p className="mt-3 text-xs text-[color:var(--success)]">{message}</p> : null}
 
-        <div className="space-y-3">
-          <label className="block">
-            <span className="mb-1.5 block text-[11px] font-medium text-[color:var(--fg-secondary)]">
-              Name
-            </span>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={saving}
-              placeholder="Your name"
-              className={`w-full ${ownerInputClass}`}
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-[11px] font-medium text-[color:var(--fg-secondary)]">
-              Phone
-            </span>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              disabled={saving}
-              placeholder="Phone number (optional)"
-              className={`w-full ${ownerInputClass}`}
-            />
-          </label>
-        </div>
-
-        {error ? <p className="mt-3 text-xs text-[color:var(--error)]">{error}</p> : null}
-        {message ? <p className="mt-3 text-xs text-emerald-400">{message}</p> : null}
-
-        <Button
-          onClick={() => void handleSaveProfile()}
-          disabled={saving}
-          loading={saving}
-          className="mt-4 rounded-2xl"
-        >
+        <Button onClick={() => void handleSaveProfile()} disabled={saving} loading={saving} className="mt-4">
           {saving ? "Saving…" : "Save Profile"}
         </Button>
       </Card>
 
-      <Card className={`p-4 ${ownerPanelClass}`}>
-        <div className="mb-4 flex items-center gap-2">
-          <div className="rounded-xl bg-[color:var(--brand-soft)] p-2 text-[#9edcff]">
-            <KeyRound className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">
-              Security
-            </p>
-            <p className="text-sm font-semibold text-white">Change Password</p>
-          </div>
-        </div>
-
+      {/* Security */}
+      <Card className="p-4">
+        <SectionHead icon={<KeyRound size={16} />} eyebrow="Security" title="Change password" />
         {isDemo ? (
-          <p className="text-[12px] text-[color:var(--fg-secondary)]">
-            Password changes are not available in demo mode.
-          </p>
+          <p className="text-[12px] text-[color:var(--fg-secondary)]">Password changes are not available in demo mode.</p>
         ) : (
-          <div className="space-y-3">
-            <label className="block">
-              <span className="mb-1.5 block text-[11px] font-medium text-[color:var(--fg-secondary)]">
-                Current password
-              </span>
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                disabled={pwSaving}
-                placeholder="••••••••"
-                className={`w-full ${ownerInputClass}`}
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-[11px] font-medium text-[color:var(--fg-secondary)]">
-                New password
-              </span>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                disabled={pwSaving}
-                placeholder="Min. 8 characters"
-                className={`w-full ${ownerInputClass}`}
-              />
-            </label>
+          <div className="flex flex-col gap-3">
+            <FormField label="Current password">
+              {({ id }) => (
+                <TextInput id={id} type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} disabled={pwSaving} placeholder="••••••••" />
+              )}
+            </FormField>
+            <FormField label="New password" helper="Minimum 8 characters">
+              {({ id }) => (
+                <TextInput id={id} type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={pwSaving} placeholder="Min. 8 characters" />
+              )}
+            </FormField>
             {pwError ? <p className="text-xs text-[color:var(--error)]">{pwError}</p> : null}
-            {pwMessage ? <p className="text-xs text-emerald-400">{pwMessage}</p> : null}
-            <Button
-              onClick={() => void handleChangePassword()}
-              disabled={pwSaving}
-              loading={pwSaving}
-              className="rounded-2xl"
-            >
+            {pwMessage ? <p className="text-xs text-[color:var(--success)]">{pwMessage}</p> : null}
+            <Button onClick={() => void handleChangePassword()} disabled={pwSaving} loading={pwSaving} className="self-start">
               {pwSaving ? "Changing…" : "Change Password"}
             </Button>
           </div>
         )}
       </Card>
+    </div>
+  );
+}
+
+function SectionHead({ icon, eyebrow, title }: { icon: React.ReactNode; eyebrow: string; title: string }) {
+  return (
+    <div className="mb-4 flex items-center gap-2">
+      <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-[color:var(--brand-soft)] text-[color:var(--accent-electric)]">
+        {icon}
+      </span>
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">{eyebrow}</p>
+        <p className="text-[length:var(--text-sm-size)] font-semibold text-[color:var(--fg-primary)]">{title}</p>
+      </div>
     </div>
   );
 }

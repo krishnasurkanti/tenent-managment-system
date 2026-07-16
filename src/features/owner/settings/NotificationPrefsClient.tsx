@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { ownerPanelClass } from "@/components/ui/owner-theme";
 
 const STORAGE_KEY = "notification_prefs_v1";
 
@@ -71,16 +70,16 @@ export function NotificationPrefsClient() {
   };
 
   return (
-    <Card className={`p-4 ${ownerPanelClass}`}>
+    <Card className="p-4">
       <div className="mb-4 flex items-center gap-2">
-        <div className="rounded-xl bg-[color:var(--brand-soft)] p-2 text-[#9edcff]">
-          <Bell className="h-4 w-4" />
-        </div>
+        <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-[color:var(--brand-soft)] text-[color:var(--accent-electric)]">
+          <Bell size={16} />
+        </span>
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-secondary)]">
             Preferences
           </p>
-          <p className="text-sm font-semibold text-white">In-app Notifications</p>
+          <p className="text-[length:var(--text-sm-size)] font-semibold text-[color:var(--fg-primary)]">In-app notifications</p>
         </div>
       </div>
 

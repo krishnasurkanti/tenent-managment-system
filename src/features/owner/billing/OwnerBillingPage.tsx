@@ -1,11 +1,13 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { SkeletonBlock } from "@/components/ui/skeleton";
 import { PricingCarousel } from "@/components/ui/pricing-carousel";
+import { FormField } from "@/components/ui/form/field";
+import { TextInput } from "@/components/ui/form/text-input";
 import {
   fetchOwnerBilling,
   requestOwnerPlanUpgrade,
@@ -14,6 +16,8 @@ import {
 } from "@/services/owner/owner-billing.service";
 import { useHostelContext } from "@/store/hostel-context";
 import { getPlanLabel, type PlanId } from "@/config/pricing";
+
+const inr = (n: number) => `Rs ${n.toLocaleString("en-IN")}`;
 
 export default function OwnerBillingPage() {
   const { currentHostel, loading: hostelLoading } = useHostelContext();
@@ -53,13 +57,11 @@ export default function OwnerBillingPage() {
     (async () => {
       const billingResponse = await fetchOwnerBilling(currentHostel.id);
       if (!active) return;
-
       if (!billingResponse.response.ok) {
         setError(billingResponse.data.message ?? "Unable to load billing.");
         setLoading(false);
         return;
       }
-
       setData(billingResponse.data);
       setLoading(false);
     })();
@@ -68,16 +70,11 @@ export default function OwnerBillingPage() {
   }, [currentHostel]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  if (hostelLoading || loading) {
-    return <LoadingState />;
-  }
+  if (hostelLoading || loading) return <LoadingState />;
 
   if (error || !data) {
     return (
-      <div
-        role="alert"
-        className="rounded-[10px] border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-300"
-      >
+      <div role="alert" className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--error)_35%,transparent)] bg-[color:var(--error-soft)] px-5 py-4 text-sm text-[color:var(--error)]">
         {error || "Unable to load pricing."}
       </div>
     );
@@ -91,55 +88,40 @@ export default function OwnerBillingPage() {
 
   const handlePlanRequest = async (planId: PlanId) => {
     if (!currentHostel?.id) return;
-
     setRequestingPlanId(planId);
     setError("");
-
-    const { response, data: responseData } = await requestOwnerPlanUpgrade(
-      currentHostel.id,
-      data.planId,
-      planId,
-    );
+    const { response, data: responseData } = await requestOwnerPlanUpgrade(currentHostel.id, data.planId, planId);
     if (!response.ok) {
       setError(responseData.message ?? "Unable to send request.");
       setRequestingPlanId(null);
       return;
     }
-
     setRequestingPlanId(null);
     await reload(currentHostel.id);
   };
 
-  const hasExtraCharges =
-    data.billing.extraCharges > 0 || (data.billing.hostelExtraCharges ?? 0) > 0;
+  const hasExtraCharges = data.billing.extraCharges > 0 || (data.billing.hostelExtraCharges ?? 0) > 0;
 
   return (
-    <div className="space-y-3 text-white">
-      {/* Compact status strip */}
+    <div className="flex flex-col gap-3">
+      {/* Status strip */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-0.5">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.05] px-3 py-1.5 text-[12px] font-semibold text-white">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-3 py-1.5 text-[12px] font-semibold text-[color:var(--fg-primary)]">
           {currentPlanLabel}
         </span>
-        <span className="text-[12px] text-white/50">
-          Rs {data.payableAmount.toLocaleString("en-IN")}/mo
-        </span>
+        <span className="text-[12px] text-[color:var(--fg-secondary)]">{inr(data.payableAmount)}/mo</span>
         {trialDaysLeft !== null && (
           <>
-            <span className="text-white/20">·</span>
-            <span className="text-[12px] text-white/50">{trialDaysLeft}d to billing</span>
+            <span className="text-[color:var(--fg-tertiary)]">·</span>
+            <span className="text-[12px] text-[color:var(--fg-secondary)]">{trialDaysLeft}d to billing</span>
           </>
         )}
       </div>
 
-      {/* Invoice payment section */}
       {data.payableAmount > 0 && (
-        <InvoicePaymentSection
-          data={data}
-          onProofSubmitted={() => currentHostel?.id && void reload(currentHostel.id)}
-        />
+        <InvoicePaymentSection data={data} onProofSubmitted={() => currentHostel?.id && void reload(currentHostel.id)} />
       )}
 
-      {/* Plan cards — front and center */}
       <PricingCarousel
         currentPlanId={data.planId}
         onSelect={handlePlanRequest}
@@ -149,50 +131,33 @@ export default function OwnerBillingPage() {
         totalBilled={data.payableAmount}
       />
 
-      {/* Pending upgrade notice */}
       {data.upgradePending ? (
-        <div className="rounded-[14px] border border-[#f59e0b]/20 bg-[#f59e0b]/[0.05] px-4 py-3">
-          <p className="text-sm font-semibold text-[#fbbf24]">
-            Plan request sent — waiting for approval.
-          </p>
-          <p className="mt-0.5 text-[12px] text-white/45">
-            Your current access stays active until super admin approves.
-          </p>
+        <div className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--warning)_25%,transparent)] bg-[color:var(--warning-soft)] px-4 py-3">
+          <p className="text-sm font-semibold text-[color:var(--warning)]">Plan request sent — waiting for approval.</p>
+          <p className="mt-0.5 text-[12px] text-[color:var(--fg-secondary)]">Your current access stays active until super admin approves.</p>
         </div>
       ) : null}
 
-      {/* Limit warning — only when >= 80% */}
       <UpgradeHook data={data} currentPlanLabel={currentPlanLabel} />
 
-      {/* Extra charges — only when non-zero */}
       {hasExtraCharges ? (
-        <div className="rounded-[14px] border border-white/10 bg-white/[0.03] px-4 py-3">
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
-            Extra usage charges
-          </p>
+        <div className="rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-tertiary)]">Extra usage charges</p>
           {data.billing.extraCharges > 0 ? (
-            <p className="text-[12px] text-white/65">
-              {data.billing.extraTenants} extra tenants →{" "}
-              <span className="font-semibold text-white">
-                Rs {data.billing.extraCharges.toLocaleString("en-IN")}
-              </span>
+            <p className="text-[12px] text-[color:var(--fg-secondary)]">
+              {data.billing.extraTenants} extra tenants → <span className="font-semibold text-[color:var(--fg-primary)]">{inr(data.billing.extraCharges)}</span>
             </p>
           ) : null}
           {(data.billing.hostelExtraCharges ?? 0) > 0 ? (
-            <p className="text-[12px] text-white/65">
-              {data.billing.extraHostels ?? 0} extra hostels →{" "}
-              <span className="font-semibold text-white">
-                Rs {(data.billing.hostelExtraCharges ?? 0).toLocaleString("en-IN")}
-              </span>
+            <p className="text-[12px] text-[color:var(--fg-secondary)]">
+              {data.billing.extraHostels ?? 0} extra hostels → <span className="font-semibold text-[color:var(--fg-primary)]">{inr(data.billing.hostelExtraCharges ?? 0)}</span>
             </p>
           ) : null}
         </div>
       ) : null}
 
       {error ? (
-        <div className="rounded-[14px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          {error}
-        </div>
+        <div className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--error)_35%,transparent)] bg-[color:var(--error-soft)] px-4 py-3 text-sm text-[color:var(--error)]">{error}</div>
       ) : null}
 
       <TenantPortalPricing />
@@ -203,65 +168,45 @@ export default function OwnerBillingPage() {
 function TenantPortalPricing() {
   const tiers = [
     {
-      name: "Basic",
-      price: "Free",
-      priceNote: "always",
-      color: "border-white/10 bg-white/[0.03]",
-      badge: null,
-      features: [
-        "View payment history",
-        "Download rent receipts",
-        "View room assignment",
-        "Contact hostel owner",
-      ],
+      name: "Basic", price: "Free", priceNote: "always",
+      color: "border-[color:var(--border)] bg-[color:var(--surface-soft)]", badge: null,
+      features: ["View payment history", "Download rent receipts", "View room assignment", "Contact hostel owner"],
     },
     {
-      name: "Plus",
-      price: "₹49",
-      priceNote: "/ tenant / month",
-      color: "border-[rgba(99,102,241,0.25)] bg-[rgba(99,102,241,0.05)]",
-      badge: "Coming soon",
-      features: [
-        "Digital rent agreement storage",
-        "Maintenance request submission",
-        "Move-out notice filing",
-        "Document uploads",
-        "Payment reminders via SMS",
-      ],
+      name: "Plus", price: "₹49", priceNote: "/ tenant / month",
+      color: "border-[color:color-mix(in_srgb,var(--brand)_25%,transparent)] bg-[color:var(--brand-soft)]", badge: "Coming soon",
+      features: ["Digital rent agreement storage", "Maintenance request submission", "Move-out notice filing", "Document uploads", "Payment reminders via SMS"],
     },
   ] as const;
 
   return (
-    <div className="rounded-[14px] border border-white/8 bg-white/[0.02] px-4 py-4">
+    <div className="rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4">
       <div className="mb-3 flex items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(99,102,241,0.3)] bg-[rgba(99,102,241,0.1)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#a5b4fc]">
-          <Sparkles className="h-3 w-3" />
-          Tenant Portal
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:color-mix(in_srgb,var(--brand)_30%,transparent)] bg-[color:var(--brand-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--accent)]">
+          <Sparkles className="h-3 w-3" /> Tenant Portal
         </span>
-        <span className="text-[11px] text-white/35">Give your tenants app access</span>
+        <span className="text-[11px] text-[color:var(--fg-tertiary)]">Give your tenants app access</span>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {tiers.map((tier) => (
-          <div key={tier.name} className={`rounded-[12px] border p-3.5 ${tier.color}`}>
+          <div key={tier.name} className={`rounded-[var(--radius-md)] border p-3.5 ${tier.color}`}>
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">Tenant</p>
-                <p className="text-base font-bold text-white">{tier.name}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-tertiary)]">Tenant</p>
+                <p className="text-base font-bold text-[color:var(--fg-primary)]">{tier.name}</p>
               </div>
               {tier.badge ? (
-                <span className="rounded-full border border-[rgba(99,102,241,0.3)] bg-[rgba(99,102,241,0.12)] px-2 py-0.5 text-[10px] font-semibold text-[#a5b4fc]">
-                  {tier.badge}
-                </span>
+                <span className="rounded-full border border-[color:color-mix(in_srgb,var(--brand)_30%,transparent)] bg-[color:var(--brand-soft)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--accent)]">{tier.badge}</span>
               ) : null}
             </div>
             <div className="mt-1.5">
-              <span className="text-lg font-bold text-white">{tier.price}</span>
-              <span className="ml-1 text-[11px] text-white/40">{tier.priceNote}</span>
+              <span className="text-lg font-bold text-[color:var(--fg-primary)]">{tier.price}</span>
+              <span className="ml-1 text-[11px] text-[color:var(--fg-tertiary)]">{tier.priceNote}</span>
             </div>
-            <ul className="mt-2.5 space-y-1">
+            <ul className="mt-2.5 flex flex-col gap-1">
               {tier.features.map((f) => (
-                <li key={f} className="flex items-start gap-1.5 text-[11px] text-white/55">
-                  <span className="mt-0.5 h-3 w-3 shrink-0 text-[#4ade80]">✓</span>
+                <li key={f} className="flex items-start gap-1.5 text-[11px] text-[color:var(--fg-secondary)]">
+                  <span className="mt-0.5 h-3 w-3 shrink-0 text-[color:var(--success)]">✓</span>
                   {f}
                 </li>
               ))}
@@ -269,20 +214,12 @@ function TenantPortalPricing() {
           </div>
         ))}
       </div>
-      <p className="mt-3 text-center text-[10px] text-white/25">
-        Tenant portal pricing is separate from hostel owner plans · Billed per active tenant
-      </p>
+      <p className="mt-3 text-center text-[10px] text-[color:var(--fg-tertiary)]">Tenant portal pricing is separate from hostel owner plans · Billed per active tenant</p>
     </div>
   );
 }
 
-function InvoicePaymentSection({
-  data,
-  onProofSubmitted,
-}: {
-  data: OwnerBillingData;
-  onProofSubmitted: () => void;
-}) {
+function InvoicePaymentSection({ data, onProofSubmitted }: { data: OwnerBillingData; onProofSubmitted: () => void }) {
   const [showForm, setShowForm] = useState(false);
   const [txnId, setTxnId] = useState("");
   const [screenshotDataUrl, setScreenshotDataUrl] = useState<string | null>(null);
@@ -327,129 +264,74 @@ function InvoicePaymentSection({
   };
 
   return (
-    <div className="rounded-[14px] border border-white/10 bg-white/[0.03] p-4 space-y-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
-        Invoice {data.monthKey}
-      </p>
+    <Card className="flex flex-col gap-3 p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--fg-tertiary)]">Invoice {data.monthKey}</p>
 
       {isPaid && (
-        <div className="rounded-[10px] border border-[#4ade80]/20 bg-[#16a34a]/15 px-4 py-3">
-          <p className="text-sm font-semibold text-[#4ade80]">Paid ✓</p>
-          <p className="mt-0.5 text-[12px] text-white/45">This month&apos;s invoice is settled.</p>
+        <div className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--success)_25%,transparent)] bg-[color:var(--success-soft)] px-4 py-3">
+          <p className="text-sm font-semibold text-[color:var(--success)]">Paid ✓</p>
+          <p className="mt-0.5 text-[12px] text-[color:var(--fg-secondary)]">This month&apos;s invoice is settled.</p>
         </div>
       )}
 
       {isPendingReview && (
-        <div className="rounded-[10px] border border-[#f59e0b]/20 bg-[#f59e0b]/10 px-4 py-3">
-          <p className="text-sm font-semibold text-[#fbbf24]">Under review — awaiting admin approval.</p>
-          {data.proof?.txnId ? (
-            <p className="mt-0.5 text-[12px] text-white/50">Txn ID: {data.proof.txnId}</p>
-          ) : null}
-          {data.proof?.submittedAt ? (
-            <p className="mt-0.5 text-[12px] text-white/40">
-              Submitted {new Date(data.proof.submittedAt).toLocaleDateString("en-IN")}
-            </p>
-          ) : null}
+        <div className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--warning)_25%,transparent)] bg-[color:var(--warning-soft)] px-4 py-3">
+          <p className="text-sm font-semibold text-[color:var(--warning)]">Under review — awaiting admin approval.</p>
+          {data.proof?.txnId ? <p className="mt-0.5 text-[12px] text-[color:var(--fg-secondary)]">Txn ID: {data.proof.txnId}</p> : null}
+          {data.proof?.submittedAt ? <p className="mt-0.5 text-[12px] text-[color:var(--fg-tertiary)]">Submitted {new Date(data.proof.submittedAt).toLocaleDateString("en-IN")}</p> : null}
         </div>
       )}
 
       {isRejected && (
-        <div className="rounded-[10px] border border-red-500/30 bg-red-500/10 px-4 py-3">
-          <p className="text-sm font-semibold text-red-300">Payment rejected — please resubmit proof.</p>
+        <div className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--error)_35%,transparent)] bg-[color:var(--error-soft)] px-4 py-3">
+          <p className="text-sm font-semibold text-[color:var(--error)]">Payment rejected — please resubmit proof.</p>
         </div>
       )}
 
       <div className="flex items-center justify-between">
-        <span className="text-sm text-white/60">Amount due</span>
-        <span className="text-lg font-semibold text-white">Rs {data.payableAmount.toLocaleString("en-IN")}</span>
+        <span className="text-sm text-[color:var(--fg-secondary)]">Amount due</span>
+        <span className="text-lg font-semibold text-[color:var(--fg-primary)]">{inr(data.payableAmount)}</span>
       </div>
 
       {canPay && data.upiString ? (
         <div className="flex flex-col items-center gap-2 py-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`/api/owner-billing/qr?upi=${encodeURIComponent(data.upiString)}`}
-            alt="UPI QR code"
-            className="h-48 w-48 rounded-[12px] border border-white/10 bg-white p-2"
-            width={192}
-            height={192}
-          />
-          <p className="text-[12px] text-white/40">Scan with any UPI app to pay</p>
+          <img src={`/api/owner-billing/qr?upi=${encodeURIComponent(data.upiString)}`} alt="UPI QR code" className="h-48 w-48 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-white p-2" width={192} height={192} />
+          <p className="text-[12px] text-[color:var(--fg-tertiary)]">Scan with any UPI app to pay</p>
         </div>
       ) : null}
 
       {canPay && !showForm ? (
-        <Button onClick={() => setShowForm(true)} className="w-full min-h-11">
-          I&apos;ve Paid — Submit Proof
-        </Button>
+        <Button onClick={() => setShowForm(true)} fullWidth className="min-h-11">I&apos;ve Paid — Submit Proof</Button>
       ) : null}
 
       {showForm ? (
-        <div className="space-y-3 rounded-[10px] border border-white/8 bg-white/[0.04] p-3">
-          <label className="block text-xs text-white/50">
-            Transaction ID
-            <input
-              type="text"
-              value={txnId}
-              onChange={(e) => setTxnId(e.target.value)}
-              placeholder="e.g. 423456789012"
-              className="mt-1 w-full rounded-[8px] border border-white/10 bg-white/[0.06] px-3 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-white/25"
-            />
-          </label>
-
-          <label className="block text-xs text-white/50">
-            Payment Screenshot (optional)
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="mt-1 block w-full text-xs text-white/50 file:mr-3 file:rounded-[6px] file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-xs file:text-white/70 file:cursor-pointer"
-            />
-          </label>
-
+        <div className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-3">
+          <FormField label="Transaction ID">
+            {({ id }) => <TextInput id={id} value={txnId} onChange={(e) => setTxnId(e.target.value)} placeholder="e.g. 423456789012" />}
+          </FormField>
+          <FormField label="Payment screenshot (optional)">
+            {({ id }) => (
+              <input id={id} ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="block w-full text-xs text-[color:var(--fg-secondary)] file:mr-3 file:rounded-[var(--radius-xs)] file:border-0 file:bg-[color:var(--muted)] file:px-3 file:py-1.5 file:text-xs file:text-[color:var(--fg-primary)] file:cursor-pointer" />
+            )}
+          </FormField>
           {screenshotDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={screenshotDataUrl}
-              alt="Payment screenshot preview"
-              className="max-h-36 w-auto rounded-[8px] border border-white/10 object-contain"
-            />
+            <img src={screenshotDataUrl} alt="Payment screenshot preview" className="max-h-36 w-auto rounded-[var(--radius-sm)] border border-[color:var(--border)] object-contain" />
           ) : null}
-
-          {submitError ? (
-            <p className="text-xs text-red-400">{submitError}</p>
-          ) : null}
-
+          {submitError ? <p className="text-xs text-[color:var(--error)]">{submitError}</p> : null}
           <div className="flex gap-2">
-            <Button onClick={handleSubmit} disabled={submitting} className="flex-1 min-h-10">
-              {submitting ? "Submitting…" : "Submit"}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => { setShowForm(false); setSubmitError(""); }}
-              className="min-h-10 px-4"
-            >
-              Cancel
-            </Button>
+            <Button onClick={handleSubmit} disabled={submitting} className="min-h-10 flex-1">{submitting ? "Submitting…" : "Submit"}</Button>
+            <Button variant="secondary" onClick={() => { setShowForm(false); setSubmitError(""); }} className="min-h-10 px-4">Cancel</Button>
           </div>
         </div>
       ) : null}
-    </div>
+    </Card>
   );
 }
 
-function UpgradeHook({
-  data,
-  currentPlanLabel,
-}: {
-  data: OwnerBillingData;
-  currentPlanLabel: string;
-}) {
-  const tenantPct =
-    data.billing.planLimit && data.billing.tenantCount
-      ? Math.round((data.billing.tenantCount / data.billing.planLimit) * 100)
-      : 0;
+function UpgradeHook({ data, currentPlanLabel }: { data: OwnerBillingData; currentPlanLabel: string }) {
+  const tenantPct = data.billing.planLimit && data.billing.tenantCount ? Math.round((data.billing.tenantCount / data.billing.planLimit) * 100) : 0;
   const hostelCount = data.billing.hostelCount ?? 0;
   const hostelLimit = data.billing.hostelLimit ?? 1;
   const hostelPct = hostelLimit > 0 ? Math.round((hostelCount / hostelLimit) * 100) : 0;
@@ -461,25 +343,17 @@ function UpgradeHook({
   if (!showTenantWarning && !showHostelWarning) return null;
 
   return (
-    <div className="rounded-[14px] border border-[#f59e0b]/25 bg-[rgba(245,158,11,0.06)] p-3">
+    <div className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--warning)_25%,transparent)] bg-[color:var(--warning-soft)] p-3">
       <div className="flex items-start gap-3">
-        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#fbbf24]" />
+        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--warning)]" />
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-[#fbbf24]">
-            {showTenantWarning && showHostelWarning
-              ? "Approaching tenant and hostel limits"
-              : showTenantWarning
-                ? "Approaching tenant limit"
-                : "Approaching hostel limit"}
+          <p className="text-sm font-semibold text-[color:var(--warning)]">
+            {showTenantWarning && showHostelWarning ? "Approaching tenant and hostel limits" : showTenantWarning ? "Approaching tenant limit" : "Approaching hostel limit"}
           </p>
-          <p className="mt-1 text-[12px] text-white/50">
-            {showTenantWarning
-              ? `Used ${data.billing.tenantCount} of ${data.billing.planLimit} on ${currentPlanLabel}. `
-              : ""}
+          <p className="mt-1 text-[12px] text-[color:var(--fg-secondary)]">
+            {showTenantWarning ? `Used ${data.billing.tenantCount} of ${data.billing.planLimit} on ${currentPlanLabel}. ` : ""}
             {showHostelWarning ? `${hostelCount} of ${hostelLimit} hostel slots filled. ` : ""}
-            {isOnMaxPlan
-              ? "Extra usage billed at Rs 5/tenant and Rs 199/hostel per month."
-              : "Upgrade your plan for a higher limit."}
+            {isOnMaxPlan ? "Extra usage billed at Rs 5/tenant and Rs 199/hostel per month." : "Upgrade your plan for a higher limit."}
           </p>
         </div>
       </div>
@@ -489,11 +363,11 @@ function UpgradeHook({
 
 function LoadingState() {
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       <SkeletonBlock className="h-10 w-64 rounded-full" />
       <div className="flex gap-3 overflow-hidden">
         {Array.from({ length: 4 }).map((_, i) => (
-          <SkeletonBlock key={i} className="h-96 w-[260px] shrink-0 rounded-[20px]" />
+          <SkeletonBlock key={i} className="h-96 w-[260px] shrink-0 rounded-[var(--radius-xl)]" />
         ))}
       </div>
     </div>

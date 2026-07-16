@@ -51,23 +51,48 @@
     --glow-accent: rgba(245, 158, 11, 0.18);
     --danger-soft: var(--error-soft);
 
-    /* ── Shadows ── */
-    --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.28);
-    --shadow-soft: 0 8px 24px rgba(99, 102, 241, 0.14);
-    --shadow-elevated: 0 20px 52px rgba(0, 0, 0, 0.36);
+    /* ── Shadows (legacy names → mapped to semantic scale below) ── */
+    --shadow-card: var(--shadow-3);
+    --shadow-soft: var(--shadow-brand);
+    --shadow-elevated: var(--shadow-4);
 
     /* ── Layout — single source of truth for every height ── */
     --topbar-h: 48px;
     --nav-h: 62px;    /* mobile bottom nav total height including padding */
     --sidebar-w: 272px;
 
-    /* ── Border radius ── */
-    --radius-card: 16px;
-    --radius-pill: 10px;
-    --radius-sm: 8px;
+    /* ── Border radius ──
+       Semantic scale (rebuild). Legacy aliases (--radius-card/pill/xs) kept
+       below so existing components keep resolving until migrated. */
     --radius-xs: 6px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+    /* legacy radius aliases */
+    --radius-card: var(--radius-lg);   /* was 16px */
+    --radius-pill: 10px;
 
-    /* ── Motion ── */
+    /* ── Elevation / shadow — 5-level semantic scale (rebuild) ──
+       --shadow-1 flat cards → --shadow-5 modals/overlays. Legacy
+       --shadow-card/soft/elevated remapped onto the scale. */
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.24);
+    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.26);
+    --shadow-3: 0 8px 32px rgba(0, 0, 0, 0.28);
+    --shadow-4: 0 20px 52px rgba(0, 0, 0, 0.36);
+    --shadow-5: 0 40px 100px rgba(0, 0, 0, 0.6);
+    --shadow-brand: 0 8px 24px rgba(99, 102, 241, 0.14);
+
+    /* ── Motion ──
+       Semantic duration scale (rebuild): instant/fast/normal/slow/deliberate.
+       Legacy --motion-micro..xl kept as aliases below. */
+    --duration-instant: 0ms;
+    --duration-fast: 100ms;
+    --duration-normal: 200ms;
+    --duration-slow: 350ms;
+    --duration-deliberate: 500ms;
+    /* legacy motion aliases */
     --motion-micro: 80ms;
     --motion-small: 160ms;
     --motion-medium: 240ms;
@@ -76,6 +101,7 @@
     --ease-enter: cubic-bezier(0, 0, 0.2, 1);
     --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
     --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
     /* ── Spacing scale ── */
     --space-1: 4px;

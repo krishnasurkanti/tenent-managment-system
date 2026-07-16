@@ -2,6 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { SkeletonBlock } from "@/components/ui/skeleton";
+import { StatCard } from "@/components/ui/stat-card";
+import { ProcessingPill } from "@/components/ui/processing-pill";
 import { fetchAdminOverview } from "@/services/admin/admin.service";
 
 export default function AdminDashboardPage() {
@@ -15,27 +17,13 @@ export default function AdminDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="rounded-[10px] border border-white/80 bg-white/90 p-3 sm:p-4 shadow-sm">
-          <div className="flex items-center gap-2">
-            <div className="h-2.5 w-2.5 rounded-full bg-[var(--cta)] animate-[status-breathe_1s_ease-in-out_infinite]" />
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Preparing admin overview</p>
-          </div>
-          <div className="mt-4 space-y-3">
-            <SkeletonBlock className="h-4 w-28" />
-            <SkeletonBlock className="h-10 w-60" />
-            <SkeletonBlock className="h-4 w-80 max-w-full" />
-          </div>
-        </div>
+      <div className="flex flex-col gap-4">
+        <ProcessingPill label="Preparing admin overview" />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <SkeletonBlock key={index} className="h-28" />
-          ))}
+          {Array.from({ length: 5 }).map((_, i) => <SkeletonBlock key={i} className="h-24 rounded-[var(--radius-lg)]" />)}
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <SkeletonBlock key={index} className="h-28" />
-          ))}
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonBlock key={i} className="h-24 rounded-[var(--radius-lg)]" />)}
         </div>
       </div>
     );
@@ -43,50 +31,33 @@ export default function AdminDashboardPage() {
 
   if (isError || !data) {
     return (
-      <div
-        role="alert"
-        className="rounded-[10px] border border-red-200 bg-red-50 p-3 sm:p-4 text-sm font-medium text-red-700"
-      >
+      <div role="alert" className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--error)_35%,transparent)] bg-[color:var(--error-soft)] p-4 text-sm font-medium text-[color:var(--error)]">
         Failed to load dashboard. Refresh the page to try again.
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-[10px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(240,249,255,0.95)_100%)] p-3 sm:p-4 shadow-[0_20px_44px_rgba(14,165,233,0.1)]">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Control Center</p>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">Admin Dashboard</h1>
-        <p className="mt-1 text-sm text-slate-600">Platform-wide metrics across all businesses, hostels, and tenants.</p>
+    <div className="flex flex-col gap-4">
+      <header>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:var(--fg-secondary)]">Control center</p>
+        <h1 className="font-display mt-0.5 text-[clamp(1.35rem,4.5vw,1.75rem)] font-bold text-[color:var(--fg-primary)]">Admin dashboard</h1>
+        <p className="text-[length:var(--text-sm-size)] text-[color:var(--fg-secondary)]">Platform-wide metrics across all businesses, hostels, and tenants.</p>
+      </header>
+
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+        <StatCard label="Total hostels" value={data.totals.hostels} helper="All onboarded" />
+        <StatCard label="Active tenants" value={data.totals.activeTenants} helper="Across all hostels" tone="success" />
+        <StatCard label="Monthly revenue" value={`Rs ${data.totals.monthlyRevenue.toLocaleString("en-IN")}`} helper="Current billing month" />
+        <StatCard label="Active hostels" value={data.totals.activeHostels} helper="Operating" tone="success" />
+        <StatCard label="Inactive hostels" value={data.totals.inactiveHostels} helper="Suspended" tone={data.totals.inactiveHostels ? "warning" : "plain"} />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard label="Total Hostels" value={String(data.totals.hostels)} helper="All onboarded hostels" />
-        <StatCard label="Active Tenants" value={String(data.totals.activeTenants)} helper="Across all hostels" />
-        <StatCard label="Monthly Revenue" value={`Rs ${data.totals.monthlyRevenue.toLocaleString("en-IN")}`} helper="Current billing month" />
-        <StatCard label="Active Hostels" value={String(data.totals.activeHostels)} helper="Operating hostels" />
-        <StatCard label="Inactive Hostels" value={String(data.totals.inactiveHostels)} helper="Deactivated/suspended" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <StatCard label="New tenants" value={data.growth.newTenantsThisMonth} helper="Added this month" />
+        <StatCard label="New hostels" value={data.growth.newHostelsThisMonth} helper="Created this month" />
+        <StatCard label="Tenant growth" value={`${data.growth.tenantGrowthDelta >= 0 ? "+" : ""}${data.growth.tenantGrowthDelta}`} helper="Vs previous month" tone={data.growth.tenantGrowthDelta >= 0 ? "success" : "danger"} />
       </div>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard label="New Tenants" value={String(data.growth.newTenantsThisMonth)} helper="Added this month" />
-        <StatCard label="New Hostels" value={String(data.growth.newHostelsThisMonth)} helper="Created this month" />
-        <StatCard
-          label="Tenant Growth"
-          value={`${data.growth.tenantGrowthDelta >= 0 ? "+" : ""}${data.growth.tenantGrowthDelta}`}
-          helper="Vs previous month"
-        />
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, helper }: { label: string; value: string; helper: string }) {
-  return (
-    <div className="rounded-2xl border border-white/80 bg-white/90 p-4 shadow-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-slate-900">{value}</p>
-      <p className="mt-1 text-xs text-slate-500">{helper}</p>
     </div>
   );
 }

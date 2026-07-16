@@ -27,6 +27,9 @@ type Invoice = {
 };
 
 const plans = ["free", "starter", "growth", "pro"] as const;
+const fieldCls = "mt-1 w-full rounded-[var(--radius-md)] border border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-[color:var(--fg-primary)] outline-none placeholder:text-[color:var(--fg-tertiary)] [&>option]:bg-[color:var(--bg-elevated)]";
+const approveCls = "min-h-9 border-[color:var(--success)] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white";
+const rejectCls = "min-h-9 border-[color:var(--error)] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] text-white";
 
 export default function AdminBillingPage() {
   const [rows, setRows] = useState<AdminBillingRow[]>([]);
@@ -51,69 +54,39 @@ export default function AdminBillingPage() {
     void load();
   }, []);
 
-  const updateControl = async (hostelId: string, patch: Record<string, unknown>) => {
-    await updateAdminBillingControl(hostelId, patch);
-    await load();
-  };
-
-  const generateInvoice = async (hostelId: string) => {
-    await generateAdminInvoice(hostelId);
-    await load();
-  };
-
-  const setStatus = async (invoiceId: string, status: PaymentStatus) => {
-    await updateAdminInvoiceStatus(invoiceId, status);
-    await load();
-  };
-
-  const decideUpgrade = async (requestId: string, action: "approve" | "reject") => {
-    await decideAdminUpgradeRequest(requestId, action);
-    await load();
-  };
-
-  const approveProof = async (invoiceId: string) => {
-    await approveAdminPaymentProof(invoiceId);
-    await load();
-  };
-
-  const rejectProof = async (invoiceId: string) => {
-    await rejectAdminPaymentProof(invoiceId);
-    await load();
-  };
-
-  const activateBilling = async (hostelId: string) => {
-    await startOwnerBilling(hostelId);
-    await load();
-  };
+  const updateControl = async (hostelId: string, patch: Record<string, unknown>) => { await updateAdminBillingControl(hostelId, patch); await load(); };
+  const generateInvoice = async (hostelId: string) => { await generateAdminInvoice(hostelId); await load(); };
+  const setStatus = async (invoiceId: string, status: PaymentStatus) => { await updateAdminInvoiceStatus(invoiceId, status); await load(); };
+  const decideUpgrade = async (requestId: string, action: "approve" | "reject") => { await decideAdminUpgradeRequest(requestId, action); await load(); };
+  const approveProof = async (invoiceId: string) => { await approveAdminPaymentProof(invoiceId); await load(); };
+  const rejectProof = async (invoiceId: string) => { await rejectAdminPaymentProof(invoiceId); await load(); };
+  const activateBilling = async (hostelId: string) => { await startOwnerBilling(hostelId); await load(); };
 
   return (
-    <div className="space-y-4 text-white">
-      <Card className="bg-[radial-gradient(circle_at_top_right,rgba(249,193,42,0.14),transparent_28%),linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4">
-        <h1 className="text-2xl font-semibold text-white">Pricing & Billing Control</h1>
-        <p className="mt-2 text-sm text-[color:var(--fg-secondary)]">Apply plan upgrades, overrides, discounts, free months, and invoice actions.</p>
-      </Card>
+    <div className="flex flex-col gap-4">
+      <header>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Admin</p>
+        <h1 className="font-display mt-0.5 text-[clamp(1.35rem,4.5vw,1.75rem)] font-bold text-[color:var(--fg-primary)]">Pricing &amp; billing control</h1>
+        <p className="text-[length:var(--text-sm-size)] text-[color:var(--fg-secondary)]">Apply plan upgrades, overrides, discounts, free months, and invoice actions.</p>
+      </header>
 
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         {rows.map((row) => (
-          <Card key={row.hostelId} className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
+          <Card key={row.hostelId} className="p-3 sm:p-4">
             {!row.billingCycleStart && (
-              <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2.5">
+              <div className="mb-3 flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--warning)_25%,transparent)] bg-[color:var(--warning-soft)] px-3 py-2.5">
                 <div>
-                  <p className="text-[12px] font-semibold text-amber-300">Billing not started</p>
-                  <p className="text-[11px] text-amber-200/60">Owner is on free access until you start billing.</p>
+                  <p className="text-[12px] font-semibold text-[color:var(--warning)]">Billing not started</p>
+                  <p className="text-[11px] text-[color:var(--fg-secondary)]">Owner is on free access until you start billing.</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void activateBilling(row.hostelId)}
-                  className="shrink-0 rounded-xl border border-amber-400/40 bg-amber-500/20 px-3 py-1.5 text-[12px] font-semibold text-amber-300 transition hover:bg-amber-500/30"
-                >
+                <button type="button" onClick={() => void activateBilling(row.hostelId)} className="shrink-0 rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--warning)_40%,transparent)] bg-[color:var(--warning-soft)] px-3 py-1.5 text-[12px] font-semibold text-[color:var(--warning)] transition hover:brightness-110">
                   Start Billing
                 </button>
               </div>
             )}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-lg font-semibold text-white">{row.hostelName}</p>
+                <p className="text-lg font-semibold text-[color:var(--fg-primary)]">{row.hostelName}</p>
                 <p className="text-sm text-[color:var(--fg-secondary)]">
                   {row.billingCycleStart
                     ? `Cycle from ${new Date(row.billingCycleStart).toLocaleDateString("en-IN")} • Billable: ${row.billing.billableTenantCount} • Rs ${row.billing.finalAmount.toLocaleString("en-IN")}`
@@ -121,124 +94,58 @@ export default function AdminBillingPage() {
                 </p>
               </div>
               {row.billing.blockedAtNextPlan ? (
-                <span className="rounded-full border border-[#ef4444] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] px-2.5 py-1 text-xs font-semibold text-white shadow-[0_10px_22px_rgba(220,38,38,0.24)]">
-                  Upgrade required ({row.billing.nextPlanName})
-                </span>
+                <span className="rounded-full border border-[color:var(--error)] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] px-2.5 py-1 text-xs font-semibold text-white">Upgrade required ({row.billing.nextPlanName})</span>
               ) : row.billing.upgradeSuggested ? (
-                <span className="rounded-full border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-2.5 py-1 text-xs font-semibold text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]">
-                  Upgrade suggested
-                </span>
+                <span className="rounded-full border border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] px-2.5 py-1 text-xs font-semibold text-[#422006]">Upgrade suggested</span>
               ) : null}
             </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
               <AdminField label="Plan">
-                <select
-                  value={row.control.planId}
-                  onChange={(event) => updateControl(row.hostelId, { planId: event.target.value })}
-                  className="mt-1 w-full rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white"
-                >
-                  {plans.map((plan) => (
-                    <option key={plan} value={plan}>
-                      {plan}
-                    </option>
-                  ))}
+                <select value={row.control.planId} onChange={(e) => updateControl(row.hostelId, { planId: e.target.value })} className={fieldCls}>
+                  {plans.map((plan) => <option key={plan} value={plan}>{plan}</option>)}
                 </select>
               </AdminField>
-
-              <AdminField label="Price Override">
-                <input
-                  type="number"
-                  defaultValue={row.control.pricingOverride ?? ""}
-                  onBlur={(event) => updateControl(row.hostelId, { pricingOverride: event.target.value ? Number(event.target.value) : null })}
-                  placeholder="Auto"
-                  className="mt-1 w-full rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white placeholder:text-[color:var(--fg-secondary)]"
-                />
+              <AdminField label="Price override">
+                <input type="number" defaultValue={row.control.pricingOverride ?? ""} onBlur={(e) => updateControl(row.hostelId, { pricingOverride: e.target.value ? Number(e.target.value) : null })} placeholder="Auto" className={fieldCls} />
               </AdminField>
-
               <AdminField label="Discount %">
-                <input
-                  type="number"
-                  defaultValue={row.control.discountPercent}
-                  onBlur={(event) => updateControl(row.hostelId, { discountPercent: Number(event.target.value || 0) })}
-                  className="mt-1 w-full rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white"
-                />
+                <input type="number" defaultValue={row.control.discountPercent} onBlur={(e) => updateControl(row.hostelId, { discountPercent: Number(e.target.value || 0) })} className={fieldCls} />
               </AdminField>
-
-              <AdminField label="Free Months">
-                <input
-                  type="number"
-                  defaultValue={row.control.freeMonthsRemaining}
-                  onBlur={(event) => updateControl(row.hostelId, { freeMonthsRemaining: Number(event.target.value || 0) })}
-                  className="mt-1 w-full rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white"
-                />
+              <AdminField label="Free months">
+                <input type="number" defaultValue={row.control.freeMonthsRemaining} onBlur={(e) => updateControl(row.hostelId, { freeMonthsRemaining: Number(e.target.value || 0) })} className={fieldCls} />
               </AdminField>
-
               <div className="flex items-end">
-                <Button onClick={() => generateInvoice(row.hostelId)} className="w-full min-h-12">
-                  Generate Invoice
-                </Button>
+                <Button onClick={() => generateInvoice(row.hostelId)} fullWidth className="min-h-12">Generate Invoice</Button>
               </div>
             </div>
           </Card>
         ))}
       </div>
 
-      {/* Pending Payment Proofs */}
+      {/* Pending payment proofs */}
       {pendingProofs.length > 0 ? (
-        <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white border-[#f59e0b]/25">
-          <h2 className="text-lg font-semibold text-[#fbbf24]">
-            Pending Payment Proofs ({pendingProofs.length})
-          </h2>
-          <p className="mt-0.5 text-[12px] text-white/40">Review submitted proofs and approve or reject.</p>
-          <div className="mt-3 space-y-3">
+        <Card className="border-[color:color-mix(in_srgb,var(--warning)_25%,transparent)] p-3 sm:p-4">
+          <h2 className="text-lg font-semibold text-[color:var(--warning)]">Pending payment proofs ({pendingProofs.length})</h2>
+          <p className="mt-0.5 text-[12px] text-[color:var(--fg-tertiary)]">Review submitted proofs and approve or reject.</p>
+          <div className="mt-3 flex flex-col gap-3">
             {pendingProofs.map((item) => (
-              <div
-                key={item.invoiceId}
-                className="rounded-[10px] border border-[#f59e0b]/20 bg-[#f59e0b]/[0.05] p-3"
-              >
+              <div key={item.invoiceId} className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--warning)_20%,transparent)] bg-[color:var(--warning-soft)] p-3">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-white">{item.hostelName}</p>
-                    <p className="text-[12px] text-white/50">
-                      {item.monthKey} • Rs {item.finalAmount.toLocaleString("en-IN")}
-                    </p>
-                    {item.proof?.txnId ? (
-                      <p className="mt-1 text-[12px] text-white/60">
-                        Txn ID:{" "}
-                        <span className="font-mono text-white/80">{item.proof.txnId}</span>
-                      </p>
-                    ) : null}
-                    {item.proof?.submittedAt ? (
-                      <p className="mt-0.5 text-[11px] text-white/35">
-                        Submitted {new Date(item.proof.submittedAt).toLocaleString("en-IN")}
-                      </p>
-                    ) : null}
+                    <p className="text-sm font-semibold text-[color:var(--fg-primary)]">{item.hostelName}</p>
+                    <p className="text-[12px] text-[color:var(--fg-secondary)]">{item.monthKey} • Rs {item.finalAmount.toLocaleString("en-IN")}</p>
+                    {item.proof?.txnId ? <p className="mt-1 text-[12px] text-[color:var(--fg-secondary)]">Txn ID: <span className="font-mono text-[color:var(--fg-primary)]">{item.proof.txnId}</span></p> : null}
+                    {item.proof?.submittedAt ? <p className="mt-0.5 text-[11px] text-[color:var(--fg-tertiary)]">Submitted {new Date(item.proof.submittedAt).toLocaleString("en-IN")}</p> : null}
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      variant="secondary"
-                      className="min-h-9 border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white shadow-[0_12px_24px_rgba(34,197,94,0.22)]"
-                      onClick={() => approveProof(item.invoiceId)}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      className="min-h-9 border-[#ef4444] bg-[linear-gradient(180deg,rgba(220,38,38,0.26)_0%,rgba(127,29,29,0.38)_100%)] text-white shadow-[0_12px_24px_rgba(220,38,38,0.18)]"
-                      onClick={() => rejectProof(item.invoiceId)}
-                    >
-                      Reject
-                    </Button>
+                    <Button variant="secondary" className={approveCls} onClick={() => approveProof(item.invoiceId)}>Approve</Button>
+                    <Button variant="secondary" className={rejectCls} onClick={() => rejectProof(item.invoiceId)}>Reject</Button>
                   </div>
                 </div>
                 {item.proof?.screenshotDataUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.proof.screenshotDataUrl}
-                    alt="Payment screenshot"
-                    className="mt-3 max-h-48 w-auto rounded-[8px] border border-white/10 object-contain"
-                  />
+                  <img src={item.proof.screenshotDataUrl} alt="Payment screenshot" className="mt-3 max-h-48 w-auto rounded-[var(--radius-sm)] border border-[color:var(--border)] object-contain" />
                 ) : null}
               </div>
             ))}
@@ -246,25 +153,21 @@ export default function AdminBillingPage() {
         </Card>
       ) : null}
 
-      <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
-        <h2 className="text-lg font-semibold text-white">Upgrade Requests</h2>
-        <div className="mt-3 space-y-2">
+      <Card className="p-3 sm:p-4">
+        <h2 className="text-lg font-semibold text-[color:var(--fg-primary)]">Upgrade requests</h2>
+        <div className="mt-3 flex flex-col gap-2">
           {upgradeRequests.length === 0 ? (
             <p className="text-sm text-[color:var(--fg-secondary)]">No upgrade requests yet.</p>
           ) : (
             upgradeRequests.map((request) => (
-              <div key={request.requestId} className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
-                <div className="text-sm text-white">
+              <div key={request.requestId} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
+                <div className="text-sm text-[color:var(--fg-primary)]">
                   {request.hostelName}: {request.currentPlanId.toUpperCase()} {"->"} {request.requestedPlanId.toUpperCase()} ({request.status})
                 </div>
                 {request.status === "pending" ? (
                   <div className="flex gap-2">
-                    <Button variant="secondary" className="min-h-9 border-[#4ade80] bg-[linear-gradient(180deg,#22c55e_0%,#16a34a_100%)] text-white shadow-[0_12px_24px_rgba(34,197,94,0.22)]" onClick={() => decideUpgrade(request.requestId, "approve")}>
-                      Approve
-                    </Button>
-                    <Button variant="secondary" className="min-h-9 border-[#ef4444] bg-[linear-gradient(180deg,rgba(220,38,38,0.26)_0%,rgba(127,29,29,0.38)_100%)] text-white shadow-[0_12px_24px_rgba(220,38,38,0.18)]" onClick={() => decideUpgrade(request.requestId, "reject")}>
-                      Reject
-                    </Button>
+                    <Button variant="secondary" className={approveCls} onClick={() => decideUpgrade(request.requestId, "approve")}>Approve</Button>
+                    <Button variant="secondary" className={rejectCls} onClick={() => decideUpgrade(request.requestId, "reject")}>Reject</Button>
                   </div>
                 ) : null}
               </div>
@@ -273,25 +176,19 @@ export default function AdminBillingPage() {
         </div>
       </Card>
 
-      <Card className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
-        <h2 className="text-lg font-semibold text-white">Billing History</h2>
-        <div className="mt-3 space-y-2">
+      <Card className="p-3 sm:p-4">
+        <h2 className="text-lg font-semibold text-[color:var(--fg-primary)]">Billing history</h2>
+        <div className="mt-3 flex flex-col gap-2">
           {history.length === 0 ? (
             <p className="text-sm text-[color:var(--fg-secondary)]">No invoices generated yet.</p>
           ) : (
             history.map((invoice) => (
-              <div key={invoice.invoiceId} className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
-                <div className="text-sm text-white">
-                  {invoice.invoiceId} • {invoice.monthKey} • Rs{invoice.finalAmount.toLocaleString("en-IN")}
-                </div>
+              <div key={invoice.invoiceId} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
+                <div className="text-sm text-[color:var(--fg-primary)]">{invoice.invoiceId} • {invoice.monthKey} • Rs{invoice.finalAmount.toLocaleString("en-IN")}</div>
                 <div className="flex gap-2">
                   {(["paid", "pending", "failed"] as const).map((status) => (
-                    <Button
-                      key={status}
-                      variant="secondary"
-                      onClick={() => setStatus(invoice.invoiceId, status)}
-                      className={`min-h-9 px-3 text-xs ${invoice.paymentStatus === status ? "border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] text-[#422006] shadow-[0_10px_22px_rgba(250,204,21,0.24)]" : "bg-[color:var(--surface-strong)] text-white"}`}
-                    >
+                    <Button key={status} variant="secondary" onClick={() => setStatus(invoice.invoiceId, status)}
+                      className={`min-h-9 px-3 text-xs ${invoice.paymentStatus === status ? "border-[#facc15] bg-[linear-gradient(180deg,#facc15_0%,#eab308_100%)] text-[#422006]" : "bg-[color:var(--surface-strong)] text-[color:var(--fg-primary)]"}`}>
                       {status}
                     </Button>
                   ))}
