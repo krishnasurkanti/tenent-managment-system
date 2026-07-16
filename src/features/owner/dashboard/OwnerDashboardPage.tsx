@@ -577,11 +577,11 @@ function DashboardAlertBanner({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full pt-1">
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex snap-x snap-mandatory overflow-x-auto gap-3"
+        className="mx-auto flex w-fit max-w-full snap-x snap-mandatory overflow-x-auto gap-3"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none", scrollPaddingLeft: "1rem" }}
       >
         {cards.map((card, i) => {
