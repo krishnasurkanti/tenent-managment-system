@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Archive, Download, RefreshCw } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 type Backup = {
   id: number;
@@ -17,10 +18,7 @@ function fmtSize(bytes: number) {
 }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleString("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  return new Date(iso).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
 }
 
 export default function AdminBackupsPage() {
@@ -45,9 +43,7 @@ export default function AdminBackupsPage() {
     }
   };
 
-  useEffect(() => {
-    void load();
-  }, []);
+  useEffect(() => { void load(); }, []);
 
   const triggerBackup = async () => {
     setTriggering(true);
@@ -69,9 +65,7 @@ export default function AdminBackupsPage() {
       const res = await fetch(`/api/admin/backups/${id}`);
       if (!res.ok) throw new Error("Download failed");
       const data = (await res.json()) as { backup: { snapshot: unknown } };
-      const blob = new Blob([JSON.stringify(data.backup.snapshot, null, 2)], {
-        type: "application/json",
-      });
+      const blob = new Blob([JSON.stringify(data.backup.snapshot, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -86,47 +80,39 @@ export default function AdminBackupsPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-[10px] border border-white/10 bg-white/[0.04] p-4 shadow-sm">
+    <div className="flex flex-col gap-4">
+      <Card className="p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <Archive className="h-5 w-5 text-white/50" />
+            <Archive className="h-5 w-5 text-[color:var(--fg-secondary)]" />
             <div>
-              <h1 className="text-lg font-semibold text-white">Daily Backups</h1>
-              <p className="text-[11px] text-white/40">
-                Auto-runs at midnight · last 7 days retained
-              </p>
+              <h1 className="text-[length:var(--text-lg-size)] font-semibold text-[color:var(--fg-primary)]">Daily backups</h1>
+              <p className="text-[11px] text-[color:var(--fg-tertiary)]">Auto-runs at midnight · last 7 days retained</p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => void triggerBackup()}
             disabled={triggering}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.06] px-3 py-2 text-[13px] font-semibold text-white transition hover:bg-white/[0.12] disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-3 py-2 text-[13px] font-semibold text-[color:var(--fg-primary)] transition hover:bg-[color:var(--surface-strong)] disabled:opacity-50"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${triggering ? "animate-spin" : ""}`} />
             {triggering ? "Running…" : "Backup Now"}
           </button>
         </div>
-      </div>
+      </Card>
 
-      {error && (
-        <p className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
-          {error}
-        </p>
-      )}
+      {error && <p className="rounded-[var(--radius-md)] border border-[color:color-mix(in_srgb,var(--error)_30%,transparent)] bg-[color:var(--error-soft)] px-3 py-2 text-sm text-[color:var(--error)]">{error}</p>}
 
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
+      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[color:var(--border)]">
         {loading ? (
-          <div className="px-4 py-8 text-center text-sm text-white/40">Loading…</div>
+          <div className="px-4 py-8 text-center text-sm text-[color:var(--fg-tertiary)]">Loading…</div>
         ) : backups.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-white/40">
-            No backups yet. First auto-backup runs at midnight.
-          </div>
+          <div className="px-4 py-8 text-center text-sm text-[color:var(--fg-tertiary)]">No backups yet. First auto-backup runs at midnight.</div>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/8 text-[11px] font-semibold uppercase tracking-wider text-white/35">
+              <tr className="border-b border-[color:var(--border)] text-[11px] font-semibold uppercase tracking-wider text-[color:var(--fg-tertiary)]">
                 <th className="px-4 py-2.5 text-left">Date</th>
                 <th className="px-4 py-2.5 text-left">Source</th>
                 <th className="px-4 py-2.5 text-right">Size</th>
@@ -134,31 +120,17 @@ export default function AdminBackupsPage() {
               </tr>
             </thead>
             <tbody>
-              {backups.map((b, i) => (
-                <tr
-                  key={b.id}
-                  className={`border-b border-white/5 last:border-0 ${i % 2 === 0 ? "" : "bg-white/[0.015]"}`}
-                >
-                  <td className="px-4 py-3 font-medium text-white">{fmtDate(b.created_at)}</td>
+              {backups.map((b) => (
+                <tr key={b.id} className="border-b border-[color:var(--border)] last:border-0">
+                  <td className="px-4 py-3 font-medium text-[color:var(--fg-primary)]">{fmtDate(b.created_at)}</td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                        b.triggered_by === "manual"
-                          ? "bg-[rgba(99,102,241,0.2)] text-[#a5b4fc]"
-                          : "bg-white/8 text-white/45"
-                      }`}
-                    >
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${b.triggered_by === "manual" ? "bg-[color:var(--brand-soft)] text-[color:var(--accent)]" : "bg-[color:var(--muted)] text-[color:var(--fg-secondary)]"}`}>
                       {b.triggered_by === "manual" ? "Manual" : "Auto"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right text-white/55">{fmtSize(b.size_bytes)}</td>
+                  <td className="px-4 py-3 text-right text-[color:var(--fg-secondary)]">{fmtSize(b.size_bytes)}</td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      disabled={downloading === b.id}
-                      onClick={() => void downloadBackup(b.id, b.created_at)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[11px] font-semibold text-white/70 transition hover:bg-white/[0.10] hover:text-white disabled:opacity-40"
-                    >
+                    <button type="button" disabled={downloading === b.id} onClick={() => void downloadBackup(b.id, b.created_at)} className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2.5 py-1 text-[11px] font-semibold text-[color:var(--fg-secondary)] transition hover:bg-[color:var(--surface-strong)] hover:text-[color:var(--fg-primary)] disabled:opacity-40">
                       <Download className="h-3 w-3" />
                       {downloading === b.id ? "…" : "JSON"}
                     </button>

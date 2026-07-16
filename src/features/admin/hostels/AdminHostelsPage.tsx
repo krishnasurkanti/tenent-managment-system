@@ -67,24 +67,24 @@ export default function AdminHostelsPage() {
   }
 
   return (
-    <div className="space-y-4 text-white">
-      <Card className="bg-[radial-gradient(circle_at_top_right,rgba(249,193,42,0.14),transparent_28%),linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Admin Control</p>
-        <h1 className="mt-1 text-2xl font-semibold text-white">Hostel Management</h1>
-      </Card>
+    <div className="flex flex-col gap-4">
+      <header>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Admin control</p>
+        <h1 className="font-display mt-0.5 text-[clamp(1.35rem,4.5vw,1.75rem)] font-bold text-[color:var(--fg-primary)]">Hostel management</h1>
+      </header>
 
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         {rows.map((row) => (
-          <Card key={row.hostelId} className="bg-[linear-gradient(180deg,#111827_0%,#0d1322_100%)] p-3 sm:p-4 text-white">
+          <Card key={row.hostelId} className="p-3 sm:p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-lg font-semibold text-white">{row.hostelName}</p>
+                <p className="text-lg font-semibold text-[color:var(--fg-primary)]">{row.hostelName}</p>
                 <p className="text-sm text-[color:var(--fg-secondary)]">{row.address}</p>
                 <p className="mt-2 text-sm text-[color:var(--fg-secondary)]">
                   Owner: {row.owner.ownerName} ({row.owner.ownerEmail}) • Hostels: {row.owner.ownerHostelCount} • Tenants: {row.tenantCount}
                 </p>
                 <p className="mt-1 text-sm text-[color:var(--fg-secondary)]">
-                  Login ID: <span className="font-semibold text-white">{row.owner.ownerUsername}</span> • Failed Attempts: <span className="font-semibold text-white">{row.owner.failedLoginAttempts}</span>
+                  Login ID: <span className="font-semibold text-[color:var(--fg-primary)]">{row.owner.ownerUsername}</span> • Failed Attempts: <span className="font-semibold text-[color:var(--fg-primary)]">{row.owner.failedLoginAttempts}</span>
                   {row.owner.lockedUntil ? ` • Locked Until: ${new Date(row.owner.lockedUntil).toLocaleString("en-IN")}` : ""}
                 </p>
               </div>
@@ -122,7 +122,7 @@ export default function AdminHostelsPage() {
                   }))
                 }
                 placeholder="Owner username"
-                className="rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white placeholder:text-[color:var(--fg-secondary)]"
+                className="rounded-[var(--radius-md)] border border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-[color:var(--fg-primary)] outline-none placeholder:text-[color:var(--fg-tertiary)]"
               />
               <input
                 type="password"
@@ -137,7 +137,7 @@ export default function AdminHostelsPage() {
                   }))
                 }
                 placeholder="New owner password"
-                className="rounded-[8px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-white placeholder:text-[color:var(--fg-secondary)]"
+                className="rounded-[var(--radius-md)] border border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-3 py-3 text-sm text-[color:var(--fg-primary)] outline-none placeholder:text-[color:var(--fg-tertiary)]"
               />
               <Button onClick={() => saveCredentials(row.hostelId)} className="min-h-12">
                 Save Credentials
@@ -175,10 +175,10 @@ function ActionButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-[8px] px-3 py-2 text-xs font-semibold ${
+      className={`rounded-[var(--radius-md)] px-3 py-2 text-xs font-semibold ${
         tone === "danger"
-          ? "border border-[#ef4444] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] text-white shadow-[0_12px_24px_rgba(220,38,38,0.24)]"
-          : "border border-[color:var(--border)] bg-[color:var(--surface-soft)] text-white"
+          ? "border border-[color:var(--error)] bg-[linear-gradient(180deg,#dc2626_0%,#b91c1c_100%)] text-white shadow-[0_12px_24px_rgba(220,38,38,0.24)]"
+          : "border border-[color:var(--border)] bg-[color:var(--surface-soft)] text-[color:var(--fg-primary)]"
       }`}
     >
       {children}
