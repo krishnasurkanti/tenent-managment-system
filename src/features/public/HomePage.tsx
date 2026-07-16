@@ -61,9 +61,11 @@ function TrialModal({ open, initialPlan, onClose }: { open: boolean; initialPlan
   const hostelRef = useRef<HTMLInputElement>(null);
   const roomsRef = useRef<HTMLInputElement>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- reset modal form state when it opens */
   useEffect(() => {
     if (open) { setPlan(initialPlan); setSubmitted(false); setSubmitting(false); }
   }, [open, initialPlan]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -141,7 +143,7 @@ function TrialModal({ open, initialPlan, onClose }: { open: boolean; initialPlan
               </span>
             </h3>
             <p style={{ fontSize: 12.5, color: "#71717a", lineHeight: 1.5, marginBottom: 18 }}>
-              We'll contact you to activate your account. Takes about 10 minutes.
+              We&apos;ll contact you to activate your account. Takes about 10 minutes.
             </p>
             <form style={{ display: "flex", flexDirection: "column", gap: 11 }} onSubmit={handleSubmit}>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -187,7 +189,7 @@ function TrialModal({ open, initialPlan, onClose }: { open: boolean; initialPlan
                 {submitting ? "Sending…" : "Request Trial →"}
               </button>
               <p style={{ fontSize: 11, color: "#52525b", lineHeight: 1.5, textAlign: "center", marginTop: 4 }}>
-                We'll contact you within 24 hours.
+                We&apos;ll contact you within 24 hours.
               </p>
             </form>
           </>
@@ -204,7 +206,7 @@ function TrialModal({ open, initialPlan, onClose }: { open: boolean; initialPlan
             </div>
             <div style={{ fontSize: "1.1rem", fontWeight: 800, letterSpacing: "-.02em", marginBottom: 6 }}>Request received!</div>
             <div style={{ fontSize: 12.5, color: "#71717a", lineHeight: 1.55, maxWidth: 280, margin: "0 auto 18px" }}>
-              We'll contact you within 24 hours to set up your account.
+              We&apos;ll contact you within 24 hours to set up your account.
             </div>
             <button onClick={onClose} style={{
               background: "rgba(99,102,241,.12)", border: "1px solid rgba(99,102,241,.32)",
