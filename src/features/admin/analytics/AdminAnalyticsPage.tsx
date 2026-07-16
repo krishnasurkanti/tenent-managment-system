@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Card } from "@/components/ui/card";
 import { fetchAdminAnalytics } from "@/services/admin/admin.service";
 import type { AdminAnalyticsData } from "@/types/admin";
 
@@ -15,86 +16,70 @@ export default function AdminAnalyticsPage() {
     void load();
   }, []);
 
-  if (!data) return <div className="rounded-2xl border border-white/70 bg-white/80 p-4 text-sm text-slate-600">Loading analytics...</div>;
+  if (!data) {
+    return <div className="rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 text-sm text-[color:var(--fg-secondary)]">Loading analytics…</div>;
+  }
 
   const maxTenant = Math.max(1, ...data.tenantsPerHostel.map((item) => item.tenantCount));
   const maxRevenue = Math.max(1, ...data.revenuePerHostel.map((item) => item.revenue));
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-[10px] border border-white/70 bg-white/90 p-3 sm:p-4 shadow-sm">
-        <h1 className="text-2xl font-semibold text-slate-900">Analytics</h1>
-        <p className="mt-1 text-sm text-slate-600">Tenants, revenue, growth trends, and most active hostels.</p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <header>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--fg-secondary)]">Analytics</p>
+        <h1 className="font-display mt-0.5 text-[clamp(1.35rem,4.5vw,1.75rem)] font-bold text-[color:var(--fg-primary)]">Platform analytics</h1>
+        <p className="text-[length:var(--text-sm-size)] text-[color:var(--fg-secondary)]">Tenants, revenue, growth trends, and most active hostels.</p>
+      </header>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Card title="Tenants per Hostel">
+        <ChartCard title="Tenants per hostel">
           {data.tenantsPerHostel.map((item) => (
-            <Bar key={item.hostelName} label={item.hostelName} valueLabel={String(item.tenantCount)} pct={(item.tenantCount / maxTenant) * 100} tone="sky" />
+            <Bar key={item.hostelName} label={item.hostelName} valueLabel={String(item.tenantCount)} pct={(item.tenantCount / maxTenant) * 100} tone="brand" />
           ))}
-        </Card>
-        <Card title="Revenue per Hostel">
+        </ChartCard>
+        <ChartCard title="Revenue per hostel">
           {data.revenuePerHostel.map((item) => (
-            <Bar
-              key={item.hostelName}
-              label={item.hostelName}
-              valueLabel={`Rs ${item.revenue.toLocaleString("en-IN")}`}
-              pct={(item.revenue / maxRevenue) * 100}
-              tone="green"
-            />
+            <Bar key={item.hostelName} label={item.hostelName} valueLabel={`Rs ${item.revenue.toLocaleString("en-IN")}`} pct={(item.revenue / maxRevenue) * 100} tone="success" />
           ))}
-        </Card>
+        </ChartCard>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Card title="Growth Trends">
-          <p className="text-sm text-slate-600">Month: {data.growthTrends.monthKey}</p>
-          <p className="mt-2 text-sm text-slate-700">New Hostels: {data.growthTrends.newHostels}</p>
-          <p className="text-sm text-slate-700">New Tenants: {data.growthTrends.newTenants}</p>
-        </Card>
-        <Card title="Most Active Hostels">
+        <ChartCard title="Growth trends">
+          <p className="text-sm text-[color:var(--fg-secondary)]">Month: {data.growthTrends.monthKey}</p>
+          <p className="mt-2 text-sm text-[color:var(--fg-primary)]">New hostels: {data.growthTrends.newHostels}</p>
+          <p className="text-sm text-[color:var(--fg-primary)]">New tenants: {data.growthTrends.newTenants}</p>
+        </ChartCard>
+        <ChartCard title="Most active hostels">
           {data.mostActiveHostels.map((item) => (
-            <p key={item.hostelName} className="text-sm text-slate-700">
+            <p key={item.hostelName} className="text-sm text-[color:var(--fg-primary)]">
               {item.hostelName}: <span className="font-semibold">{item.tenantCount}</span> tenants
             </p>
           ))}
-        </Card>
+        </ChartCard>
       </div>
     </div>
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/80 bg-white/95 p-4 shadow-sm">
-      <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-      <div className="mt-3 space-y-2">{children}</div>
-    </div>
+    <Card className="p-4">
+      <h2 className="text-[length:var(--text-lg-size)] font-semibold text-[color:var(--fg-primary)]">{title}</h2>
+      <div className="mt-3 flex flex-col gap-2">{children}</div>
+    </Card>
   );
 }
 
-function Bar({
-  label,
-  valueLabel,
-  pct,
-  tone,
-}: {
-  label: string;
-  valueLabel: string;
-  pct: number;
-  tone: "sky" | "green";
-}) {
+function Bar({ label, valueLabel, pct, tone }: { label: string; valueLabel: string; pct: number; tone: "brand" | "success" }) {
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
-        <span>{label}</span>
-        <span>{valueLabel}</span>
+      <div className="mb-1 flex items-center justify-between text-xs text-[color:var(--fg-secondary)]">
+        <span className="truncate">{label}</span>
+        <span className="shrink-0 tabular-nums">{valueLabel}</span>
       </div>
-      <div className="h-2.5 rounded-full bg-slate-100">
-        <div
-          className={`h-2.5 rounded-full ${tone === "green" ? "bg-emerald-500" : "bg-sky-500"}`}
-          style={{ width: `${Math.max(6, Math.min(pct, 100))}%` }}
-        />
+      <div className="h-2.5 rounded-full bg-[color:var(--surface-strong)]">
+        <div className={`h-2.5 rounded-full ${tone === "success" ? "bg-[color:var(--success)]" : "bg-[color:var(--brand)]"}`} style={{ width: `${Math.max(6, Math.min(pct, 100))}%` }} />
       </div>
     </div>
   );
