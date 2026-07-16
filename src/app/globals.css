@@ -512,7 +512,10 @@
   .app-scroll-fade {
     position: relative;
   }
-  .app-scroll-fade::before {
+  /* ::after (last child) so the bottom fade pins to the bottom and overlaps the
+     final 24px of content. As ::before (first child) the -24px margin dragged
+     all page content up under the sticky topbar. */
+  .app-scroll-fade::after {
     content: "";
     position: sticky;
     bottom: 0;
