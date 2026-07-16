@@ -318,7 +318,7 @@ function DashboardAlertBanner({
   if (cards.length === 0) return null;
 
   return (
-    <CardCarousel ariaLabel="Rent alerts" autoAdvanceMs={4500} className="-mt-1">
+    <CardCarousel ariaLabel="Rent alerts" autoAdvanceMs={4500} align="center" className="pt-1">
       {cards.map((card, i) => {
         if (card.kind === "alert") {
           const { tenant, status } = card;

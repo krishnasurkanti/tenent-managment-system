@@ -23,6 +23,7 @@ export function CardCarousel({
   gap = 12,
   ariaLabel = "carousel",
   autoAdvanceMs,
+  align = "start",
   className,
 }: {
   children: React.ReactNode[];
@@ -30,6 +31,8 @@ export function CardCarousel({
   gap?: number;
   ariaLabel?: string;
   autoAdvanceMs?: number;
+  /** "center" centres the cards when they don't fill the width, still scrolls when they overflow */
+  align?: "start" | "center";
   className?: string;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -83,7 +86,11 @@ export function CardCarousel({
         ref={trackRef}
         role="group"
         aria-label={ariaLabel}
-        className="flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className={cn(
+          "flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          // w-fit + max-w-full + mx-auto centres a short row and still scrolls a full one
+          align === "center" && "mx-auto w-fit max-w-full",
+        )}
         style={{
           gap,
           paddingLeft: leadPadding,
