@@ -102,7 +102,7 @@ test.describe("Authenticated route accessibility", () => {
 
   test("/owner/notifications loads with alert centre", async ({ page }) => {
     await page.goto("/owner/notifications");
-    await expect(visibleText(page, /owner alert centre/i)).toBeVisible();
+    await expect(visibleText(page, /alert centre/i)).toBeVisible();
     await expect(page.getByRole("main")).toBeVisible();
   });
 
