@@ -63,7 +63,10 @@ const assignmentSchema = z
 
 const paymentHistoryItemSchema = z.object({
   paymentId: z.string().max(128),
-  amount: z.number().finite().nonnegative().max(10_000_000),
+  // coerce: Postgres numeric columns serialise as strings in JSON, so an
+  // existing item round-tripped back on a proof/payment update arrives as
+  // "8000" — z.number() rejected it ("Validation failed"). coerce accepts both.
+  amount: z.coerce.number().finite().nonnegative().max(10_000_000),
   paidOnDate: z.string(),
   nextDueDate: z.string(),
   status: z.string().max(20),
