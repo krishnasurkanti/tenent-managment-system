@@ -64,9 +64,9 @@ export default async function OwnerTenantDetailsPage({
         </div>
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <OwnerQuickStat label="Refundable Advance" value={`â‚¹${(tenant.advanceBalance ?? tenant.advanceAmount ?? 0).toLocaleString("en-IN")}`} helper="Current refundable balance after adjustments" />
-          <OwnerQuickStat label="Service Fee" value={`â‚¹${(tenant.serviceFeeAmount ?? 0).toLocaleString("en-IN")}`} helper="One-time non-refundable fee" />
-          <OwnerQuickStat label="Original Advance" value={`â‚¹${(tenant.advanceAmount ?? 0).toLocaleString("en-IN")}`} helper="Amount deposited at admission" />
+          <OwnerQuickStat label="Refundable Advance" value={`₹${(tenant.advanceBalance ?? tenant.advanceAmount ?? 0).toLocaleString("en-IN")}`} helper="Current refundable balance after adjustments" />
+          <OwnerQuickStat label="Service Fee" value={`₹${(tenant.serviceFeeAmount ?? 0).toLocaleString("en-IN")}`} helper="One-time non-refundable fee" />
+          <OwnerQuickStat label="Original Advance" value={`₹${(tenant.advanceAmount ?? 0).toLocaleString("en-IN")}`} helper="Amount deposited at admission" />
         </div>
 
         {(!tenant.phone || !tenant.idType || !tenant.idPhotoUrl) && (
@@ -211,7 +211,7 @@ export default async function OwnerTenantDetailsPage({
                     {payment.status === "active" ? "Active" : payment.status === "due-soon" ? "Due soon" : "Overdue"}
                   </span>
                 </div>
-                <p className="mt-3 text-sm font-semibold text-white">â‚¹{payment.amount.toLocaleString("en-IN")}</p>
+                <p className="mt-3 text-sm font-semibold text-white">₹{payment.amount.toLocaleString("en-IN")}</p>
               </div>
             ))}
           </div>
@@ -231,7 +231,7 @@ export default async function OwnerTenantDetailsPage({
                 {[...tenant.paymentHistory].reverse().map((payment) => (
                   <tr key={payment.paymentId} className="border-t border-[color:var(--border)] text-white">
                     <td className="px-4 py-4 font-medium">{payment.paymentId}</td>
-                    <td className="px-4 py-4">â‚¹{payment.amount.toLocaleString("en-IN")}</td>
+                    <td className="px-4 py-4">₹{payment.amount.toLocaleString("en-IN")}</td>
                     <td className="px-4 py-4 text-[color:var(--fg-secondary)]">{formatPaymentDate(payment.paidOnDate)}</td>
                     <td className="px-4 py-4 text-[color:var(--fg-secondary)]">{formatPaymentDate(payment.nextDueDate)}</td>
                     <td className="px-4 py-4">

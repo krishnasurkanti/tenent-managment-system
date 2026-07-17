@@ -11,12 +11,20 @@ const FOCUSABLE =
  * - locks the app scroll area while open
  * - closes on Escape
  * - traps Tab focus inside the panel
- * - moves focus into the panel on open, restores it on close
- * Returns a ref to attach to the panel element.
+ * - moves focus into the panel ONCE on open, restores it on close
+ *
+ * onClose is read through a ref so the effect only depends on `open`. Depending
+ * on `onClose` (usually an inline arrow) re-ran the effect on every render,
+ * which stole focus back to the first field on each keystroke and dismissed the
+ * mobile keyboard.
  */
 export function useOverlayA11y(open: boolean, onClose: () => void) {
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useLockBodyScroll(open);
 
@@ -25,14 +33,14 @@ export function useOverlayA11y(open: boolean, onClose: () => void) {
     restoreRef.current = document.activeElement as HTMLElement | null;
 
     const panel = panelRef.current;
-    // Focus the first focusable element, else the panel itself.
+    // Focus the first focusable element (once, when the overlay opens).
     const first = panel?.querySelector<HTMLElement>(FOCUSABLE);
     (first ?? panel)?.focus();
 
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== "Tab" || !panel) return;
@@ -61,7 +69,7 @@ export function useOverlayA11y(open: boolean, onClose: () => void) {
       document.removeEventListener("keydown", onKeyDown, true);
       restoreRef.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   return panelRef;
 }

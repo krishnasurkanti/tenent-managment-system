@@ -45,7 +45,10 @@ app.use(
     },
   }),
 );
-app.use(express.json({ limit: "1mb" }));
+// 15mb so base64 payment-proof screenshots/receipts don't hit "request entity
+// too large" (photos routinely exceed the old 1mb cap once base64-encoded).
+app.use(express.json({ limit: "15mb" }));
+app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 
 app.get("/health", async (_req, res) => {
   try {
