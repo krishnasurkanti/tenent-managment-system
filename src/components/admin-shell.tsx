@@ -121,7 +121,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           app-scroll: single scroll surface.
           No bottom nav on admin, so pb-4 is enough.
         */}
-        <main className="app-scroll app-scroll-fade px-3 py-3 sm:px-4 lg:px-5 lg:py-4">
+        <main className="app-scroll px-3 py-3 sm:px-4 lg:px-5 lg:py-4">
           <div className="mx-auto flex w-full max-w-[1360px] flex-col page-enter">
             <ErrorBoundary message="This page failed to load. Try refreshing.">
               {children}

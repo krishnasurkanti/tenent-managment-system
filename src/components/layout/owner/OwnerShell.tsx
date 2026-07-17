@@ -48,7 +48,7 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
             is never hidden behind the mobile bottom nav.
           */}
           <main
-            className="app-scroll app-scroll-fade px-4 pt-4 pb-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+1.25rem)] sm:px-5 sm:pt-5 md:px-6 xl:px-8 xl:py-6 xl:pb-8"
+            className="app-scroll px-4 pt-4 pb-[calc(var(--nav-h)+env(safe-area-inset-bottom,0px)+1.25rem)] sm:px-5 sm:pt-5 md:px-6 xl:px-8 xl:py-6 xl:pb-8"
           >
             <div className="mx-auto flex w-full max-w-[1360px] flex-1 flex-col page-enter">
               <ErrorBoundary message="This page failed to load. Try refreshing.">
